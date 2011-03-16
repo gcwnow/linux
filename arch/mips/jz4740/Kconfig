@@ -3,6 +3,10 @@ choice
 	depends on MACH_INGENIC
 	default JZ4740_QI_LB60
 
+config JZ4740_A320
+	bool "Dingoo A320 game and media player"
+	select MACH_JZ4740
+
 config JZ4740_QI_LB60
 	bool "Qi Hardware Ben NanoNote"
 	select MACH_JZ4740

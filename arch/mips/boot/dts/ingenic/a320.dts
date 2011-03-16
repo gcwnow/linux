@@ -1,0 +1,68 @@
+/dts-v1/;
+
+#include "jz4740.dtsi"
+
+/ {
+	compatible = "dingoo,a320", "ingenic,jz4740";
+
+	chosen {
+		stdout-path = &uart0;
+	};
+
+	regulators {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <>;
+
+		vcc: regulator@0 {
+			compatible = "regulator-fixed";
+			regulator-name = "vcc";
+
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+		};
+
+		mmc_power: regulator@1 {
+			compatible = "regulator-fixed";
+			regulator-name = "mmc_vcc";
+			regulator-always-on;
+
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			power-supply = <&vcc>;
+		};
+	};
+};
+
+&ext {
+	clock-frequency = <12000000>;
+};
+
+&mmc {
+	bus-width = <4>;
+	max-frequency = <48000000>;
+	vmmc-supply = <&mmc_power>;
+	non-removable;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_msc_4bit>;
+};
+
+&timer_ingenic {
+	timers = <0 1>;
+};
+
+&tcu {
+	assigned-clocks = <&tcu JZ4740_CLK_WDT>;
+	assigned-clock-parents = <&rtc>;
+};
+
+&wdt {
+	system-power-controller;
+};
+
+&rtc_dev {
+	system-power-controller;
+};
