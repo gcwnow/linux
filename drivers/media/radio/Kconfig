@@ -78,6 +78,17 @@ config RADIO_MAXIRADIO
 	  To compile this driver as a module, choose M here: the
 	  module will be called radio-maxiradio.
 
+config RADIO_RDA5807
+	tristate "RDA5807 I2C FM radio support"
+	depends on I2C && VIDEO_V4L2
+	---help---
+	  Say Y here if you want to use the RDA5807 FM receiver connected to
+	  an I2C bus. It is used in for example the Dingoo A320 portable
+	  media player.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called radio-rda5807.
+
 config RADIO_SHARK
 	tristate "Griffin radioSHARK USB radio receiver"
 	depends on USB
