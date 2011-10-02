@@ -1,0 +1,35 @@
+* RDA Microelectronics RDA5807 FM radio receiver
+
+
+Required properties:
+
+- compatible: Must be "rdamicro,rda5807"
+
+
+Optional properties:
+
+- lnan: Use LNAN input port.
+- lnap: Use LNAP input port.
+  Dual port input is possible.
+
+- lna-current: LNA working current: 1800, 2100, 2500 or 3000 uA.
+  Default is 2500 uA (2.5 mA).
+
+- analog-out: Enable analog output.
+
+- i2s-out: Enable I2S output.
+
+
+Example:
+
+	i2c@0 {
+		...
+		rda5807@11 {
+			compatible = "rdamicro,rda5807";
+			reg = <0x11>;
+			lnap;
+			lna-current = <2500>;
+			analog-out;
+		};
+		...
+	};
