@@ -488,9 +488,9 @@ static int __init fb_console_setup(char *this_opt)
 				}
 
 				fbcon_map_override();
+			} else {
+				printk(KERN_WARNING "fbcon: map: incorrect value.\n");
 			}
-
-			return 1;
 		}
 
 		if (!strncmp(options, "vc:", 3)) {
