@@ -123,7 +123,7 @@ C. Boot options
 	is typically located on the same video card.  Thus, the consoles that
 	are controlled by the VGA console will be garbled.
 
-4. fbcon=rotate:<n>
+5. fbcon=rotate:<n>
 
         This option changes the orientation angle of the console display. The
         value 'n' accepts the following:
@@ -147,6 +147,16 @@ C. Boot options
 	use the framebuffer will remain at their 'normal'orientation.
 	Actually, the underlying fb driver is totally ignorant of console
 	rotation.
+
+6. fbcon=bind:<01>
+
+	This option controls whether or not the console should be bound to the
+	terminal when the kernel starts. In any case, the framebuffer console
+	can be bound / unbound at any time through sysfs.
+
+	This parameter can be useful in some cases, for instance when the
+	bootloader or the video driver display a logo that should be shown
+	during the whole boot.
 
 C. Attaching, Detaching and Unloading
 
