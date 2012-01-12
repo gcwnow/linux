@@ -114,6 +114,7 @@ static int fbcon_is_default = 1;
 static int fbcon_has_exited;
 static int primary_device = -1;
 static int fbcon_has_console_bind;
+static unsigned int bind_on_startup = 1;
 
 #ifdef CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY
 static int map_override;
@@ -539,6 +540,14 @@ static int __init fb_console_setup(char *this_opt)
 			}
 			continue;
 		}
+
+		if (!strncmp(options, "bind:", 5)) {
+			options += 5;
+			ret = kstrtouint(options, 0, &bind_on_startup);
+			if (ret)
+				printk(KERN_WARNING "fbcon: bind: incorrect value.\n");
+			continue;
+		}
 	}
 	return 1;
 }
@@ -581,8 +590,11 @@ static int fbcon_takeover(int show_logo)
 	for (i = first_fb_vc; i <= last_fb_vc; i++)
 		con2fb_map[i] = info_idx;
 
-	err = take_over_console(&fb_con, first_fb_vc, last_fb_vc,
-				fbcon_is_default);
+	if (bind_on_startup)
+		err = take_over_console(&fb_con, first_fb_vc, last_fb_vc,
+					fbcon_is_default);
+	else
+		err = register_con_driver(&fb_con, first_fb_vc, last_fb_vc);
 
 	if (err) {
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
@@ -590,7 +602,7 @@ static int fbcon_takeover(int show_logo)
 		}
 		info_idx = -1;
 	} else {
-		fbcon_has_console_bind = 1;
+		fbcon_has_console_bind = bind_on_startup;
 	}
 
 	return err;
