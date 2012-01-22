@@ -82,4 +82,9 @@ config LOGO_M32R_CLUT224
 	depends on M32R
 	default y
 
++config LOGO_GCWZERO_CLUT224
+	bool "224-color GCW-Zero logo"
+	depends on JZ4770_GCW0
+	default n
+
 endif # LOGO
