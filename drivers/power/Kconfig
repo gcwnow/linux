@@ -64,6 +64,12 @@ config WM8350_POWER
           Say Y here to enable support for the power management unit
 	  provided by the Wolfson Microelectronics WM8350 PMIC.
 
+config PMU_ACT8600_SUPPORT
+	tristate "ACT8600 PMU support for Ingenic SoC"
+	depends on MACH_JZ4770
+	help
+	  Say Y here to enable ACT8600 for power supply class and drivers.
+
 config TEST_POWER
 	tristate "Test power driver"
 	help
