@@ -2397,6 +2397,15 @@ config FB_JZ4740
 	help
 	  Framebuffer support for the JZ4740 SoC.
 
+config FB_JZ4770
+	tristate "JZ4770 LCD framebuffer support"
+	depends on FB && MACH_JZ4770
+	select FB_SYS_FILLRECT
+	select FB_SYS_COPYAREA
+	select FB_SYS_IMAGEBLIT
+	help
+	  Framebuffer support for the JZ4770 SoC.
+
 config FB_MXS
 	tristate "MXS LCD framebuffer support"
 	depends on FB && ARCH_MXS
