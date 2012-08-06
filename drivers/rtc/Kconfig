@@ -1068,6 +1068,17 @@ config RTC_DRV_JZ4740
 	  This driver can also be buillt as a module. If so, the module
 	  will be called rtc-jz4740.
 
+config RTC_DRV_JZ4770
+	tristate "Ingenic JZ4770 SoC"
+	depends on RTC_CLASS
+	depends on MACH_JZ4770
+	help
+	  If you say yes here you get support for the Ingenic JZ4770 SoC RTC
+	  controller.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called rtc-jz4770.
+
 config RTC_DRV_LPC32XX
 	depends on ARCH_LPC32XX
 	tristate "NXP LPC32XX RTC"
