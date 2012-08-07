@@ -45,6 +45,9 @@
 
 #include "musb_core.h"
 
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+#include "vbus_hotplug.c"
+#endif
 
 /* MUSB PERIPHERAL status 3-mar-2006:
  *
@@ -1896,10 +1899,21 @@ int __devinit musb_gadget_setup(struct musb *musb)
 	}
 	status = usb_add_gadget_udc(musb->controller, &musb->g);
 	if (status)
-		goto err;
+		goto err0;
+
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	status = musb_gadget_hotplug_setup(musb);
+	if (status != 0)
+		goto err1;
+#endif
 
 	return 0;
-err:
+
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+err1:
+	usb_del_gadget_udc(&musb->g);
+#endif
+err0:
 	musb->g.dev.parent = NULL;
 	device_unregister(&musb->g.dev);
 	return status;
@@ -1911,6 +1925,64 @@ void musb_gadget_cleanup(struct musb *musb)
 	if (musb->g.dev.parent)
 		device_unregister(&musb->g.dev);
 }
+
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver);
+
+static int jz_musb_vbus_hotplug_event(struct notifier_block *n,
+		unsigned long val, void *data)
+{
+	struct musb *musb = the_gadget;
+
+	unsigned long flags;
+
+	int state = *((int *)data);
+
+	D("Called.\n");
+
+	if (!musb || !musb->gadget_driver)
+		return 0;
+
+	switch (val) {
+	case UH_NOTIFY_CABLE_STATE:
+		switch (state) {
+		case UH_CABLE_STATE_OFFLINE:
+		case UH_CABLE_STATE_POWER:
+			D("OFFLINE.\n");
+
+			spin_lock_irqsave(&musb->lock, flags);
+
+			musb_gadget_vbus_draw(&musb->g, 0);
+			musb->xceiv->state = OTG_STATE_UNDEFINED;
+			stop_activity(musb, musb->gadget_driver);
+			musb->is_active = 0;
+
+			spin_unlock_irqrestore(&musb->lock, flags);
+
+			break;
+
+		case UH_CABLE_STATE_USB:
+			D("ONLINE.\n");
+
+			spin_lock_irqsave(&musb->lock, flags);
+
+			musb->xceiv->gadget = &musb->g;
+			musb->xceiv->state = OTG_STATE_B_IDLE;
+			musb->is_active = 1;
+
+			spin_unlock_irqrestore(&musb->lock, flags);
+
+			break;
+		}
+	}
+
+	return 0;
+}
+
+static struct notifier_block jz_musb_vbus_hotplug_nb = {
+	.notifier_call = jz_musb_vbus_hotplug_event,
+};
+#endif
 
 /*
  * Register the gadget driver. Used by gadget drivers when
@@ -1947,8 +2019,13 @@ static int musb_gadget_start(struct usb_gadget *g,
 	spin_lock_irqsave(&musb->lock, flags);
 	musb->is_active = 1;
 
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	uh_register_notifier(&jz_musb_vbus_hotplug_nb);
+#else
 	otg_set_peripheral(otg, &musb->g);
 	musb->xceiv->state = OTG_STATE_B_IDLE;
+#endif
+
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	/* REVISIT:  funcall to other code, which also
@@ -2029,6 +2106,9 @@ static int musb_gadget_stop(struct usb_gadget *g,
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_get_sync(musb->controller);
 
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	uh_unregister_notifier(&jz_musb_vbus_hotplug_nb);
+#endif
 	/*
 	 * REVISIT always use otg_set_peripheral() here too;
 	 * this needs to shut down the OTG engine.

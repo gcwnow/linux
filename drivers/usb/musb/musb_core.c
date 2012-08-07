@@ -123,6 +123,7 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
 
+extern void uh_alive(void);
 
 /*-------------------------------------------------------------------------*/
 
@@ -1524,26 +1525,37 @@ static int __devinit musb_core_init(u16 musb_type, struct musb *musb)
 /*-------------------------------------------------------------------------*/
 
 #if defined(CONFIG_SOC_OMAP2430) || defined(CONFIG_SOC_OMAP3430) || \
-	defined(CONFIG_ARCH_OMAP4) || defined(CONFIG_ARCH_U8500)
+	defined(CONFIG_ARCH_OMAP4) || defined(CONFIG_ARCH_U8500) || \
+	defined(CONFIG_MACH_JZ4770)
 
 static irqreturn_t generic_interrupt(int irq, void *__hci)
 {
 	unsigned long	flags;
-	irqreturn_t	retval = IRQ_NONE;
 	struct musb	*musb = __hci;
 
+	irqreturn_t rv, rv_dma, rv_usb;
+	rv = rv_dma = rv_usb = IRQ_NONE;
+
 	spin_lock_irqsave(&musb->lock, flags);
+
+#if defined(CONFIG_USB_INVENTRA_DMA)
+	if (musb->b_dma_share_usb_irq)
+		rv_dma = musb_call_dma_controller_irq(irq, musb);
+#endif
 
 	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
 	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
 	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
 
 	if (musb->int_usb || musb->int_tx || musb->int_rx)
-		retval = musb_interrupt(musb);
+		rv_usb = musb_interrupt(musb);
 
 	spin_unlock_irqrestore(&musb->lock, flags);
 
-	return retval;
+	rv = (rv_dma == IRQ_HANDLED || rv_usb == IRQ_HANDLED) ?
+		IRQ_HANDLED : IRQ_NONE;
+
+	return rv;
 }
 
 #else
@@ -1563,6 +1575,9 @@ irqreturn_t musb_interrupt(struct musb *musb)
 	u8		devctl, power;
 	int		ep_num;
 	u32		reg;
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	uh_alive();
+#endif
 
 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 	power = musb_readb(musb->mregs, MUSB_POWER);
