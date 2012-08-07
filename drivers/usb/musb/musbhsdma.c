@@ -247,7 +247,7 @@ static irqreturn_t dma_controller_irq(int irq, void *private_data)
 
 	irqreturn_t retval = IRQ_NONE;
 
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	u8 bchannel;
 	u8 int_hsdma;
@@ -255,9 +255,13 @@ static irqreturn_t dma_controller_irq(int irq, void *private_data)
 	u32 addr, count;
 	u16 csr;
 
-	spin_lock_irqsave(&musb->lock, flags);
 
-	int_hsdma = musb_readb(mbase, MUSB_HSDMA_INTR);
+	if (!musb->b_dma_share_usb_irq) {
+		spin_lock_irqsave(&musb->lock, flags);
+
+		int_hsdma = musb_readb(mbase, MUSB_HSDMA_INTR);
+	} else
+		int_hsdma = controller->controller.int_hsdma;
 
 #ifdef CONFIG_BLACKFIN
 	/* Clear DMA interrupt flags */
@@ -352,7 +356,8 @@ static irqreturn_t dma_controller_irq(int irq, void *private_data)
 
 	retval = IRQ_HANDLED;
 done:
-	spin_unlock_irqrestore(&musb->lock, flags);
+	if (!musb->b_dma_share_usb_irq)
+		spin_unlock_irqrestore(&musb->lock, flags);
 	return retval;
 }
 
@@ -374,12 +379,28 @@ struct dma_controller *dma_controller_create(struct musb *musb, void __iomem *ba
 	struct musb_dma_controller *controller;
 	struct device *dev = musb->controller;
 	struct platform_device *pdev = to_platform_device(dev);
-	int irq = platform_get_irq_byname(pdev, "dma");
+	int irq;
+	u8 nr_dma_channel;
 
-	if (irq <= 0) {
-		dev_err(dev, "No DMA interrupt line!\n");
-		return NULL;
+	/* Modified by River - Get DMA Channels from RAMINFO. */
+	nr_dma_channel = musb_readb(musb->mregs, MUSB_RAMINFO);
+	nr_dma_channel >>= 4;
+
+	/* Modified by River - DMA Share IRQ with USB. */
+	if (musb->b_dma_share_usb_irq) {
+		irq = 0;
+		dev_info(dev, "DMA IRQ: Shared. DMA Channels: %d.\n",
+			      nr_dma_channel);
+	} else {
+		irq = platform_get_irq(pdev, 1);
+		if (irq <= 0) {
+			dev_err(dev, "No DMA interrupt line!\n");
+			return NULL;
+		}
+		dev_info(dev, "DMA IRQ: %d. DMA Channels: %d.\n",
+			      irq, nr_dma_channel);
 	}
+	/* End modified */
 
 	controller = kzalloc(sizeof(*controller), GFP_KERNEL);
 	if (!controller)
@@ -394,15 +415,39 @@ struct dma_controller *dma_controller_create(struct musb *musb, void __iomem *ba
 	controller->controller.channel_program = dma_channel_program;
 	controller->controller.channel_abort = dma_channel_abort;
 
-	if (request_irq(irq, dma_controller_irq, 0,
-			dev_name(musb->controller), &controller->controller)) {
-		dev_err(dev, "request_irq %d failed!\n", irq);
-		dma_controller_destroy(&controller->controller);
-
-		return NULL;
+	if (irq) {
+		if (request_irq(irq, dma_controller_irq, 0,
+				dev_name(musb->controller),
+				&controller->controller)) {
+			dev_err(dev, "request_irq %d failed!\n", irq);
+			dma_controller_destroy(&controller->controller);
+			return NULL;
+		}
 	}
 
 	controller->irq = irq;
 
 	return &controller->controller;
 }
+
+/* Added by river - For DMA IRQ Sharing */
+static u8 dma_controller_fetch_intr(struct dma_controller *c)
+{
+	struct musb_dma_controller *mc = container_of(c, struct musb_dma_controller, controller);
+
+	c->int_hsdma = musb_readb(mc->base, MUSB_HSDMA_INTR);
+
+	return c->int_hsdma;
+}
+
+irqreturn_t musb_call_dma_controller_irq(int irq, struct musb *musb)
+{
+	if (!musb->b_dma_share_usb_irq)
+		return IRQ_NONE;
+
+	if (dma_controller_fetch_intr(musb->dma_controller))
+		return dma_controller_irq(irq, (void *)musb->dma_controller);
+
+	return IRQ_NONE;
+}
+/* End added */
