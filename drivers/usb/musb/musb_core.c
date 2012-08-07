@@ -122,6 +122,7 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
 
+extern void uh_alive(void);
 
 /*-------------------------------------------------------------------------*/
 
@@ -1514,6 +1515,9 @@ irqreturn_t musb_interrupt(struct musb *musb)
 	u8		devctl;
 	int		ep_num;
 	u32		reg;
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	uh_alive();
+#endif
 
 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 
