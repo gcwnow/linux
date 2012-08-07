@@ -2194,7 +2194,11 @@ void mmc_start_host(struct mmc_host *host)
 	host->f_init = max(freqs[0], host->f_min);
 	host->rescan_disable = 0;
 	mmc_power_up(host);
+#if defined(CONFIG_JZ_SYSTEM_AT_CARD)
+	mmc_rescan(&host->detect.work);
+#else
 	mmc_detect_change(host, 0);
+#endif
 }
 
 void mmc_stop_host(struct mmc_host *host)

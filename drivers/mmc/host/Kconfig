@@ -577,6 +577,21 @@ config MMC_JZ4740
 	  If you have a board based on such a SoC and with a SD/MMC slot,
 	  say Y or M here.
 
+config MMC_JZ4770
+	tristate "JZ4770 SD/Multimedia Card Interface support"
+	depends on MACH_JZ4770
+	help
+	  This selects support for the SD/MMC controller on Ingenic JZ4770
+	  SoCs.
+	  If you have a board based on such a SoC and with a SD/MMC slot,
+	  say Y or M here.
+
+config JZ_SYSTEM_AT_CARD
+	bool "Boot from MMC/SD"
+	depends on MMC_JZ4770
+	help
+	  Select this if your system boots from an MMC/SD card in slot 0.
+
 config MMC_VUB300
 	tristate "VUB300 USB to SDIO/SD/MMC Host Controller support"
 	depends on USB
