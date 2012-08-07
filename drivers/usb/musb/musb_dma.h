@@ -164,6 +164,11 @@ dma_channel_status(struct dma_channel *c)
  */
 struct dma_controller {
 	struct musb *musb;
+
+	/* Added by River - For DMA IRQ Sharing. */
+	u8			int_hsdma;
+	/* End added. */
+
 	struct dma_channel	*(*channel_alloc)(struct dma_controller *,
 					struct musb_hw_ep *, u8 is_tx);
 	void			(*channel_release)(struct dma_channel *);
@@ -218,5 +223,7 @@ extern void cppi41_dma_controller_destroy(struct dma_controller *c);
 extern struct dma_controller *
 ux500_dma_controller_create(struct musb *musb, void __iomem *base);
 extern void ux500_dma_controller_destroy(struct dma_controller *c);
+
+extern irqreturn_t musb_call_dma_controller_irq(int irq, struct musb *musb);
 
 #endif	/* __MUSB_DMA_H__ */
