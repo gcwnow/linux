@@ -460,6 +460,16 @@ config I2C_IOP3XX
 	  This driver can also be built as a module.  If so, the module
 	  will be called i2c-iop3xx.
 
+config I2C_JZ4770
+	tristate "JZ4770 I2C Controller"
+	depends on MACH_JZ4770
+	help
+	  Say Y here if you want support for the hardware I2C controller in
+	  the JZ4770 SoC.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called i2c-jz4770.
+
 config I2C_MPC
 	tristate "MPC107/824x/85xx/512x/52xx/83xx/86xx"
 	depends on PPC
