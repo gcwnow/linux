@@ -92,6 +92,10 @@ config USB_MUSB_BLACKFIN
 config USB_MUSB_UX500
 	tristate "U8500 and U5500"
 
+config USB_MUSB_JZ4770
+	tristate "JZ4770"
+	depends on MACH_JZ4770
+
 endchoice
 
 config USB_MUSB_AM335X_CHILD
@@ -119,7 +123,7 @@ config USB_UX500_DMA
 
 config USB_INVENTRA_DMA
 	bool 'Inventra'
-	depends on USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
+	depends on USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN || USB_MUSB_JZ4770
 	help
 	  Enable DMA transfers using Mentor's engine.
 

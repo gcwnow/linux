@@ -418,6 +418,8 @@ struct musb {
 	 */
 	unsigned                double_buffer_not_ok:1;
 
+	unsigned int b_dma_share_usb_irq;
+
 	struct musb_hdrc_config	*config;
 
 	int			xceiv_old_state;
