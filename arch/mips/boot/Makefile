@@ -40,3 +40,13 @@ quiet_cmd_srec = OBJCOPY $@
       cmd_srec = $(OBJCOPY) -S -O srec $(strip-flags) $(VMLINUX) $@
 $(obj)/vmlinux.srec: $(VMLINUX) FORCE
 	$(call if_changed,srec)
+
+$(obj)/vmlinux.bin.gz: $(obj)/vmlinux.bin FORCE
+	$(call if_changed,gzip)
+
+targets += uImage
+UIMAGE_LOADADDR := $(VMLINUX_LOAD_ADDRESS)
+UIMAGE_ENTRYADDR = $(shell sh $(obj)/get_entry $(NM) $(VMLINUX) )
+$(obj)/uImage: $(obj)/vmlinux.bin.gz $(VMLINUX) FORCE
+	$(call if_changed,uimage,gzip)
+	@echo '  Image $@ is ready'
