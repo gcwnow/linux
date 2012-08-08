@@ -3,4 +3,5 @@ elf2ecoff
 vmlinux.*
 zImage
 zImage.tmp
+uImage
 calc_vmlinuz_load_addr
