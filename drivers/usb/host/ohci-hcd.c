@@ -1095,6 +1095,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER	ohci_hcd_jz4740_driver
 #endif
 
+#ifdef CONFIG_MACH_JZ4770
+#include "ohci-jz4770.c"
+#define PLATFORM_DRIVER		ohci_hcd_jz4770_driver
+#endif
+
 #ifdef CONFIG_USB_OCTEON_OHCI
 #include "ohci-octeon.c"
 #define PLATFORM_DRIVER		ohci_octeon_driver
