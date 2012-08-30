@@ -81,6 +81,16 @@ config PWM_JZ4740
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-jz4740.
 
+config PWM_JZ4770
+	tristate "Ingenic JZ4770 PWM support"
+	depends on MACH_JZ4770
+	help
+	  Generic PWM framework driver for Ingenic JZ4770 based
+	  machines.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-jz4770.
+
 config PWM_LPC32XX
 	tristate "LPC32XX PWM support"
 	depends on ARCH_LPC32XX
