@@ -565,6 +565,8 @@ typedef struct {
 #	define AFMT_U16_BE		0x00000100	/* Big endian U16 */
 #	define AFMT_MPEG		0x00000200	/* MPEG (2) audio */
 #	define AFMT_AC3		0x00000400	/* Dolby Digital AC3 */
+#	define AFMT_S24_LE		0x00000800	/* Little endian signed 24*/
+#	define AFMT_S24_BE		0x00001000	/* Big endian signed 24 */
 
 /*
  * Buffer status queries.
