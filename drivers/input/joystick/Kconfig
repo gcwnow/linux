@@ -329,4 +329,14 @@ config JOYSTICK_MAPLE
 	  To compile this as a module choose M here: the module will be called
 	  maplecontrol.
 
+config JOYSTICK_JZ_SADC
+	tristate "Analog joystick connected to JZ4770 SADC"
+	depends on MFD_JZ4770_ADC
+	help
+	  Say Y here if you have want to enable support for an analog joystick
+	  connected to the touch screen pins of the Ingenic JZ4770 SoC.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called jz-sadc.
+
 endif
