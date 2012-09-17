@@ -20,6 +20,7 @@ obj-$(CONFIG_JOYSTICK_GUILLEMOT)	+= guillemot.o
 obj-$(CONFIG_JOYSTICK_IFORCE)		+= iforce/
 obj-$(CONFIG_JOYSTICK_INTERACT)		+= interact.o
 obj-$(CONFIG_JOYSTICK_JOYDUMP)		+= joydump.o
+obj-$(CONFIG_JOYSTICK_JZ_SADC)		+= jz-sadc.o
 obj-$(CONFIG_JOYSTICK_MAGELLAN)		+= magellan.o
 obj-$(CONFIG_JOYSTICK_MAPLE)		+= maplecontrol.o
 obj-$(CONFIG_JOYSTICK_PSXPAD_SPI)	+= psxpad-spi.o
