@@ -16,6 +16,7 @@ CFLAGS_setup.o = -I$(src)/../../../scripts/dtc/libfdt
 # board specific support
 
 obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
+obj-$(CONFIG_JZ4770_GCW0)		+= board-gcw0.o
 
 # PM support
 
