@@ -43,6 +43,11 @@ FEXPORT(__ret_from_irq)
 resume_userspace_check:
 	LONG_L	t0, PT_STATUS(sp)		# returning to kernel mode?
 	andi	t0, t0, KU_USER
+	bnez	t0, resume_userspace
+        nop
+	LONG_L	t0, PT_STATUS(sp)		# returning to kernel mode?
+        srl     t0, t0, 27
+	andi	t0, t0, 1
 	beqz	t0, resume_kernel
 
 resume_userspace:
@@ -90,6 +95,11 @@ FEXPORT(syscall_exit)
 
 restore_all:				# restore full frame
 #ifdef CONFIG_MIPS_MT_SMTC
+/* Detect and execute deferred IPI "interrupts" */
+	LONG_L	s0, TI_REGS($28)
+	LONG_S	sp, TI_REGS($28)
+	jal	deferred_smtc_ipi
+	LONG_S	s0, TI_REGS($28)
 #ifdef CONFIG_MIPS_MT_SMTC_IM_BACKSTOP
 /* Re-arm any temporarily masked interrupts not explicitly "acked" */
 	mfc0	v0, CP0_TCSTATUS
@@ -118,11 +128,6 @@ restore_all:				# restore full frame
 	xor	t0, t0, t3
 	mtc0	t0, CP0_TCCONTEXT
 #endif /* CONFIG_MIPS_MT_SMTC_IM_BACKSTOP */
-/* Detect and execute deferred IPI "interrupts" */
-	LONG_L	s0, TI_REGS($28)
-	LONG_S	sp, TI_REGS($28)
-	jal	deferred_smtc_ipi
-	LONG_S	s0, TI_REGS($28)
 #endif /* CONFIG_MIPS_MT_SMTC */
 	.set	noat
 	RESTORE_TEMP
