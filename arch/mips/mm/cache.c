@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/sched.h>
 #include <linux/syscalls.h>
+#include <linux/highmem.h>
 #include <linux/mm.h>
 
 #include <asm/cacheflush.h>
@@ -58,6 +59,8 @@ void (*_dma_cache_wback)(unsigned long start, unsigned long size);
 void (*_dma_cache_inv)(unsigned long start, unsigned long size);
 
 EXPORT_SYMBOL(_dma_cache_wback_inv);
+EXPORT_SYMBOL(_dma_cache_wback);
+EXPORT_SYMBOL(_dma_cache_inv);
 
 #endif /* CONFIG_DMA_NONCOHERENT || CONFIG_DMA_MAYBE_COHERENT */
 
@@ -76,6 +79,38 @@ SYSCALL_DEFINE3(cacheflush, unsigned long, addr, unsigned long, bytes,
 	flush_icache_range(addr, addr + bytes);
 
 	return 0;
+}
+
+void __flush_kernel_dcache_page(struct vm_area_struct *vma, struct page *page)
+{
+	struct address_space *mapping = page_mapping(page);
+	void *addr;
+	int exec = (vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc;
+
+	if (!exec)
+		return;
+
+	if (PageHighMem(page)) {
+		addr = kmap_atomic(page);
+		if (addr) {
+			flush_data_cache_page((unsigned long)addr);
+			kunmap_atomic(addr);
+		}
+		return;
+	}
+
+	if (mapping && !mapping_mapped(mapping)) {
+		SetPageDcacheDirty(page);
+		return;
+	}
+
+	/*
+	 * We could delay the flush for the !page_mapping case too.  But that
+	 * case is for exec env/arg pages and those are %99 certainly going to
+	 * get faulted into the tlb (and thus flushed) anyways.
+	 */
+	addr = page_address(page);
+	flush_data_cache_page((unsigned long)addr);
 }
 
 void __flush_dcache_page(struct page *page)
