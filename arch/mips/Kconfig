@@ -302,6 +302,7 @@ config MACH_INGENIC
 	select ARCH_REQUIRE_GPIOLIB
 	select COMMON_CLK
 	select GENERIC_IRQ_CHIP
+	select SERIAL_8250_INGENIC
 	select BUILTIN_DTB
 	select USE_OF
 	select LIBFDT
