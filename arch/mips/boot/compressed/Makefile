@@ -58,7 +58,7 @@ $(obj)/piggy.o: $(obj)/dummy.o $(obj)/vmlinux.bin.z FORCE
 # Calculate the load address of the compressed kernel image
 hostprogs-y := calc_vmlinuz_load_addr
 
-ifeq ($(CONFIG_MACH_JZ4740),y)
+ifneq ($(CONFIG_MACH_JZ4740)$(CONFIG_MACH_JZ4770),)
 VMLINUZ_LOAD_ADDRESS := 0x80600000
 else
 VMLINUZ_LOAD_ADDRESS = $(shell $(obj)/calc_vmlinuz_load_addr \
