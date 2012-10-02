@@ -7,6 +7,10 @@ config JZ4740_QI_LB60
 	bool "Qi Hardware Ben NanoNote"
 	select MACH_JZ4740
 
+config JZ4770_GCW0
+	bool "GCW Zero handheld game/media player"
+	select MACH_JZ4770
+
 endchoice
 
 config JZSOC

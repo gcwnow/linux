@@ -1,0 +1,212 @@
+/dts-v1/;
+
+#include "jz4770.dtsi"
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+
+/ {
+	compatible = "gcw,zero", "ingenic,jz4770";
+
+	board {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <>;
+
+		rumble {
+			compatible = "pwm-haptic";
+			pwms = <&pwm 4 2000000 0>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinfunc_pwm4_data>;
+		};
+
+		backlight {
+			compatible = "pwm-backlight";
+			pwms = <&pwm 1 40000 PWM_POLARITY_INVERTED>;
+
+			brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
+			default-brightness-level = <128>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinfunc_pwm1_data>;
+		};
+
+		gpio-keys {
+			compatible = "gpio-keys";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			autorepeat;
+
+			button@0 {
+				label = "D-pad up";
+				linux,code = <KEY_UP>;
+				gpios = <&gpe 21 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@1 {
+				label = "D-pad down";
+				linux,code = <KEY_DOWN>;
+				gpios = <&gpe 25 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@2 {
+				label = "D-pad left";
+				linux,code = <KEY_LEFT>;
+				gpios = <&gpe 23 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@3 {
+				label = "D-pad right";
+				linux,code = <KEY_RIGHT>;
+				gpios = <&gpe 24 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@4 {
+				label = "Button A";
+				linux,code = <KEY_LEFTCTRL>;
+				gpios = <&gpe 29 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@5 {
+				label = "Button B";
+				linux,code = <KEY_LEFTALT>;
+				gpios = <&gpe 20 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@6 {
+				label = "Button Y";
+				linux,code = <KEY_SPACE>;
+				gpios = <&gpe 27 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@7 {
+				label = "Button X";
+				linux,code = <KEY_LEFTSHIFT>;
+				gpios = <&gpe 28 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@8 {
+				label = "Left shoulder button";
+				linux,code = <KEY_TAB>;
+				gpios = <&gpb 20 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@9 {
+				label = "Right shoulder button";
+				linux,code = <KEY_BACKSPACE>;
+				gpios = <&gpe 26 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@10 {
+				label = "Start button";
+				linux,code = <KEY_ENTER>;
+				gpios = <&gpb 21 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+
+			button@11 {
+				label = "Select button";
+				linux,code = <KEY_ESC>;
+				/* This is the only button that is active high,
+				 * since it doubles as BOOT_SEL1.
+				 */
+				gpios = <&gpd 18 GPIO_ACTIVE_HIGH>;
+				debounce-interval = <10>;
+			};
+
+			button@12 {
+				label = "Power slider";
+				linux,code = <KEY_POWER>;
+				gpios = <&gpa 30 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+				gpio-key,wakeup;
+			};
+
+			button@13 {
+				label = "Power hold";
+				linux,code = <KEY_PAUSE>;
+				gpios = <&gpf 11 GPIO_ACTIVE_LOW>;
+				debounce-interval = <10>;
+			};
+		};
+
+		i2c3: i2c-act8600 {
+			compatible = "i2c-gpio";
+			gpios = <&gpd 5 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 4 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		i2c4: i2c-it6610 {
+			compatible = "i2c-gpio";
+			gpios = <&gpd 6 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 7 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		leds {
+			compatible = "gpio-leds";
+
+			power {
+				gpios = <&gpb 30 GPIO_ACTIVE_LOW>;
+				default-state = "on";
+			};
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	rda5807@11 {				/* FM radio receiver */
+		compatible = "rdamicro,rda5807";
+		reg = <0x11>;
+		lnap;
+		lna-current = <2500>;
+		analog-out;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	mxc6225@15 {				/* g-sensor */
+		compatible = "mxc6225";
+		reg = <0x15>;
+	};
+};
+
+&i2c3 {
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	act8600@5a {				/* power management unit */
+		compatible = "act8600";
+		reg = <0x5a>;
+	};
+};
+
+&i2c4 {
+	i2c-gpio,delay-us = <5>;		/* 100 kHz */
+
+	/* the IT6610 is on this bus, but we don't have a driver for it yet */
+};
