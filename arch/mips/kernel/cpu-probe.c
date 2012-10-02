@@ -197,7 +197,13 @@ static inline unsigned long cpu_get_fpu_id(void)
  */
 static inline int __cpu_has_fpu(void)
 {
+#if defined(CONFIG_MACH_JZ4770)
+	/* (cpu_get_fpu_id() & 0xff00) no use again in jz4760B */
+	/* so we have to force it to 1 */
+	return 1;
+#else
 	return (cpu_get_fpu_id() & FPIR_IMP_MASK) != FPIR_IMP_NONE;
+#endif
 }
 
 static inline unsigned long cpu_get_msa_id(void)
@@ -1200,7 +1206,14 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 	case PRID_IMP_JZRISC:
 		c->cputype = CPU_JZRISC;
 		c->writecombine = _CACHE_UNCACHED_ACCELERATED;
+#if defined(CONFIG_MACH_JZ4770)
+		c->isa_level = MIPS_CPU_ISA_M32R2;
+		c->tlbsize = 32;
+#endif
 		__cpu_name[cpu] = "Ingenic JZRISC";
+
+		if (__cpu_has_fpu())
+			c->options |= MIPS_CPU_FPU | MIPS_CPU_32FPR;
 		break;
 	default:
 		panic("Unknown Ingenic Processor ID!");
