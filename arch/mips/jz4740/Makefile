@@ -4,10 +4,12 @@
 
 # Object file lists.
 
-obj-y += prom.o time.o reset.o setup.o \
-	platform.o timer.o
+obj-y += prom.o setup.o
 
 obj-$(CONFIG_MACH_JZ4740) += gpio.o
+obj-$(CONFIG_MACH_JZ4770) += jz4770-pm.o
+obj-$(CONFIG_MACH_JZ4740)$(CONFIG_MACH_JZ4780) += \
+	time.o timer.o platform.o reset.o
 
 CFLAGS_setup.o = -I$(src)/../../../scripts/dtc/libfdt
 
@@ -17,4 +19,4 @@ obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
 
 # PM support
 
-obj-$(CONFIG_PM) += pm.o
+obj-$(if CONFIG_MACH_JZ4770,,$(CONFIG_PM)) += pm.o

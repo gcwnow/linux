@@ -1503,6 +1503,10 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 	case PRID_IMP_JZRISC:
 		c->cputype = CPU_JZRISC;
 		c->writecombine = _CACHE_UNCACHED_ACCELERATED;
+#ifdef CONFIG_MACH_JZ4770
+		/* FPIR ProcessorID is 0, so __cpu_has_fpu() would return 0. */
+		c->options |= MIPS_CPU_FPU | MIPS_CPU_32FPR;
+#endif
 		__cpu_name[cpu] = "Ingenic JZRISC";
 		break;
 	default:

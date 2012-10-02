@@ -60,6 +60,11 @@
 
 #define JZ4740_IRQ_ADC_BASE	JZ4740_IRQ(NR_INTC_IRQS + 144)
 
+#ifdef CONFIG_MACH_JZ4770
+/* we need 256 IRQs at least */
+#define NR_IRQS 384
+#else
 #define NR_IRQS (JZ4740_IRQ_ADC_BASE + 6)
+#endif
 
 #endif

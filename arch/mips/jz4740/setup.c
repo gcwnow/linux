@@ -14,6 +14,8 @@
  *
  */
 
+#include <linux/clk-provider.h>
+#include <linux/clocksource.h>
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/irqchip.h>
@@ -54,16 +56,46 @@ static void __init jz4740_detect_mem(void)
 	add_memory_region(0, size, BOOT_MEM_RAM);
 }
 
+#ifdef CONFIG_MACH_JZ4770
+/*
+ * We have seen MMC DMA transfers read corrupted data from SDRAM when a burst
+ * interval ends at physical address 0x10000000. To avoid this problem, we
+ * remove the final page of low memory from the memory map.
+ */
+static void __init jz4770_reserve_unsafe_for_dma(void)
+{
+	int i;
+	for (i = 0; i < boot_mem_map.nr_map; i++) {
+		struct boot_mem_map_entry *entry = boot_mem_map.map + i;
+
+		if (entry->type != BOOT_MEM_RAM)
+			continue;
+
+		if (entry->addr + entry->size != 0x10000000)
+			continue;
+
+		entry->size -= PAGE_SIZE;
+		break;
+	}
+}
+#endif /*CONFIG_MACH_JZ4770 */
+
 void __init plat_mem_setup(void)
 {
 	int offset;
 
+#ifndef CONFIG_MACH_JZ4770
 	jz4740_reset_init();
+#endif
 	__dt_setup_arch(__dtb_start);
 
 	offset = fdt_path_offset(__dtb_start, "/memory");
 	if (offset < 0)
 		jz4740_detect_mem();
+
+#ifdef CONFIG_MACH_JZ4770
+	jz4770_reserve_unsafe_for_dma();
+#endif
 }
 
 void __init device_tree_init(void)
@@ -86,6 +118,9 @@ const char *get_system_type(void)
 	if (config_enabled(CONFIG_MACH_JZ4780))
 		return "JZ4780";
 
+	if (config_enabled(CONFIG_MACH_JZ4770))
+		return "JZ4770";
+
 	return "JZ4740";
 }
 
@@ -93,3 +128,11 @@ void __init arch_init_irq(void)
 {
 	irqchip_init();
 }
+
+#ifdef CONFIG_MACH_JZ4770
+void __init plat_time_init(void)
+{
+	of_clk_init(NULL);
+	clocksource_probe();
+}
+#endif
