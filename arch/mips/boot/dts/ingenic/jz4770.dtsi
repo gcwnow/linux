@@ -1,0 +1,630 @@
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/clock/jz4770-cgu.h>
+#include <dt-bindings/clock/ingenic,jz4740-tcu.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "ingenic,jz4770";
+
+	cpuintc: cpuintc@0 {
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	intc: intc@10001000 {
+		compatible = "ingenic,jz4770-intc";
+		reg = <0x10001000 0x40>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <2>;
+	};
+
+	clocks {
+		ext: ext {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <12000000>;
+		};
+
+		rtc_clk: rtc {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+		};
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <>;
+
+		cgu: jz4770-cgu@10000000 {
+			compatible = "ingenic,jz4770-cgu";
+			reg = <0x10000000 0x100>;
+
+			clocks = <&ext>, <&rtc_clk>;
+			clock-names = "ext", "rtc";
+
+			#clock-cells = <1>;
+		};
+
+		tcu: jz4770-tcu@10002010 {
+			compatible = "ingenic,jz4770-tcu-clocks";
+			reg = <0x10002010 0x128		/* TCU regs */
+					0x10002000 0xF		/* WDT regs */
+					0x100020e0 0xF>;	/* OST regs */
+
+			#clock-cells = <1>;
+		};
+
+		wdt: jz4740-wdt@10002000 {
+			compatible = "ingenic,jz4770-watchdog";
+			reg = <0x10002000 0x0B>;
+
+			clocks = <&tcu JZ4740_CLK_WDT>;
+			clock-names = "wdt";
+		};
+
+		pwm: jz4740-pwm@10002010 {
+			compatible = "ingenic,jz4770-pwm";
+			reg = <0x10002010 0x4B>;
+			#pwm-cells = <3>;
+
+			clocks = <&tcu JZ4740_CLK_TIMER0
+					&tcu JZ4740_CLK_TIMER1
+					&tcu JZ4740_CLK_TIMER2
+					&tcu JZ4740_CLK_TIMER3
+					&tcu JZ4740_CLK_TIMER4
+					&tcu JZ4740_CLK_TIMER5
+					&tcu JZ4740_CLK_TIMER6
+					&tcu JZ4740_CLK_TIMER7
+					&tcu JZ4740_COUNTER0
+					&tcu JZ4740_COUNTER1
+					&tcu JZ4740_COUNTER2
+					&tcu JZ4740_COUNTER3
+					&tcu JZ4740_COUNTER4
+					&tcu JZ4740_COUNTER5
+					&tcu JZ4740_COUNTER6
+					&tcu JZ4740_COUNTER7>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+					"timer4", "timer5", "timer6", "timer7",
+					"counter0", "counter1", "counter2", "counter3",
+					"counter4", "counter5", "counter6", "counter7";
+		};
+
+		clocksource@0x10002000 {
+			compatible = "ingenic,jz4780-tcu";
+			reg = <0x10002000 0x140>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <27 26 25>;
+
+			clocks = <&tcu JZ4740_CLK_TIMER0
+					&tcu JZ4740_CLK_TIMER1
+					&tcu JZ4740_CLK_TIMER2
+					&tcu JZ4740_CLK_TIMER3
+					&tcu JZ4740_CLK_TIMER4
+					&tcu JZ4740_CLK_TIMER5
+					&tcu JZ4740_CLK_TIMER6
+					&tcu JZ4740_CLK_TIMER7
+					&tcu JZ4770_CLK_OST
+					&tcu JZ4740_COUNTER0
+					&tcu JZ4740_COUNTER1
+					&tcu JZ4740_COUNTER2
+					&tcu JZ4740_COUNTER3
+					&tcu JZ4740_COUNTER4
+					&tcu JZ4740_COUNTER5
+					&tcu JZ4740_COUNTER6
+					&tcu JZ4740_COUNTER7
+					&tcu JZ4770_COUNTER_OST>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+					"timer4", "timer5", "timer6", "timer7", "ost",
+					"counter0", "counter1", "counter2", "counter3",
+					"counter4", "counter5", "counter6", "counter7",
+					"counter_ost";
+		};
+
+		rtc: jz4740-rtc@10003000 {
+			compatible = "ingenic,jz4770-rtc";
+			reg = <0x10003000 0x3F>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <32>;
+		};
+
+		pinctrl: jz4770-pinctrl@10010000 {
+			compatible = "ingenic,jz4770-pinctrl";
+			reg = <0x10010000 0x5AB>;
+
+			gpa: gpa {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <17>;
+
+				ingenic,pull-ups = <0x3fffffff>;
+			};
+
+			gpb: gpb {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <16>;
+
+				ingenic,pull-downs = <0x000f0c03>;
+				ingenic,pull-ups   = <0xfff0030c>;
+			};
+
+			gpc: gpc {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <15>;
+
+				ingenic,pull-ups = <0xffffffff>;
+			};
+
+			gpd: gpd {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <14>;
+
+				ingenic,pull-downs = <0x0000b000>;
+				ingenic,pull-ups   = <0xffff4fff>;
+			};
+
+			gpe: gpe {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <13>;
+
+				ingenic,pull-downs = <0x00000483>;
+				ingenic,pull-ups   = <0xfffffb7c>;
+			};
+
+			gpf: gpf {
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&intc>;
+				interrupts = <12>;
+
+				ingenic,pull-downs = <0x00580ff0>;
+				ingenic,pull-ups   = <0xffa7f00f>;
+			};
+
+			pincfg_nobias: nobias {
+				bias-disable;
+			};
+
+			pincfg_pull_up: pull_up {
+				bias-pull-up;
+			};
+
+			pincfg_pull_down: pull_down {
+				bias-pull-down;
+			};
+
+			pinfunc_otg: otg {
+				pins_otg_data: otg-data {
+					ingenic,pins = <&gpe 10 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_msc0: msc0 {
+				pins_msc0_4bit: msc0_4bit {
+					ingenic,pins = <&gpa 18 1 &pincfg_nobias
+							&gpa 19 1 &pincfg_nobias
+							&gpa 20 0 &pincfg_nobias
+							&gpa 21 1 &pincfg_nobias
+							&gpa 22 1 &pincfg_nobias
+							&gpa 23 1 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_msc1: msc1 {
+				pins_msc1_4bit: msc1_4bit {
+					ingenic,pins = <&gpd 20 0 &pincfg_nobias
+							&gpd 21 0 &pincfg_nobias
+							&gpd 22 0 &pincfg_nobias
+							&gpd 23 0 &pincfg_nobias
+							&gpd 24 0 &pincfg_nobias
+							&gpd 25 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_msc2: msc2 {
+				pins_msc2_4bit: msc2_4bit {
+					ingenic,pins = <&gpb 20 0 &pincfg_nobias
+							&gpb 21 0 &pincfg_nobias
+							&gpb 28 0 &pincfg_nobias
+							&gpb 29 0 &pincfg_nobias
+							&gpb 30 0 &pincfg_nobias
+							&gpb 31 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_pwm1: pwm1 {
+				pinfunc_pwm1_data: pwm1-data {
+					ingenic,pins = <&gpe 1 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_pwm4: pwm4 {
+				pinfunc_pwm4_data: pwm4-data {
+					ingenic,pins = <&gpe 4 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_lcd: lcd {
+				pinfunc_lcd_rgb888: lcd_rgb888 {
+					ingenic,pins = <&gpc  8 0 &pincfg_nobias
+							&gpc  9 0 &pincfg_nobias
+							&gpc 18 0 &pincfg_nobias
+							&gpc 19 0 &pincfg_nobias
+							&gpc  0 0 &pincfg_nobias
+							&gpc  1 0 &pincfg_nobias
+							&gpc  2 0 &pincfg_nobias
+							&gpc  3 0 &pincfg_nobias
+							&gpc  4 0 &pincfg_nobias
+							&gpc 10 0 &pincfg_nobias
+							&gpc 11 0 &pincfg_nobias
+							&gpc 12 0 &pincfg_nobias
+							&gpc 13 0 &pincfg_nobias
+							&gpc 14 0 &pincfg_nobias
+							&gpc 15 0 &pincfg_nobias
+							&gpc 20 0 &pincfg_nobias
+							&gpc 21 0 &pincfg_nobias
+							&gpc 22 0 &pincfg_nobias
+							&gpc 23 0 &pincfg_nobias
+							&gpc 24 0 &pincfg_nobias
+							&gpc  5 0 &pincfg_nobias
+							&gpc 25 0 &pincfg_nobias
+							&gpc  6 0 &pincfg_nobias
+							&gpc  7 0 &pincfg_nobias
+							&gpc 16 0 &pincfg_nobias
+							&gpc 17 0 &pincfg_nobias
+							&gpc 26 0 &pincfg_nobias
+							&gpc 27 0 &pincfg_nobias>;
+				};
+
+				pinfunc_lcd_nopins: no_pins {
+					ingenic,pins = <>;
+				};
+			};
+
+			pinfunc_uart0: uart0 {
+				pins_uart0_data: uart0-data {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart0_dataplusflow: uart0-dataplusflow {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  1 0 &pincfg_nobias   /* cts */
+							&gpf  2 0 &pincfg_nobias   /* rts */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+			};
+
+			pinfunc_uart1: uart1 {
+				pins_uart1_data: uart1-data {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up   /* rxd */
+							&gpd 28 0 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart1_dataplusflow: uart1-dataplusflow {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up  /* rxd */
+							&gpd 28 0 &pincfg_nobias   /* txd */
+							&gpd 27 0 &pincfg_nobias   /* cts */
+							&gpd 29 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart2: uart2 {
+				pins_uart2_data: uart2-data {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart2_dataplusflow: uart2-dataplusflow {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias   /* txd */
+							&gpc 29 0 &pincfg_nobias   /* cts */
+							&gpc 31 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart3: uart3 {
+				pins_uart3_data: uart3-data {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart3_dataplusflow: uart3-dataplusflow {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias    /* txd */
+							&gpe  8 0 &pincfg_nobias    /* cts */
+							&gpe  9 0 &pincfg_nobias>;  /* rts */
+				};
+			};
+		};
+
+		uart0: serial@10030000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10030000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART0>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <5>;
+		};
+
+		uart1: serial@10031000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10031000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART1>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <4>;
+		};
+
+		uart2: serial@10032000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10032000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART2>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <3>;
+		};
+
+		uart3: serial@10033000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10033000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART3>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <2>;
+		};
+
+		i2s: i2s@10020000 {
+			compatible = "ingenic,jz4770-i2s";
+			reg = <0x10020000 0x94>;
+
+			clocks = <&cgu JZ4770_CLK_AIC>, <&cgu JZ4770_CLK_I2S>,
+					<&cgu JZ4770_CLK_EXT>, <&cgu JZ4770_CLK_PLL0>;
+			clock-names = "aic", "i2s", "ext", "pll half";
+
+			dmas = <&dmac1 3>, <&dmac1 4>;
+			dma-names = "rx" , "tx";
+
+		};
+
+		codec: codec@100200A0 {
+			compatible = "ingenic,jz4770-codec";
+			reg = <0x100200A0 0xF>;
+
+			clocks = <&cgu JZ4770_CLK_AIC>;
+			clock-names = "aic";
+		};
+
+		mmc0: jz4770-mmc@10021000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10021000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC0>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <37>;
+
+			dmas = <&dmac1 0>;
+			dma-names = "rx-tx";
+			dma-tx-id = <26>;
+			dma-rx-id = <27>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
+		};
+
+		mmc1: jz4770-mmc@10022000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10022000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC1>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <36>;
+
+			dmas = <&dmac1 1>;
+			dma-names = "rx-tx";
+			dma-tx-id = <30>;
+			dma-rx-id = <31>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
+		};
+
+		mmc2: jz4770-mmc@10023000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10023000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC2>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <35>;
+
+			dmas = <&dmac1 2>;
+			dma-names = "rx-tx";
+			dma-tx-id = <36>;
+			dma-rx-id = <37>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
+		};
+
+		adc: jz4770-adc@10070000 {
+			compatible = "ingenic,jz4770-adc";
+			reg = <0x10070000 0x2F>;
+			#address-cells = <0>;
+			#size-cells = <0>;
+
+			clocks = <&cgu JZ4770_CLK_ADC>;
+			interrupt-parent = <&intc>;
+			interrupts = <18>;
+
+			battery: jz4770-battery {
+				compatible = "ingenic,jz4770-adc,battery", "ingenic,jz4770-battery";
+			};
+
+			joystick: jz4770-touchscreen {
+				compatible = "ingenic,jz4770-adc,touchscreen", "ingenic,jz4770-touchscreen";
+			};
+		};
+
+		lcdc: jz4770-fb@13050000 {
+			compatible = "ingenic,jz4770-fb";
+			reg = <0x13050000 0x2FF /* LCDC, TVE, LCDC PART2 */
+			       0x13080000 0x09B /* IPU */
+			      >;
+
+			clocks = <&cgu JZ4770_CLK_LPCLK_MUX>, <&cgu JZ4770_CLK_IPU>;
+			clock-names = "lpclk", "ipu";
+
+			interrupt-parent = <&intc>;
+			interrupts = <29>;
+		};
+
+		dmac0: jz4770-dma@13420000 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420000 0xBF
+				   0x13420300 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <24>;
+
+			/* Disable dmac0 until we have something
+			 * that uses it */
+			status = "disabled";
+		};
+
+		dmac1: jz4770-dma@13420100 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420100 0xBF
+				   0x13420400 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <23>;
+		};
+
+		uhc: uhc@13430000 {
+			compatible = "ingenic,jz4770-ohci", "generic-ohci";
+			reg = <0x13430000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_UHC>, <&cgu JZ4770_CLK_UHC_PHY>;
+			assigned-clocks = <&cgu JZ4770_CLK_UHC>;
+			assigned-clock-rates = <48000000>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <20>;
+
+			status = "disabled";
+		};
+
+		usb_otg: usb_otg@0x13440000 {
+			compatible = "ingenic,jz4770-musb";
+			reg = <0x13440000 0xFFFF>;
+
+			clocks = <&cgu JZ4770_CLK_OTG>;
+			clock-names = "usb";
+
+			interrupt-parent = <&intc>;
+			interrupts = <21>;
+			interrupt-names = "mc";
+
+			status = "disabled";
+		};
+
+		i2c0: i2c@0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpd 30 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 31 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
+		};
+
+		i2c1: i2c@1 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpe 30 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpe 31 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
+		};
+
+		i2c2: i2c@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpf 16 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpf 17 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
+		};
+	};
+};
