@@ -10,6 +10,7 @@
 #define _ASM_CACHEFLUSH_H
 
 /* Keep includes the same across arches.  */
+#include <linux/fs.h>
 #include <linux/mm.h>
 #include <asm/cpu-features.h>
 
@@ -58,10 +59,39 @@ static inline void flush_anon_page(struct vm_area_struct *vma,
 		__flush_anon_page(page, vmaddr);
 }
 
+#ifdef CONFIG_JZRISC
+extern void (*flush_insn_cache_page)(unsigned long addr);
+static inline void flush_icache_page(struct vm_area_struct *vma,
+	struct page *page)
+{
+	struct address_space *mapping = page_mapping(page);
+	unsigned long addr;
+
+	if (PageHighMem(page))
+	  return;
+
+	if (mapping && !mapping_mapped(mapping)) {
+	  return;
+	}
+
+	__flush_dcache_page(page);
+
+	/*
+	 * We could delay the flush for the !page_mapping case too.  But that
+	 * case is for exec env/arg pages and those are %99 certainly going to
+	 * get faulted into the tlb (and thus flushed) anyways.
+	 */
+
+	addr = (unsigned long) page_address(page);
+
+	flush_insn_cache_page(addr);
+}
+#else
 static inline void flush_icache_page(struct vm_area_struct *vma,
 	struct page *page)
 {
 }
+#endif
 
 extern void (*flush_icache_range)(unsigned long start, unsigned long end);
 extern void (*local_flush_icache_range)(unsigned long start, unsigned long end);

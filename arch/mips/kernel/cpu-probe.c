@@ -319,7 +319,13 @@ static inline unsigned long cpu_get_fpu_id(void)
  */
 static inline int __cpu_has_fpu(void)
 {
+#if defined(CONFIG_MACH_JZ4770)
+	/* (cpu_get_fpu_id() & 0xff00) no use again in jz4760B */
+	/* so we have to force it to 1 */
+	return 1;
+#else
 	return ((cpu_get_fpu_id() & 0xff00) != FPIR_IMP_NONE);
+#endif
 }
 
 static inline void cpu_probe_vmbits(struct cpuinfo_mips *c)
@@ -1034,7 +1040,22 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 	switch (c->processor_id & 0xff00) {
 	case PRID_IMP_JZRISC:
 		c->cputype = CPU_JZRISC;
+#if defined(CONFIG_MACH_JZ4770)
+		c->isa_level = MIPS_CPU_ISA_M32R2;
+		c->tlbsize = 32;
+#endif
 		__cpu_name[cpu] = "Ingenic JZRISC";
+
+		if (__cpu_has_fpu()) {
+			unsigned int tmp, mask = 1 << 26;
+			c->options |= MIPS_CPU_FPU;
+			/* Set floating mode to 32*32bit mode */
+			tmp = read_c0_status();
+			tmp &= ~mask;
+			printk("Jz4760 Floating coprocessor work on %s mode\n",
+					(tmp & mask) ? "32*64bit" : "32*32bit");
+			write_c0_status(tmp);
+		}
 		break;
 	default:
 		panic("Unknown Ingenic Processor ID!");
@@ -1160,6 +1181,9 @@ __cpuinit void cpu_probe(void)
 		cpu_probe_cavium(c, cpu);
 		break;
 	case PRID_COMP_INGENIC:
+	case 0xd80000: // used on fpga
+	case 0xd90000:
+	case 0xd10000: //falcon
 		cpu_probe_ingenic(c, cpu);
 		break;
 	case PRID_COMP_NETLOGIC:
