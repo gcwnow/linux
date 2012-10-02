@@ -1,0 +1,15 @@
+choice
+	prompt "Machine type"
+	depends on MACH_JZ4770
+
+endchoice
+
+config JZ4770_PROC_JZ
+	bool "Enable /proc/jz directory"
+	depends on PROC_FS
+	help
+	  Enable additional debug and control facilities through a subdirectory
+	  in the proc file system.
+
+	  Use of these custom interfaces is discouraged, but might be useful
+	  during the development of non-custom alternatives.
