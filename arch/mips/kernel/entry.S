@@ -40,6 +40,11 @@ FEXPORT(__ret_from_irq)
 resume_userspace_check:
 	LONG_L	t0, PT_STATUS(sp)		# returning to kernel mode?
 	andi	t0, t0, KU_USER
+	bnez	t0, resume_userspace
+        nop
+	LONG_L	t0, PT_STATUS(sp)		# returning to kernel mode?
+        srl     t0, t0, 27
+	andi	t0, t0, 1
 	beqz	t0, resume_kernel
 
 resume_userspace:
