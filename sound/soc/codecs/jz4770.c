@@ -516,7 +516,7 @@ static const unsigned int input_sel_values_mic12[] = { 2, 0, 1 };
 		jz_icdc_adc_enum_ ## name, JZ_ICDC_CR_ADC, 0, 0x3, \
 		input_sel_texts_ ## texts, input_sel_values_ ## values); \
 	static const struct snd_kcontrol_new icdc_adc_controls_ ## name = \
-		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_adc_enum_ ## name);
+		SOC_DAPM_ENUM("Route", jz_icdc_adc_enum_ ## name);
 
 ADC_ENUM_DECL(nomic, nomic, nomic)
 ADC_ENUM_DECL(mic1, singlemic, mic1)
@@ -540,7 +540,7 @@ static const unsigned int output_sel_values_mic12[] = { 3, 2, 0, 1 };
 		jz_icdc_hp_enum_ ## name, JZ_ICDC_CR_HP, 0, 0x3, \
 		output_sel_texts_ ## texts, output_sel_values_ ## values); \
 	static const struct snd_kcontrol_new icdc_hp_controls_ ## name = \
-		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_hp_enum_ ## name);
+		SOC_DAPM_ENUM("Route", jz_icdc_hp_enum_ ## name);
 
 HP_ENUM_DECL(nomic, nomic, nomic)
 HP_ENUM_DECL(mic1, singlemic, mic1)
@@ -554,7 +554,7 @@ HP_ENUM_DECL(mic1r2l, singlemic, mic2)
 		jz_icdc_lo_enum_ ## name, JZ_ICDC_CR_LO, 0, 0x3, \
 		output_sel_texts_ ## texts, output_sel_values_ ## values); \
 	static const struct snd_kcontrol_new icdc_lo_controls_ ## name = \
-		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_lo_enum_ ## name);
+		SOC_DAPM_ENUM("Route", jz_icdc_lo_enum_ ## name);
 
 LO_ENUM_DECL(nomic, nomic, nomic)
 LO_ENUM_DECL(mic1, singlemic, mic1)
@@ -848,16 +848,14 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
 	const struct mic_config *mic_cfg = &mic_configs[jz_icdc->mic_mode];
 	struct snd_soc_dapm_widget widgets[] = {
-		SND_SOC_DAPM_VALUE_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
+		SND_SOC_DAPM_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
 				       mic_cfg->capture_mux_controls),
-		SND_SOC_DAPM_VALUE_MUX("Headphone Source", SND_SOC_NOPM, 0, 0,
+		SND_SOC_DAPM_MUX("Headphone Source", SND_SOC_NOPM, 0, 0,
 				       mic_cfg->hp_mux_controls),
-		SND_SOC_DAPM_VALUE_MUX("Line Out Source", SND_SOC_NOPM, 0, 0,
+		SND_SOC_DAPM_MUX("Line Out Source", SND_SOC_NOPM, 0, 0,
 				       mic_cfg->lo_mux_controls),
 	};
 	int ret;
-
-	snd_soc_codec_set_cache_io(codec, 5, 8, SND_SOC_REGMAP);
 
 	jz_icdc_codec_init_regs(codec);
 
