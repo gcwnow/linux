@@ -79,6 +79,13 @@ enum loongson_machine_type {
  */
 #define  MACH_INGENIC_JZ4730	0	/* JZ4730 SOC		*/
 #define  MACH_INGENIC_JZ4740	1	/* JZ4740 SOC		*/
+#define  MACH_INGENIC_JZ4750    2	/* JZ4750 SOC		*/
+#define  MACH_INGENIC_JZ4750D   3	/* JZ4750D SOC		*/
+#define  MACH_INGENIC_JZ4750L   4	/* JZ4750L SOC		*/
+#define  MACH_INGENIC_JZ4760    5	/* JZ4760 SOC		*/
+#define  MACH_INGENIC_JZ4760B   6	/* JZ4760B SOC		*/
+#define  MACH_INGENIC_JZ4770    7	/* JZ4770 SOC		*/
+#define  MACH_INGENIC_JZ4810    8	/* JZ4810 SOC		*/
 
 extern char *system_type;
 const char *get_system_type(void);
