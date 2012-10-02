@@ -19,6 +19,59 @@
 #include <asm/mipsmtregs.h>
 #include <asm/uaccess.h> /* for segment_eq() */
 
+#ifdef CONFIG_JZRISC
+
+#define K0_TO_K1()				\
+do {						\
+	unsigned long __k0_addr;		\
+						\
+	__asm__ __volatile__(			\
+	"la %0, 1f\n\t"				\
+	"or	%0, %0, %1\n\t"			\
+	"jr	%0\n\t"				\
+	"nop\n\t"				\
+	"1: nop\n"				\
+	: "=&r"(__k0_addr)			\
+	: "r" (0x20000000) );			\
+} while(0)
+
+#define K1_TO_K0()				\
+do {						\
+	unsigned long __k0_addr;		\
+	__asm__ __volatile__(			\
+	"nop;nop;nop;nop;nop;nop;nop\n\t"	\
+	"la %0, 1f\n\t"				\
+	"jr	%0\n\t"				\
+	"nop\n\t"				\
+	"1:	nop\n"				\
+	: "=&r" (__k0_addr));			\
+} while (0)
+
+#define INVALIDATE_BTB()			\
+do {						\
+	unsigned long tmp;			\
+	__asm__ __volatile__(			\
+	".set mips32\n\t"			\
+	"mfc0 %0, $16, 7\n\t"			\
+	"nop\n\t"				\
+	"ori %0, 2\n\t"				\
+	"mtc0 %0, $16, 7\n\t"			\
+	"nop\n\t"				\
+	".set mips0\n\t"			\
+	: "=&r" (tmp));				\
+} while (0)
+
+#define SYNC_WB() __asm__ __volatile__ ("sync")
+
+#else /* CONFIG_JZRISC */
+
+#define K0_TO_K1() do { } while (0)
+#define K1_TO_K0() do { } while (0)
+#define INVALIDATE_BTB() do { } while (0)
+#define SYNC_WB() do { } while (0)
+
+#endif /* CONFIG_JZRISC */
+
 /*
  * This macro return a properly sign-extended address suitable as base address
  * for indexed cache operations.  Two issues here:
@@ -146,6 +199,7 @@ static inline void flush_icache_line_indexed(unsigned long addr)
 {
 	__iflush_prologue
 	cache_op(Index_Invalidate_I, addr);
+	INVALIDATE_BTB();
 	__iflush_epilogue
 }
 
@@ -153,6 +207,7 @@ static inline void flush_dcache_line_indexed(unsigned long addr)
 {
 	__dflush_prologue
 	cache_op(Index_Writeback_Inv_D, addr);
+	SYNC_WB();
 	__dflush_epilogue
 }
 
@@ -171,6 +226,7 @@ static inline void flush_icache_line(unsigned long addr)
 
 	default:
 		cache_op(Hit_Invalidate_I, addr);
+		INVALIDATE_BTB();
 		break;
 	}
 	__iflush_epilogue
@@ -180,6 +236,7 @@ static inline void flush_dcache_line(unsigned long addr)
 {
 	__dflush_prologue
 	cache_op(Hit_Writeback_Inv_D, addr);
+	SYNC_WB();
 	__dflush_epilogue
 }
 
@@ -187,6 +244,7 @@ static inline void invalidate_dcache_line(unsigned long addr)
 {
 	__dflush_prologue
 	cache_op(Hit_Invalidate_D, addr);
+	SYNC_WB();
 	__dflush_epilogue
 }
 
@@ -243,6 +301,7 @@ static inline void protected_flush_icache_line(unsigned long addr)
 		protected_cachee_op(Hit_Invalidate_I, addr);
 #else
 		protected_cache_op(Hit_Invalidate_I, addr);
+		INVALIDATE_BTB();
 #endif
 		break;
 	}
@@ -257,6 +316,7 @@ static inline void protected_flush_icache_line(unsigned long addr)
 static inline void protected_writeback_dcache_line(unsigned long addr)
 {
 	protected_cache_op(Hit_Writeback_Inv_D, addr);
+	SYNC_WB();
 }
 
 static inline void protected_writeback_scache_line(unsigned long addr)
@@ -522,8 +582,12 @@ static inline void extra##blast_##pfx##cache##lsize##_page_indexed(unsigned long
 __BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 16, )
 __BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 16, )
 __BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 16, )
+
+#ifndef CONFIG_JZRISC
 __BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 32, )
 __BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 32, )
+#endif
+
 __BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I_Loongson2, 32, loongson2_)
 __BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 32, )
 __BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 64, )
@@ -534,7 +598,11 @@ __BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 128, )
 __BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 128, )
 
 __BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 16, )
+
+#ifndef CONFIG_JZRISC
 __BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 32, )
+#endif
+
 __BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 16, )
 __BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 32, )
 __BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 64, )
@@ -566,6 +634,115 @@ __BUILD_BLAST_USER_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D,
 			 64)
 __BUILD_BLAST_USER_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 64)
 
+#ifdef CONFIG_JZRISC
+
+static inline void blast_dcache32(void)
+{
+	unsigned long start = INDEX_BASE;
+	unsigned long end = start + current_cpu_data.dcache.waysize;
+	unsigned long ws_inc = 1UL << current_cpu_data.dcache.waybit;
+	unsigned long ws_end = current_cpu_data.dcache.ways <<
+	                       current_cpu_data.dcache.waybit;
+	unsigned long ws, addr;
+
+	for (ws = 0; ws < ws_end; ws += ws_inc)
+		for (addr = start; addr < end; addr += 0x400)
+			cache32_unroll32(addr|ws,Index_Writeback_Inv_D);
+
+	SYNC_WB();
+}
+
+static inline void blast_dcache32_page(unsigned long page)
+{
+	unsigned long start = page;
+	unsigned long end = page + PAGE_SIZE;
+
+	do {
+		cache32_unroll32(start,Hit_Writeback_Inv_D);
+		start += 0x400;
+	} while (start < end);
+
+	SYNC_WB();
+}
+
+static inline void blast_dcache32_page_indexed(unsigned long page)
+{
+	unsigned long indexmask = current_cpu_data.dcache.waysize - 1;
+	unsigned long start = INDEX_BASE + (page & indexmask);
+	unsigned long end = start + PAGE_SIZE;
+	unsigned long ws_inc = 1UL << current_cpu_data.dcache.waybit;
+	unsigned long ws_end = current_cpu_data.dcache.ways <<
+	                       current_cpu_data.dcache.waybit;
+	unsigned long ws, addr;
+
+	for (ws = 0; ws < ws_end; ws += ws_inc)
+		for (addr = start; addr < end; addr += 0x400)
+			cache32_unroll32(addr|ws,Index_Writeback_Inv_D);
+
+	SYNC_WB();
+}
+
+static inline void blast_icache32(void)
+{
+	unsigned long start = INDEX_BASE;
+	unsigned long end = start + current_cpu_data.icache.waysize;
+	unsigned long ws_inc = 1UL << current_cpu_data.icache.waybit;
+	unsigned long ws_end = current_cpu_data.icache.ways <<
+	                       current_cpu_data.icache.waybit;
+	unsigned long ws, addr;
+
+	K0_TO_K1();
+
+	for (ws = 0; ws < ws_end; ws += ws_inc)
+		for (addr = start; addr < end; addr += 0x400)
+			cache32_unroll32(addr|ws,Index_Invalidate_I);
+
+	INVALIDATE_BTB();
+
+	K1_TO_K0();
+}
+
+static inline void blast_icache32_page(unsigned long page)
+{
+	unsigned long start = page;
+	unsigned long end = page + PAGE_SIZE;
+
+	K0_TO_K1();
+
+	do {
+		cache32_unroll32(start,Hit_Invalidate_I);
+		start += 0x400;
+	} while (start < end);
+
+	INVALIDATE_BTB();
+
+	K1_TO_K0();
+}
+
+static inline void blast_icache32_page_indexed(unsigned long page)
+{
+	unsigned long indexmask = current_cpu_data.icache.waysize - 1;
+	unsigned long start = INDEX_BASE + (page & indexmask);
+	unsigned long end = start + PAGE_SIZE;
+	unsigned long ws_inc = 1UL << current_cpu_data.icache.waybit;
+	unsigned long ws_end = current_cpu_data.icache.ways <<
+	                       current_cpu_data.icache.waybit;
+	unsigned long ws, addr;
+
+	K0_TO_K1();
+
+	for (ws = 0; ws < ws_end; ws += ws_inc)
+		for (addr = start; addr < end; addr += 0x400)
+			cache32_unroll32(addr|ws,Index_Invalidate_I);
+
+	INVALIDATE_BTB();
+
+	K1_TO_K0();
+}
+
+#endif /* CONFIG_JZRISC */
+
+
 /* build blast_xxx_range, protected_blast_xxx_range */
 #define __BUILD_BLAST_CACHE_RANGE(pfx, desc, hitop, prot, extra)	\
 static inline void prot##extra##blast_##pfx##cache##_range(unsigned long start, \
@@ -587,7 +764,7 @@ static inline void prot##extra##blast_##pfx##cache##_range(unsigned long start, 
 	__##pfx##flush_epilogue						\
 }
 
-#ifndef CONFIG_EVA
+#if !defined(CONFIG_EVA) || !defined(CONFIG_JZRISC)
 
 __BUILD_BLAST_CACHE_RANGE(d, dcache, Hit_Writeback_Inv_D, protected_, )
 __BUILD_BLAST_CACHE_RANGE(i, icache, Hit_Invalidate_I, protected_, )
@@ -630,11 +807,35 @@ __BUILD_PROT_BLAST_CACHE_RANGE(i, icache, Hit_Invalidate_I)
 __BUILD_BLAST_CACHE_RANGE(s, scache, Hit_Writeback_Inv_SD, protected_, )
 __BUILD_BLAST_CACHE_RANGE(i, icache, Hit_Invalidate_I_Loongson2, \
 	protected_, loongson2_)
+
+#ifndef CONFIG_JZRISC
 __BUILD_BLAST_CACHE_RANGE(d, dcache, Hit_Writeback_Inv_D, , )
+#endif
+
 __BUILD_BLAST_CACHE_RANGE(i, icache, Hit_Invalidate_I, , )
 __BUILD_BLAST_CACHE_RANGE(s, scache, Hit_Writeback_Inv_SD, , )
 /* blast_inv_dcache_range */
 __BUILD_BLAST_CACHE_RANGE(inv_d, dcache, Hit_Invalidate_D, , )
 __BUILD_BLAST_CACHE_RANGE(inv_s, scache, Hit_Invalidate_SD, , )
+
+#ifdef CONFIG_JZRISC
+
+static inline void blast_dcache_range(unsigned long start,
+				      unsigned long end)
+{
+	unsigned long lsize = cpu_dcache_line_size();
+	unsigned long addr = start & ~(lsize - 1);
+	unsigned long aend = (end - 1) & ~(lsize - 1);
+
+	while (1) {
+		cache_op(Hit_Writeback_Inv_D, addr);
+		if (addr == aend)
+			break;
+		addr += lsize;
+	}
+	SYNC_WB();
+}
+
+#endif /* CONFIG_JZRISC */
 
 #endif /* _ASM_R4KCACHE_H */
