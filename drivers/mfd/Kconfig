@@ -917,6 +917,14 @@ config MFD_JZ4740_ADC
 	  Say yes here if you want support for the ADC unit in the JZ4740 SoC.
 	  This driver is necessary for jz4740-battery and jz4740-hwmon driver.
 
+config MFD_JZ4770_ADC
+	bool "Support for the JZ4770 SoC ADC core"
+	select MFD_CORE
+	select GENERIC_IRQ_CHIP
+	depends on MACH_JZ4770
+	help
+	  Say yes here if you want support for the ADC unit in the JZ4770 SoC.
+
 config MFD_VX855
 	tristate "Support for VIA VX855/VX875 integrated south bridge"
 	depends on PCI
