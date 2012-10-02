@@ -10,6 +10,7 @@ obj-y += irq.o gpio.o dma.o time.o cpm.o clock.o
 obj-$(CONFIG_JZ4770_PROC_JZ)	+= proc.o
 
 # board specific support
+obj-$(CONFIG_JZ4770_GCW0)	+= board-gcw0.o
 
 # PM support
 
