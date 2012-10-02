@@ -147,7 +147,8 @@ extern void kunmap_coherent(void);
 #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
 static inline void flush_kernel_dcache_page(struct page *page)
 {
-	BUG_ON(cpu_has_dc_aliases && PageHighMem(page));
+	if (cpu_has_dc_aliases || !cpu_has_ic_fills_f_dc)
+		__flush_dcache_page(page);
 }
 
 /*
