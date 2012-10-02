@@ -1030,6 +1030,14 @@ config MFD_TC6393XB
 	help
 	  Support for Toshiba Mobile IO Controller TC6393XB
 
+config MFD_JZ4770_ADC
+	bool "Support for the JZ4770 SoC ADC core"
+	select MFD_CORE
+	select GENERIC_IRQ_CHIP
+	depends on MACH_JZ4770
+	help
+	  Say yes here if you want support for the ADC unit in the JZ4770 SoC.
+
 config MFD_VX855
 	tristate "VIA VX855/VX875 integrated south bridge"
 	depends on PCI
