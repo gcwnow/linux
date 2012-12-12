@@ -188,6 +188,7 @@ static inline unsigned int dvpe(void)
 	"	.word	0x41610001		# dvpe $1		\n"
 	"	move	%0, $1						\n"
 	"	ehb							\n"
+	"	.set	mips0						\n"
 	"	.set	pop						\n"
 	: "=r" (res));
 
@@ -205,6 +206,7 @@ static inline void __raw_evpe(void)
 	"	.set	mips32r2					\n"
 	"	.word	0x41600021		# evpe			\n"
 	"	ehb							\n"
+	"	.set	mips0						\n"
 	"	.set	pop						\n");
 }
 
@@ -230,6 +232,7 @@ static inline unsigned int dmt(void)
 	"	.word	0x41610BC1			# dmt $1	\n"
 	"	ehb							\n"
 	"	move	%0, $1						\n"
+	"	.set	mips0						\n"
 	"	.set	pop						\n"
 	: "=r" (res));
 
@@ -279,6 +282,7 @@ static inline void ehb(void)
 	"	# mftc0 $1, $" #rt ", " #sel "			\n"	\
 	"	.word	0x41000800 | (" #rt " << 16) | " #sel " \n"	\
 	"	move	%0, $1					\n"	\
+	"	.set	mips0					\n"	\
 	"	.set	pop					\n"	\
 	: "=r" (__res));						\
 									\
@@ -296,6 +300,7 @@ static inline void ehb(void)
 	"	# mftgpr $1," #rt "				\n"	\
 	"	.word	0x41000820 | (" #rt " << 16)		\n"	\
 	"	move	%0, $1					\n"	\
+	"	.set	mips0					\n"	\
 	"	.set	pop					\n"	\
 	: "=r" (__res));						\
 									\
@@ -322,6 +327,7 @@ do {									\
 	"	move	$1, %0					\n"	\
 	"	# mttgpr $1, " #rd "				\n"	\
 	"	.word	0x41810020 | (" #rd " << 11)		\n"	\
+	"	.set	mips0					\n"	\
 	"	.set	pop					\n"	\
 	: : "r" (v));							\
 } while (0)
@@ -335,6 +341,7 @@ do {									\
 	"	move	$1, %0					\n"	\
 	"	# mttc0 %0," #rd ", " #sel "			\n"	\
 	"	.word	0x41810000 | (" #rd " << 11) | " #sel " \n"	\
+	"	.set	mips0					\n"	\
 	"	.set	pop					\n"	\
 	:								\
 	: "r" (v));							\
