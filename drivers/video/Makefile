@@ -13,7 +13,7 @@ fb-objs                           := $(fb-y)
 
 obj-$(CONFIG_VT)		  += console/
 obj-$(CONFIG_LOGO)		  += logo/
-obj-y				  += backlight/
+obj-y				  += backlight/ displays/
 
 obj-$(CONFIG_EXYNOS_VIDEO)     += exynos/
 
