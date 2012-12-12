@@ -1696,6 +1696,7 @@ static inline void tlb_read(void)
 	"	.word	0x41610001		# dvpe $1	\n"
 	"	move	%0, $1					\n"
 	"	ehb						\n"
+	"	.set	mips0				\n"
 	"	.set	pop					\n"
 	: "=r" (res));
 
@@ -1716,6 +1717,7 @@ static inline void tlb_read(void)
 		"	.set	mips32r2			\n"
 		"	.word	0x41600021	# evpe		\n"
 		"	ehb					\n"
+		"	.set	mips0				\n"
 		"	.set	pop				\n");
 #endif
 }

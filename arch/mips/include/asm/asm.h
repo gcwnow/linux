@@ -148,6 +148,7 @@ symbol		=	value
 		.set	push;				\
 		.set	arch=r5000;			\
 		pref	hint, addr;			\
+		.set	mips0;				\
 		.set	pop
 
 #define PREFE(hint, addr)				\
@@ -161,6 +162,7 @@ symbol		=	value
 		.set	push;				\
 		.set	arch=r5000;			\
 		prefx	hint, addr;			\
+		.set	mips0;				\
 		.set	pop
 
 #else /* !CONFIG_CPU_HAS_PREFETCH */

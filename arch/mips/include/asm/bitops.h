@@ -486,6 +486,7 @@ static inline unsigned long __fls(unsigned long word)
 		"	.set	push					\n"
 		"	.set	mips32					\n"
 		"	clz	%0, %1					\n"
+		"	.set	mips0					\n"
 		"	.set	pop					\n"
 		: "=r" (num)
 		: "r" (word));
@@ -499,6 +500,7 @@ static inline unsigned long __fls(unsigned long word)
 		"	.set	push					\n"
 		"	.set	mips64					\n"
 		"	dclz	%0, %1					\n"
+		"	.set	mips0					\n"
 		"	.set	pop					\n"
 		: "=r" (num)
 		: "r" (word));
