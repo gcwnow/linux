@@ -147,12 +147,14 @@ symbol		=	value
 		.set	push;				\
 		.set	mips4;				\
 		pref	hint, addr;			\
+		.set	mips0;				\
 		.set	pop
 
 #define PREFX(hint,addr)				\
 		.set	push;				\
 		.set	mips4;				\
 		prefx	hint, addr;			\
+		.set	mips0;				\
 		.set	pop
 
 #else /* !CONFIG_CPU_HAS_PREFETCH */
