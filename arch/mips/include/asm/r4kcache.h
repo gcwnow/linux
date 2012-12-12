@@ -36,6 +36,7 @@
 	"	.set	noreorder				\n"	\
 	"	.set	mips3\n\t				\n"	\
 	"	cache	%0, %1					\n"	\
+	"	.set	mips0\n\t				\n"	\
 	"	.set	pop					\n"	\
 	:								\
 	: "i" (op), "R" (*(unsigned char *)(addr)))
@@ -196,6 +197,7 @@ static inline void flush_scache_line(unsigned long addr)
 	"	.set	noreorder		\n"		\
 	"	.set	mips3			\n"		\
 	"1:	cache	%0, (%1)		\n"		\
+	"	.set	mips0			\n"		\
 	"2:	.set	pop			\n"		\
 	"	.section __ex_table,\"a\"	\n"		\
 	"	"STR(PTR)" 1b, 2b		\n"		\
@@ -256,6 +258,7 @@ static inline void invalidate_tcache_page(unsigned long addr)
 	"	cache %1, 0x1a0(%0); cache %1, 0x1b0(%0)	\n"	\
 	"	cache %1, 0x1c0(%0); cache %1, 0x1d0(%0)	\n"	\
 	"	cache %1, 0x1e0(%0); cache %1, 0x1f0(%0)	\n"	\
+	"	.set mips0					\n"	\
 	"	.set pop					\n"	\
 		:							\
 		: "r" (base),						\
@@ -282,6 +285,7 @@ static inline void invalidate_tcache_page(unsigned long addr)
 	"	cache %1, 0x340(%0); cache %1, 0x360(%0)	\n"	\
 	"	cache %1, 0x380(%0); cache %1, 0x3a0(%0)	\n"	\
 	"	cache %1, 0x3c0(%0); cache %1, 0x3e0(%0)	\n"	\
+	"	.set mips0					\n"	\
 	"	.set pop					\n"	\
 		:							\
 		: "r" (base),						\
@@ -308,6 +312,7 @@ static inline void invalidate_tcache_page(unsigned long addr)
 	"	cache %1, 0x680(%0); cache %1, 0x6c0(%0)	\n"	\
 	"	cache %1, 0x700(%0); cache %1, 0x740(%0)	\n"	\
 	"	cache %1, 0x780(%0); cache %1, 0x7c0(%0)	\n"	\
+	"	.set mips0					\n"	\
 	"	.set pop					\n"	\
 		:							\
 		: "r" (base),						\
@@ -334,6 +339,7 @@ static inline void invalidate_tcache_page(unsigned long addr)
 	"	cache %1, 0xd00(%0); cache %1, 0xd80(%0)	\n"	\
 	"	cache %1, 0xe00(%0); cache %1, 0xe80(%0)	\n"	\
 	"	cache %1, 0xf00(%0); cache %1, 0xf80(%0)	\n"	\
+	"	.set mips0					\n"	\
 	"	.set pop					\n"	\
 		:							\
 		: "r" (base),						\
