@@ -701,6 +701,7 @@ static void local_r4k_flush_cache_sigtramp(void * arg)
 #endif
 			"cache	%0,($at)\n\t"
 			"nop; nop; nop\n"
+			".set mips0\n\t"
 			"1:\n\t"
 			".set pop"
 			:
@@ -780,6 +781,7 @@ static inline void rm7k_erratum31(void)
 			"cache\t%1, 0x1000(%0)\n\t"
 			"cache\t%1, 0x2000(%0)\n\t"
 			"cache\t%1, 0x3000(%0)\n\t"
+			".set mips0\n\t"
 			".set pop\n"
 			:
 			: "r" (addr), "i" (Index_Store_Tag_I), "i" (Fill));
