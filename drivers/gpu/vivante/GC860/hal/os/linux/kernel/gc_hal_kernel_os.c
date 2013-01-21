@@ -2950,48 +2950,6 @@ gckOS_Delay(
     return gcvSTATUS_OK;
 }
 
-gceSTATUS
-gckOS_Delay_1ms(
-    IN gckOS Os,
-    IN gctUINT32 Delay
-    )
-{
-    struct timeval now;
-    unsigned long jiffies;
-
-    if (Delay > 0){
-        /* Convert milliseconds into seconds and microseconds. */
-        now.tv_sec  = Delay / 1000;
-        now.tv_usec = (Delay % 1000) * 1000;
-
-        /* Convert timeval to jiffies. */
-        jiffies = timeval_to_jiffies(&now);
-
-        //if (jiffies > 1) {
-        if ( 1 ) {
-            /* Schedule timeout. */
-            unsigned long long clock;
-            unsigned int diffclock;
-            int flag = 1;
-            clock = sched_clock();
-            while(flag){
-                schedule_timeout_interruptible(jiffies / 10);
-                diffclock = (unsigned int)(sched_clock() - clock);
-                if(diffclock < Delay * 1000000)
-                    jiffies = 1;
-                else
-                    flag = 0;
-            }
-        }else {
-            /* Schedule, Added, Wolfgang, 2010-06-01 */
-            schedule();
-        }
-    }
-
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-
 /*******************************************************************************
 **
 **  gckOS_MemoryBarrier
@@ -3018,9 +2976,11 @@ gceSTATUS gckOS_MemoryBarrier(
 {
     /* Verify thearguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-
+#ifdef CONFIG_MIPS
+    iob();
+#else
     mb();
-
+#endif
     /* Success. */
     return gcvSTATUS_OK;
 }
@@ -4523,6 +4483,12 @@ gckOS_WaitSignal(
     status = ((rc == 0) && !signal->event.done) ? gcvSTATUS_TIMEOUT
                                                 : gcvSTATUS_OK;
 
+#if 1				/* fix WOW_Fish suspend resume render bugs. code from Vivante Yun.Li.*/
+    if (status == gcvSTATUS_OK)
+    {
+	    INIT_COMPLETION(signal->event);
+    }
+#endif
     /* Return status. */
     gcmkFOOTER();
     return status;
