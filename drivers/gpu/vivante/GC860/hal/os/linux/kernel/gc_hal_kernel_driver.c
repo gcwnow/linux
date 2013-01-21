@@ -49,8 +49,8 @@ static gckGALDEVICE galDevice;
 static int major = 199;
 module_param(major, int, 0644);
 
-#if defined(CONFIG_SOC_JZ4770)
-#include "asm/jzsoc.h"
+#ifdef CONFIG_MACH_JZ4770
+#include <asm/mach-jz4770/jz4770cpm.h>
 
 #ifndef IRQ_GPU
 #define IRQ_GPU 6
@@ -80,7 +80,7 @@ module_param(contiguousSize, long, 0644);
 ulong contiguousBase = JZ_GPU_MEM_BASE;
 module_param(contiguousBase, ulong, 0644);
 
-#else /* CONFIG_SOC_JZ4770 */
+#else /* CONFIG_MACH_JZ4770 */
 
 int irqLine = -1;
 module_param(irqLine, int, 0644);
@@ -96,7 +96,7 @@ module_param(contiguousSize, long, 0644);
 
 ulong contiguousBase = 0;
 module_param(contiguousBase, ulong, 0644);
-#endif  /* CONFIG_SOC_JZ4770 */
+#endif  /* CONFIG_MACH_JZ4770 */
 
 long bankSize = 32 << 20;
 module_param(bankSize, long, 0644);
@@ -781,10 +781,10 @@ static int drv_mmap(struct file * filp, struct vm_area_struct * vma)
     }
 }
 
-#if defined(CONFIG_JZSOC)
+#ifdef CONFIG_JZSOC
 static void enable_jzsoc_gpu_clock(void)
 {
-#if defined(CONFIG_SOC_JZ4770)
+#ifdef CONFIG_MACH_JZ4770
     {
         /* JZ4770 GPU CLK2x 100MHz -- 500MHz */
 #define GPU_CLK_MAX 500000000
@@ -793,13 +793,13 @@ static void enable_jzsoc_gpu_clock(void)
         int div;
         int gpu_use_pll1 = 1;
         unsigned int pll_clk;
-        unsigned int gpu_clk;
+        unsigned int gpu_clk = 0;
 
         pll_clk = cpm_get_pllout1();
         if ( pll_clk == 0 ) {
             gpu_use_pll1 = 0;   /* use pll0 */
             pll_clk = cpm_get_pllout();
-#if defined(CONFIG_SOC_JZ4770)
+#ifdef CONFIG_MACH_JZ4770
             if ((INREG32(CPM_CPCCR) & CPCCR_PCS) != 0 )
 #else
             if ((INREG32(CPM_CPCCR) & CPCCR_PCS) == 0 ) /* JZ4760 */
