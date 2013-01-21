@@ -598,12 +598,6 @@ gckOS_Delay(
     IN gctUINT32 Delay
     );
 
-gceSTATUS
-gckOS_Delay_1ms(
-    IN gckOS Os,
-    IN gctUINT32 Delay
-    );
-
 /* Memory barrier. */
 gceSTATUS
 gckOS_MemoryBarrier(

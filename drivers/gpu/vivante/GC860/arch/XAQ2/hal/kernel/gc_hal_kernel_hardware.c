@@ -20,6 +20,7 @@
 
 
 
+#include <linux/sched.h>
 
 #include "gc_hal.h"
 #include "gc_hal_kernel.h"
@@ -2588,7 +2589,7 @@ gckHARDWARE_GetIdle(
     pollCount = Wait ? 100 : 1;
 
     /* At most, try for 1 second. */
-    for (retry = 0; retry < 110; ++retry)
+    for (retry = 0; retry < 145; ++retry)
     {
         /* If we have to wait, try 100 polls per millisecond. */
         for (poll = pollCount; poll > 0; --poll)
@@ -2612,10 +2613,13 @@ gckHARDWARE_GetIdle(
             gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_HARDWARE, 
                            "%s: Waiting for idle: 0x%08X", 
                            __FUNCTION__, idle);
-            if(retry < 20)
-                gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
-            else
-                gcmkVERIFY_OK(gckOS_Delay_1ms(Hardware->os, 1));
+            if(retry < 50) {
+		    if ((retry & 0x3) == 1)
+			    schedule(); 
+		    else
+			    gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
+            } else
+                gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 10));
         }
         else
         {
