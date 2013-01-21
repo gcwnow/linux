@@ -17,6 +17,7 @@
 #include <linux/sched.h>
 #include <linux/ioport.h>
 #include <linux/mm.h>
+#include <linux/module.h>
 #include <linux/console.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -856,3 +857,19 @@ void __init jz_board_setup(void)
 
 	jz_timer_callback = f4770_timer_callback;
 }
+
+#if defined(CONFIG_VIVANTE_GPU_GC860) || defined(CONFIG_VIVANTE_GPU_GC860_MODULE)
+unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
+				 unsigned long len, unsigned long prot,
+				 unsigned long flags, unsigned long pgoff)
+{
+	return do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+}
+EXPORT_SYMBOL(plat_do_mmap_pgoff);
+
+int plat_do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
+{
+	return do_munmap(mm, start, len);
+}
+EXPORT_SYMBOL(plat_do_munmap);
+#endif

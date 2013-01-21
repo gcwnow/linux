@@ -25,7 +25,8 @@
 #define __gc_hal_options_h_
 
 /* ------------------- ingenic code start ------------------------ */
-#define FIXED_MMAP_AS_CACHEABLE     1 // orig mmap as uncache, fix mmap as cacheable. And implemete       gckOS_CacheFlush()
+//#define FIXED_MMAP_AS_CACHEABLE     1 // orig mmap as uncache, fix mmap as cacheable. And implemete       gckOS_CacheFlush()
+/* This ^^^ is now passed in the CFLAGS. */
 
 #define FLUSH_CACHE_ALL_IN_KERNEL   1 /* kernel flush cache all instead user flush cache range */
 

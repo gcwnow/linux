@@ -32,6 +32,12 @@
 #include <linux/dma-mapping.h>
 #endif /* NO_DMA_COHERENT */
 
+extern unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
+				unsigned long len, unsigned long prot,
+				unsigned long flags, unsigned long pgoff);
+extern int plat_do_munmap(struct mm_struct *mm, unsigned long start,
+				size_t len);
+
 #if !USE_NEW_LINUX_SIGNAL
 #define USER_SIGNAL_TABLE_LEN_INIT  64
 #endif
@@ -1053,7 +1059,7 @@ gckOS_MapMemory(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (char *)do_mmap_pgoff(NULL,
+        mdlMap->vmaAddr = (char *)plat_do_mmap_pgoff(NULL,
                     0L,
                     mdl->numPages * PAGE_SIZE,
                     PROT_READ | PROT_WRITE,
@@ -1064,7 +1070,7 @@ gckOS_MapMemory(
         {
             gcmkTRACE_ZONE(gcvLEVEL_ERROR,
                 gcvZONE_OS,
-                "gckOS_MapMemory: do_mmap_pgoff error");
+                "gckOS_MapMemory: plat_do_mmap_pgoff error");
 
             gcmkTRACE_ZONE(gcvLEVEL_ERROR,
                 gcvZONE_OS,
@@ -1123,7 +1129,7 @@ gckOS_MapMemory(
         pgprot_val(mdlMap->vma->vm_page_prot) &= ~_CACHE_MASK;
         pgprot_val(mdlMap->vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;   /* Write-Back */
 #endif
-        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_RESERVED;
+        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
         mdlMap->vma->vm_pgoff = 0;
 
         if (remap_pfn_range(mdlMap->vma,
@@ -1239,7 +1245,7 @@ gckOS_UnmapMemory(
         if (task != gcvNULL && task->mm != gcvNULL)
         {
             down_write(&task->mm->mmap_sem);
-            do_munmap(task->mm, (unsigned long)Logical, mdl->numPages*PAGE_SIZE);
+            plat_do_munmap(task->mm, (unsigned long)Logical, mdl->numPages*PAGE_SIZE);
             up_write(&task->mm->mmap_sem);
         }
         else
@@ -1669,7 +1675,7 @@ gckOS_AllocateNonPagedMemory(
         /* We need to map this to user space. */
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING)do_mmap_pgoff(gcvNULL,
+        mdlMap->vmaAddr = (gctSTRING)plat_do_mmap_pgoff(gcvNULL,
                 0L,
                 mdl->numPages * PAGE_SIZE,
                 PROT_READ | PROT_WRITE,
@@ -1680,7 +1686,7 @@ gckOS_AllocateNonPagedMemory(
         {
             gcmkTRACE_ZONE(gcvLEVEL_INFO,
                 gcvZONE_OS,
-                "galcore: do_mmap_pgoff error");
+                "galcore: plat_do_mmap_pgoff error");
 
             up_write(&current->mm->mmap_sem);
 
@@ -1736,7 +1742,7 @@ gckOS_AllocateNonPagedMemory(
         pgprot_val(mdlMap->vma->vm_page_prot) &= ~_CACHE_MASK;
         pgprot_val(mdlMap->vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;   /* Write-Back */
 #endif
-        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_RESERVED;
+        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
         mdlMap->vma->vm_pgoff = 0;
 
         if (remap_pfn_range(mdlMap->vma,
@@ -1924,7 +1930,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
             {
                 down_write(&task->mm->mmap_sem);
 
-                if (do_munmap(task->mm,
+                if (plat_do_munmap(task->mm,
                             (unsigned long)mdlMap->vmaAddr,
                             mdl->numPages * PAGE_SIZE) < 0)
                 {
@@ -3337,7 +3343,7 @@ gceSTATUS gckOS_LockPages(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING)do_mmap_pgoff(NULL,
+        mdlMap->vmaAddr = (gctSTRING)plat_do_mmap_pgoff(NULL,
                         0L,
                         mdl->numPages * PAGE_SIZE,
                         PROT_READ | PROT_WRITE,
@@ -3357,7 +3363,7 @@ gceSTATUS gckOS_LockPages(
         {
             gcmkTRACE_ZONE(gcvLEVEL_INFO,
                         gcvZONE_OS,
-                        "gckOS_LockPages: do_mmap_pgoff error");
+                        "gckOS_LockPages: plat_do_mmap_pgoff error");
 
             MEMORY_UNLOCK(Os);
 
@@ -3379,7 +3385,7 @@ gceSTATUS gckOS_LockPages(
             return gcvSTATUS_OUT_OF_RESOURCES;
         }
 
-        mdlMap->vma->vm_flags |= VM_RESERVED;
+        mdlMap->vma->vm_flags |= VM_DONTDUMP;
         /* Make this mapping non-cached. */
         mdlMap->vma->vm_page_prot = pgprot_noncached(mdlMap->vma->vm_page_prot);
 #if FIXED_MMAP_AS_CACHEABLE
@@ -3642,7 +3648,7 @@ gceSTATUS gckOS_UnlockPages(
             if (task != gcvNULL && task->mm != gcvNULL)
             {
                 down_write(&task->mm->mmap_sem);
-                do_munmap(task->mm, (unsigned long)Logical, mdl->numPages * PAGE_SIZE);
+                plat_do_munmap(task->mm, (unsigned long)Logical, mdl->numPages * PAGE_SIZE);
                 up_write(&task->mm->mmap_sem);
             }
 
@@ -6191,8 +6197,7 @@ static inline void jz_flush_cache(
         dma_cache_wback_inv((u32)Logical, Bytes);
         return ;
     }else{  /* usr mem */
-        printk("jz_flush_cache() usr mem current->pid=%4d current->tgid=%4d Os=0x%8x, Process=%4d,
-                Logical=%p, Bytes=%d\n",
+        printk("jz_flush_cache() usr mem current->pid=%4d current->tgid=%4d Os=0x%8x, Process=%4d, Logical=%p, Bytes=%d\n",
                 current->pid, current->tgid, (int)Os, (int)Process, Logical, (int)Bytes);
         
         flush_dcache_with_prefetch_allocate();
