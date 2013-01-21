@@ -1,0 +1,15 @@
+#
+# VIVANTE_GPU support
+#
+menuconfig VIVANTE_GPU
+	tristate "Vivante GPU support"
+	depends on JZSOC
+	help
+	  Enable support for Vivante GPU cores.
+
+config VIVANTE_GPU_GC860
+	tristate "Vivante GC860 support"
+	depends on VIVANTE_GPU && MACH_JZ4770
+	help
+	  Enable support for the GC860 graphics core found on the
+	  Ingenic JZ4770 SoC designs.
