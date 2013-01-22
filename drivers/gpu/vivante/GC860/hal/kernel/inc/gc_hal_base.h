@@ -68,10 +68,13 @@ typedef enum _gcePOOL
     gcvPOOL_SYSTEM,
     gcvPOOL_VIRTUAL,
     gcvPOOL_USER,
-    gcvPOOL_CONTIGUOUS
+    gcvPOOL_CONTIGUOUS,
+
+    gcvPOOL_NUMBER_OF_POOLS
 }
 gcePOOL;
 
+#ifndef VIVANTE_NO_3D
 /* Blending functions. */
 typedef enum _gceBLEND_FUNCTION
 {
@@ -109,6 +112,8 @@ typedef enum _gceAPI
 {
     gcvAPI_D3D                  = 0x1,
     gcvAPI_OPENGL               = 0x2,
+    gcvAPI_OPENVG               = 0x3,
+    gcvAPI_OPENCL               = 0x4,
 }
 gceAPI;
 
@@ -120,6 +125,7 @@ typedef enum _gceDEPTH_MODE
     gcvDEPTH_W,
 }
 gceDEPTH_MODE;
+#endif /* VIVANTE_NO_3D */
 
 typedef enum _gceWHERE
 {
@@ -136,6 +142,94 @@ typedef enum _gceHOW
     gcvHOW_SEMAPHORE_STALL      = 0x3,
 }
 gceHOW;
+
+typedef enum _gceSignalHandlerType
+{
+    gcvHANDLE_SIGFPE_WHEN_SIGNAL_CODE_IS_0        = 0x1,
+}
+gceSignalHandlerType;
+
+
+#if gcdENABLE_VG
+/* gcsHAL_Limits*/
+typedef struct _gcsHAL_LIMITS
+{
+    /* chip info */
+    gceCHIPMODEL    chipModel;
+    gctUINT32       chipRevision;
+    gctUINT32       featureCount;
+    gctUINT32       *chipFeatures;
+
+    /* target caps */
+	gctUINT32         maxWidth;
+	gctUINT32         maxHeight;
+	gctUINT32         multiTargetCount;
+	gctUINT32         maxSamples;
+
+}gcsHAL_LIMITS;
+#endif
+
+/******************************************************************************\
+*********** Generic Memory Allocation Optimization Using Containers ************
+\******************************************************************************/
+
+/* Generic container definition. */
+typedef struct _gcsCONTAINER_LINK * gcsCONTAINER_LINK_PTR;
+typedef struct _gcsCONTAINER_LINK
+{
+    /* Points to the next container. */
+    gcsCONTAINER_LINK_PTR           next;
+}
+gcsCONTAINER_LINK;
+
+typedef struct _gcsCONTAINER_RECORD * gcsCONTAINER_RECORD_PTR;
+typedef struct _gcsCONTAINER_RECORD
+{
+    gcsCONTAINER_RECORD_PTR         prev;
+    gcsCONTAINER_RECORD_PTR         next;
+}
+gcsCONTAINER_RECORD;
+
+typedef struct _gcsCONTAINER * gcsCONTAINER_PTR;
+typedef struct _gcsCONTAINER
+{
+    gctUINT                         containerSize;
+    gctUINT                         recordSize;
+    gctUINT                         recordCount;
+    gcsCONTAINER_LINK_PTR           containers;
+    gcsCONTAINER_RECORD             freeList;
+    gcsCONTAINER_RECORD             allocList;
+}
+gcsCONTAINER;
+
+gceSTATUS
+gcsCONTAINER_Construct(
+    IN gcsCONTAINER_PTR Container,
+    gctUINT RecordsPerContainer,
+    gctUINT RecordSize
+    );
+
+gceSTATUS
+gcsCONTAINER_Destroy(
+    IN gcsCONTAINER_PTR Container
+    );
+
+gceSTATUS
+gcsCONTAINER_AllocateRecord(
+    IN gcsCONTAINER_PTR Container,
+    OUT gctPOINTER * Record
+    );
+
+gceSTATUS
+gcsCONTAINER_FreeRecord(
+    IN gcsCONTAINER_PTR Container,
+    IN gctPOINTER Record
+    );
+
+gceSTATUS
+gcsCONTAINER_FreeAll(
+    IN gcsCONTAINER_PTR Container
+    );
 
 /******************************************************************************\
 ********************************* gcoHAL Object *********************************
@@ -162,19 +256,40 @@ gcoHAL_Get2DEngine(
     OUT gco2D * Engine
     );
 
-/* Get pointer to gcoVG object. */
-gceSTATUS
-gcoHAL_GetVGEngine(
-    IN gcoHAL Hal,
-    OUT gcoVG * Engine
-    );
-
+#ifndef VIVANTE_NO_3D
 /* Get pointer to gco3D object. */
 gceSTATUS
 gcoHAL_Get3DEngine(
     IN gcoHAL Hal,
     OUT gco3D * Engine
     );
+
+gceSTATUS
+gcoHAL_Query3DEngine(
+    IN gcoHAL Hal,
+    OUT gco3D * Engine
+    );
+
+gceSTATUS
+gcoHAL_Set3DEngine(
+    IN gcoHAL Hal,
+    IN gco3D Engine
+    );
+
+gceSTATUS
+gcoHAL_Get3DHardware(
+    IN gcoHAL Hal,
+    OUT gcoHARDWARE * Hardware
+    );
+
+gceSTATUS
+gcoHAL_Set3DHardware(
+    IN gcoHAL Hal,
+    IN gcoHARDWARE Hardware
+    );
+
+
+#endif /* VIVANTE_NO_3D */
 
 /* Verify whether the specified feature is available in hardware. */
 gceSTATUS
@@ -271,6 +386,7 @@ gcoHAL_Compact(
     IN gcoHAL Hal
     );
 
+#if VIVANTE_PROFILER /*gcdENABLE_PROFILING*/
 gceSTATUS
 gcoHAL_ProfileStart(
     IN gcoHAL Hal
@@ -281,6 +397,7 @@ gcoHAL_ProfileEnd(
     IN gcoHAL Hal,
     IN gctCONST_STRING Title
     );
+#endif
 
 /* Power Management */
 gceSTATUS
@@ -1940,6 +2057,31 @@ gckOS_Print(
 #define gcmPRINT                gcoOS_Print
 #define gcmkPRINT               gckOS_Print
 
+#if gcdPRINT_VERSION
+#define gcmPRINT_VERSION()       do { \
+                                        _gcmPRINT_VERSION(gcm); \
+                                        gcmSTACK_DUMP(); \
+                                    } while (0)
+#define gcmkPRINT_VERSION()      _gcmPRINT_VERSION(gcmk)
+#define _gcmPRINT_VERSION(prefix) \
+        prefix##TRACE(gcvLEVEL_ERROR, \
+                      "Vivante HAL version %d.%d.%d build %d  %s  %s", \
+                      gcvVERSION_MAJOR, gcvVERSION_MINOR, gcvVERSION_PATCH, \
+                      gcvVERSION_BUILD, gcvVERSION_DATE, gcvVERSION_TIME )
+#else
+#define gcmPRINT_VERSION()       do { gcmSTACK_DUMP(); } while (gcvFALSE)
+#define gcmkPRINT_VERSION()      do { } while (gcvFALSE)
+#endif
+
+	typedef enum _gceDUMP_BUFFER {
+		gceDUMP_BUFFER_CONTEXT,
+		gceDUMP_BUFFER_USER,
+		gceDUMP_BUFFER_KERNEL,
+		gceDUMP_BUFFER_LINK,
+		gceDUMP_BUFFER_WAITLINK,
+		gceDUMP_BUFFER_FROM_USER,
+	} gceDUMP_BUFFER;
+
 /*******************************************************************************
 **
 **  gcmDUMP
@@ -2392,15 +2534,30 @@ gckOS_Verify(
         status = func; \
         if (gcmIS_ERROR(status)) \
         { \
+            prefix##PRINT_VERSION(); \
             prefix##TRACE(gcvLEVEL_ERROR, \
-                #prefix "ONERROR: status=%d @ %s(%d) in " __FILE__, \
-                status, __FUNCTION__, __LINE__); \
+                #prefix "ONERROR: status=%d(%s) @ %s(%d)", \
+                status, gcoOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
+            goto OnError; \
+        } \
+    } \
+    while (gcvFALSE)
+#define _gcmkONERROR(prefix, func) \
+    do \
+    { \
+        status = func; \
+        if (gcmIS_ERROR(status)) \
+        { \
+            prefix##PRINT_VERSION(); \
+            prefix##TRACE(gcvLEVEL_ERROR, \
+                #prefix "ONERROR: status=%d(%s) @ %s(%d)", \
+                status, gckOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
             goto OnError; \
         } \
     } \
     while (gcvFALSE)
 #define gcmONERROR(func)            _gcmONERROR(gcm, func)
-#define gcmkONERROR(func)           _gcmONERROR(gcmk, func)
+#define gcmkONERROR(func)           _gcmkONERROR(gcmk, func)
 
 /*******************************************************************************
 **

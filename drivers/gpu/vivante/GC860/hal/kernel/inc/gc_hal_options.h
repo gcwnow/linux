@@ -36,96 +36,100 @@ extern int gcdnull_driver_test; // hal/os/linux/kernel/gc_hal_kernel_driver.c
 /* ------------------- ingenic code end   ------------------------ */
 
 /*
+    gcdPRINT_VERSION
+
+        Print HAL version.
+*/
+#ifndef gcdPRINT_VERSION
+#   define gcdPRINT_VERSION                     0
+#endif
+
+/*
     USE_NEW_LINUX_SIGNAL
 
-    This define enables the Linux kernel signaling between kernel and user.
+        This define enables the Linux kernel signaling between kernel and user.
 */
 #ifndef USE_NEW_LINUX_SIGNAL
-#   define USE_NEW_LINUX_SIGNAL     0
+#   define USE_NEW_LINUX_SIGNAL                 0
 #endif
 
 /*
     NO_USER_DIRECT_ACCESS_FROM_KERNEL
 
-    This define enables the Linux kernel behavior accessing user memory.
+        This define enables the Linux kernel behavior accessing user memory.
 */
 #ifndef NO_USER_DIRECT_ACCESS_FROM_KERNEL
-#   define NO_USER_DIRECT_ACCESS_FROM_KERNEL        0
+#   define NO_USER_DIRECT_ACCESS_FROM_KERNEL    0
 #endif
 
 /*
     VIVANTE_PROFILER
 
-    This define enables the profiler.
+        This define enables the profiler.
 */
 #ifndef VIVANTE_PROFILER
-#   define VIVANTE_PROFILER         0
+#   define VIVANTE_PROFILER                     0
 #endif
 
 /*
     gcdUSE_VG
 
-    Enable VG HAL layer (only for GC350).
+        Enable VG HAL layer (only for GC350).
 */
 #ifndef gcdUSE_VG
-#   define gcdUSE_VG                0
+#   define gcdUSE_VG                            0
 #endif
 
 /*
     USE_SW_FB
 
-    Set to 1 if the frame buffer memory cannot be accessed by the GPU.
+        Set to 1 if the frame buffer memory cannot be accessed by the GPU.
 */
 #ifndef USE_SW_FB
-#define USE_SW_FB                   0
+#   define USE_SW_FB                            0
 #endif
-
-/*
-    USE_SHADER_SYMBOL_TABLE
-
-    This define enables the symbol table in shader object.
-*/
-#define USE_SHADER_SYMBOL_TABLE     1
 
 /*
     USE_SUPER_SAMPLING
 
-    This define enables super-sampling support.
+        This define enables super-sampling support.
 */
-#define USE_SUPER_SAMPLING          0
+#define USE_SUPER_SAMPLING                      0
 
-/* PROFILE_HAL_COUNTERS, PROFILE_HW_COUNTERS, PROFILE_SHADER_COUNTERS are not runtime configurable. */
 /*
     PROFILE_HAL_COUNTERS
 
-    This define enables HAL counter profiling support.
-    HW and SHADER Counter profiling depends on this.
+        This define enables HAL counter profiling support.  HW and SHADER
+        counter profiling depends on this.
 */
-/*
-#define PROFILE_HAL_COUNTERS        1
-*/
+#ifndef PROFILE_HAL_COUNTERS
+#   define PROFILE_HAL_COUNTERS                 1
+#endif
+
 /*
     PROFILE_HW_COUNTERS
 
-    This define enables HW counter profiling support.
+        This define enables HW counter profiling support.
 */
-/*
-#define PROFILE_HW_COUNTERS         1
-*/
+#ifndef PROFILE_HW_COUNTERS
+#   define PROFILE_HW_COUNTERS                  1
+#endif
+
 /*
     PROFILE_SHADER_COUNTERS
 
-    This define enables SHADER counter profiling support.
+        This define enables SHADER counter profiling support.
 */
-/*
-#define PROFILE_SHADER_COUNTERS     1
-*/
+#ifndef PROFILE_SHADER_COUNTERS
+#   define PROFILE_SHADER_COUNTERS              1
+#endif
+
 /*
     COMMAND_PROCESSOR_VERSION
 
-    The version of the command buffer and task manager.
+        The version of the command buffer and task manager.
 */
-#define COMMAND_PROCESSOR_VERSION   1
+#define COMMAND_PROCESSOR_VERSION               1
 
 /*
     gcdDUMP
@@ -134,7 +138,9 @@ extern int gcdnull_driver_test; // hal/os/linux/kernel/gc_hal_kernel_driver.c
         hardware related execution will be printed to the debug console.  This
         data can be used for playing back applications.
 */
-#define gcdDUMP                     0
+#ifndef gcdDUMP
+#   define gcdDUMP                              0
+#endif
 
 /*
     gcdDUMP_API
@@ -142,7 +148,21 @@ extern int gcdnull_driver_test; // hal/os/linux/kernel/gc_hal_kernel_driver.c
         When set to 1, a high level dump of the EGL and GL/VG APs's are
         captured.
 */
-#define gcdDUMP_API                 0
+#ifndef gcdDUMP_API
+#   define gcdDUMP_API                          0
+#endif
+
+/*
+    gcdDUMP_FRAMERATE
+        When set to a value other than zero, averaqe frame rate will be dumped.
+        The value set is the starting frame that the average will be calculated.
+        This is needed because sometimes first few frames are too slow to be included
+        in the average. Frame count starts from 1.
+*/
+#ifndef gcdDUMP_FRAMERATE
+#   define gcdDUMP_FRAMERATE					0
+#endif
+
 
 /*
     gcdDUMP_IN_KERNEL
@@ -151,7 +171,9 @@ extern int gcdnull_driver_test; // hal/os/linux/kernel/gc_hal_kernel_driver.c
         you want the kernel to dump its command buffers as well and the data
         needs to be in sync.
 */
-#define gcdDUMP_IN_KERNEL           0
+#ifndef gcdDUMP_IN_KERNEL
+#   define gcdDUMP_IN_KERNEL                    0
+#endif
 
 /*
     gcdDUMP_COMMAND
@@ -160,34 +182,81 @@ extern int gcdnull_driver_test; // hal/os/linux/kernel/gc_hal_kernel_driver.c
         and context buffers as well as all other modifications to the command
         queue.
 */
-#define gcdDUMP_COMMAND             0
+#ifndef gcdDUMP_COMMAND
+#   define gcdDUMP_COMMAND                      0
+#endif
 
 /*
+    gcdDUMP_FRAME_TGA
+
+    When set to a value other than 0, a dump of the frame specified by the value,
+    will be done into frame.tga. Frame count starts from 1.
+ */
+#ifndef gcdDUMP_FRAME_TGA
+#define gcdDUMP_FRAME_TGA                       0
+#endif
+/*
     gcdNULL_DRIVER
+
+    Set to 1 for infinite speed hardware.
+    Set to 2 for bypassing the HAL.
+    Set to 3 for bypassing the drivers.
 */
-#define gcdNULL_DRIVER              0
+#ifndef gcdNULL_DRIVER
+#   define gcdNULL_DRIVER  0
+#endif
 
 /*
     gcdENABLE_TIMEOUT_DETECTION
 
-    Enable timeout detection.
+        Enable timeout detection.
 */
-#define gcdENABLE_TIMEOUT_DETECTION 0
+#ifndef gcdENABLE_TIMEOUT_DETECTION
+#   define gcdENABLE_TIMEOUT_DETECTION          0
+#endif
+
+/*
+    gcdCMD_BUFFER_SIZE
+
+        Number of bytes in a command buffer.
+*/
+#ifndef gcdCMD_BUFFER_SIZE
+#   define gcdCMD_BUFFER_SIZE                   (128 << 10)
+#endif
 
 /*
     gcdCMD_BUFFERS
 
-    Number of command buffers to use per client.  Each command buffer is 32kB in
-    size.
+        Number of command buffers to use per client.
 */
-#define gcdCMD_BUFFERS              2
+#ifndef gcdCMD_BUFFERS
+#   define gcdCMD_BUFFERS                       2
+#endif
+
+/*
+    gcdMAX_CMD_BUFFERS
+
+        Maximum number of command buffers to use per client.
+*/
+#ifndef gcdMAX_CMD_BUFFERS
+#   define gcdMAX_CMD_BUFFERS                   8
+#endif
+
+/*
+    gcdCOMMAND_QUEUES
+
+        Number of command queues in the kernel.
+*/
+#ifndef gcdCOMMAND_QUEUES
+#   define gcdCOMMAND_QUEUES                    2
+#endif
 
 /*
     gcdPOWER_CONTROL_DELAY
 
-    The delay in milliseconds required to wait until the GPU has woke up from a
-    suspend or power-down state.  This is system dependent because the bus clock
-    also needs to be stabalize.
+        The delay in milliseconds required to wait until the GPU has woke up
+        from a suspend or power-down state.  This is system dependent because
+        the bus clock also needs to stabalize.
 */
 #define gcdPOWER_CONTROL_DELAY      1
 
