@@ -587,9 +587,9 @@ gcePIPE_SELECT;
 
 typedef struct _gcoCONTEXT *        gcoCONTEXT;
 typedef struct _gcoCMDBUF *         gcoCMDBUF;
-typedef struct _gcoQUEUE *          gcoQUEUE;
-typedef struct _gcsHAL_INTERFACE *  gcsHAL_INTERFACE_PTR;
-typedef struct gcs2D_PROFILE *      gcs2D_PROFILE_PTR;
+typedef struct _gcoQUEUE            * gcoQUEUE;
+typedef struct _gcsHAL_INTERFACE    * gcsHAL_INTERFACE_PTR;
+typedef struct _gcs2D_PROFILE       * gcs2D_PROFILE_PTR;
 
 #ifdef __cplusplus
 }

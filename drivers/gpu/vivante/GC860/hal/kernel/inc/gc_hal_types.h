@@ -24,16 +24,17 @@
 #ifndef __gc_hal_types_h_
 #define __gc_hal_types_h_
 
+#include "gc_hal_version.h"
 #include "gc_hal_options.h"
 
 #ifdef _WIN32
-#pragma warning(disable:4127)	/* Conditional expression is constant (do { }
-								** while(0)). */
-#pragma warning(disable:4100)	/* Unreferenced formal parameter. */
-#pragma warning(disable:4204)	/* Non-constant aggregate initializer (C99). */
-#pragma warning(disable:4131)	/* Uses old-style declarator (for Bison and
-								** Flex generated files). */
-#pragma warning(disable:4206)	/* Translation unit is empty. */
+#pragma warning(disable:4127)   /* Conditional expression is constant (do { }
+                                ** while(0)). */
+#pragma warning(disable:4100)   /* Unreferenced formal parameter. */
+#pragma warning(disable:4204)   /* Non-constant aggregate initializer (C99). */
+#pragma warning(disable:4131)   /* Uses old-style declarator (for Bison and
+                                ** Flex generated files). */
+#pragma warning(disable:4206)   /* Translation unit is empty. */
 #endif
 
 #ifdef __cplusplus
@@ -41,17 +42,21 @@ extern "C" {
 #endif
 
 /******************************************************************************\
-**	Platform macros.
+**  Platform macros.
 */
 
 #if defined(__GNUC__)
-#	define gcdHAS_ELLIPSES		1		/* GCC always has it. */
+#   define gcdHAS_ELLIPSES      1       /* GCC always has it. */
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-#	define gcdHAS_ELLIPSES		1		/* C99 has it. */
+#   define gcdHAS_ELLIPSES      1       /* C99 has it. */
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500)
-#	define gcdHAS_ELLIPSES		1		/* MSVC 2007+ has it. */
+#   define gcdHAS_ELLIPSES      1       /* MSVC 2007+ has it. */
 #elif defined(UNDER_CE)
-#	define gcdHAS_ELLIPSES		0		/* Windows CE doesn't have it. */
+#if UNDER_CE >= 600
+#       define gcdHAS_ELLIPSES  1
+#   else
+#       define gcdHAS_ELLIPSES  0
+#   endif
 #else
 #   error "gcdHAS_ELLIPSES: Platform could not be determined"
 #endif
@@ -61,167 +66,182 @@ extern "C" {
 \******************************************************************************/
 
 #if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
-#	define gcmINLINE			inline		/* C99 keyword. */
+#   define gcmINLINE            inline      /* C99 keyword. */
 #elif defined(__GNUC__)
-#	define gcmINLINE			__inline__	/* GNU keyword. */
+#   define gcmINLINE            __inline__  /* GNU keyword. */
 #elif defined(_MSC_VER) || defined(UNDER_CE)
-#	define gcmINLINE			__inline	/* Internal keyword. */
+#   define gcmINLINE            __inline    /* Internal keyword. */
 #else
 #   error "gcmINLINE: Platform could not be determined"
 #endif
 
+/* Possible debug flags. */
+#define gcdDEBUG_NONE           0
+#define gcdDEBUG_ALL            (1 << 0)
+#define gcdDEBUG_FATAL          (1 << 1)
+#define gcdDEBUG_TRACE          (1 << 2)
+#define gcdDEBUG_BREAK          (1 << 3)
+#define gcdDEBUG_ASSERT         (1 << 4)
+#define gcdDEBUG_CODE           (1 << 5)
+#define gcdDEBUG_STACK          (1 << 6)
+
+#define gcmIS_DEBUG(flag)       ( gcdDEBUG & (flag | gcdDEBUG_ALL) )
+
 #ifndef gcdDEBUG
 #if (defined(DBG) && DBG) || defined(DEBUG) || defined(_DEBUG)
-#		define gcdDEBUG			1
-#	else
-#		define gcdDEBUG			0
-#	endif
+#       define gcdDEBUG         gcdDEBUG_ALL
+#   else
+#       define gcdDEBUG         gcdDEBUG_NONE
+#   endif
 #endif
 
 #ifdef _USRDLL
 #ifdef _MSC_VER
 #ifdef HAL_EXPORTS
-#			define HALAPI		__declspec(dllexport)
-#		else
-#			define HALAPI		__declspec(dllimport)
-#		endif
-#		define HALDECL			__cdecl
-#	else
+#           define HALAPI       __declspec(dllexport)
+#       else
+#           define HALAPI       __declspec(dllimport)
+#       endif
+#       define HALDECL          __cdecl
+#   else
 #ifdef HAL_EXPORTS
-#			define HALAPI
-#		else
-#			define HALAPI		extern
-#		endif
-#	endif
+#           define HALAPI
+#       else
+#           define HALAPI       extern
+#       endif
+#   endif
 #else
-#	define HALAPI
-#	define HALDECL
+#   define HALAPI
+#   define HALDECL
 #endif
 
 /******************************************************************************\
 ********************************** Common Types ********************************
 \******************************************************************************/
 
-#define gcvFALSE				0
-#define gcvTRUE					1
+#define gcvFALSE                0
+#define gcvTRUE                 1
 
-#define gcvINFINITE				((gctUINT32) ~0U)
+#define gcvINFINITE             ((gctUINT32) ~0U)
 
-typedef int						gctBOOL;
-typedef gctBOOL *				gctBOOL_PTR;
+#define gcvINVALID_HANDLE       ((gctHANDLE) ~0U)
 
-typedef int						gctINT;
-typedef signed char				gctINT8;
-typedef signed short			gctINT16;
-typedef signed int				gctINT32;
-typedef signed long long		gctINT64;
+	typedef int gctBOOL;
+	typedef gctBOOL *gctBOOL_PTR;
 
-typedef gctINT *				gctINT_PTR;
-typedef gctINT8 *				gctINT8_PTR;
-typedef gctINT16 *				gctINT16_PTR;
-typedef gctINT32 *				gctINT32_PTR;
-typedef gctINT64 *				gctINT64_PTR;
+	typedef int gctINT;
+	typedef signed char gctINT8;
+	typedef signed short gctINT16;
+	typedef signed int gctINT32;
+	typedef signed long long gctINT64;
 
-typedef unsigned int			gctUINT;
-typedef unsigned char			gctUINT8;
-typedef unsigned short			gctUINT16;
-typedef unsigned int			gctUINT32;
-typedef unsigned long long		gctUINT64;
+	typedef gctINT *gctINT_PTR;
+	typedef gctINT8 *gctINT8_PTR;
+	typedef gctINT16 *gctINT16_PTR;
+	typedef gctINT32 *gctINT32_PTR;
+	typedef gctINT64 *gctINT64_PTR;
 
-typedef gctUINT *				gctUINT_PTR;
-typedef gctUINT8 *				gctUINT8_PTR;
-typedef gctUINT16 *				gctUINT16_PTR;
-typedef gctUINT32 *				gctUINT32_PTR;
-typedef gctUINT64 *				gctUINT64_PTR;
+	typedef unsigned int gctUINT;
+	typedef unsigned char gctUINT8;
+	typedef unsigned short gctUINT16;
+	typedef unsigned int gctUINT32;
+	typedef unsigned long long gctUINT64;
 
-typedef unsigned long			gctSIZE_T;
-typedef gctSIZE_T *				gctSIZE_T_PTR;
+	typedef gctUINT *gctUINT_PTR;
+	typedef gctUINT8 *gctUINT8_PTR;
+	typedef gctUINT16 *gctUINT16_PTR;
+	typedef gctUINT32 *gctUINT32_PTR;
+	typedef gctUINT64 *gctUINT64_PTR;
+
+	typedef unsigned long gctSIZE_T;
+	typedef gctSIZE_T *gctSIZE_T_PTR;
 
 #ifdef __cplusplus
-#	define gcvNULL				0
+#define gcvNULL              0
 #else
-#	define gcvNULL				((void *) 0)
+#define gcvNULL              ((void *) 0)
 #endif
 
-typedef float					gctFLOAT;
-typedef signed int				gctFIXED_POINT;
-typedef float *					gctFLOAT_PTR;
+	typedef float gctFLOAT;
+	typedef signed int gctFIXED_POINT;
+	typedef float *gctFLOAT_PTR;
 
-typedef void *					gctPHYS_ADDR;
-typedef void *					gctHANDLE;
-typedef void *					gctFILE;
-typedef void *					gctSIGNAL;
-typedef void *					gctWINDOW;
-typedef void *					gctIMAGE;
+	typedef void *gctPHYS_ADDR;
+	typedef void *gctHANDLE;
+	typedef void *gctFILE;
+	typedef void *gctSIGNAL;
+	typedef void *gctWINDOW;
+	typedef void *gctIMAGE;
 
-typedef void *					gctPOINTER;
-typedef const void *			gctCONST_POINTER;
+	typedef void *gctSEMAPHORE;
 
-typedef char					gctCHAR;
-typedef char *					gctSTRING;
-typedef const char *			gctCONST_STRING;
+	typedef void *gctPOINTER;
+	typedef const void *gctCONST_POINTER;
 
-typedef struct _gcsCOUNT_STRING
-{
-	gctSIZE_T					Length;
-	gctCONST_STRING				String;
-}
-gcsCOUNT_STRING;
+	typedef char gctCHAR;
+	typedef char *gctSTRING;
+	typedef const char *gctCONST_STRING;
+
+	typedef struct _gcsCOUNT_STRING {
+		gctSIZE_T Length;
+		gctCONST_STRING String;
+	} gcsCOUNT_STRING;
+
+	typedef union _gcuFLOAT_UINT32 {
+		gctFLOAT f;
+		gctUINT32 u;
+	} gcuFLOAT_UINT32;
 
 /* Fixed point constants. */
-#define gcvZERO_X				((gctFIXED_POINT) 0x00000000)
-#define gcvHALF_X				((gctFIXED_POINT) 0x00008000)
-#define gcvONE_X				((gctFIXED_POINT) 0x00010000)
-#define gcvNEGONE_X				((gctFIXED_POINT) 0xFFFF0000)
-#define gcvTWO_X				((gctFIXED_POINT) 0x00020000)
+#define gcvZERO_X               ((gctFIXED_POINT) 0x00000000)
+#define gcvHALF_X               ((gctFIXED_POINT) 0x00008000)
+#define gcvONE_X                ((gctFIXED_POINT) 0x00010000)
+#define gcvNEGONE_X             ((gctFIXED_POINT) 0xFFFF0000)
+#define gcvTWO_X                ((gctFIXED_POINT) 0x00020000)
+
+/* Stringizing macro. */
+#define gcmSTRING(Value)        #Value
 
 /******************************************************************************\
 ******************************* Fixed Point Math *******************************
 \******************************************************************************/
 
-#define gcmXMultiply(x1, x2) \
-	(gctFIXED_POINT) (((gctINT64) (x1) * (x2)) >> 16)
-
-#define gcmXDivide(x1, x2) \
-	(gctFIXED_POINT) ((((gctINT64) (x1)) << 16) / (x2))
-
-#define gcmXMultiplyDivide(x1, x2, x3) \
-	(gctFIXED_POINT) ((gctINT64) (x1) * (x2) / (x3))
+#define gcmXMultiply(x1, x2)            gcoMATH_MultiplyFixed(x1, x2)
+#define gcmXDivide(x1, x2)              gcoMATH_DivideFixed(x1, x2)
+#define gcmXMultiplyDivide(x1, x2, x3)  gcoMATH_MultiplyDivideFixed(x1, x2, x3)
 
 /* 2D Engine profile. */
-struct gcs2D_PROFILE
-{
-	/* Cycle count. 
-	   32bit counter incremented every 2D clock cycle. 
-	   Wraps back to 0 when the counter overflows.
-	*/
-	gctUINT32 cycleCount;
+	typedef struct _gcs2D_PROFILE {
+		/* Cycle count.
+		   32bit counter incremented every 2D clock cycle.
+		   Wraps back to 0 when the counter overflows.
+		 */
+		gctUINT32 cycleCount;
 
-	/* Pixels rendered by the 2D engine.
-	   Resets to 0 every time it is read. */
-	gctUINT32 pixelsRendered;
-};
-
+		/* Pixels rendered by the 2D engine.
+		   Resets to 0 every time it is read. */
+		gctUINT32 pixelsRendered;
+	} gcs2D_PROFILE;
 
 /* Macro to combine four characters into a Charcater Code. */
 #define gcmCC(c1, c2, c3, c4) \
 ( \
-	(char) (c1) \
-	| \
-	((char) (c2) <<  8) \
-	| \
-	((char) (c3) << 16) \
-	| \
-	((char) (c4) << 24) \
+    (char) (c1) \
+    | \
+    ((char) (c2) <<  8) \
+    | \
+    ((char) (c3) << 16) \
+    | \
+    ((char) (c4) << 24) \
 )
 
-#define gcmPRINTABLE(c)			((((c) >= ' ') && ((c) <= '}')) ? (c) : ' ')
+#define gcmPRINTABLE(c)         ((((c) >= ' ') && ((c) <= '}')) ? ((c) != '%' ?  (c) : ' ') : ' ')
 
 #define gcmCC_PRINT(cc) \
-	gcmPRINTABLE((char) ( (cc)        & 0xFF)), \
-	gcmPRINTABLE((char) (((cc) >>  8) & 0xFF)), \
-	gcmPRINTABLE((char) (((cc) >> 16) & 0xFF)), \
-	gcmPRINTABLE((char) (((cc) >> 24) & 0xFF))
+    gcmPRINTABLE((char) ( (cc)        & 0xFF)), \
+    gcmPRINTABLE((char) (((cc) >>  8) & 0xFF)), \
+    gcmPRINTABLE((char) (((cc) >> 16) & 0xFF)), \
+    gcmPRINTABLE((char) (((cc) >> 24) & 0xFF))
 
 /******************************************************************************\
 ****************************** Function Parameters *****************************

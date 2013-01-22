@@ -45,9 +45,7 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 
-#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
 #include <linux/clk.h>
-#endif 
 
 #define NTSTRSAFE_NO_CCH_FUNCTIONS
 #include "gc_hal.h"
@@ -79,9 +77,9 @@ GetOrder(
 	)
 {
     gctINT order = 0;
-    
+
 	while ((1 << order) <  numPages) order++;
-    
+
 	return order;
 }
 
