@@ -895,6 +895,12 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 	dev_dbg(&jzfb->pdev->dev, "PixClock: %d\n", jz_clocks.pixclk);
 
 	clk_enable(lpclk);
+
+	/*
+	 * Enabling the LCDC too soon after the clock will hang the system.
+	 * A very short delay seems to be sufficient.
+	 */
+	udelay(1);
 }
 
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
