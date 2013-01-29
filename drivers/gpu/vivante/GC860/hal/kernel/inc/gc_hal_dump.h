@@ -20,7 +20,6 @@
 
 
 
-
 #ifndef __gc_hal_dump_h_
 #define __gc_hal_dump_h_
 

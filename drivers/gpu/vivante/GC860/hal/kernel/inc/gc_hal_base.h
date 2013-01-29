@@ -26,7 +26,9 @@
 
 #include "gc_hal_enum.h"
 #include "gc_hal_types.h"
+
 #include "gc_hal_dump.h"
+#include "gc_hal_md5.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,11 +38,15 @@ extern "C" {
 ****************************** Object Declarations *****************************
 \******************************************************************************/
 
+typedef struct _gckOS *                 gckOS;
 typedef struct _gcoHAL *                gcoHAL;
 typedef struct _gcoOS *                 gcoOS;
 typedef struct _gco2D *                 gco2D;
-typedef struct _gcoVG *                 gcoVG;
+
+#ifndef VIVANTE_NO_3D
 typedef struct _gco3D *                 gco3D;
+#endif
+
 typedef struct _gcoSURF *               gcoSURF;
 typedef struct _gcsSURF_INFO *          gcsSURF_INFO_PTR;
 typedef struct _gcsSURF_NODE *          gcsSURF_NODE_PTR;
@@ -51,15 +57,96 @@ typedef struct _gcsRECT *               gcsRECT_PTR;
 typedef struct _gcsBOUNDARY *           gcsBOUNDARY_PTR;
 typedef struct _gcoDUMP *               gcoDUMP;
 typedef struct _gcoHARDWARE *           gcoHARDWARE;
+typedef union  _gcuVIDMEM_NODE *        gcuVIDMEM_NODE_PTR;
+
+#if gcdENABLE_VG
+typedef struct _gcoVG *                 gcoVG;
+typedef struct _gcsCOMPLETION_SIGNAL *	gcsCOMPLETION_SIGNAL_PTR;
+typedef struct _gcsCONTEXT_MAP *		gcsCONTEXT_MAP_PTR;
+#else
+typedef void *                          gcoVG;
+#endif
+
+/******************************************************************************\
+******************************* Process local storage *************************
+\******************************************************************************/
+
+typedef struct _gcsPLS * gcsPLS_PTR;
+typedef struct _gcsPLS
+{
+    /* Global objects. */
+    gcoOS                       os;
+    gcoHAL                      hal;
+
+    /* Internal memory pool. */
+    gctSIZE_T                   internalSize;
+    gctPHYS_ADDR                internalPhysical;
+    gctPOINTER                  internalLogical;
+
+    /* External memory pool. */
+    gctSIZE_T                   externalSize;
+    gctPHYS_ADDR                externalPhysical;
+    gctPOINTER                  externalLogical;
+
+    /* Contiguous memory pool. */
+    gctSIZE_T                   contiguousSize;
+    gctPHYS_ADDR                contiguousPhysical;
+    gctPOINTER                  contiguousLogical;
+
+    /* EGL-specific process-wide objects. */
+    gctPOINTER                  eglDisplayInfo;
+    gctPOINTER                  eglSurfaceInfo;
+}
+gcsPLS;
+
+extern gcsPLS gcPLS;
+
+/******************************************************************************\
+******************************* Thread local storage *************************
+\******************************************************************************/
+
+typedef struct _gcsTLS * gcsTLS_PTR;
+
+typedef void (* gctTLS_DESTRUCTOR) (
+    gcsTLS_PTR TLS
+    );
+
+typedef struct _gcsTLS
+{
+    gceHARDWARE_TYPE            currentType;
+    gcoHARDWARE                 hardware;
+    /* Only for separated 3D and 2D */
+    gcoHARDWARE                 hardware2D;
+#if gcdENABLE_VG
+    gcoVGHARDWARE               vg;
+    gcoVG                       engineVG;
+#endif /* gcdENABLE_VG */
+    gctPOINTER                  context;
+    gctTLS_DESTRUCTOR           destructor;
+    gctBOOL                     ProcessExiting;
+
+#ifndef VIVANTE_NO_3D
+	gco3D						engine3D;
+#endif
+	gco2D						engine2D;
+}
+gcsTLS;
 
 /******************************************************************************\
 ********************************* Enumerations *********************************
 \******************************************************************************/
 
+typedef enum _gcePLS_VALUE
+{
+  gcePLS_VALUE_EGL_DISPLAY_INFO,
+  gcePLS_VALUE_EGL_SURFACE_INFO
+}
+gcePLS_VALUE;
+
 /* Video memory pool type. */
 typedef enum _gcePOOL
 {
-    gcvPOOL_UNKNOWN,
+    gcvPOOL_UNKNOWN = 0,
     gcvPOOL_DEFAULT,
     gcvPOOL_LOCAL,
     gcvPOOL_LOCAL_INTERNAL,
@@ -446,16 +533,101 @@ gcoHAL_DestroySurface(
     IN gcoSURF Surface
     );
 
-/* Wait for a signal from GPU. */
+/* Request a start/stop timestamp. */
 gceSTATUS
-gcoHAL_WaitSignalFromGPU(
+gcoHAL_SetTimer(
     IN gcoHAL Hal,
-    IN gctSIGNAL Signal
+    IN gctUINT32 Index,
+    IN gctBOOL Start
     );
 
+/* Get Time delta from a Timer in microseconds. */
+gceSTATUS
+gcoHAL_GetTimerTime(
+    IN gcoHAL Hal,
+    IN gctUINT32 Timer,
+    OUT gctINT32_PTR TimeDelta
+    );
+
+/* set timeout value. */
+gceSTATUS
+gcoHAL_SetTimeOut(
+    IN gcoHAL Hal,
+    IN gctUINT32 timeOut
+    );
+
+gceSTATUS
+gcoHAL_SetHardwareType(
+    IN gcoHAL Hal,
+    IN gceHARDWARE_TYPE HardwardType
+    );
+
+gceSTATUS
+gcoHAL_GetHardwareType(
+    IN gcoHAL Hal,
+    OUT gceHARDWARE_TYPE * HardwardType
+    );
+
+gceSTATUS
+gcoHAL_QueryChipCount(
+    IN gcoHAL Hal,
+    OUT gctINT32 * Count
+    );
+
+gceSTATUS
+gcoHAL_QuerySeparated3D2D(
+    IN gcoHAL Hal
+    );
+
+/* Get pointer to gcoVG object. */
+gceSTATUS
+gcoHAL_GetVGEngine(
+    IN gcoHAL Hal,
+    OUT gcoVG * Engine
+    );
+
+#if gcdENABLE_VG
+gceSTATUS
+gcoHAL_QueryChipLimits(
+    IN gcoHAL           Hal,
+    IN gctINT32         Chip,
+    OUT gcsHAL_LIMITS   *Limits);
+
+gceSTATUS
+gcoHAL_QueryChipFeature(
+    IN gcoHAL       Hal,
+    IN gctINT32     Chip,
+    IN gceFEATURE   Feature);
+
+#endif
 /******************************************************************************\
 ********************************** gcoOS Object *********************************
 \******************************************************************************/
+
+/* Get PLS value for given key */
+gctPOINTER
+gcoOS_GetPLSValue(
+    IN gcePLS_VALUE key
+    );
+
+/* Set PLS value of a given key */
+void
+gcoOS_SetPLSValue(
+    IN gcePLS_VALUE key,
+    OUT gctPOINTER value
+    );
+
+/* Get access to the thread local storage. */
+gceSTATUS
+gcoOS_GetTLS(
+    OUT gcsTLS_PTR * TLS
+    );
+
+/* Destroy the objects associated with the current thread. */
+void
+gcoOS_FreeThreadData(
+    IN gctBOOL ProcessExiting
+    );
 
 /* Construct a new gcoOS object. */
 gceSTATUS
@@ -483,6 +655,14 @@ gcoOS_Allocate(
     IN gcoOS Os,
     IN gctSIZE_T Bytes,
     OUT gctPOINTER * Memory
+    );
+
+/* Get allocated memory size. */
+gceSTATUS
+gcoOS_GetMemorySize(
+    IN gcoOS Os,
+    IN gctPOINTER Memory,
+    OUT gctSIZE_T_PTR MemorySize
     );
 
 /* Free allocated memory. */
@@ -526,6 +706,16 @@ gcoOS_FreeContiguous(
     IN gctSIZE_T Bytes
     );
 
+#if gcdENABLE_BANK_ALIGNMENT
+gceSTATUS
+gcoSURF_GetBankOffsetBytes(
+    IN gcoSURF Surfce,
+    IN gceSURF_TYPE Type,
+    IN gctUINT32 Stride,
+    IN gctUINT32_PTR Bytes
+    );
+#endif
+
 /* Map user memory. */
 gceSTATUS
 gcoOS_MapUserMemory(
@@ -558,21 +748,31 @@ gcoOS_DeviceControl(
     );
 
 /* Allocate non paged memory. */
-gceSTATUS gcoOS_AllocateNonPagedMemory(
-        IN gcoOS Os,
-        IN gctBOOL InUserSpace,
-        IN OUT gctSIZE_T * Bytes,
-        OUT gctPHYS_ADDR * Physical,
-        OUT gctPOINTER * Logical
-        );
+gceSTATUS
+gcoOS_AllocateNonPagedMemory(
+    IN gcoOS Os,
+    IN gctBOOL InUserSpace,
+    IN OUT gctSIZE_T * Bytes,
+    OUT gctPHYS_ADDR * Physical,
+    OUT gctPOINTER * Logical
+    );
 
 /* Free non paged memory. */
-gceSTATUS gcoOS_FreeNonPagedMemory(
-        IN gcoOS Os,
-        IN gctSIZE_T Bytes,
-        IN gctPHYS_ADDR Physical,
-        IN gctPOINTER Logical
-        );
+gceSTATUS
+gcoOS_FreeNonPagedMemory(
+    IN gcoOS Os,
+    IN gctSIZE_T Bytes,
+    IN gctPHYS_ADDR Physical,
+    IN gctPOINTER Logical
+    );
+
+#define gcmOS_SAFE_FREE(os, mem) \
+	gcoOS_Free(os, mem); \
+	mem = gcvNULL
+
+#define gcmkOS_SAFE_FREE(os, mem) \
+    gckOS_Free(os, mem); \
+	mem = gcvNULL
 
 typedef enum _gceFILE_MODE
 {
@@ -686,6 +886,22 @@ gcoOS_GetEnv(
     OUT gctSTRING * Value
     );
 
+/* Get current working directory. */
+gceSTATUS
+gcoOS_GetCwd(
+    IN gcoOS Os,
+	IN gctINT SizeInBytes,
+    OUT gctSTRING Buffer
+    );
+
+/* Get file status info. */
+gceSTATUS
+gcoOS_Stat(
+    IN gcoOS Os,
+    IN gctCONST_STRING FileName,
+    OUT gctPOINTER Buffer
+    );
+
 typedef enum _gceFILE_WHENCE
 {
     gcvFILE_SEEK_SET,
@@ -740,6 +956,14 @@ gceSTATUS
 gcoOS_ZeroMemory(
     IN gctPOINTER Memory,
     IN gctSIZE_T Bytes
+    );
+
+/* Same as strstr. */
+gceSTATUS
+gcoOS_StrStr(
+    IN gctCONST_STRING String,
+    IN gctCONST_STRING SubString,
+    OUT gctSTRING * Output
     );
 
 /* Find the last occurance of a character inside a string. */
@@ -801,6 +1025,18 @@ gcoOS_StrToFloat(
     OUT gctFLOAT * Float
     );
 
+/* Convert hex string to integer. */
+gceSTATUS gcoOS_HexStrToInt(
+	IN gctCONST_STRING String,
+	OUT gctINT * Int
+	);
+
+/* Convert hex string to float. */
+gceSTATUS gcoOS_HexStrToFloat(
+	IN gctCONST_STRING String,
+	OUT gctFLOAT * Float
+	);
+
 /* Convert string to integer. */
 gceSTATUS
 gcoOS_StrToInt(
@@ -822,15 +1058,6 @@ gcoOS_PrintStrSafe(
     IN OUT gctUINT * Offset,
     IN gctCONST_STRING Format,
     ...
-    );
-
-gceSTATUS
-gcoOS_PrintStrVSafe(
-    OUT gctSTRING String,
-    IN gctSIZE_T StringSize,
-    IN OUT gctUINT * Offset,
-    IN gctCONST_STRING Format,
-    IN gctPOINTER Arguments
     );
 
 gceSTATUS
@@ -860,6 +1087,12 @@ gcoOS_Compact(
     );
 
 gceSTATUS
+gcoOS_AddSignalHandler (
+    IN gceSignalHandlerType SignalHandlerType
+    );
+
+#if VIVANTE_PROFILER /*gcdENABLE_PROFILING*/
+gceSTATUS
 gcoOS_ProfileStart(
     IN gcoOS Os
     );
@@ -876,6 +1109,7 @@ gcoOS_SetProfileSetting(
         IN gctBOOL Enable,
         IN gctCONST_STRING FileName
         );
+#endif
 
 /* Query the video memory. */
 gceSTATUS
@@ -887,6 +1121,12 @@ gcoOS_QueryVideoMemory(
     OUT gctSIZE_T * ExternalSize,
     OUT gctPHYS_ADDR * ContiguousAddress,
     OUT gctSIZE_T * ContiguousSize
+    );
+
+/* Detect if the process is the executable specified. */
+gceSTATUS
+gcoOS_DetectProcessByName(
+    IN gctCONST_STRING Name
     );
 
 /*----------------------------------------------------------------------------*/
@@ -929,6 +1169,11 @@ gcoOS_GetCurrentProcessID(
     void
     );
 
+gctHANDLE
+gcoOS_GetCurrentThreadID(
+    void
+    );
+
 /*----------------------------------------------------------------------------*/
 /*----- Time -----------------------------------------------------------------*/
 
@@ -964,6 +1209,40 @@ gceSTATUS
 gcoOS_Delay(
     IN gcoOS Os,
     IN gctUINT32 Delay
+    );
+
+/*----------------------------------------------------------------------------*/
+/*----- Threads --------------------------------------------------------------*/
+
+#ifdef _WIN32
+/* Cannot include windows.h here becuase "near" and "far"
+ * which are used in gcsDEPTH_INFO, are defined to nothing in WinDef.h.
+ * So, use the real value of DWORD and WINAPI, instead.
+ * DWORD is unsigned long, and WINAPI is __stdcall.
+ * If these two are change in WinDef.h, the following two typdefs
+ * need to be changed, too.
+ */
+typedef unsigned long gctTHREAD_RETURN;
+typedef unsigned long (__stdcall * gcTHREAD_ROUTINE)(void * Argument);
+#else
+typedef void * gctTHREAD_RETURN;
+typedef void * (* gcTHREAD_ROUTINE)(void *);
+#endif
+
+/* Create a new thread. */
+gceSTATUS
+gcoOS_CreateThread(
+    IN gcoOS Os,
+    IN gcTHREAD_ROUTINE Worker,
+    IN gctPOINTER Argument,
+    OUT gctPOINTER * Thread
+    );
+
+/* Close a thread. */
+gceSTATUS
+gcoOS_CloseThread(
+    IN gcoOS Os,
+    IN gctPOINTER Thread
     );
 
 /*----------------------------------------------------------------------------*/
@@ -1032,6 +1311,19 @@ gcoOS_WaitSignal(
     IN gctUINT32 Wait
     );
 
+/* Map a signal from another process */
+gceSTATUS
+gcoOS_MapSignal(
+    IN gctSIGNAL  RemoteSignal,
+    OUT gctSIGNAL * LocalSignal
+    );
+
+/* Unmap a signal mapped from another process */
+gceSTATUS
+gcoOS_UnmapSignal(
+    IN gctSIGNAL Signal
+    );
+
 /* Write a register. */
 gceSTATUS
 gcoOS_WriteRegister(
@@ -1049,8 +1341,17 @@ gcoOS_ReadRegister(
     );
 
 gceSTATUS
+gcoOS_CacheClean(
+    IN gcoOS Os,
+    IN gcuVIDMEM_NODE_PTR Node,
+    IN gctPOINTER Logical,
+    IN gctSIZE_T Bytes
+    );
+
+gceSTATUS
 gcoOS_CacheFlush(
     IN gcoOS Os,
+    IN gcuVIDMEM_NODE_PTR Node,
     IN gctPOINTER Logical,
     IN gctSIZE_T Bytes
     );
@@ -1058,9 +1359,78 @@ gcoOS_CacheFlush(
 gceSTATUS
 gcoOS_CacheInvalidate(
     IN gcoOS Os,
+    IN gcuVIDMEM_NODE_PTR Node,
     IN gctPOINTER Logical,
     IN gctSIZE_T Bytes
     );
+
+gceSTATUS
+gcoOS_MemoryBarrier(
+    IN gcoOS Os,
+    IN gctPOINTER Logical
+    );
+
+
+/*----------------------------------------------------------------------------*/
+/*----- Profile --------------------------------------------------------------*/
+
+gceSTATUS
+gckOS_GetProfileTick(
+    OUT gctUINT64_PTR Tick
+    );
+
+gceSTATUS
+gckOS_QueryProfileTickRate(
+    OUT gctUINT64_PTR TickRate
+    );
+
+gctUINT32
+gckOS_ProfileToMS(
+    IN gctUINT64 Ticks
+    );
+
+gceSTATUS
+gcoOS_GetProfileTick(
+    OUT gctUINT64_PTR Tick
+    );
+
+gceSTATUS
+gcoOS_QueryProfileTickRate(
+    OUT gctUINT64_PTR TickRate
+    );
+
+#define _gcmPROFILE_INIT(prefix, freq, start) \
+    do { \
+        prefix ## OS_QueryProfileTickRate(&(freq)); \
+        prefix ## OS_GetProfileTick(&(start)); \
+    } while (gcvFALSE)
+
+#define _gcmPROFILE_QUERY(prefix, start, ticks) \
+    do { \
+        prefix ## OS_GetProfileTick(&(ticks)); \
+        (ticks) = ((ticks) > (start)) ? ((ticks) - (start)) \
+                                      : (~0ull - (start) + (ticks) + 1); \
+    } while (gcvFALSE)
+
+#if gcdENABLE_PROFILING
+#   define gcmkPROFILE_INIT(freq, start)    _gcmPROFILE_INIT(gck, freq, start)
+#   define gcmkPROFILE_QUERY(start, ticks)  _gcmPROFILE_QUERY(gck, start, ticks)
+#   define gcmPROFILE_INIT(freq, start)     _gcmPROFILE_INIT(gco, freq, start)
+#   define gcmPROFILE_QUERY(start, ticks)   _gcmPROFILE_QUERY(gco, start, ticks)
+#   define gcmPROFILE_ONLY(x)               x
+#   define gcmPROFILE_ELSE(x)               do { } while (gcvFALSE)
+#   define gcmPROFILE_DECLARE_ONLY(x)       x
+#   define gcmPROFILE_DECLARE_ELSE(x)       typedef x
+#else
+#   define gcmkPROFILE_INIT(start, freq)    do { } while (gcvFALSE)
+#   define gcmkPROFILE_QUERY(start, ticks)  do { } while (gcvFALSE)
+#   define gcmPROFILE_INIT(start, freq)     do { } while (gcvFALSE)
+#   define gcmPROFILE_QUERY(start, ticks)   do { } while (gcvFALSE)
+#   define gcmPROFILE_ONLY(x)               do { } while (gcvFALSE)
+#   define gcmPROFILE_ELSE(x)               x
+#   define gcmPROFILE_DECLARE_ONLY(x)       typedef x
+#   define gcmPROFILE_DECLARE_ELSE(x)       x
+#endif
 
 /*******************************************************************************
 **  gcoMATH object
@@ -1068,87 +1438,39 @@ gcoOS_CacheInvalidate(
 
 #define gcdPI                   3.14159265358979323846f
 
+/* Kernel. */
+gctINT
+gckMATH_ModuloInt(
+    IN gctINT X,
+    IN gctINT Y
+    );
+
+/* User. */
 gctUINT32
 gcoMATH_Log2in5dot5(
     IN gctINT X
     );
 
+
 gctFLOAT
-gcoMATH_Sine(
+gcoMATH_UIntAsFloat(
+    IN gctUINT32 X
+    );
+
+gctUINT32
+gcoMATH_FloatAsUInt(
     IN gctFLOAT X
     );
 
-gctFLOAT
-gcoMATH_Cosine(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Floor(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Ceiling(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_SquareRoot(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Log2(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Power(
+gctBOOL
+gcoMATH_CompareEqualF(
     IN gctFLOAT X,
     IN gctFLOAT Y
     );
 
-gctFLOAT
-gcoMATH_Modulo(
-    IN gctFLOAT X,
-    IN gctFLOAT Y
-    );
-
-gctFLOAT
-gcoMATH_Exp(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Absolute(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_ArcCosine(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Tangent(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_UInt2Float(
-    IN gctUINT X
-    );
-
-gctUINT
-gcoMATH_Float2UInt(
-    IN gctFLOAT X
-    );
-
-gctFLOAT
-gcoMATH_Multiply(
-    IN gctFLOAT X,
-    IN gctFLOAT Y
+gctUINT16
+gcoMATH_UInt8AsFloat16(
+    IN gctUINT8 X
     );
 
 /******************************************************************************\
@@ -1311,6 +1633,16 @@ typedef struct _gcsSURF_FRAMEBUFFER
 }
 gcsSURF_FRAMEBUFFER;
 
+typedef struct _gcsVIDMEM_NODE_SHARED_INFO
+{
+    gctBOOL                     tileStatusDisabled;
+    gcsPOINT                    SrcOrigin;
+    gcsPOINT                    DestOrigin;
+    gcsSIZE                     RectSize;
+    gctUINT32                   clearValue;
+}
+gcsVIDMEM_NODE_SHARED_INFO;
+
 /* Generic pixel component descriptors. */
 extern gcsFORMAT_COMPONENT gcvPIXEL_COMP_XXX8;
 extern gcsFORMAT_COMPONENT gcvPIXEL_COMP_XX8X;
@@ -1353,6 +1685,29 @@ gcoSURF_MapUserSurface(
     IN gctUINT32 Physical
     );
 
+/* Query vid mem node info. */
+gceSTATUS
+gcoSURF_QueryVidMemNode(
+    IN gcoSURF Surface,
+    OUT gcuVIDMEM_NODE_PTR * Node,
+    OUT gcePOOL * Pool,
+    OUT gctUINT_PTR Bytes
+    );
+
+/*  Set usage attribute of a surface. */
+gceSTATUS
+gcoSURF_SetUsage(
+    IN gcoSURF Surface,
+    IN gceSURF_USAGE Usage
+    );
+
+/*  Return usage attribute of a surface. */
+gceSTATUS
+gcoSURF_QueryUsage(
+    IN gcoSURF Surface,
+    OUT gceSURF_USAGE *Usage
+    );
+
 /* Set the color type of the surface. */
 gceSTATUS
 gcoSURF_SetColorType(
@@ -1374,9 +1729,21 @@ gcoSURF_SetRotation(
     IN gceSURF_ROTATION Rotation
     );
 
+gceSTATUS
+gcoSURF_IsValid(
+    IN gcoSURF Surface
+    );
+
+#ifndef VIVANTE_NO_3D
 /* Verify and return the state of the tile status mechanism. */
 gceSTATUS
 gcoSURF_IsTileStatusSupported(
+    IN gcoSURF Surface
+    );
+
+/* Process tile status for the specified surface. */
+gceSTATUS
+gcoSURF_SetTileStatus(
     IN gcoSURF Surface
     );
 
@@ -1392,6 +1759,7 @@ gcoSURF_DisableTileStatus(
     IN gcoSURF Surface,
     IN gctBOOL Decompress
     );
+#endif /* VIVANTE_NO_3D */
 
 /* Get surface size. */
 gceSTATUS
@@ -1411,12 +1779,29 @@ gcoSURF_GetAlignedSize(
     OUT gctINT * Stride
     );
 
+/* Get alignments. */
+gceSTATUS
+gcoSURF_GetAlignment(
+    IN gceSURF_TYPE Type,
+    IN gceSURF_FORMAT Format,
+    OUT gctUINT * AddressAlignment,
+    OUT gctUINT * XAlignment,
+    OUT gctUINT * YAlignment
+    );
+
 /* Get surface type and format. */
 gceSTATUS
 gcoSURF_GetFormat(
     IN gcoSURF Surface,
     OUT gceSURF_TYPE * Type,
     OUT gceSURF_FORMAT * Format
+    );
+
+/* Get surface tiling. */
+gceSTATUS
+gcoSURF_GetTiling(
+    IN gcoSURF Surface,
+    OUT gceTILING * Tiling
     );
 
 /* Lock the surface. */
@@ -1451,6 +1836,12 @@ gcoSURF_ComputeColorMask(
 /* Flush the surface. */
 gceSTATUS
 gcoSURF_Flush(
+    IN gcoSURF Surface
+    );
+
+/* Fill surface from it's tile status buffer. */
+gceSTATUS
+gcoSURF_FillFromTile(
     IN gcoSURF Surface
     );
 
@@ -1530,13 +1921,34 @@ gcoSURF_QueryOrientation(
     OUT gceORIENTATION * Orientation
     );
 
-/*Reset the hal member of a surface*/
 gceSTATUS
-gcoSURF_ResetHal(
+gcoSURF_SetOffset(
     IN gcoSURF Surface,
-    IN gcoHAL Hal
+    IN gctUINT Offset
     );
 
+gceSTATUS
+gcoSURF_NODE_Cache(
+    IN gcsSURF_NODE_PTR Node,
+    IN gctPOINTER Logical,
+    IN gctSIZE_T Bytes,
+    IN gceCACHEOPERATION Operation
+    );
+
+/* Perform CPU cache operation on surface */
+gceSTATUS
+gcoSURF_CPUCacheOperation(
+    IN gcoSURF Surface,
+    IN gceCACHEOPERATION Operation
+    );
+
+
+gceSTATUS
+gcoSURF_SetLinearResolveAddress(
+    IN gcoSURF Surface,
+    IN gctUINT32 Address,
+    IN gctPOINTER Memory
+    );
 /******************************************************************************\
 ********************************* gcoDUMP Object ********************************
 \******************************************************************************/
@@ -1608,6 +2020,7 @@ gcoDUMP_Delete(
     IN gctUINT32 Address
     );
 
+
 /******************************************************************************\
 ******************************* gcsRECT Structure ******************************
 \******************************************************************************/
@@ -1658,6 +2071,26 @@ gcsRECT_IsOfEqualSize(
     OUT gctBOOL * EqualSize
     );
 
+gceSTATUS
+gcsRECT_RelativeRotation(
+    IN gceSURF_ROTATION Orientation,
+    IN OUT gceSURF_ROTATION *Relation);
+
+gceSTATUS
+
+gcsRECT_Rotate(
+
+    IN OUT gcsRECT_PTR Rect,
+
+    IN gceSURF_ROTATION Rotation,
+
+    IN gceSURF_ROTATION toRotation,
+
+    IN gctINT32 SurfaceWidth,
+
+    IN gctINT32 SurfaceHeight
+
+    );
 
 /******************************************************************************\
 **************************** gcsBOUNDARY Structure *****************************
@@ -1700,6 +2133,13 @@ gcoHEAP_Allocate(
     OUT gctPOINTER * Node
     );
 
+gceSTATUS
+gcoHEAP_GetMemorySize(
+    IN gcoHEAP Heap,
+    IN gctPOINTER Memory,
+    OUT gctSIZE_T_PTR MemorySize
+    );
+
 /* Free memory. */
 gceSTATUS
 gcoHEAP_Free(
@@ -1707,6 +2147,7 @@ gcoHEAP_Free(
     IN gctPOINTER Node
     );
 
+#if (VIVANTE_PROFILER /*gcdENABLE_PROFILING*/ || gcdDEBUG)
 /* Profile the heap. */
 gceSTATUS
 gcoHEAP_ProfileStart(
@@ -1718,6 +2159,7 @@ gcoHEAP_ProfileEnd(
     IN gcoHEAP Heap,
     IN gctCONST_STRING Title
     );
+#endif
 
 
 /******************************************************************************\
@@ -1730,8 +2172,19 @@ gcoOS_SetDebugLevel(
     );
 
 void
+gcoOS_GetDebugLevel(
+    OUT gctUINT32_PTR DebugLevel
+    );
+
+void
 gcoOS_SetDebugZone(
     IN gctUINT32 Zone
+    );
+
+void
+gcoOS_GetDebugZone(
+    IN gctUINT32 Zone,
+    OUT gctUINT32_PTR DebugZone
     );
 
 void
@@ -1750,6 +2203,11 @@ void
 gcoOS_SetDebugFile(
     IN gctCONST_STRING FileName
     );
+
+gctFILE
+gcoOS_ReplaceDebugFile(
+    IN gctFILE fp
+	);
 
 /*******************************************************************************
 **
@@ -1775,7 +2233,7 @@ gcoOS_DebugFatal(
     ...
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_FATAL)
 #   define gcmFATAL             gcoOS_DebugFatal
 #   define gcmkFATAL            gckOS_DebugFatal
 #elif gcdHAS_ELLIPSES
@@ -1820,20 +2278,30 @@ gckOS_DebugTrace(
     IN gctCONST_STRING Message,
     ...
     );
-void
 
+void
+gckOS_DebugTraceN(
+    IN gctUINT32 Level,
+    IN gctUINT ArgumentSize,
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
 gcoOS_DebugTrace(
     IN gctUINT32 Level,
     IN gctCONST_STRING Message,
     ...
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_TRACE)
 #   define gcmTRACE             gcoOS_DebugTrace
 #   define gcmkTRACE            gckOS_DebugTrace
+#   define gcmkTRACE_N          gckOS_DebugTraceN
 #elif gcdHAS_ELLIPSES
 #   define gcmTRACE(...)
 #   define gcmkTRACE(...)
+#   define gcmkTRACE_N(...)
 #else
     gcmINLINE static void
     __dummy_trace(
@@ -1843,14 +2311,27 @@ gcoOS_DebugTrace(
         )
     {
     }
+
+    gcmINLINE static void
+    __dummy_trace_n(
+        IN gctUINT32 Level,
+        IN gctUINT ArgumentSize,
+        IN gctCONST_STRING Message,
+        ...
+        )
+    {
+    }
+
 #   define gcmTRACE             __dummy_trace
 #   define gcmkTRACE            __dummy_trace
+#   define gcmkTRACE_N          __dummy_trace_n
 #endif
 
-/* Debug zones. */
+/* Zones common for kernel and user. */
 #define gcvZONE_OS              (1 << 0)
 #define gcvZONE_HARDWARE        (1 << 1)
 #define gcvZONE_HEAP            (1 << 2)
+#define gcvZONE_SIGNAL          (1 << 27)
 
 /* Kernel zones. */
 #define gcvZONE_KERNEL          (1 << 3)
@@ -1861,6 +2342,8 @@ gcoOS_DebugTrace(
 #define gcvZONE_MMU             (1 << 8)
 #define gcvZONE_EVENT           (1 << 9)
 #define gcvZONE_DEVICE          (1 << 10)
+#define gcvZONE_DATABASE        (1 << 11)
+#define gcvZONE_INTERRUPT       (1 << 12)
 
 /* User zones. */
 #define gcvZONE_HAL             (1 << 3)
@@ -1876,24 +2359,37 @@ gcoOS_DebugTrace(
 #define gcvZONE_MEMORY          (1 << 13)
 #define gcvZONE_STATE           (1 << 14)
 #define gcvZONE_AUX             (1 << 15)
+#define gcvZONE_VERTEX          (1 << 16)
+#define gcvZONE_CL              (1 << 17)
+#define gcvZONE_COMPOSITION     (1 << 17)
+#define gcvZONE_VG              (1 << 18)
+#define gcvZONE_IMAGE           (1 << 19)
+#define gcvZONE_UTILITY         (1 << 20)
+#define gcvZONE_PARAMETERS      (1 << 21)
 
 /* API definitions. */
-#define gcvZONE_API_HAL         (0 << 28)
-#define gcvZONE_API_EGL         (1 << 28)
-#define gcvZONE_API_ES11        (2 << 28)
-#define gcvZONE_API_ES20        (3 << 28)
-#define gcvZONE_API_VG11        (4 << 28)
-#define gcvZONE_API_GL          (5 << 28)
-#define gcvZONE_API_DFB         (6 << 28)
-#define gcvZONE_API_GDI         (7 << 28)
-#define gcvZONE_API_D3D         (8 << 28)
+#define gcvZONE_API_HAL         (1 << 28)
+#define gcvZONE_API_EGL         (2 << 28)
+#define gcvZONE_API_ES11        (3 << 28)
+#define gcvZONE_API_ES20        (4 << 28)
+#define gcvZONE_API_VG11        (5 << 28)
+#define gcvZONE_API_GL          (6 << 28)
+#define gcvZONE_API_DFB         (7 << 28)
+#define gcvZONE_API_GDI         (8 << 28)
+#define gcvZONE_API_D3D         (9 << 28)
+
 
 #define gcmZONE_GET_API(zone)   ((zone) >> 28)
+/*Set gcdZONE_MASE like 0x0 | gcvZONE_API_EGL
+will enable print EGL module debug info*/
 #define gcdZONE_MASK            0x0FFFFFFF
 
 /* Handy zones. */
 #define gcvZONE_NONE            0
-#define gcvZONE_ALL             gcdZONE_MASK
+#define gcvZONE_ALL             0x0FFFFFFF
+
+/*Dump API depth set 1 for API, 2 for API and API behavior*/
+#define gcvDUMP_API_DEPTH       1
 
 /*******************************************************************************
 **
@@ -1919,6 +2415,15 @@ gckOS_DebugTraceZone(
     );
 
 void
+gckOS_DebugTraceZoneN(
+    IN gctUINT32 Level,
+    IN gctUINT32 Zone,
+    IN gctUINT ArgumentSize,
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
 gcoOS_DebugTraceZone(
     IN gctUINT32 Level,
     IN gctUINT32 Zone,
@@ -1926,12 +2431,14 @@ gcoOS_DebugTraceZone(
     ...
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_TRACE)
 #   define gcmTRACE_ZONE            gcoOS_DebugTraceZone
 #   define gcmkTRACE_ZONE           gckOS_DebugTraceZone
+#   define gcmkTRACE_ZONE_N         gckOS_DebugTraceZoneN
 #elif gcdHAS_ELLIPSES
 #   define gcmTRACE_ZONE(...)
 #   define gcmkTRACE_ZONE(...)
+#   define gcmkTRACE_ZONE_N(...)
 #else
     gcmINLINE static void
     __dummy_trace_zone(
@@ -1942,8 +2449,89 @@ gcoOS_DebugTraceZone(
         )
     {
     }
+
+    gcmINLINE static void
+    __dummy_trace_zone_n(
+        IN gctUINT32 Level,
+        IN gctUINT32 Zone,
+        IN gctUINT ArgumentSize,
+        IN gctCONST_STRING Message,
+        ...
+        )
+    {
+    }
+
 #   define gcmTRACE_ZONE            __dummy_trace_zone
 #   define gcmkTRACE_ZONE           __dummy_trace_zone
+#   define gcmkTRACE_ZONE_N         __dummy_trace_zone_n
+#endif
+
+/*******************************************************************************
+**
+**  gcmDEBUG_ONLY
+**
+**      Execute a statement or function only in DEBUG mode.
+**
+**  ARGUMENTS:
+**
+**      f       Statement or function to execute.
+*/
+#if gcmIS_DEBUG(gcdDEBUG_CODE)
+#   define gcmDEBUG_ONLY(f)         f
+#else
+#   define gcmDEBUG_ONLY(f)
+#endif
+
+/*******************************************************************************
+**
+**  gcmSTACK_PUSH
+**  gcmSTACK_POP
+**  gcmSTACK_DUMP
+**
+**      Push or pop a function with entry arguments on the trace stack.
+**
+**  ARGUMENTS:
+**
+**      Function    Name of function.
+**      Line        Line number.
+**      Text        Optional text.
+**      ...         Optional arguments for text.
+*/
+#if gcmIS_DEBUG(gcdDEBUG_STACK)
+    void
+    gcoOS_StackPush(
+        IN gctCONST_STRING Function,
+        IN gctINT Line,
+        IN gctCONST_STRING Text,
+        ...
+        );
+    void
+    gcoOS_StackPop(
+        IN gctCONST_STRING Function
+        );
+    void
+    gcoOS_StackDump(
+        void
+        );
+#   define gcmSTACK_PUSH            gcoOS_StackPush
+#   define gcmSTACK_POP             gcoOS_StackPop
+#   define gcmSTACK_DUMP            gcoOS_StackDump
+#elif gcdHAS_ELLIPSES
+#   define gcmSTACK_PUSH(...)       do { } while (0)
+#   define gcmSTACK_POP(Function)   do { } while (0)
+#   define gcmSTACK_DUMP()          do { } while (0)
+#else
+    gcmINLINE static void
+    __dummy_stack_push(
+        IN gctCONST_STRING Function,
+        IN gctINT Line,
+        IN gctCONST_STRING Text, ...
+        )
+    {
+    }
+#   define gcmSTACK_PUSH            __dummy_stack_push
+#   define gcmSTACK_POP(Function)   do { } while (0)
+#   define gcmSTACK_DUMP()          do { } while (0)
 #endif
 
 /******************************************************************************\
@@ -1952,12 +2540,57 @@ gcoOS_DebugTraceZone(
 
 #define gcdHEADER_LEVEL             gcvLEVEL_VERBOSE
 
+
+#if gcdENABLE_PROFILING
+void
+gcoOS_ProfileDB(
+    IN gctCONST_STRING Function,
+    IN OUT gctBOOL_PTR Initialized
+    );
+
 #define gcmHEADER() \
+    static gctBOOL __profile__initialized__ = gcvFALSE; \
+    gcmSTACK_PUSH(__FUNCTION__, __LINE__, gcvNULL, gcvNULL); \
+    gcoOS_ProfileDB(__FUNCTION__, &__profile__initialized__)
+#define gcmHEADER_ARG(...) \
+    static gctBOOL __profile__initialized__ = gcvFALSE; \
+    gcmSTACK_PUSH(__FUNCTION__, __LINE__, Text, __VA_ARGS__); \
+    gcoOS_ProfileDB(__FUNCTION__, &__profile__initialized__)
+#define gcmFOOTER() \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcoOS_ProfileDB(__FUNCTION__, gcvNULL)
+#define gcmFOOTER_NO() \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcoOS_ProfileDB(__FUNCTION__, gcvNULL)
+#define gcmFOOTER_ARG(...) \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcoOS_ProfileDB(__FUNCTION__, gcvNULL)
+#define gcmFOOTER_KILL() \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcoOS_ProfileDB(gcvNULL, gcvNULL)
+
+#else /* gcdENABLE_PROFILING */
+
+#if gcdHAS_ELLIPSES
+#define gcmHEADER() \
+    gctINT8 __user__ = 1; \
+    gctINT8_PTR __user_ptr__ = &__user__; \
+    gcmSTACK_PUSH(__FUNCTION__, __LINE__, gcvNULL, gcvNULL); \
     gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                   "++%s(%d)", __FUNCTION__, __LINE__)
+#else
+    gcmINLINE static void
+    __dummy_header(void)
+    {
+    }
+#   define gcmHEADER                   __dummy_header
+#endif
 
 #if gcdHAS_ELLIPSES
 #   define gcmHEADER_ARG(Text, ...) \
+        gctINT8 __user__ = 1; \
+        gctINT8_PTR __user_ptr__ = &__user__; \
+        gcmSTACK_PUSH(__FUNCTION__, __LINE__, Text, __VA_ARGS__); \
         gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                       "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
 #else
@@ -1971,20 +2604,61 @@ gcoOS_DebugTraceZone(
 #   define gcmHEADER_ARG                __dummy_header_arg
 #endif
 
-#define gcmFOOTER() \
-    gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                  "--%s(%d): status=%d", \
-                  __FUNCTION__, __LINE__, status)
+#if gcdHAS_ELLIPSES
+#   define gcmFOOTER() \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcmPROFILE_ONLY(gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                                  "--%s(%d) [%llu,%llu]: status=%d(%s)", \
+                                  __FUNCTION__, __LINE__, \
+                                  __ticks__, __total__, \
+                                  status, gcoOS_DebugStatus2Name(status))); \
+    gcmPROFILE_ELSE(gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                                  "--%s(%d): status=%d(%s)", \
+                                  __FUNCTION__, __LINE__, \
+                                  status, gcoOS_DebugStatus2Name(status))); \
+    *__user_ptr__ -= 1
+#else
+    gcmINLINE static void
+    __dummy_footer(void)
+    {
+    }
+#   define gcmFOOTER                    __dummy_footer
+#endif
 
+#if gcdHAS_ELLIPSES
 #define gcmFOOTER_NO() \
+    gcmSTACK_POP(__FUNCTION__); \
     gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                  "--%s(%d)", __FUNCTION__, __LINE__)
+                  "--%s(%d)", __FUNCTION__, __LINE__); \
+    *__user_ptr__ -= 1
+#else
+    gcmINLINE static void
+    __dummy_footer_no(void)
+    {
+    }
+#   define gcmFOOTER_NO                 __dummy_footer_no
+#endif
+
+#if gcdHAS_ELLIPSES
+#define gcmFOOTER_KILL() \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                  "--%s(%d)", __FUNCTION__, __LINE__); \
+    *__user_ptr__ -= 1
+#else
+    gcmINLINE static void
+    __dummy_footer_kill(void)
+    {
+    }
+#   define gcmFOOTER_KILL               __dummy_footer_kill
+#endif
 
 #if gcdHAS_ELLIPSES
 #   define gcmFOOTER_ARG(Text, ...) \
+        gcmSTACK_POP(__FUNCTION__); \
         gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                      "--%s(%d): " Text, \
-                      __FUNCTION__, __LINE__, __VA_ARGS__)
+                      "--%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__); \
+        *__user_ptr__ -= 1
 #else
     gcmINLINE static void
     __dummy_footer_arg(
@@ -1996,12 +2670,26 @@ gcoOS_DebugTraceZone(
 #   define gcmFOOTER_ARG                __dummy_footer_arg
 #endif
 
+#endif /* gcdENABLE_PROFILING */
+
+#if gcdHAS_ELLIPSES
 #define gcmkHEADER() \
+    gctINT8 __kernel__ = 1; \
+    gctINT8_PTR __kernel_ptr__ = &__kernel__; \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "++%s(%d)", __FUNCTION__, __LINE__)
+#else
+    gcmINLINE static void
+    __dummy_kheader(void)
+    {
+    }
+#   define gcmkHEADER                  __dummy_kheader
+#endif
 
 #if gcdHAS_ELLIPSES
 #   define gcmkHEADER_ARG(Text, ...) \
+        gctINT8 __kernel__ = 1; \
+        gctINT8_PTR __kernel_ptr__ = &__kernel__; \
         gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                        "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
 #else
@@ -2015,20 +2703,39 @@ gcoOS_DebugTraceZone(
 #   define gcmkHEADER_ARG               __dummy_kheader_arg
 #endif
 
+#if gcdHAS_ELLIPSES
 #define gcmkFOOTER() \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                   "--%s(%d): status=%d", \
-                   __FUNCTION__, __LINE__, status)
+                   "--%s(%d): status=%d(%s)", \
+                   __FUNCTION__, __LINE__, status, gckOS_DebugStatus2Name(status)); \
+    *__kernel_ptr__ -= 1
+#else
+    gcmINLINE static void
+    __dummy_kfooter(void)
+    {
+    }
+#   define gcmkFOOTER                   __dummy_kfooter
+#endif
 
+#if gcdHAS_ELLIPSES
 #define gcmkFOOTER_NO() \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                   "--%s(%d)", __FUNCTION__, __LINE__)
+                   "--%s(%d)", __FUNCTION__, __LINE__); \
+    *__kernel_ptr__ -= 1
+#else
+    gcmINLINE static void
+    __dummy_kfooter_no(void)
+    {
+    }
+#   define gcmkFOOTER_NO                __dummy_kfooter_no
+#endif
 
 #if gcdHAS_ELLIPSES
 #   define gcmkFOOTER_ARG(Text, ...) \
         gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                        "--%s(%d): " Text, \
-                       __FUNCTION__, __LINE__, __VA_ARGS__)
+                       __FUNCTION__, __LINE__, __VA_ARGS__); \
+        *__kernel_ptr__ -= 1
 #else
     gcmINLINE static void
     __dummy_kfooter_arg(
@@ -2045,42 +2752,119 @@ gcoOS_DebugTraceZone(
 #define gcmOPT_STRING(ptr)          (((ptr) == gcvNULL) ? "(nil)" : (ptr))
 
 void
-gcoOS_Print(
-    IN gctCONST_STRING Message,
-    ...
-    );
-void
 gckOS_Print(
     IN gctCONST_STRING Message,
     ...
     );
+
+void
+gckOS_PrintN(
+    IN gctUINT ArgumentSize,
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
+gckOS_CopyPrint(
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
+gcoOS_Print(
+    IN gctCONST_STRING Message,
+    ...
+    );
+
 #define gcmPRINT                gcoOS_Print
 #define gcmkPRINT               gckOS_Print
+#define gcmkPRINT_N             gckOS_PrintN
 
 #if gcdPRINT_VERSION
-#define gcmPRINT_VERSION()       do { \
+#   define gcmPRINT_VERSION()       do { \
                                         _gcmPRINT_VERSION(gcm); \
                                         gcmSTACK_DUMP(); \
                                     } while (0)
-#define gcmkPRINT_VERSION()      _gcmPRINT_VERSION(gcmk)
-#define _gcmPRINT_VERSION(prefix) \
+#   define gcmkPRINT_VERSION()      _gcmPRINT_VERSION(gcmk)
+#   define _gcmPRINT_VERSION(prefix) \
         prefix##TRACE(gcvLEVEL_ERROR, \
                       "Vivante HAL version %d.%d.%d build %d  %s  %s", \
                       gcvVERSION_MAJOR, gcvVERSION_MINOR, gcvVERSION_PATCH, \
                       gcvVERSION_BUILD, gcvVERSION_DATE, gcvVERSION_TIME )
 #else
-#define gcmPRINT_VERSION()       do { gcmSTACK_DUMP(); } while (gcvFALSE)
-#define gcmkPRINT_VERSION()      do { } while (gcvFALSE)
+#   define gcmPRINT_VERSION()       do { gcmSTACK_DUMP(); } while (gcvFALSE)
+#   define gcmkPRINT_VERSION()      do { } while (gcvFALSE)
 #endif
 
-	typedef enum _gceDUMP_BUFFER {
-		gceDUMP_BUFFER_CONTEXT,
-		gceDUMP_BUFFER_USER,
-		gceDUMP_BUFFER_KERNEL,
-		gceDUMP_BUFFER_LINK,
-		gceDUMP_BUFFER_WAITLINK,
-		gceDUMP_BUFFER_FROM_USER,
-	} gceDUMP_BUFFER;
+typedef enum _gceDUMP_BUFFER
+{
+    gceDUMP_BUFFER_CONTEXT,
+    gceDUMP_BUFFER_USER,
+    gceDUMP_BUFFER_KERNEL,
+    gceDUMP_BUFFER_LINK,
+    gceDUMP_BUFFER_WAITLINK,
+    gceDUMP_BUFFER_FROM_USER,
+}
+gceDUMP_BUFFER;
+
+void
+gckOS_DumpBuffer(
+    IN gckOS Os,
+    IN gctPOINTER Buffer,
+    IN gctUINT Size,
+    IN gceDUMP_BUFFER Type,
+    IN gctBOOL CopyMessage
+    );
+
+#define gcmkDUMPBUFFER          gckOS_DumpBuffer
+
+#if gcdDUMP_COMMAND
+#   define gcmkDUMPCOMMAND(Os, Buffer, Size, Type, CopyMessage) \
+        gcmkDUMPBUFFER(Os, Buffer, Size, Type, CopyMessage)
+#else
+#   define gcmkDUMPCOMMAND(Os, Buffer, Size, Type, CopyMessage)
+#endif
+
+#if gcmIS_DEBUG(gcdDEBUG_CODE)
+
+void
+gckOS_DebugFlush(
+    gctCONST_STRING CallerName,
+    gctUINT LineNumber,
+    gctUINT32 DmaAddress
+    );
+
+#   define gcmkDEBUGFLUSH(DmaAddress) \
+        gckOS_DebugFlush(__FUNCTION__, __LINE__, DmaAddress)
+#else
+#   define gcmkDEBUGFLUSH(DmaAddress)
+#endif
+
+/*******************************************************************************
+**
+**  gcmDUMP_FRAMERATE
+**
+**      Print average frame rate
+**
+*/
+#if gcdDUMP_FRAMERATE
+    gceSTATUS
+    gcfDumpFrameRate(
+        void
+    );
+#   define gcmDUMP_FRAMERATE        gcfDumpFrameRate
+#elif gcdHAS_ELLIPSES
+#   define gcmDUMP_FRAMERATE(...)
+#else
+    gcmINLINE static void
+    __dummy_dump_frame_rate(
+        void
+        )
+    {
+    }
+#   define gcmDUMP_FRAMERATE        __dummy_dump_frame_rate
+#endif
+
 
 /*******************************************************************************
 **
@@ -2134,7 +2918,7 @@ gckOS_Print(
 **          Number of bytes.
 */
 
-#if gcdDUMP
+#if gcdDUMP || gcdDUMP_COMMAND
     gceSTATUS
     gcfDumpData(
         IN gcoOS Os,
@@ -2182,7 +2966,7 @@ gckOS_Print(
 **          Number of bytes.
 */
 
-#if gcdDUMP
+#if gcdDUMP || gcdDUMP_COMMAND
 gceSTATUS
 gcfDumpBuffer(
     IN gcoOS Os,
@@ -2306,6 +3090,37 @@ gcfDumpBuffer(
 
 /*******************************************************************************
 **
+**  gcmDUMP_API_DATA
+**
+**      Print an array of bytes.
+**
+**  ARGUMENTS:
+**
+**      gctCONST_POINTER    Pointer to array.
+**      gctSIZE_T           Size.
+*/
+#if gcdDUMP_API
+    gceSTATUS
+    gcfDumpApiData(
+        IN gctCONST_POINTER Data,
+        IN gctSIZE_T Size
+    );
+#   define gcmDUMP_API_DATA         gcfDumpApiData
+#elif gcdHAS_ELLIPSES
+#   define gcmDUMP_API_DATA(...)
+#else
+    gcmINLINE static void
+    __dummy_dump_api_data(
+        IN gctCONST_POINTER Data,
+        IN gctSIZE_T Size
+        )
+    {
+    }
+#   define gcmDUMP_API_DATA         __dummy_dump_api_data
+#endif
+
+/*******************************************************************************
+**
 **  gcmTRACE_RELEASE
 **
 **      Print a message to the shader debugger.
@@ -2335,6 +3150,11 @@ gcoOS_SetDebugShaderFileType(
     IN gctUINT32 ShaderType
     );
 
+void
+gcoOS_EnableDebugBuffer(
+    IN gctBOOL Enable
+    );
+
 /*******************************************************************************
 **
 **  gcmBREAK
@@ -2356,7 +3176,7 @@ gckOS_DebugBreak(
     void
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_BREAK)
 #   define gcmBREAK             gcoOS_DebugBreak
 #   define gcmkBREAK            gckOS_DebugBreak
 #else
@@ -2375,14 +3195,14 @@ gckOS_DebugBreak(
 **
 **      exp     Expression to evaluate.
 */
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_ASSERT)
 #   define _gcmASSERT(prefix, exp) \
         do \
         { \
             if (!(exp)) \
             { \
                 prefix##TRACE(gcvLEVEL_ERROR, \
-                              #prefix "ASSERT at %s(%d) in " __FILE__, \
+                              #prefix "ASSERT at %s(%d)", \
                               __FUNCTION__, __LINE__); \
                 prefix##TRACE(gcvLEVEL_ERROR, \
                               "(%s)", #exp); \
@@ -2408,7 +3228,7 @@ gckOS_DebugBreak(
 **
 **      exp     Expression to evaluate.
 */
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_ASSERT)
 #   define gcmVERIFY(exp)           gcmASSERT(exp)
 #   define gcmkVERIFY(exp)          gcmkASSERT(exp)
 #else
@@ -2438,12 +3258,20 @@ gckOS_Verify(
     IN gceSTATUS Status
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_ASSERT)
 #   define gcmVERIFY_OK(func) \
         do \
         { \
             gceSTATUS verifyStatus = func; \
             gcoOS_Verify(verifyStatus); \
+            if (verifyStatus != gcvSTATUS_OK) \
+            { \
+                gcmTRACE( \
+                    gcvLEVEL_ERROR, \
+                    "gcmVERIFY_OK(%d): function returned %d", \
+                    __LINE__, verifyStatus \
+                    ); \
+            } \
             gcmASSERT(verifyStatus == gcvSTATUS_OK); \
         } \
         while (gcvFALSE)
@@ -2451,6 +3279,14 @@ gckOS_Verify(
         do \
         { \
             gceSTATUS verifyStatus = func; \
+            if (verifyStatus != gcvSTATUS_OK) \
+            { \
+                gcmkTRACE( \
+                    gcvLEVEL_ERROR, \
+                    "gcmkVERIFY_OK(%d): function returned %d", \
+                    __LINE__, verifyStatus \
+                    ); \
+            } \
             gckOS_Verify(verifyStatus); \
             gcmkASSERT(verifyStatus == gcvSTATUS_OK); \
         } \
@@ -2459,6 +3295,16 @@ gckOS_Verify(
 #   define gcmVERIFY_OK(func)       func
 #   define gcmkVERIFY_OK(func)      func
 #endif
+
+gctCONST_STRING
+gcoOS_DebugStatus2Name(
+    gceSTATUS status
+    );
+
+gctCONST_STRING
+gckOS_DebugStatus2Name(
+    gceSTATUS status
+    );
 
 /*******************************************************************************
 **
@@ -2478,14 +3324,26 @@ gckOS_Verify(
     status = func; \
     if (gcmIS_ERROR(status)) \
     { \
+        prefix##PRINT_VERSION(); \
         prefix##TRACE(gcvLEVEL_ERROR, \
-            #prefix "ERR_BREAK: status=%d @ %s(%d) in " __FILE__, \
-            status, __FUNCTION__, __LINE__); \
+            #prefix "ERR_BREAK: status=%d(%s) @ %s(%d)", \
+            status, gcoOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
+        break; \
+    } \
+    do { } while (gcvFALSE)
+#define _gcmkERR_BREAK(prefix, func) \
+    status = func; \
+    if (gcmIS_ERROR(status)) \
+    { \
+        prefix##PRINT_VERSION(); \
+        prefix##TRACE(gcvLEVEL_ERROR, \
+            #prefix "ERR_BREAK: status=%d(%s) @ %s(%d)", \
+            status, gckOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
         break; \
     } \
     do { } while (gcvFALSE)
 #define gcmERR_BREAK(func)          _gcmERR_BREAK(gcm, func)
-#define gcmkERR_BREAK(func)         _gcmERR_BREAK(gcmk, func)
+#define gcmkERR_BREAK(func)         _gcmkERR_BREAK(gcmk, func)
 
 /*******************************************************************************
 **
@@ -2505,14 +3363,29 @@ gckOS_Verify(
     status = func; \
     if (gcmIS_ERROR(status)) \
     { \
+        prefix##PRINT_VERSION(); \
         prefix##TRACE(gcvLEVEL_ERROR, \
-            #prefix "ERR_RETURN: status=%d @ %s(%d) in " __FILE__, \
-            status, __FUNCTION__, __LINE__); \
+            #prefix "ERR_RETURN: status=%d(%s) @ %s(%d)", \
+            status, gcoOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
+        prefix##FOOTER(); \
+        return status; \
+    } \
+    do { } while (gcvFALSE)
+#define _gcmkERR_RETURN(prefix, func) \
+    status = func; \
+    if (gcmIS_ERROR(status)) \
+    { \
+        prefix##PRINT_VERSION(); \
+        prefix##TRACE(gcvLEVEL_ERROR, \
+            #prefix "ERR_RETURN: status=%d(%s) @ %s(%d)", \
+            status, gckOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
+        prefix##FOOTER(); \
         return status; \
     } \
     do { } while (gcvFALSE)
 #define gcmERR_RETURN(func)         _gcmERR_RETURN(gcm, func)
-#define gcmkERR_RETURN(func)        _gcmERR_RETURN(gcmk, func)
+#define gcmkERR_RETURN(func)        _gcmkERR_RETURN(gcmk, func)
+
 
 /*******************************************************************************
 **
@@ -2572,10 +3445,8 @@ gckOS_Verify(
 #define gcmVERIFY_LOCK(surfaceInfo) \
     if (!surfaceInfo->node.valid) \
     { \
-        status = gcvSTATUS_MEMORY_UNLOCKED; \
-        break; \
+        gcmONERROR(gcvSTATUS_MEMORY_UNLOCKED); \
     } \
-    do { } while (gcvFALSE)
 
 /*******************************************************************************
 **
@@ -2637,14 +3508,27 @@ gckOS_Verify(
         if (gcmIS_ERROR(last)) \
         { \
             prefix##TRACE(gcvLEVEL_ERROR, \
-                #prefix "CHECK_STATUS: status=%d @ %s(%d) in " __FILE__, \
-                last, __FUNCTION__, __LINE__); \
+                #prefix "CHECK_STATUS: status=%d(%s) @ %s(%d)", \
+                last, gcoOS_DebugStatus2Name(last), __FUNCTION__, __LINE__); \
+            status = last; \
+        } \
+    } \
+    while (gcvFALSE)
+#define _gcmkCHECK_STATUS(prefix, func) \
+    do \
+    { \
+        last = func; \
+        if (gcmIS_ERROR(last)) \
+        { \
+            prefix##TRACE(gcvLEVEL_ERROR, \
+                #prefix "CHECK_STATUS: status=%d(%s) @ %s(%d)", \
+                last, gckOS_DebugStatus2Name(last), __FUNCTION__, __LINE__); \
             status = last; \
         } \
     } \
     while (gcvFALSE)
 #define gcmCHECK_STATUS(func)       _gcmCHECK_STATUS(gcm, func)
-#define gcmkCHECK_STATUS(func)      _gcmCHECK_STATUS(gcmk, func)
+#define gcmkCHECK_STATUS(func)      _gcmkCHECK_STATUS(gcmk, func)
 
 /*******************************************************************************
 **
@@ -2659,7 +3543,6 @@ gckOS_Verify(
 **
 **      arg     Argument to evaluate.
 */
-#if !defined(ANDROID)
 #   define _gcmVERIFY_ARGUMENT(prefix, arg) \
        do \
        { \
@@ -2674,11 +3557,21 @@ gckOS_Verify(
        while (gcvFALSE)
 #   define gcmVERIFY_ARGUMENT(arg)     _gcmVERIFY_ARGUMENT(gcm, arg)
 #   define gcmkVERIFY_ARGUMENT(arg)    _gcmVERIFY_ARGUMENT(gcmk, arg)
-#else
-#   define gcmVERIFY_ARGUMENT(arg)
-#   define gcmkVERIFY_ARGUMENT(arg)
-#endif
 
+/*******************************************************************************
+**
+**  gcmDEBUG_VERIFY_ARGUMENT
+**
+**      Works just like gcmVERIFY_ARGUMENT, but is only valid in debug mode.
+**      Use this to verify arguments inside non-public API functions.
+*/
+#if gcdDEBUG
+#   define gcmDEBUG_VERIFY_ARGUMENT(arg)    _gcmVERIFY_ARGUMENT(gcm, arg)
+#   define gcmkDEBUG_VERIFY_ARGUMENT(arg)   _gcmkVERIFY_ARGUMENT(gcm, arg)
+#else
+#   define gcmDEBUG_VERIFY_ARGUMENT(arg)
+#   define gcmkDEBUG_VERIFY_ARGUMENT(arg)
+#endif
 /*******************************************************************************
 **
 **  gcmVERIFY_ARGUMENT_RETURN
@@ -2692,7 +3585,6 @@ gckOS_Verify(
 **
 **      arg     Argument to evaluate.
 */
-#if !defined(ANDROID)
 #   define _gcmVERIFY_ARGUMENT_RETURN(prefix, arg, value) \
        do \
        { \
@@ -2710,10 +3602,9 @@ gckOS_Verify(
                 _gcmVERIFY_ARGUMENT_RETURN(gcm, arg, value)
 #   define gcmkVERIFY_ARGUMENT_RETURN(arg, value) \
                 _gcmVERIFY_ARGUMENT_RETURN(gcmk, arg, value)
-#else
-#   define gcmVERIFY_ARGUMENT_RETURN(arg, value)
-#   define gcmkVERIFY_ARGUMENT_RETURN(arg, value)
-#endif
+
+#define MAX_LOOP_COUNT 0x7FFFFFFF
+
 #ifdef __cplusplus
 }
 #endif
