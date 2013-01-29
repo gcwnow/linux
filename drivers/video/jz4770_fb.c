@@ -941,7 +941,7 @@ static void gpio_init(void)
 		__gpio_as_lcd_18bit();
 }
 
-static int __devinit jz4760_fb_probe(struct platform_device *pdev)
+static int jz4760_fb_probe(struct platform_device *pdev)
 {
 	struct jzfb_platform_data *pdata = pdev->dev.platform_data;
 	struct jzfb *jzfb;
