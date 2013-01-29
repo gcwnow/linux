@@ -24,6 +24,10 @@
 #ifndef __gc_hal_kernel_hardware_h_
 #define __gc_hal_kernel_hardware_h_
 
+#if gcdENABLE_VG
+#include "gc_hal_kernel_hardware_vg.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,24 +44,15 @@ struct _gckHARDWARE
     /* Pointer to gctOS object. */
     gckOS                       os;
 
+    /* Core */
+    gceCORE                     core;
+
     /* Chip characteristics. */
-    gceCHIPMODEL                chipModel;
-    gctUINT32                   chipRevision;
-    gctUINT32                   chipFeatures;
-    gctUINT32                   chipMinorFeatures0;
-    gctUINT32                   chipMinorFeatures1;
-    gctUINT32                   chipMinorFeatures2;
+    gcsHAL_QUERY_CHIP_IDENTITY  identity;
     gctBOOL                     allowFastClear;
     gctBOOL                     allowCompression;
     gctUINT32                   powerBaseAddress;
     gctBOOL                     extraEventStates;
-
-    gctUINT32                   streamCount;
-    gctUINT32                   registerMax;
-    gctUINT32                   threadCount;
-    gctUINT32                   shaderCoreCount;
-    gctUINT32                   vertexCacheSize;
-    gctUINT32                   vertexOutputBufferSize;
 
     /* Big endian */
     gctBOOL                     bigEndian;
@@ -67,26 +62,46 @@ struct _gckHARDWARE
     gctUINT32                   powerProcess;
     gctUINT32                   powerThread;
     gceCHIPPOWERSTATE           chipPowerState;
-    gctBOOL                     broadcast;
-    gctBOOL                     settingPowerState;
     gctUINT32                   lastWaitLink;
+    gctBOOL                     clockState;
+    gctBOOL                     powerState;
+    gctPOINTER                  globalSemaphore;
 
     gctISRMANAGERFUNC           startIsr;
     gctISRMANAGERFUNC           stopIsr;
     gctPOINTER                  isrContext;
+
+    gctUINT32                   mmuVersion;
+
+    /* Type */
+    gceHARDWARE_TYPE            type;
+
+#if gcdPOWEROFF_TIMEOUT
+    gctUINT32                   powerOffTime;
+    gctUINT32                   powerOffTimeout;
+    gctPOINTER                  powerOffTimer;
+#endif
+
+    gctPOINTER                  pageTableDirty;
 };
 
 gceSTATUS
 gckHARDWARE_GetBaseAddress(
-    IN gckHARDWARE Hardware, 
+    IN gckHARDWARE Hardware,
     OUT gctUINT32_PTR BaseAddress
     );
 
 gceSTATUS
 gckHARDWARE_NeedBaseAddress(
-    IN gckHARDWARE Hardware, 
-    IN gctUINT32 State, 
+    IN gckHARDWARE Hardware,
+    IN gctUINT32 State,
     OUT gctBOOL_PTR NeedBase
+    );
+
+gceSTATUS
+gckHARDWARE_GetFrameInfo(
+    IN gckHARDWARE Hardware,
+    OUT gcsHAL_FRAME_INFO * FrameInfo
     );
 
 #ifdef __cplusplus

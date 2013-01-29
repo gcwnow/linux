@@ -23,7 +23,7 @@
 
 #include "gc_hal_kernel_linux.h"
 
-#define _GC_OBJ_ZONE	gcvZONE_KERNEL
+#define _GC_OBJ_ZONE    gcvZONE_KERNEL
 
 /******************************************************************************\
 ******************************* gckKERNEL API Code ******************************
@@ -31,236 +31,237 @@
 
 /*******************************************************************************
 **
-**	gckKERNEL_QueryVideoMemory
+**  gckKERNEL_QueryVideoMemory
 **
-**	Query the amount of video memory.
+**  Query the amount of video memory.
 **
-**	INPUT:
+**  INPUT:
 **
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**	OUTPUT:
+**  OUTPUT:
 **
-**		gcsHAL_INTERFACE * Interface
-**			Pointer to an gcsHAL_INTERFACE structure that will be filled in with
-**			the memory information.
+**      gcsHAL_INTERFACE * Interface
+**          Pointer to an gcsHAL_INTERFACE structure that will be filled in with
+**          the memory information.
 */
 gceSTATUS
 gckKERNEL_QueryVideoMemory(
-	IN gckKERNEL Kernel,
-	OUT gcsHAL_INTERFACE * Interface
-	)
+    IN gckKERNEL Kernel,
+    OUT gcsHAL_INTERFACE * Interface
+    )
 {
-	gckGALDEVICE device;
-	
-	gcmkHEADER_ARG("Kernel=%p", Kernel);
+    gckGALDEVICE device;
 
-	/* Verify the arguments. */
-	gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-	gcmkVERIFY_ARGUMENT(Interface != NULL);
+    gcmkHEADER_ARG("Kernel=%p", Kernel);
 
-	/* Extract the pointer to the gckGALDEVICE class. */
-	device = (gckGALDEVICE) Kernel->context;
-
-	/* Get internal memory size and physical address. */
-	Interface->u.QueryVideoMemory.internalSize = device->internalSize;
-	Interface->u.QueryVideoMemory.internalPhysical = device->internalPhysical;
-
-	/* Get external memory size and physical address. */
-	Interface->u.QueryVideoMemory.externalSize = device->externalSize;
-	Interface->u.QueryVideoMemory.externalPhysical = device->externalPhysical;
-
-	/* Get contiguous memory size and physical address. */
-	Interface->u.QueryVideoMemory.contiguousSize = device->contiguousSize;
-	Interface->u.QueryVideoMemory.contiguousPhysical = device->contiguousPhysical;
-
-	/* Success. */
-	gcmkFOOTER_NO();
-	return gcvSTATUS_OK;
-}
-
-/*******************************************************************************
-**
-**	gckKERNEL_GetVideoMemoryPool
-**
-**	Get the gckVIDMEM object belonging to the specified pool.
-**
-**	INPUT:
-**
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
-**
-**		gcePOOL Pool
-**			Pool to query gckVIDMEM object for.
-**
-**	OUTPUT:
-**
-**		gckVIDMEM * VideoMemory
-**			Pointer to a variable that will hold the pointer to the gckVIDMEM
-**			object belonging to the requested pool.
-*/
-gceSTATUS 
-gckKERNEL_GetVideoMemoryPool(
-	IN gckKERNEL Kernel,
-	IN gcePOOL Pool,
-	OUT gckVIDMEM * VideoMemory
-	)
-{
-	gckGALDEVICE device;
-	gckVIDMEM videoMemory;
-	
-	gcmkHEADER_ARG("Kernel=%p Pool=%d", Kernel, Pool);
-
-	/* Verify the arguments. */
-	gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-	gcmkVERIFY_ARGUMENT(VideoMemory != NULL);
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
+    gcmkVERIFY_ARGUMENT(Interface != NULL);
 
     /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;
 
-	/* Dispatch on pool. */
-	switch (Pool)
-	{
-	case gcvPOOL_LOCAL_INTERNAL:
-		/* Internal memory. */
-		videoMemory = device->internalVidMem;
-		break;
+    /* Get internal memory size and physical address. */
+    Interface->u.QueryVideoMemory.internalSize = device->internalSize;
+    Interface->u.QueryVideoMemory.internalPhysical = device->internalPhysical;
 
-	case gcvPOOL_LOCAL_EXTERNAL:
-		/* External memory. */
-		videoMemory = device->externalVidMem;
-		break;
+    /* Get external memory size and physical address. */
+    Interface->u.QueryVideoMemory.externalSize = device->externalSize;
+    Interface->u.QueryVideoMemory.externalPhysical = device->externalPhysical;
 
-	case gcvPOOL_SYSTEM:
-		/* System memory. */
-		videoMemory = device->contiguousVidMem;
-		break;
+    /* Get contiguous memory size and physical address. */
+    Interface->u.QueryVideoMemory.contiguousSize = device->contiguousSize;
+    Interface->u.QueryVideoMemory.contiguousPhysical = device->contiguousPhysical;
 
-	default:
-		/* Unknown pool. */
-		videoMemory = NULL;
-	}
-
-	/* Return pointer to the gckVIDMEM object. */
-	*VideoMemory = videoMemory;
-
-	/* Return status. */
-	gcmkFOOTER_ARG("*VideoMemory=%p", *VideoMemory);
-	return (videoMemory == NULL) ? gcvSTATUS_OUT_OF_MEMORY : gcvSTATUS_OK;
+    /* Success. */
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
 }
 
 /*******************************************************************************
 **
-**	gckKERNEL_MapMemory
+**  gckKERNEL_GetVideoMemoryPool
 **
-**	Map video memory into the current process space.
+**  Get the gckVIDMEM object belonging to the specified pool.
 **
-**	INPUT:
+**  INPUT:
 **
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**		gctPHYS_ADDR Physical
-**			Physical address of video memory to map.
+**      gcePOOL Pool
+**          Pool to query gckVIDMEM object for.
 **
-**		gctSIZE_T Bytes
-**			Number of bytes to map.
+**  OUTPUT:
 **
-**	OUTPUT:
-**
-**		gctPOINTER * Logical
-**			Pointer to a variable that will hold the base address of the mapped
-**			memory region.
+**      gckVIDMEM * VideoMemory
+**          Pointer to a variable that will hold the pointer to the gckVIDMEM
+**          object belonging to the requested pool.
 */
-gceSTATUS 
+gceSTATUS
+gckKERNEL_GetVideoMemoryPool(
+    IN gckKERNEL Kernel,
+    IN gcePOOL Pool,
+    OUT gckVIDMEM * VideoMemory
+    )
+{
+    gckGALDEVICE device;
+    gckVIDMEM videoMemory;
+
+    gcmkHEADER_ARG("Kernel=%p Pool=%d", Kernel, Pool);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
+    gcmkVERIFY_ARGUMENT(VideoMemory != NULL);
+
+    /* Extract the pointer to the gckGALDEVICE class. */
+    device = (gckGALDEVICE) Kernel->context;
+
+    /* Dispatch on pool. */
+    switch (Pool)
+    {
+    case gcvPOOL_LOCAL_INTERNAL:
+        /* Internal memory. */
+        videoMemory = device->internalVidMem;
+        break;
+
+    case gcvPOOL_LOCAL_EXTERNAL:
+        /* External memory. */
+        videoMemory = device->externalVidMem;
+        break;
+
+    case gcvPOOL_SYSTEM:
+        /* System memory. */
+        videoMemory = device->contiguousVidMem;
+        break;
+
+    default:
+        /* Unknown pool. */
+        videoMemory = NULL;
+    }
+
+    /* Return pointer to the gckVIDMEM object. */
+    *VideoMemory = videoMemory;
+
+    /* Return status. */
+    gcmkFOOTER_ARG("*VideoMemory=%p", *VideoMemory);
+    return (videoMemory == NULL) ? gcvSTATUS_OUT_OF_MEMORY : gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckKERNEL_MapMemory
+**
+**  Map video memory into the current process space.
+**
+**  INPUT:
+**
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
+**
+**      gctPHYS_ADDR Physical
+**          Physical address of video memory to map.
+**
+**      gctSIZE_T Bytes
+**          Number of bytes to map.
+**
+**  OUTPUT:
+**
+**      gctPOINTER * Logical
+**          Pointer to a variable that will hold the base address of the mapped
+**          memory region.
+*/
+gceSTATUS
 gckKERNEL_MapMemory(
-	IN gckKERNEL Kernel,
-	IN gctPHYS_ADDR Physical,
-	IN gctSIZE_T Bytes,
-	OUT gctPOINTER * Logical
-	)
+    IN gckKERNEL Kernel,
+    IN gctPHYS_ADDR Physical,
+    IN gctSIZE_T Bytes,
+    OUT gctPOINTER * Logical
+    )
 {
-	return gckOS_MapMemory(Kernel->os, Physical, Bytes, Logical);
+    return gckOS_MapMemory(Kernel->os, Physical, Bytes, Logical);
 }
 
 /*******************************************************************************
 **
-**	gckKERNEL_UnmapMemory
+**  gckKERNEL_UnmapMemory
 **
-**	Unmap video memory from the current process space.
+**  Unmap video memory from the current process space.
 **
-**	INPUT:
+**  INPUT:
 **
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**		gctPHYS_ADDR Physical
-**			Physical address of video memory to map.
+**      gctPHYS_ADDR Physical
+**          Physical address of video memory to map.
 **
-**		gctSIZE_T Bytes
-**			Number of bytes to map.
+**      gctSIZE_T Bytes
+**          Number of bytes to map.
 **
-**		gctPOINTER Logical
-**			Base address of the mapped memory region.
+**      gctPOINTER Logical
+**          Base address of the mapped memory region.
 **
-**	OUTPUT:
+**  OUTPUT:
 **
-**		Nothing.
+**      Nothing.
 */
-gceSTATUS 
+gceSTATUS
 gckKERNEL_UnmapMemory(
-	IN gckKERNEL Kernel,
-	IN gctPHYS_ADDR Physical,
-	IN gctSIZE_T Bytes,
-	IN gctPOINTER Logical
-	)
+    IN gckKERNEL Kernel,
+    IN gctPHYS_ADDR Physical,
+    IN gctSIZE_T Bytes,
+    IN gctPOINTER Logical
+    )
 {
-	return gckOS_UnmapMemory(Kernel->os, Physical, Bytes, Logical);
+    return gckOS_UnmapMemory(Kernel->os, Physical, Bytes, Logical);
 }
 
 /*******************************************************************************
 **
-**	gckKERNEL_MapVideoMemory
+**  gckKERNEL_MapVideoMemory
 **
-**	Get the logical address for a hardware specific memory address for the
-**	current process.
+**  Get the logical address for a hardware specific memory address for the
+**  current process.
 **
-**	INPUT:
+**  INPUT:
 **
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
 **      gctBOOL InUserSpace
 **          gcvTRUE to map the memory into the user space.
 **
-**		gctUINT32 Address
-**			Hardware specific memory address.
+**      gctUINT32 Address
+**          Hardware specific memory address.
 **
-**	OUTPUT:
+**  OUTPUT:
 **
-**		gctPOINTER * Logical
-**			Pointer to a variable that will hold the logical address of the
-**			specified memory address.
+**      gctPOINTER * Logical
+**          Pointer to a variable that will hold the logical address of the
+**          specified memory address.
 */
-gceSTATUS 
-gckKERNEL_MapVideoMemory(
-	IN gckKERNEL Kernel,
-	IN gctBOOL InUserSpace,
-	IN gctUINT32 Address,
-	OUT gctPOINTER * Logical
-	)
+gceSTATUS
+gckKERNEL_MapVideoMemoryEx(
+    IN gckKERNEL Kernel,
+    IN gceCORE Core,
+    IN gctBOOL InUserSpace,
+    IN gctUINT32 Address,
+    OUT gctPOINTER * Logical
+    )
 {
     gckGALDEVICE device;
     PLINUX_MDL mdl;
-	PLINUX_MDL_MAP mdlMap;
+    PLINUX_MDL_MAP mdlMap;
     gcePOOL pool;
     gctUINT32 offset, base;
     gceSTATUS status;
     gctPOINTER logical;
-    
+
     gcmkHEADER_ARG("Kernel=%p InUserSpace=%d Address=%08x",
-    			   Kernel, InUserSpace, Address);
+                   Kernel, InUserSpace, Address);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
@@ -269,51 +270,76 @@ gckKERNEL_MapVideoMemory(
     /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;
 
-    /* Split the memory address into a pool type and offset. */
-    gcmkONERROR(
-    	gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
+#if gcdENABLE_VG
+    if (Core == gcvCORE_VG)
+    {
+        /* Split the memory address into a pool type and offset. */
+        gcmkONERROR(
+            gckVGHARDWARE_SplitMemory(Kernel->vg->hardware, Address, &pool, &offset));
+    }
+    else
+#endif
+    {
+        /* Split the memory address into a pool type and offset. */
+        gcmkONERROR(
+            gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
+    }
 
     /* Dispatch on pool. */
     switch (pool)
     {
     case gcvPOOL_LOCAL_INTERNAL:
-    	/* Internal memory. */
-    	logical = device->internalLogical;
-    	break;
+        /* Internal memory. */
+        logical = device->internalLogical;
+        break;
 
     case gcvPOOL_LOCAL_EXTERNAL:
-    	/* External memory. */
-    	logical = device->externalLogical;
-    	break;
+        /* External memory. */
+        logical = device->externalLogical;
+        break;
 
     case gcvPOOL_SYSTEM:
-		/* System memory. */
-		if (device->contiguousMapped)
-		{
-			logical = device->contiguousBase;
-		}
-		else
-		{
-			mdl = (PLINUX_MDL) device->contiguousPhysical;
+        /* System memory. */
+        if (device->contiguousMapped)
+        {
+            logical = device->contiguousBase;
+        }
+        else
+        {
+            gctINT processID;
+            gckOS_GetProcessID(&processID);
 
-			mdlMap = FindMdlMap(mdl, current->tgid);
-			gcmkASSERT(mdlMap);
+            mdl = (PLINUX_MDL) device->contiguousPhysical;
 
-			logical = (gctPOINTER) mdlMap->vmaAddr;
-		}
+            mdlMap = FindMdlMap(mdl, processID);
+            gcmkASSERT(mdlMap);
 
-		gcmkVERIFY_OK(
-			gckHARDWARE_SplitMemory(Kernel->hardware,
-									device->contiguousVidMem->baseAddress,
-									&pool, 
-									&base));
-
-		offset -= base;
-		break;
+            logical = (gctPOINTER) mdlMap->vmaAddr;
+        }
+#if gcdENABLE_VG
+        if (Core == gcvCORE_VG)
+        {
+            gcmkVERIFY_OK(
+                gckVGHARDWARE_SplitMemory(Kernel->vg->hardware,
+                                        device->contiguousVidMem->baseAddress,
+                                        &pool,
+                                        &base));
+        }
+        else
+#endif
+        {
+            gcmkVERIFY_OK(
+                gckHARDWARE_SplitMemory(Kernel->hardware,
+                                        device->contiguousVidMem->baseAddress,
+                                        &pool,
+                                        &base));
+        }
+        offset -= base;
+        break;
 
     default:
-    	/* Invalid memory pool. */
-    	gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+        /* Invalid memory pool. */
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     /* Build logical address of specified address. */
@@ -322,89 +348,123 @@ gckKERNEL_MapVideoMemory(
     /* Success. */
     gcmkFOOTER_ARG("*Logical=%p", *Logical);
     return gcvSTATUS_OK;
-    
+
 OnError:
-	/* Retunn the status. */
-	gcmkFOOTER();
-	return status;
+    /* Retunn the status. */
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
 **
-**	gckKERNEL_Notify
+**  gckKERNEL_MapVideoMemory
 **
-**	This function iscalled by clients to notify the gckKERNRL object of an event.
+**  Get the logical address for a hardware specific memory address for the
+**  current process.
 **
-**	INPUT:
+**  INPUT:
 **
-**		gckKERNEL Kernel
-**			Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**		gceNOTIFY Notification
-**			Notification event.
+**      gctBOOL InUserSpace
+**          gcvTRUE to map the memory into the user space.
 **
-**	OUTPUT:
+**      gctUINT32 Address
+**          Hardware specific memory address.
 **
-**		Nothing.
+**  OUTPUT:
+**
+**      gctPOINTER * Logical
+**          Pointer to a variable that will hold the logical address of the
+**          specified memory address.
 */
-gceSTATUS 
-gckKERNEL_Notify(
-	IN gckKERNEL Kernel,
-	IN gceNOTIFY Notification,
-	IN gctBOOL Data
-	)
+gceSTATUS
+gckKERNEL_MapVideoMemory(
+    IN gckKERNEL Kernel,
+    IN gctBOOL InUserSpace,
+    IN gctUINT32 Address,
+    OUT gctPOINTER * Logical
+    )
 {
-	gceSTATUS status;
-	
-	gcmkHEADER_ARG("Kernel=%p Notification=%d Data=%d",
-				   Kernel, Notification, Data);
+    return gckKERNEL_MapVideoMemoryEx(Kernel, gcvCORE_MAJOR, InUserSpace, Address, Logical);
+}
+/*******************************************************************************
+**
+**  gckKERNEL_Notify
+**
+**  This function iscalled by clients to notify the gckKERNRL object of an event.
+**
+**  INPUT:
+**
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
+**
+**      gceNOTIFY Notification
+**          Notification event.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckKERNEL_Notify(
+    IN gckKERNEL Kernel,
+    IN gceNOTIFY Notification,
+    IN gctBOOL Data
+    )
+{
+    gceSTATUS status;
 
-	/* Verify the arguments. */
-	gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
+    gcmkHEADER_ARG("Kernel=%p Notification=%d Data=%d",
+                   Kernel, Notification, Data);
 
-	/* Dispatch on notifcation. */
-	switch (Notification)
-	{
-	case gcvNOTIFY_INTERRUPT:
-		/* Process the interrupt. */
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
+
+    /* Dispatch on notifcation. */
+    switch (Notification)
+    {
+    case gcvNOTIFY_INTERRUPT:
+        /* Process the interrupt. */
 #if COMMAND_PROCESSOR_VERSION > 1
-		status = gckINTERRUPT_Notify(Kernel->interrupt, Data);
+        status = gckINTERRUPT_Notify(Kernel->interrupt, Data);
 #else
-		status = gckHARDWARE_Interrupt(Kernel->hardware, Data);
+        status = gckHARDWARE_Interrupt(Kernel->hardware, Data);
 #endif
-		break;
+        break;
 
-	default:
-		status = gcvSTATUS_OK;
-		break;
-	}
+    default:
+        status = gcvSTATUS_OK;
+        break;
+    }
 
-	/* Success. */
-	gcmkFOOTER();
-	return status;
+    /* Success. */
+    gcmkFOOTER();
+    return status;
 }
 
 gceSTATUS
 gckKERNEL_QuerySettings(
-	IN gckKERNEL Kernel,
-	OUT gcsKERNEL_SETTINGS * Settings
-	)
+    IN gckKERNEL Kernel,
+    OUT gcsKERNEL_SETTINGS * Settings
+    )
 {
-	gckGALDEVICE device;
-	
-	gcmkHEADER_ARG("Kernel=%p", Kernel);
-	
-	/* Verify the arguments. */
-	gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-	gcmkVERIFY_ARGUMENT(Settings != gcvNULL);
-	
-	/* Extract the pointer to the gckGALDEVICE class. */
+    gckGALDEVICE device;
+
+    gcmkHEADER_ARG("Kernel=%p", Kernel);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
+    gcmkVERIFY_ARGUMENT(Settings != gcvNULL);
+
+    /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;
-	
-	/* Fill in signal. */
-	Settings->signal = device->signal;
-	
-	/* Success. */
-	gcmkFOOTER_ARG("Settings->signal=%d", Settings->signal);
-	return gcvSTATUS_OK;
+
+    /* Fill in signal. */
+    Settings->signal = device->signal;
+
+    /* Success. */
+    gcmkFOOTER_ARG("Settings->signal=%d", Settings->signal);
+    return gcvSTATUS_OK;
 }

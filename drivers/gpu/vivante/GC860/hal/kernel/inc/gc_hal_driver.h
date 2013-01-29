@@ -24,7 +24,12 @@
 #ifndef __gc_hal_driver_h_
 #define __gc_hal_driver_h_
 
+#include "gc_hal_enum.h"
 #include "gc_hal_types.h"
+
+#if gcdENABLE_VG
+#include "gc_hal_driver_vg.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,10 +119,41 @@ typedef enum _gceHAL_COMMAND_CODES
     /* Cache stuff. */
     gcvHAL_CACHE,
 
-#if gcdGPU_TIMEOUT
-    /* Broadcast GPU stuck */
-    gcvHAL_BROADCAST_GPU_STUCK,
-#endif
+    /* TimeStamp */
+    gcvHAL_TIMESTAMP,
+
+    /* Database. */
+    gcvHAL_DATABASE,
+
+    /* Version. */
+    gcvHAL_VERSION,
+
+    /* Chip info */
+    gcvHAL_CHIP_INFO,
+
+    /* Process attaching/detaching. */
+    gcvHAL_ATTACH,
+    gcvHAL_DETACH,
+
+    /* Composition. */
+    gcvHAL_COMPOSE,
+
+    /* Set timeOut value */
+    gcvHAL_SET_TIMEOUT,
+
+    /* Frame database. */
+    gcvHAL_GET_FRAME_INFO,
+
+    /* Shared info for each process */
+    gcvHAL_GET_SHARED_INFO,
+    gcvHAL_SET_SHARED_INFO,
+    gcvHAL_QUERY_COMMAND_BUFFER,
+
+    gcvHAL_COMMIT_DONE,
+
+    /* GPU and event dump */
+    gcvHAL_DUMP_GPU_STATE,
+    gcvHAL_DUMP_EVENT
 }
 gceHAL_COMMAND_CODES;
 
@@ -127,10 +163,110 @@ gceHAL_COMMAND_CODES;
 
 #define gcdMAX_PROFILE_FILE_NAME    128
 
+/* Kernel settings. */
+typedef struct _gcsKERNEL_SETTINGS
+{
+    /* Used RealTime signal between kernel and user. */
+    gctINT signal;
+}
+gcsKERNEL_SETTINGS;
+
+
+/* gcvHAL_QUERY_CHIP_IDENTITY */
+typedef struct _gcsHAL_QUERY_CHIP_IDENTITY * gcsHAL_QUERY_CHIP_IDENTITY_PTR;
+typedef struct _gcsHAL_QUERY_CHIP_IDENTITY
+{
+
+    /* Chip model. */
+    gceCHIPMODEL                chipModel;
+
+    /* Revision value.*/
+    gctUINT32                   chipRevision;
+
+    /* Supported feature fields. */
+    gctUINT32                   chipFeatures;
+
+    /* Supported minor feature fields. */
+    gctUINT32                   chipMinorFeatures;
+
+    /* Supported minor feature 1 fields. */
+    gctUINT32                   chipMinorFeatures1;
+
+    /* Supported minor feature 2 fields. */
+    gctUINT32                   chipMinorFeatures2;
+
+    /* Supported minor feature 3 fields. */
+    gctUINT32                   chipMinorFeatures3;
+
+    /* Number of streams supported. */
+    gctUINT32                   streamCount;
+
+    /* Total number of temporary registers per thread. */
+    gctUINT32                   registerMax;
+
+    /* Maximum number of threads. */
+    gctUINT32                   threadCount;
+
+    /* Number of shader cores. */
+    gctUINT32                   shaderCoreCount;
+
+    /* Size of the vertex cache. */
+    gctUINT32                   vertexCacheSize;
+
+    /* Number of entries in the vertex output buffer. */
+    gctUINT32                   vertexOutputBufferSize;
+
+    /* Number of pixel pipes. */
+    gctUINT32                   pixelPipes;
+
+    /* Number of instructions. */
+	gctUINT32                   instructionCount;
+
+    /* Number of constants. */
+	gctUINT32                   numConstants;
+
+	/* Buffer size */
+	gctUINT32                   bufferSize;
+
+}
+gcsHAL_QUERY_CHIP_IDENTITY;
+
+/* gcvHAL_COMPOSE. */
+typedef struct _gcsHAL_COMPOSE * gcsHAL_COMPOSE_PTR;
+typedef struct _gcsHAL_COMPOSE
+{
+    /* Composition state buffer. */
+    gctPHYS_ADDR                physical;
+    gctPOINTER                  logical;
+    gctSIZE_T                   offset;
+    gctSIZE_T                   size;
+
+    /* Composition end signal. */
+    gctHANDLE                   process;
+    gctSIGNAL                   signal;
+
+    /* User signals. */
+    gctHANDLE                   userProcess;
+    gctSIGNAL                   userSignal1;
+    gctSIGNAL                   userSignal2;
+
+#if defined(__QNXNTO__)
+    /* Client pulse side-channel connection ID. */
+    gctINT32                    coid;
+
+    /* Set by server. */
+    gctINT32                    rcvid;
+#endif
+}
+gcsHAL_COMPOSE;
+
 typedef struct _gcsHAL_INTERFACE
 {
     /* Command code. */
     gceHAL_COMMAND_CODES        command;
+
+    /* Hardware type. */
+    gceHARDWARE_TYPE            hardwareType;
 
     /* Status value. */
     gceSTATUS                   status;
@@ -176,46 +312,7 @@ typedef struct _gcsHAL_INTERFACE
         QueryVideoMemory;
 
         /* gcvHAL_QUERY_CHIP_IDENTITY */
-        struct _gcsHAL_QUERY_CHIP_IDENTITY
-        {
-
-            /* Chip model. */
-            OUT gceCHIPMODEL            chipModel;
-
-            /* Revision value.*/
-            OUT gctUINT32               chipRevision;
-
-            /* Supported feature fields. */
-            OUT gctUINT32               chipFeatures;
-
-            /* Supported minor feature fields. */
-            OUT gctUINT32               chipMinorFeatures;
-
-            /* Supported minor feature 1 fields. */
-            OUT gctUINT32               chipMinorFeatures1;
-
-            /* Supported minor feature 2 fields. */
-            OUT gctUINT32               chipMinorFeatures2;
-
-            /* Number of streams supported. */
-            OUT gctUINT32               streamCount;
-
-            /* Total number of temporary registers per thread. */
-            OUT gctUINT32               registerMax;
-
-            /* Maximum number of threads. */
-            OUT gctUINT32               threadCount;
-
-            /* Number of shader cores. */
-            OUT gctUINT32               shaderCoreCount;
-
-            /* Size of the vertex cache. */
-            OUT gctUINT32               vertexCacheSize;
-
-            /* Number of entries in the vertex output buffer. */
-            OUT gctUINT32               vertexOutputBufferSize;
-        }
-        QueryChipIdentity;
+        gcsHAL_QUERY_CHIP_IDENTITY      QueryChipIdentity;
 
         /* gcvHAL_MAP_MEMORY */
         struct _gcsHAL_MAP_MEMORY
@@ -314,6 +411,11 @@ typedef struct _gcsHAL_INTERFACE
             /* Allocated video memory. */
             IN gcuVIDMEM_NODE_PTR       node;
 
+            /* Cache configuration. */
+            /* Only gcvPOOL_CONTIGUOUS and gcvPOOL_VIRUTAL
+            ** can be configured */
+            IN gctBOOL                  cacheable;
+
             /* Hardware specific address. */
             OUT gctUINT32               address;
 
@@ -368,21 +470,24 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_EVENT_COMMIT
         {
             /* Event queue. */
-            IN struct _gcsQUEUE *       queue;
+            IN gcsQUEUE_PTR             queue;
         }
         Event;
 
         /* gcvHAL_COMMIT */
         struct _gcsHAL_COMMIT
         {
+            /* Context buffer object. */
+            IN gckCONTEXT               context;
+
             /* Command buffer. */
             IN gcoCMDBUF                commandBuffer;
 
-            /* Context buffer. */
-            IN gcoCONTEXT               contextBuffer;
+            /* State delta buffer. */
+            gcsSTATE_DELTA_PTR          delta;
 
-            /* Process handle. */
-            IN gctHANDLE                process;
+            /* Event queue. */
+            IN gcsQUEUE_PTR             queue;
         }
         Commit;
 
@@ -420,7 +525,6 @@ typedef struct _gcsHAL_INTERFACE
             IN gctUINT32                address;
         }
         UnmapUserMemory;
-
 #if !USE_NEW_LINUX_SIGNAL
         /* gcsHAL_USER_SIGNAL  */
         struct _gcsHAL_USER_SIGNAL
@@ -484,12 +588,14 @@ typedef struct _gcsHAL_INTERFACE
             /* Number of bytes to allocate. */
             IN OUT gctSIZE_T            bytes;
 
+            /* Hardware address of allocation. */
+            OUT gctUINT32               address;
+
             /* Physical address of allocation. */
             OUT gctPHYS_ADDR            physical;
 
             /* Logical address of allocation. */
             OUT gctPOINTER              logical;
-
         }
         AllocateContiguousMemory;
 
@@ -529,6 +635,7 @@ typedef struct _gcsHAL_INTERFACE
         }
         WriteRegisterData;
 
+#if VIVANTE_PROFILER
         /* gcvHAL_GET_PROFILE_SETTING */
         struct _gcsHAL_GET_PROFILE_SETTING
         {
@@ -566,7 +673,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gcs2D_PROFILE_PTR       hwProfile2D;
         }
         RegisterProfileData2D;
-
+#endif
         /* Power management. */
         /* gcvHAL_SET_POWER_MANAGEMENT_STATE */
         struct _gcsHAL_SET_POWER_MANAGEMENT
@@ -615,23 +722,177 @@ typedef struct _gcsHAL_INTERFACE
             IN gctUINT32                zones;
             IN gctBOOL                  enable;
 
+            IN gceDEBUG_MESSAGE_TYPE    type;
+            IN gctUINT32                messageSize;
+
             /* Message to print if not empty. */
             IN gctCHAR                  message[80];
         }
         Debug;
 
+        /* gcvHAL_CACHE */
         struct _gcsHAL_CACHE
         {
-            IN gctBOOL                  invalidate;
+            IN gceCACHEOPERATION        operation;
             IN gctHANDLE                process;
             IN gctPOINTER               logical;
             IN gctSIZE_T                bytes;
+            IN gcuVIDMEM_NODE_PTR       node;
         }
         Cache;
+
+        /* gcvHAL_TIMESTAMP */
+        struct _gcsHAL_TIMESTAMP
+        {
+            /* Timer select. */
+            IN gctUINT32                timer;
+
+            /* Timer request type (0-stop, 1-start, 2-send delta). */
+            IN gctUINT32                request;
+
+            /* Result of delta time in microseconds. */
+            OUT gctINT32                timeDelta;
+        }
+        TimeStamp;
+
+        /* gcvHAL_DATABASE */
+        struct _gcsHAL_DATABASE
+        {
+            /* Set to gcvTRUE if you want to query a particular process ID.
+            ** Set to gcvFALSE to query the last detached process. */
+            IN gctBOOL                  validProcessID;
+
+            /* Process ID to query. */
+            IN gctUINT32                processID;
+
+            /* Information. */
+            OUT gcuDATABASE_INFO        vidMem;
+            OUT gcuDATABASE_INFO        nonPaged;
+            OUT gcuDATABASE_INFO        contiguous;
+            OUT gcuDATABASE_INFO        gpuIdle;
+        }
+        Database;
+
+        /* gcvHAL_VERSION */
+        struct _gcsHAL_VERSION
+        {
+            /* Major version: N.n.n. */
+            OUT gctINT32                major;
+
+            /* Minor version: n.N.n. */
+            OUT gctINT32                minor;
+
+            /* Patch version: n.n.N. */
+            OUT gctINT32                patch;
+
+            /* Build version. */
+            OUT gctUINT32               build;
+        }
+        Version;
+
+        /* gcvHAL_CHIP_INFO */
+        struct _gcsHAL_CHIP_INFO
+        {
+            /* Chip count. */
+            OUT gctINT32                count;
+
+            /* Chip types. */
+            OUT gceHARDWARE_TYPE        types[gcdCHIP_COUNT];
+        }
+        ChipInfo;
+
+        /* gcvHAL_ATTACH */
+        struct _gcsHAL_ATTACH
+        {
+            /* Context buffer object. */
+            OUT gckCONTEXT              context;
+
+            /* Number of states in the buffer. */
+            OUT gctSIZE_T               stateCount;
+        }
+        Attach;
+
+        /* gcvHAL_DETACH */
+        struct _gcsHAL_DETACH
+        {
+            /* Context buffer object. */
+            IN gckCONTEXT               context;
+        }
+        Detach;
+
+        /* gcvHAL_COMPOSE. */
+        gcsHAL_COMPOSE                  Compose;
+
+        /* gcvHAL_GET_FRAME_INFO. */
+        struct _gcsHAL_GET_FRAME_INFO
+        {
+            OUT gcsHAL_FRAME_INFO *     frameInfo;
+        }
+        GetFrameInfo;
+
+        /* gcvHAL_SET_TIME_OUT. */
+        struct _gcsHAL_SET_TIMEOUT
+        {
+            gctUINT32                   timeOut;
+        }
+        SetTimeOut;
+
+#if gcdENABLE_VG
+		/* gcvHAL_COMMIT */
+		struct _gcsHAL_VGCOMMIT
+		{
+			/* Context buffer. */
+			IN gcsVGCONTEXT_PTR			context;
+
+			/* Command queue. */
+			IN gcsVGCMDQUEUE_PTR			queue;
+
+			/* Number of entries in the queue. */
+			IN gctUINT					entryCount;
+
+			/* Task table. */
+			IN gcsTASK_MASTER_TABLE_PTR	taskTable;
+		}
+		VGCommit;
+
+		/* gcvHAL_QUERY_COMMAND_BUFFER */
+		struct _gcsHAL_QUERY_COMMAND_BUFFER
+		{
+			/* Command buffer attributes. */
+			OUT gcsCOMMAND_BUFFER_INFO	information;
+		}
+		QueryCommandBuffer;
+
+#endif
+
+        struct _gcsHAL_GET_SHARED_INFO
+        {
+            IN gctUINT32            pid;
+            IN gctUINT32            dataId;
+            IN gcuVIDMEM_NODE_PTR   node;
+            OUT gctUINT8_PTR        data;
+            /* fix size */
+            OUT gctUINT8_PTR        nodeData;
+            gctSIZE_T               size;
+            IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
+        }
+        GetSharedInfo;
+
+        struct _gcsHAL_SET_SHARED_INFO
+        {
+            IN gctUINT32            dataId;
+            IN gcuVIDMEM_NODE_PTR   node;
+            IN gctUINT8_PTR         data;
+            IN gctUINT8_PTR         nodeData;
+            IN gctSIZE_T            size;
+            IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
+        }
+        SetSharedInfo;
     }
     u;
 }
 gcsHAL_INTERFACE;
+
 
 #ifdef __cplusplus
 }

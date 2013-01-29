@@ -218,6 +218,11 @@ gcoSURF_WritePixel(
 	IN gctPOINTER PixelValue
 	);
 
+gceSTATUS
+gcoSURF_SetDither(
+    IN gcoSURF Surface,
+    IN gctBOOL Dither
+    );
 /******************************************************************************\
 ********************************** gco2D Object *********************************
 \******************************************************************************/
@@ -259,6 +264,28 @@ gco2D_LoadSolidBrush(
 	IN gctUINT32 Color,
 	IN gctUINT64 Mask
 	);
+
+gceSTATUS
+gco2D_LoadMonochromeBrush(
+    IN gco2D Engine,
+    IN gctUINT32 OriginX,
+    IN gctUINT32 OriginY,
+    IN gctUINT32 ColorConvert,
+    IN gctUINT32 FgColor,
+    IN gctUINT32 BgColor,
+    IN gctUINT64 Bits,
+    IN gctUINT64 Mask
+    );
+
+gceSTATUS
+gco2D_LoadColorBrush(
+    IN gco2D Engine,
+    IN gctUINT32 OriginX,
+    IN gctUINT32 OriginY,
+    IN gctUINT32 Address,
+    IN gceSURF_FORMAT Format,
+    IN gctUINT64 Mask
+    );
 
 /* Configure monochrome source. */
 gceSTATUS
@@ -314,6 +341,18 @@ gco2D_SetColorSourceAdvanced(
 	IN gctUINT32 SurfaceHeight,
 	IN gctBOOL CoordRelative
 	);
+
+gceSTATUS
+gco2D_SetColorSourceN(
+    IN gco2D Engine,
+    IN gctUINT32 Address,
+    IN gctUINT32 Stride,
+    IN gceSURF_FORMAT Format,
+    IN gceSURF_ROTATION Rotation,
+    IN gctUINT32 SurfaceWidth,
+    IN gctUINT32 SurfaceHeight,
+    IN gctUINT32 SurfaceNumber
+    );
 
 /* Configure masked color source. */
 gceSTATUS
@@ -474,6 +513,17 @@ gco2D_Blit(
 	IN gceSURF_FORMAT DestFormat
 	);
 
+gceSTATUS
+gco2D_Blend(
+    IN gco2D Engine,
+    IN gctUINT32 SrcCount,
+    IN gctUINT32 RectCount,
+    IN gcsRECT_PTR Rect,
+    IN gctUINT8 FgRop,
+    IN gctUINT8 BgRop,
+    IN gceSURF_FORMAT DestFormat
+    );
+
 /* Batch blit. */
 gceSTATUS
 gco2D_BatchBlit(
@@ -485,7 +535,7 @@ gco2D_BatchBlit(
 	IN gctUINT8 BgRop,
 	IN gceSURF_FORMAT DestFormat
 	);
-	
+
 /* Stretch blit. */
 gceSTATUS
 gco2D_StretchBlit(
@@ -496,7 +546,7 @@ gco2D_StretchBlit(
 	IN gctUINT8 BgRop,
 	IN gceSURF_FORMAT DestFormat
 	);
-	
+
 /* Monochrome blit. */
 gceSTATUS
 gco2D_MonoBlit(
@@ -715,6 +765,19 @@ gco2D_SetBitBlitMirror(
 	IN gctBOOL VerticalMirror
 	);
 
+/*
+ * Set the transparency for source, destination and pattern.
+ * It also enable or disable the DFB color key mode.
+ */
+gceSTATUS
+gco2D_SetTransparencyAdvancedEx(
+    IN gco2D Engine,
+    IN gce2D_TRANSPARENCY SrcTransparency,
+    IN gce2D_TRANSPARENCY DstTransparency,
+    IN gce2D_TRANSPARENCY PatTransparency,
+    IN gctBOOL EnableDFBColorKeyMode
+	);
+
 /* Set the transparency for source, destination and pattern. */
 gceSTATUS
 gco2D_SetTransparencyAdvanced(
@@ -774,7 +837,7 @@ gceSTATUS gco2D_SetTargetGlobalColorAdvanced(
 	);
 
 /* Setup the source and target pixel multiply modes. */
-gceSTATUS 
+gceSTATUS
 gco2D_SetPixelMultiplyModeAdvanced(
 	IN gco2D Engine,
 	IN gce2D_PIXEL_COLOR_MULTIPLY_MODE SrcPremultiplySrcAlpha,
@@ -784,20 +847,22 @@ gco2D_SetPixelMultiplyModeAdvanced(
 	);
 
 /* Set the GPU clock cycles after which the idle engine will keep auto-flushing. */
-gceSTATUS 
+gceSTATUS
 gco2D_SetAutoFlushCycles(
 	IN gco2D Engine,
 	IN gctUINT32 Cycles
 	);
 
+#if VIVANTE_PROFILER
 /* Read the profile registers available in the 2D engine and sets them in the profile.
    The function will also reset the pixelsRendered counter every time.
 */
-gceSTATUS 
+gceSTATUS
 gco2D_ProfileEngine(
 	IN gco2D Engine,
 	OPTIONAL gcs2D_PROFILE_PTR Profile
 	);
+#endif
 
 /* Enable or disable 2D dithering. */
 gceSTATUS
@@ -833,6 +898,33 @@ gco2D_SetGenericTarget(
     IN gctUINT32           SurfaceWidth,
     IN gctUINT32           SurfaceHeight
 );
+
+gceSTATUS
+gco2D_SetCurrentSourceIndex(
+    IN gco2D        Engine,
+    IN gctUINT32    SrcIndex
+    );
+
+gceSTATUS
+gco2D_MultiSourceBlit(
+    IN gco2D Engine,
+    IN gctUINT32 SourceMask,
+    IN gcsRECT_PTR DestRect,
+    IN gctUINT32 RectCount
+    );
+
+gceSTATUS
+gco2D_SetROP(
+    IN gco2D Engine,
+    IN gctUINT8 FgRop,
+    IN gctUINT8 BgRop
+    );
+
+gceSTATUS
+gco2D_SetGdiStretchMode(
+    IN gco2D Engine,
+    IN gctBOOL Enable
+    );
 
 #ifdef __cplusplus
 }
