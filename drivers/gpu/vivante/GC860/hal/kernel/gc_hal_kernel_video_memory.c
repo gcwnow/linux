@@ -65,6 +65,7 @@ _Split(
     )
 {
     gcuVIDMEM_NODE_PTR node;
+    gctPOINTER pointer = gcvNULL;
 
     /* Make sure the byte boundary makes sense. */
     if ((Bytes <= 0) || (Bytes > Node->VidMem.bytes))
@@ -75,11 +76,13 @@ _Split(
     /* Allocate a new gcuVIDMEM_NODE object. */
     if (gcmIS_ERROR(gckOS_Allocate(Os,
                                    gcmSIZEOF(gcuVIDMEM_NODE),
-                                   (gctPOINTER *) &node)))
+                                   &pointer)))
     {
         /* Error. */
         return gcvFALSE;
     }
+
+    node = pointer;
 
     /* Initialize gcuVIDMEM_NODE structure. */
     node->VidMem.offset    = Node->VidMem.offset + Bytes;
@@ -90,8 +93,16 @@ _Split(
     node->VidMem.pool      = Node->VidMem.pool;
     node->VidMem.physical  = Node->VidMem.physical;
 #ifdef __QNXNTO__
+#if gcdUSE_VIDMEM_PER_PID
+    gcmkASSERT(Node->VidMem.physical != 0);
+    gcmkASSERT(Node->VidMem.logical != gcvNULL);
+    node->VidMem.processID = Node->VidMem.processID;
+    node->VidMem.physical  = Node->VidMem.physical + Bytes;
+    node->VidMem.logical   = Node->VidMem.logical + Bytes;
+#else
+    node->VidMem.processID = 0;
     node->VidMem.logical   = gcvNULL;
-    node->VidMem.handle    = 0;
+#endif
 #endif
 
     /* Insert node behind specified node. */
@@ -137,9 +148,19 @@ _Merge(
     )
 {
     gcuVIDMEM_NODE_PTR node;
+    gceSTATUS status;
 
     /* Save pointer to next node. */
     node = Node->VidMem.next;
+#if gcdUSE_VIDMEM_PER_PID
+    /* Check if the nodes are adjacent physically. */
+    if ( ((Node->VidMem.physical + Node->VidMem.bytes) != node->VidMem.physical) ||
+          ((Node->VidMem.logical + Node->VidMem.bytes) != node->VidMem.logical) )
+    {
+        /* Can't merge. */
+        return gcvSTATUS_OK;
+    }
+#else
 
     /* This is a good time to make sure the heap is not corrupted. */
     if (Node->VidMem.offset + Node->VidMem.bytes != node->VidMem.offset)
@@ -149,6 +170,7 @@ _Merge(
             Node->VidMem.offset + Node->VidMem.bytes == node->VidMem.offset);
         return gcvSTATUS_HEAP_CORRUPTED;
     }
+#endif
 
     /* Adjust byte count. */
     Node->VidMem.bytes += node->VidMem.bytes;
@@ -161,7 +183,8 @@ _Merge(
     Node->VidMem.nextFree->VidMem.prevFree = Node;
 
     /* Free next node. */
-    return gckOS_Free(Os, node);
+    status = gcmkOS_SAFE_FREE(Os, node);
+    return status;
 }
 
 /******************************************************************************\
@@ -192,49 +215,59 @@ gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
     IN gctBOOL Contiguous,
     IN gctSIZE_T Bytes,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
     gckOS os;
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node = gcvNULL;
+    gctPOINTER pointer = gcvNULL;
+    gctINT i;
 
-    gcmkHEADER_ARG("Kernel=0x%x Bytes=%lu", Kernel, Bytes);
+    gcmkHEADER_ARG("Kernel=0x%x Contiguous=%d Bytes=%lu", Kernel, Contiguous, Bytes);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Node != gcvNULL);
-#ifdef __QNXNTO__
-    gcmkVERIFY_ARGUMENT(Handle != gcvNULL);
-#endif
 
     /* Extract the gckOS object pointer. */
     os = Kernel->os;
     gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
 
     /* Allocate an gcuVIDMEM_NODE union. */
-    gcmkONERROR(
-        gckOS_Allocate(os, gcmSIZEOF(gcuVIDMEM_NODE), (gctPOINTER *) &node));
+    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(gcuVIDMEM_NODE), &pointer));
+
+    node = pointer;
 
     /* Initialize gcuVIDMEM_NODE union for virtual memory. */
     node->Virtual.kernel        = Kernel;
     node->Virtual.contiguous    = Contiguous;
-    node->Virtual.locked        = 0;
     node->Virtual.logical       = gcvNULL;
-    node->Virtual.pageTable     = gcvNULL;
+
+    for (i = 0; i < gcdCORE_COUNT; i++)
+    {
+        node->Virtual.lockeds[i]        = 0;
+        node->Virtual.pageTables[i]     = gcvNULL;
+        node->Virtual.lockKernels[i]    = gcvNULL;
+    }
+
     node->Virtual.mutex         = gcvNULL;
+
+    gcmkONERROR(gckOS_GetProcessID(&node->Virtual.processID));
+
 #ifdef __QNXNTO__
     node->Virtual.next          = gcvNULL;
-    node->Virtual.unlockPending = gcvFALSE;
     node->Virtual.freePending   = gcvFALSE;
-    node->Virtual.handle        = Handle;
-#else
-    node->Virtual.pending       = gcvFALSE;
+    for (i = 0; i < gcdCORE_COUNT; i++)
+    {
+        node->Virtual.unlockPendings[i] = gcvFALSE;
+    }
 #endif
+
+    node->Virtual.freed         = gcvFALSE;
+
+    gcmkONERROR(gckOS_ZeroMemory(&node->Virtual.sharedInfo, gcmSIZEOF(gcsVIDMEM_NODE_SHARED_INFO)));
 
     /* Create the mutex. */
     gcmkONERROR(
@@ -274,7 +307,7 @@ OnError:
         }
 
         /* Free the structure. */
-        gcmkVERIFY_OK(gckOS_Free(os, node));
+        gcmkVERIFY_OK(gcmkOS_SAFE_FREE(os, node));
     }
 
     /* Return the status. */
@@ -303,6 +336,7 @@ gckVIDMEM_DestroyVirtual(
     )
 {
     gckOS os;
+    gctINT i;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -317,27 +351,36 @@ gckVIDMEM_DestroyVirtual(
     /* Unregister. */
     gcmkVERIFY_OK(
             gckMMU_RemoveNode(Node->Virtual.kernel->mmu, Node));
-
-    /* Free virtual memory. */
-    gcmkVERIFY_OK(
-            gckOS_FreePagedMemory(os,
-                                  Node->Virtual.physical,
-                                  Node->Virtual.bytes));
 #endif
 
     /* Delete the mutex. */
     gcmkVERIFY_OK(gckOS_DeleteMutex(os, Node->Virtual.mutex));
 
-    if (Node->Virtual.pageTable != gcvNULL)
+    for (i = 0; i < gcdCORE_COUNT; i++)
     {
-        /* Free the pages. */
-        gcmkVERIFY_OK(gckMMU_FreePages(Node->Virtual.kernel->mmu,
-                                       Node->Virtual.pageTable,
-                                       Node->Virtual.pageCount));
+        if (Node->Virtual.pageTables[i] != gcvNULL)
+        {
+#if gcdENABLE_VG
+            if (i == gcvCORE_VG)
+            {
+                /* Free the pages. */
+                gcmkVERIFY_OK(gckVGMMU_FreePages(Node->Virtual.lockKernels[i]->vg->mmu,
+                                               Node->Virtual.pageTables[i],
+                                               Node->Virtual.pageCount));
+            }
+            else
+#endif
+            {
+                /* Free the pages. */
+                gcmkVERIFY_OK(gckMMU_FreePages(Node->Virtual.lockKernels[i]->mmu,
+                                               Node->Virtual.pageTables[i],
+                                               Node->Virtual.pageCount));
+            }
+        }
     }
 
     /* Delete the gcuVIDMEM_NODE union. */
-    gcmkVERIFY_OK(gckOS_Free(os, Node));
+    gcmkVERIFY_OK(gcmkOS_SAFE_FREE(os, Node));
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -389,6 +432,7 @@ gckVIDMEM_Construct(
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node;
     gctINT i, banks = 0;
+    gctPOINTER pointer = gcvNULL;
 
     gcmkHEADER_ARG("Os=0x%x BaseAddress=%08x Bytes=%lu Threshold=%lu "
                    "BankSize=%lu",
@@ -400,10 +444,9 @@ gckVIDMEM_Construct(
     gcmkVERIFY_ARGUMENT(Memory != gcvNULL);
 
     /* Allocate the gckVIDMEM object. */
-    gcmkONERROR(
-        gckOS_Allocate(Os,
-                       gcmSIZEOF(struct _gckVIDMEM),
-                       (gctPOINTER *) &memory));
+    gcmkONERROR(gckOS_Allocate(Os, gcmSIZEOF(struct _gckVIDMEM), &pointer));
+
+    memory = pointer;
 
     /* Initialize the gckVIDMEM object. */
     memory->object.type = gcvOBJ_VIDMEM;
@@ -415,6 +458,9 @@ gckVIDMEM_Construct(
     memory->freeBytes   = Bytes;
     memory->threshold   = Threshold;
     memory->mutex       = gcvNULL;
+#if gcdUSE_VIDMEM_PER_PID
+    gcmkONERROR(gckOS_GetProcessID(&memory->pid));
+#endif
 
     BaseAddress = 0;
 
@@ -451,10 +497,9 @@ gckVIDMEM_Construct(
         }
 
         /* Allocate one gcuVIDMEM_NODE union. */
-        gcmkONERROR(
-            gckOS_Allocate(Os,
-                           gcmSIZEOF(gcuVIDMEM_NODE),
-                           (gctPOINTER *) &node));
+        gcmkONERROR(gckOS_Allocate(Os, gcmSIZEOF(gcuVIDMEM_NODE), &pointer));
+
+        node = pointer;
 
         /* Initialize gcuVIDMEM_NODE union. */
         node->VidMem.memory    = memory;
@@ -472,9 +517,20 @@ gckVIDMEM_Construct(
 
         node->VidMem.locked    = 0;
 
+        gcmkONERROR(gckOS_ZeroMemory(&node->VidMem.sharedInfo, gcmSIZEOF(gcsVIDMEM_NODE_SHARED_INFO)));
+
 #ifdef __QNXNTO__
+#if gcdUSE_VIDMEM_PER_PID
+        node->VidMem.processID = memory->pid;
+        node->VidMem.physical  = memory->baseAddress + BaseAddress;
+        gcmkONERROR(gckOS_GetLogicalAddressProcess(Os,
+                    node->VidMem.processID,
+                    node->VidMem.physical,
+                    &node->VidMem.logical));
+#else
+        node->VidMem.processID = 0;
         node->VidMem.logical   = gcvNULL;
-        node->VidMem.handle    = 0;
+#endif
 #endif
 
         /* Initialize the linked list of nodes. */
@@ -508,6 +564,12 @@ gckVIDMEM_Construct(
     memory->mapping[gcvSURF_TILE_STATUS]        = banks - 1;
     if (banks > 1) --banks;
     memory->mapping[gcvSURF_TYPE_UNKNOWN]       = 0;
+
+#if gcdENABLE_VG
+    memory->mapping[gcvSURF_IMAGE]   = 0;
+    memory->mapping[gcvSURF_MASK]    = 0;
+    memory->mapping[gcvSURF_SCISSOR] = 0;
+#endif
 
     gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
                   "[GALCORE] INDEX:         bank %d",
@@ -552,11 +614,11 @@ OnError:
         {
             /* Free the heap. */
             gcmkASSERT(memory->sentinel[i].VidMem.next != gcvNULL);
-            gcmkVERIFY_OK(gckOS_Free(Os, memory->sentinel[i].VidMem.next));
+            gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Os, memory->sentinel[i].VidMem.next));
         }
 
         /* Free the object. */
-        gcmkVERIFY_OK(gckOS_Free(Os, memory));
+        gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Os, memory));
     }
 
     /* Return the status. */
@@ -610,7 +672,7 @@ gckVIDMEM_Destroy(
             next = node->VidMem.next;
 
             /* Free the node. */
-            gcmkVERIFY_OK(gckOS_Free(Memory->os, node));
+            gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Memory->os, node));
         }
     }
 
@@ -621,7 +683,7 @@ gckVIDMEM_Destroy(
     Memory->object.type = gcvOBJ_UNKNOWN;
 
     /* Free the gckVIDMEM object. */
-    gcmkVERIFY_OK(gckOS_Free(Memory->os, Memory));
+    gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Memory->os, Memory));
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -675,9 +737,6 @@ gckVIDMEM_Allocate(
     IN gctUINT BytesPerPixel,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
@@ -696,21 +755,13 @@ gckVIDMEM_Allocate(
     gcmkVERIFY_ARGUMENT(Depth > 0);
     gcmkVERIFY_ARGUMENT(BytesPerPixel > 0);
     gcmkVERIFY_ARGUMENT(Node != gcvNULL);
-#ifdef __QNXNTO__
-    gcmkVERIFY_ARGUMENT(Handle != gcvNULL);
-#endif
 
     /* Compute linear size. */
     bytes = Width * Height * Depth * BytesPerPixel;
 
     /* Allocate through linear function. */
-#ifdef __QNXNTO__
-    gcmkONERROR(
-        gckVIDMEM_AllocateLinear(Memory, bytes, Alignment, Type, Handle, Node));
-#else
     gcmkONERROR(
         gckVIDMEM_AllocateLinear(Memory, bytes, Alignment, Type, Node));
-#endif
 
     /* Success. */
     gcmkFOOTER_ARG("*Node=0x%x", *Node);
@@ -721,6 +772,93 @@ OnError:
     gcmkFOOTER();
     return status;
 }
+
+#if gcdENABLE_BANK_ALIGNMENT
+
+#if !gcdBANK_BIT_START
+#error gcdBANK_BIT_START not defined.
+#endif
+
+#if !gcdBANK_BIT_END
+#error gcdBANK_BIT_END not defined.
+#endif
+/*******************************************************************************
+**  _GetSurfaceBankAlignment
+**
+**  Return the required offset alignment required to the make BaseAddress
+**  aligned properly.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to gcoOS object.
+**
+**      gceSURF_TYPE Type
+**          Type of allocation.
+**
+**      gctUINT32 BaseAddress
+**          Base address of current video memory node.
+**
+**  OUTPUT:
+**
+**      gctUINT32_PTR AlignmentOffset
+**          Pointer to a variable that will hold the number of bytes to skip in
+**          the current video memory node in order to make the alignment bank
+**          aligned.
+*/
+static gceSTATUS
+_GetSurfaceBankAlignment(
+    IN gceSURF_TYPE Type,
+    IN gctUINT32 BaseAddress,
+    OUT gctUINT32_PTR AlignmentOffset
+    )
+{
+    gctUINT32 bank;
+    /* To retrieve the bank. */
+    static const gctUINT32 bankMask = (0xFFFFFFFF << gcdBANK_BIT_START)
+                                    ^ (0xFFFFFFFF << (gcdBANK_BIT_END + 1));
+
+    /* To retrieve the bank and all the lower bytes. */
+    static const gctUINT32 byteMask = ~(0xFFFFFFFF << (gcdBANK_BIT_END + 1));
+
+    gcmkHEADER_ARG("Type=%d BaseAddress=0x%x ", Type, BaseAddress);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_ARGUMENT(AlignmentOffset != gcvNULL);
+
+    switch (Type)
+    {
+    case gcvSURF_RENDER_TARGET:
+        bank = (BaseAddress & bankMask) >> (gcdBANK_BIT_START);
+
+        /* Align to the first bank. */
+        *AlignmentOffset = (bank == 0) ?
+            0 :
+            ((1 << (gcdBANK_BIT_END + 1)) + 0) -  (BaseAddress & byteMask);
+        break;
+
+    case gcvSURF_DEPTH:
+        bank = (BaseAddress & bankMask) >> (gcdBANK_BIT_START);
+
+        /* Align to the third bank. */
+        *AlignmentOffset = (bank == 2) ?
+            0 :
+            ((1 << (gcdBANK_BIT_END + 1)) + (2 << gcdBANK_BIT_START)) -  (BaseAddress & byteMask);
+
+        /* Add a channel offset at the channel bit. */
+        *AlignmentOffset += (1 << gcdBANK_CHANNEL_BIT);
+        break;
+
+    default:
+        /* no alignment needed. */
+        *AlignmentOffset = 0;
+    }
+
+    /* Return the status. */
+    gcmkFOOTER_ARG("*AlignmentOffset=%u", *AlignmentOffset);
+    return gcvSTATUS_OK;
+}
+#endif
 
 static gcuVIDMEM_NODE_PTR
 _FindNode(
@@ -737,15 +875,22 @@ _FindNode(
 #if gcdENABLE_BANK_ALIGNMENT
     gctUINT32 bankAlignment;
     gceSTATUS status;
+#endif
 
+    if (Memory->sentinel[Bank].VidMem.nextFree == gcvNULL)
+    {
+        /* No free nodes left. */
+        return gcvNULL;
+    }
+
+#if gcdENABLE_BANK_ALIGNMENT
     /* Walk all free nodes until we have one that is big enough or we have
     ** reached the sentinel. */
     for (node = Memory->sentinel[Bank].VidMem.nextFree;
          node->VidMem.bytes != 0;
          node = node->VidMem.nextFree)
     {
-        gcmkONERROR(gckOS_GetSurfaceBankAlignment(
-			Memory->os,
+        gcmkONERROR(_GetSurfaceBankAlignment(
             Type,
             node->VidMem.memory->baseAddress + node->VidMem.offset,
             &bankAlignment));
@@ -779,10 +924,10 @@ _FindNode(
          node = node->VidMem.nextFree)
     {
 
+        gctINT modulo = gckMATH_ModuloInt(node->VidMem.offset, *Alignment);
+
         /* Compute number of bytes to skip for alignment. */
-        alignment = (*Alignment == 0)
-                  ? 0
-                  : (*Alignment - (node->VidMem.offset % *Alignment));
+        alignment = (*Alignment == 0) ? 0 : (*Alignment - modulo);
 
         if (alignment == *Alignment)
         {
@@ -836,9 +981,6 @@ gckVIDMEM_AllocateLinear(
     IN gctSIZE_T Bytes,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
@@ -855,27 +997,41 @@ gckVIDMEM_AllocateLinear(
     gcmkVERIFY_OBJECT(Memory, gcvOBJ_VIDMEM);
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Node != gcvNULL);
-#ifdef __QNXNTO__
-    gcmkVERIFY_ARGUMENT(Handle != gcvNULL);
-#endif
+    gcmkVERIFY_ARGUMENT(Type < gcvSURF_NUM_TYPES);
 
     /* Acquire the mutex. */
-    gcmkONERROR(
-        gckOS_AcquireMutex(Memory->os, Memory->mutex, gcvINFINITE));
+    gcmkONERROR(gckOS_AcquireMutex(Memory->os, Memory->mutex, gcvINFINITE));
 
     acquired = gcvTRUE;
+#if !gcdUSE_VIDMEM_PER_PID
 
     if (Bytes > Memory->freeBytes)
     {
         /* Not enough memory. */
+        status = gcvSTATUS_OUT_OF_MEMORY;
+        goto OnError;
+    }
+#endif
+
+#if gcdSMALL_BLOCK_SIZE
+    if ((Memory->freeBytes < (Memory->bytes/gcdRATIO_FOR_SMALL_MEMORY))
+    &&  (Bytes >= gcdSMALL_BLOCK_SIZE)
+    )
+    {
+        /* The left memory is for small memory.*/
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
+#endif
 
     /* Find the default bank for this surface type. */
     gcmkASSERT((gctINT) Type < gcmCOUNTOF(Memory->mapping));
     bank      = Memory->mapping[Type];
     alignment = Alignment;
 
+#if gcdUSE_VIDMEM_PER_PID
+    if (Bytes <= Memory->freeBytes)
+    {
+#endif
     /* Find a free node in the default bank. */
     node = _FindNode(Memory, bank, Bytes, Type, &alignment);
 
@@ -913,11 +1069,72 @@ gckVIDMEM_AllocateLinear(
             }
         }
     }
+#if gcdUSE_VIDMEM_PER_PID
+    }
+#endif
 
     if (node == gcvNULL)
     {
         /* Out of memory. */
-        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
+#if gcdUSE_VIDMEM_PER_PID
+        /* Allocate more memory from shared pool. */
+        gctSIZE_T bytes;
+        gctPHYS_ADDR physical_temp;
+        gctUINT32 physical;
+        gctPOINTER logical;
+
+        bytes = gcmALIGN(Bytes, gcdUSE_VIDMEM_PER_PID_SIZE);
+
+        gcmkONERROR(gckOS_AllocateContiguous(Memory->os,
+                gcvTRUE,
+                &bytes,
+                &physical_temp,
+                &logical));
+
+        /* physical address is returned as 0 for user space. workaround. */
+        if (physical_temp == gcvNULL)
+        {
+        gcmkONERROR(gckOS_GetPhysicalAddress(Memory->os, logical, &physical));
+        }
+
+        /* Allocate one gcuVIDMEM_NODE union. */
+        gcmkONERROR(
+            gckOS_Allocate(Memory->os,
+                           gcmSIZEOF(gcuVIDMEM_NODE),
+                           (gctPOINTER *) &node));
+
+        /* Initialize gcuVIDMEM_NODE union. */
+        node->VidMem.memory    = Memory;
+
+        node->VidMem.offset    = 0;
+        node->VidMem.bytes     = bytes;
+        node->VidMem.alignment = 0;
+        node->VidMem.physical  = physical;
+        node->VidMem.pool      = gcvPOOL_UNKNOWN;
+
+        node->VidMem.locked    = 0;
+
+#ifdef __QNXNTO__
+        gcmkONERROR(gckOS_GetProcessID(&node->VidMem.processID));
+        node->VidMem.logical   = logical;
+        gcmkASSERT(logical != gcvNULL);
+#endif
+
+        /* Insert node behind sentinel node. */
+        node->VidMem.next = Memory->sentinel[bank].VidMem.next;
+        node->VidMem.prev = &Memory->sentinel[bank];
+        Memory->sentinel[bank].VidMem.next = node->VidMem.next->VidMem.prev = node;
+
+        /* Insert free node behind sentinel node. */
+        node->VidMem.nextFree = Memory->sentinel[bank].VidMem.nextFree;
+        node->VidMem.prevFree = &Memory->sentinel[bank];
+        Memory->sentinel[bank].VidMem.nextFree = node->VidMem.nextFree->VidMem.prevFree = node;
+
+        Memory->freeBytes += bytes;
+#else
+        status = gcvSTATUS_OUT_OF_MEMORY;
+        goto OnError;
+#endif
     }
 
     /* Do we have an alignment? */
@@ -951,12 +1168,22 @@ gckVIDMEM_AllocateLinear(
     node->VidMem.alignment = alignment;
     node->VidMem.memory    = Memory;
 #ifdef __QNXNTO__
+#if !gcdUSE_VIDMEM_PER_PID
     node->VidMem.logical   = gcvNULL;
-    node->VidMem.handle    = Handle;
+    gcmkONERROR(gckOS_GetProcessID(&node->VidMem.processID));
+#else
+    gcmkASSERT(node->VidMem.logical != gcvNULL);
+#endif
 #endif
 
     /* Adjust the number of free bytes. */
     Memory->freeBytes -= node->VidMem.bytes;
+
+    node->VidMem.freePending = gcvFALSE;
+
+#if gcdDYNAMIC_MAP_RESERVED_MEMORY && gcdENABLE_VG
+    node->VidMem.kernelVirtual = gcvNULL;
+#endif
 
     /* Release the mutex. */
     gcmkVERIFY_OK(gckOS_ReleaseMutex(Memory->os, Memory->mutex));
@@ -1004,10 +1231,14 @@ gckVIDMEM_Free(
     IN gcuVIDMEM_NODE_PTR Node
     )
 {
+    gceSTATUS status;
+    gckKERNEL kernel = gcvNULL;
     gckVIDMEM memory = gcvNULL;
     gcuVIDMEM_NODE_PTR node;
-    gceSTATUS status;
+    gctBOOL mutexAcquired = gcvFALSE;
+    gckOS os = gcvFALSE;
     gctBOOL acquired = gcvFALSE;
+    gctINT32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -1026,12 +1257,15 @@ gckVIDMEM_Free(
     {
         if (Node->VidMem.locked > 0)
         {
-            gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_VIDMEM,
-                           "Node 0x%x is locked (%d)",
+            /* Client still has a lock, defer free op 'till when lock reaches 0. */
+            Node->VidMem.freePending = gcvTRUE;
+
+            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                           "Node 0x%x is locked (%d)... deferring free.",
                            Node, Node->VidMem.locked);
 
-            /* Force unlock. */
-            Node->VidMem.locked = 0;
+            gcmkFOOTER_NO();
+            return gcvSTATUS_OK;
         }
 
         /* Extract pointer to gckVIDMEM object owning the node. */
@@ -1041,25 +1275,43 @@ gckVIDMEM_Free(
         gcmkONERROR(
             gckOS_AcquireMutex(memory->os, memory->mutex, gcvINFINITE));
 
-        acquired = gcvTRUE;
+        mutexAcquired = gcvTRUE;
 
 #ifdef __QNXNTO__
-        /* Reset handle to 0. */
+#if !gcdUSE_VIDMEM_PER_PID
+        /* Reset. */
+        Node->VidMem.processID = 0;
         Node->VidMem.logical = gcvNULL;
-        Node->VidMem.handle = 0;
+#endif
 
-        /* Don't try to a re-free an already freed node. */
+        /* Don't try to re-free an already freed node. */
         if ((Node->VidMem.nextFree == gcvNULL)
         &&  (Node->VidMem.prevFree == gcvNULL)
         )
 #endif
         {
+#if gcdDYNAMIC_MAP_RESERVED_MEMORY && gcdENABLE_VG
+            if (Node->VidMem.kernelVirtual)
+            {
+                gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                        "%s(%d) Unmap %x from kernel space.",
+                        __FUNCTION__, __LINE__,
+                        Node->VidMem.kernelVirtual);
+
+                gcmkVERIFY_OK(
+                    gckOS_UnmapPhysical(memory->os,
+                                        Node->VidMem.kernelVirtual,
+                                        Node->VidMem.bytes));
+
+                Node->VidMem.kernelVirtual = gcvNULL;
+            }
+#endif
             /* Update the number of free bytes. */
             memory->freeBytes += Node->VidMem.bytes;
 
             /* Find the next free node. */
             for (node = Node->VidMem.next;
-                 node->VidMem.nextFree == gcvNULL;
+                 node != gcvNULL && node->VidMem.nextFree == gcvNULL;
                  node = node->VidMem.next) ;
 
             /* Insert this node in the free list. */
@@ -1095,6 +1347,10 @@ gckVIDMEM_Free(
         /* Release the mutex. */
         gcmkVERIFY_OK(gckOS_ReleaseMutex(memory->os, memory->mutex));
 
+        gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                       "Node 0x%x is freed.",
+                       Node);
+
         /* Success. */
         gcmkFOOTER_NO();
         return gcvSTATUS_OK;
@@ -1102,56 +1358,46 @@ gckVIDMEM_Free(
 
     /*************************** Virtual Memory *******************************/
 
-    /* Verify the gckKERNEL object pointer. */
-    gcmkVERIFY_OBJECT(Node->Virtual.kernel, gcvOBJ_KERNEL);
+    /* Get gckKERNEL object. */
+    kernel = Node->Virtual.kernel;
 
-#ifdef __QNXNTO__
-    if (!Node->Virtual.unlockPending && (Node->Virtual.locked > 0))
-#else
-    if (!Node->Virtual.pending && (Node->Virtual.locked > 0))
-#endif
+    /* Verify the gckKERNEL object pointer. */
+    gcmkVERIFY_OBJECT(kernel, gcvOBJ_KERNEL);
+
+    /* Get the gckOS object pointer. */
+    os = kernel->os;
+    gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
+
+    /* Grab the mutex. */
+    gcmkONERROR(
+        gckOS_AcquireMutex(os, Node->Virtual.mutex, gcvINFINITE));
+
+    acquired = gcvTRUE;
+
+    for (i = 0, totalLocked = 0; i < gcdCORE_COUNT; i++)
+    {
+        totalLocked += Node->Virtual.lockeds[i];
+    }
+
+    if (totalLocked > 0)
     {
         gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_VIDMEM,
                        "gckVIDMEM_Free: Virtual node 0x%x is locked (%d)",
-                       Node, Node->Virtual.locked);
+                       Node, totalLocked);
 
-        /* Force unlock. */
-        Node->Virtual.locked = 0;
+        /* Set Flag */
+        Node->Virtual.freed = gcvTRUE;
+
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
     }
-
-#ifdef __QNXNTO__
-    if (!Node->Virtual.freePending) { if (Node->Virtual.unlockPending)
-#else
-    if (Node->Virtual.pending)
-#endif
-    {
-        gcmkASSERT(Node->Virtual.locked == 1);
-
-        /* Schedule the node to be freed. */
-        gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
-                       "gckVIDMEM_Free: Scheduling node 0x%x to be freed later",
-                       Node);
-
-        /* Schedule the video memory to be freed again. */
-        gcmkONERROR(gckEVENT_FreeVideoMemory(Node->Virtual.kernel->event,
-                                             Node,
-                                             gcvKERNEL_PIXEL));
-
-#ifdef __QNXNTO__
-        Node->Virtual.freePending = gcvTRUE; }
-#endif
-
-        /* Success. */
-        gcmkFOOTER_NO();
-        return gcvSTATUS_SKIP;
-    }
-
     else
     {
         /* Free the virtual memory. */
-        gcmkVERIFY_OK(gckOS_FreePagedMemory(Node->Virtual.kernel->os,
+        gcmkVERIFY_OK(gckOS_FreePagedMemory(kernel->os,
                                             Node->Virtual.physical,
                                             Node->Virtual.bytes));
+
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
 
         /* Destroy the gcuVIDMEM_NODE union. */
         gcmkVERIFY_OK(gckVIDMEM_DestroyVirtual(Node));
@@ -1162,10 +1408,17 @@ gckVIDMEM_Free(
     return gcvSTATUS_OK;
 
 OnError:
-    if (acquired)
+    if (mutexAcquired)
     {
         /* Release the mutex. */
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(memory->os, memory->mutex));
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(
+            memory->os, memory->mutex
+            ));
+    }
+
+    if (acquired)
+    {
+       gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
     }
 
     /* Return the status. */
@@ -1192,8 +1445,9 @@ OnError:
 */
 gceSTATUS
 gckVIDMEM_FreeHandleMemory(
+    IN gckKERNEL Kernel,
     IN gckVIDMEM Memory,
-    IN gctHANDLE Handle
+    IN gctUINT32 Pid
     )
 {
     gceSTATUS status;
@@ -1203,8 +1457,9 @@ gckVIDMEM_FreeHandleMemory(
     gctUINT32 nodeCount = 0, byteCount = 0;
     gctBOOL again;
 
-    gcmkHEADER_ARG("Memory=0x%x Handle=0x%x", Memory, Handle);
+    gcmkHEADER_ARG("Kernel=0x%x, Memory=0x%x Pid=0x%u", Kernel, Memory, Pid);
 
+    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
     gcmkVERIFY_OBJECT(Memory, gcvOBJ_VIDMEM);
 
     gcmkONERROR(gckOS_AcquireMutex(Memory->os, Memory->mutex, gcvINFINITE));
@@ -1229,18 +1484,19 @@ gckVIDMEM_FreeHandleMemory(
                  node = node->VidMem.next)
             {
                 /* Free the node if it was allocated by Handle. */
-                if (node->VidMem.handle == Handle)
+                if (node->VidMem.processID == Pid)
                 {
                     /* Unlock video memory. */
-                    while (gckVIDMEM_Unlock(node, gcvSURF_TYPE_UNKNOWN, gcvNULL, gcvNULL)
-                        != gcvSTATUS_MEMORY_UNLOCKED)
-                        ;
+                    while (node->VidMem.locked > 0)
+                    {
+                        gckVIDMEM_Unlock(Kernel, node, gcvSURF_TYPE_UNKNOWN, gcvNULL);
+                    }
 
                     nodeCount++;
                     byteCount += node->VidMem.bytes;
 
                     /* Free video memory. */
-                    gcmkVERIFY_OK(gckVIDMEM_Free(node, gcvNULL));
+                    gcmkVERIFY_OK(gckVIDMEM_Free(node));
 
                     /*
                      * Freeing may cause a merge which will invalidate our iteration.
@@ -1250,6 +1506,12 @@ gckVIDMEM_FreeHandleMemory(
 
                     break;
                 }
+#if gcdUSE_VIDMEM_PER_PID
+                else
+                {
+                    gcmkASSERT(node->VidMem.processID == Pid);
+                }
+#endif
             }
         }
         while (again);
@@ -1272,11 +1534,95 @@ OnError:
 
 /*******************************************************************************
 **
-**  gckVIDMEM_Lock
+** _NeedVirtualMapping
 **
-**  Lock a video memory node and return it's hardware specific address.
+**  Whether setup GPU page table for video node.
 **
 **  INPUT:
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
+**
+**      gcuVIDMEM_NODE_PTR Node
+**          Pointer to a gcuVIDMEM_NODE union.
+**
+**      gceCORE  Core
+**          Id of current GPU.
+**
+**  OUTPUT:
+**      gctBOOL * NeedMapping
+**          A pointer hold the result whether Node should be mapping.
+*/
+static gceSTATUS
+_NeedVirtualMapping(
+    IN gckKERNEL Kernel,
+    IN gceCORE  Core,
+    IN gcuVIDMEM_NODE_PTR Node,
+    OUT gctBOOL * NeedMapping
+)
+{
+    gceSTATUS status;
+    gctUINT32 phys;
+    gctUINT32 end;
+    gcePOOL pool;
+    gctUINT32 offset;
+
+    gcmkHEADER_ARG("Node=0x%X", Node);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_ARGUMENT(Kernel != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Node != gcvNULL);
+    gcmkVERIFY_ARGUMENT(NeedMapping != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Core < gcdCORE_COUNT);
+
+    if (Node->Virtual.contiguous)
+    {
+#if gcdENABLE_VG
+        if (Core == gcvCORE_VG)
+        {
+            *NeedMapping = gcvFALSE;
+        }
+        else
+#endif
+        {
+            /* For cores which can't access all physical address. */
+            gcmkONERROR(gckOS_GetPhysicalAddress(Kernel->os,
+                        Node->Virtual.logical,
+                        &phys));
+
+            /* If part of region is belong to gcvPOOL_VIRTUAL,
+            ** whole region has to be mapped. */
+            end = phys + Node->Virtual.bytes - 1;
+
+            gcmkONERROR(gckHARDWARE_SplitMemory(
+                        Kernel->hardware, end, &pool, &offset
+                        ));
+
+            *NeedMapping = (pool == gcvPOOL_VIRTUAL);
+        }
+    }
+    else
+    {
+        *NeedMapping = gcvTRUE;
+    }
+
+    gcmkFOOTER_ARG("*NeedMapping=%d", *NeedMapping);
+    return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
+}
+
+/*******************************************************************************
+**
+**  gckVIDMEM_Lock
+**
+**  Lock a video memory node and return its hardware specific address.
+**
+**  INPUT:
+**
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
 **      gcuVIDMEM_NODE_PTR Node
 **          Pointer to a gcuVIDMEM_NODE union.
@@ -1288,7 +1634,9 @@ OnError:
 */
 gceSTATUS
 gckVIDMEM_Lock(
+    IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
+    IN gctBOOL Cacheable,
     OUT gctUINT32 * Address
     )
 {
@@ -1296,6 +1644,7 @@ gckVIDMEM_Lock(
     gctBOOL acquired = gcvFALSE;
     gctBOOL locked = gcvFALSE;
     gckOS os = gcvNULL;
+    gctBOOL needMapping;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -1314,13 +1663,22 @@ gckVIDMEM_Lock(
 
     if (Node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
     {
+        if (Cacheable == gcvTRUE)
+        {
+            gcmkONERROR(gcvSTATUS_INVALID_REQUEST);
+        }
+
         /* Increment the lock count. */
         Node->VidMem.locked ++;
 
         /* Return the address of the node. */
+#if !gcdUSE_VIDMEM_PER_PID
         *Address = Node->VidMem.memory->baseAddress
                  + Node->VidMem.offset
                  + Node->VidMem.alignment;
+#else
+        *Address = Node->VidMem.physical;
+#endif
 
         gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
                       "Locked node 0x%x (%d) @ 0x%08X",
@@ -1344,98 +1702,104 @@ gckVIDMEM_Lock(
         gcmkONERROR(gckOS_AcquireMutex(os, Node->Virtual.mutex, gcvINFINITE));
         acquired = gcvTRUE;
 
+        gcmkONERROR(
+            gckOS_LockPages(os,
+                            Node->Virtual.physical,
+                            Node->Virtual.bytes,
+                            Cacheable,
+                            &Node->Virtual.logical,
+                            &Node->Virtual.pageCount));
+
         /* Increment the lock count. */
-        if (Node->Virtual.locked ++ == 0)
+        if (Node->Virtual.lockeds[Kernel->core] ++ == 0)
         {
             /* Is this node pending for a final unlock? */
 #ifdef __QNXNTO__
-            if (!Node->Virtual.contiguous && Node->Virtual.unlockPending)
-#else
-            if (!Node->Virtual.contiguous && Node->Virtual.pending)
-#endif
+            if (!Node->Virtual.contiguous && Node->Virtual.unlockPendings[Kernel->core])
             {
                 /* Make sure we have a page table. */
-                gcmkASSERT(Node->Virtual.pageTable != gcvNULL);
+                gcmkASSERT(Node->Virtual.pageTables[Kernel->core] != gcvNULL);
 
                 /* Remove pending unlock. */
-#ifdef __QNXNTO__
-                Node->Virtual.unlockPending = gcvFALSE;
-#else
-                Node->Virtual.pending = gcvFALSE;
-#endif
+                Node->Virtual.unlockPendings[Kernel->core] = gcvFALSE;
             }
 
             /* First lock - create a page table. */
-            gcmkASSERT(Node->Virtual.pageTable == gcvNULL);
+            gcmkASSERT(Node->Virtual.pageTables[Kernel->core] == gcvNULL);
 
             /* Make sure we mark our node as not flushed. */
-#ifdef __QNXNTO__
-            Node->Virtual.unlockPending = gcvFALSE;
-#else
-            Node->Virtual.pending = gcvFALSE;
-#endif
-
-            /* Lock the allocated pages. */
-#ifdef __QNXNTO__
-            gcmkONERROR(
-                gckOS_LockPages(os,
-                                Node->Virtual.physical,
-                                Node->Virtual.bytes,
-                                Node->Virtual.userPID,
-                                &Node->Virtual.logical,
-                                &Node->Virtual.pageCount));
-#else
-            gcmkONERROR(
-                gckOS_LockPages(os,
-                                Node->Virtual.physical,
-                                Node->Virtual.bytes,
-                                &Node->Virtual.logical,
-                                &Node->Virtual.pageCount));
+            Node->Virtual.unlockPendings[Kernel->core] = gcvFALSE;
 #endif
 
             locked = gcvTRUE;
 
-            if (Node->Virtual.contiguous)
+            gcmkONERROR(_NeedVirtualMapping(Kernel, Kernel->core, Node, &needMapping));
+
+            if (needMapping == gcvFALSE)
             {
                 /* Get physical address directly */
-                gcmkONERROR(gckOS_GetPhysicalAddress(os,
-                                    Node->Virtual.logical,
-                                    &Node->Virtual.address));
+                 gcmkONERROR(gckOS_GetPhysicalAddress(os,
+                             Node->Virtual.logical,
+                             &Node->Virtual.addresses[Kernel->core]));
             }
             else
             {
-                /* Allocate pages inside the MMU. */
-                gcmkONERROR(
-                    gckMMU_AllocatePages(Node->Virtual.kernel->mmu,
-                                         Node->Virtual.pageCount,
-                                         &Node->Virtual.pageTable,
-                                         &Node->Virtual.address));
+#if gcdENABLE_VG
+                if (Kernel->vg != gcvNULL)
+                {
+                    /* Allocate pages inside the MMU. */
+                    gcmkONERROR(
+                        gckVGMMU_AllocatePages(Kernel->vg->mmu,
+                                             Node->Virtual.pageCount,
+                                             &Node->Virtual.pageTables[Kernel->core],
+                                             &Node->Virtual.addresses[Kernel->core]));
+                }
+                else
+#endif
+                {
+                    /* Allocate pages inside the MMU. */
+                    gcmkONERROR(
+                        gckMMU_AllocatePages(Kernel->mmu,
+                                             Node->Virtual.pageCount,
+                                             &Node->Virtual.pageTables[Kernel->core],
+                                             &Node->Virtual.addresses[Kernel->core]));
+                }
+
+                Node->Virtual.lockKernels[Kernel->core] = Kernel;
 
                 /* Map the pages. */
 #ifdef __QNXNTO__
                 gcmkONERROR(
-                    gckOS_MapPages(os,
-                                   Node->Virtual.physical,
-                                   Node->Virtual.logical,
-                                   Node->Virtual.pageCount,
-                                   Node->Virtual.pageTable));
+                    gckOS_MapPagesEx(os,
+                                     Kernel->core,
+                                     Node->Virtual.physical,
+                                     Node->Virtual.logical,
+                                     Node->Virtual.pageCount,
+                                     Node->Virtual.pageTables[Kernel->core]));
 #else
                 gcmkONERROR(
-                    gckOS_MapPages(os,
-                                   Node->Virtual.physical,
-                                   Node->Virtual.pageCount,
-                                   Node->Virtual.pageTable));
+                    gckOS_MapPagesEx(os,
+                                     Kernel->core,
+                                     Node->Virtual.physical,
+                                     Node->Virtual.pageCount,
+                                     Node->Virtual.pageTables[Kernel->core]));
 #endif
 
-                gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
-                               "Mapped virtual node 0x%x to 0x%08X",
-                               Node,
-                               Node->Virtual.address);
+#if gcdENABLE_VG
+                if (Kernel->core != gcvCORE_VG)
+#endif
+                {
+                    gcmkONERROR(gckMMU_Flush(Kernel->mmu));
+                }
             }
+            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                           "Mapped virtual node 0x%x to 0x%08X",
+                           Node,
+                           Node->Virtual.addresses[Kernel->core]);
         }
 
         /* Return hardware address. */
-        *Address = Node->Virtual.address;
+        *Address = Node->Virtual.addresses[Kernel->core];
 
         /* Release the mutex. */
         gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
@@ -1448,32 +1812,39 @@ gckVIDMEM_Lock(
 OnError:
     if (locked)
     {
-        if (Node->Virtual.pageTable != gcvNULL)
+        if (Node->Virtual.pageTables[Kernel->core] != gcvNULL)
         {
-            /* Free the pages from the MMU. */
-            gcmkVERIFY_OK(
-                gckMMU_FreePages(Node->Virtual.kernel->mmu,
-                                 Node->Virtual.pageTable,
-                                 Node->Virtual.pageCount));
-
-            Node->Virtual.pageTable = gcvNULL;
+#if gcdENABLE_VG
+            if (Kernel->vg != gcvNULL)
+            {
+                /* Free the pages from the MMU. */
+                gcmkVERIFY_OK(
+                    gckVGMMU_FreePages(Kernel->vg->mmu,
+                                     Node->Virtual.pageTables[Kernel->core],
+                                     Node->Virtual.pageCount));
+            }
+            else
+#endif
+            {
+                /* Free the pages from the MMU. */
+                gcmkVERIFY_OK(
+                    gckMMU_FreePages(Kernel->mmu,
+                                     Node->Virtual.pageTables[Kernel->core],
+                                     Node->Virtual.pageCount));
+            }
+            Node->Virtual.pageTables[Kernel->core]  = gcvNULL;
+            Node->Virtual.lockKernels[Kernel->core] = gcvNULL;
         }
 
         /* Unlock the pages. */
-#ifdef __QNXNTO__
-        gcmkVERIFY_OK(
-            gckOS_UnlockPages(os,
-                              Node->Virtual.physical,
-                              Node->Virtual.userPID,
-                              Node->Virtual.bytes,
-                              Node->Virtual.logical));
-#else
         gcmkVERIFY_OK(
             gckOS_UnlockPages(os,
                               Node->Virtual.physical,
                               Node->Virtual.bytes,
-                              Node->Virtual.logical));
-#endif
+                              Node->Virtual.logical
+                              ));
+
+        Node->Virtual.lockeds[Kernel->core]--;
     }
 
     if (acquired)
@@ -1495,16 +1866,14 @@ OnError:
 **
 **  INPUT:
 **
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
+**
 **      gcuVIDMEM_NODE_PTR Node
 **          Pointer to a locked gcuVIDMEM_NODE union.
 **
 **      gceSURF_TYPE Type
 **          Type of surface to unlock.
-**
-**      gctSIZE_T * CommandSize
-**          Pointer to a variable specifying the number of bytes in the command
-**          buffer specified by 'Commands'.  If gcvNULL, there is no command
-**          buffer and the video memory shoud be unlocked synchronously.
 **
 **      gctBOOL * Asynchroneous
 **          Pointer to a variable specifying whether the surface should be
@@ -1519,13 +1888,13 @@ OnError:
 */
 gceSTATUS
 gckVIDMEM_Unlock(
+    IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
     IN gceSURF_TYPE Type,
     IN OUT gctBOOL * Asynchroneous
     )
 {
     gceSTATUS status;
-    gckKERNEL kernel;
     gckHARDWARE hardware;
     gctPOINTER buffer;
     gctSIZE_T requested, bufferSize;
@@ -1533,8 +1902,8 @@ gckVIDMEM_Unlock(
     gceKERNEL_FLUSH flush;
     gckOS os = gcvNULL;
     gctBOOL acquired = gcvFALSE;
-    gctBOOL needRelease = gcvFALSE;
-    gctBOOL pendingUnlock = gcvFALSE;
+    gctBOOL commitEntered = gcvFALSE;
+    gctINT32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x Type=%d *Asynchroneous=%d",
                    Node, Type, gcmOPT_VALUE(Asynchroneous));
@@ -1555,7 +1924,8 @@ gckVIDMEM_Unlock(
         if (Node->VidMem.locked <= 0)
         {
             /* The surface was not locked. */
-            gcmkONERROR(gcvSTATUS_MEMORY_UNLOCKED);
+            status = gcvSTATUS_MEMORY_UNLOCKED;
+            goto OnError;
         }
 
         /* Decrement the lock count. */
@@ -1566,57 +1936,167 @@ gckVIDMEM_Unlock(
             /* No need for any events. */
             *Asynchroneous = gcvFALSE;
         }
+
+        gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                      "Unlocked node 0x%x (%d)",
+                      Node,
+                      Node->VidMem.locked);
+
+#ifdef __QNXNTO__
+        /* Unmap the video memory */
+        if ((Node->VidMem.locked == 0) && (Node->VidMem.logical != gcvNULL))
+        {
+            if (Kernel->core == gcvCORE_VG)
+            {
+                gckKERNEL_UnmapVideoMemory(Kernel,
+                                           Node->VidMem.logical,
+                                           Node->VidMem.processID,
+                                           Node->VidMem.bytes);
+                Node->VidMem.logical = gcvNULL;
+            }
+        }
+#endif /* __QNXNTO__ */
+
+        if (Node->VidMem.freePending && (Node->VidMem.locked == 0))
+        {
+            /* Client has unlocked node previously attempted to be freed by compositor. Free now. */
+            Node->VidMem.freePending = gcvFALSE;
+            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
+                           "Deferred-freeing Node 0x%x.",
+                           Node);
+            gcmkONERROR(gckVIDMEM_Free(Node));
+        }
     }
 
     /*************************** Virtual Memory *******************************/
 
     else
     {
-        /* Verify the gckKERNEL object pointer. */
-        kernel = Node->Virtual.kernel;
-        gcmkVERIFY_OBJECT(kernel, gcvOBJ_KERNEL);
-
         /* Verify the gckHARDWARE object pointer. */
-        hardware = Node->Virtual.kernel->hardware;
+        hardware = Kernel->hardware;
         gcmkVERIFY_OBJECT(hardware, gcvOBJ_HARDWARE);
 
         /* Verify the gckCOMMAND object pointer. */
-        command = Node->Virtual.kernel->command;
+        command = Kernel->command;
         gcmkVERIFY_OBJECT(command, gcvOBJ_COMMAND);
+
+        /* Get the gckOS object pointer. */
+        os = Kernel->os;
+        gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
+
+        /* Grab the mutex. */
+        gcmkONERROR(
+            gckOS_AcquireMutex(os, Node->Virtual.mutex, gcvINFINITE));
+
+        acquired = gcvTRUE;
 
         if (Asynchroneous == gcvNULL)
         {
+            if (Node->Virtual.lockeds[Kernel->core] == 0)
+            {
+                status = gcvSTATUS_MEMORY_UNLOCKED;
+                goto OnError;
+            }
+
+            /* Decrement lock count. */
+            -- Node->Virtual.lockeds[Kernel->core];
+
+            /* See if we can unlock the resources. */
+            if (Node->Virtual.lockeds[Kernel->core] == 0)
+            {
+                /* Free the page table. */
+                if (Node->Virtual.pageTables[Kernel->core] != gcvNULL)
+                {
+#if gcdENABLE_VG
+                    if (Kernel->vg != gcvNULL)
+                    {
+                        gcmkONERROR(
+                            gckVGMMU_FreePages(Kernel->vg->mmu,
+                                             Node->Virtual.pageTables[Kernel->core],
+                                             Node->Virtual.pageCount));
+                    }
+                    else
+#endif
+                    {
+                        gcmkONERROR(
+                            gckMMU_FreePages(Kernel->mmu,
+                                             Node->Virtual.pageTables[Kernel->core],
+                                             Node->Virtual.pageCount));
+                    }
+                    /* Mark page table as freed. */
+                    Node->Virtual.pageTables[Kernel->core] = gcvNULL;
+                    Node->Virtual.lockKernels[Kernel->core] = gcvNULL;
+                }
+
+#ifdef __QNXNTO__
+                /* Mark node as unlocked. */
+                Node->Virtual.unlockPendings[Kernel->core] = gcvFALSE;
+#endif
+            }
+
+            for (i = 0, totalLocked = 0; i < gcdCORE_COUNT; i++)
+            {
+                totalLocked += Node->Virtual.lockeds[i];
+            }
+
+            if (totalLocked == 0)
+            {
+                /* Owner have already freed this node
+                ** and we are the last one to unlock, do
+                ** real free */
+                if (Node->Virtual.freed)
+                {
+                    /* Free the virtual memory. */
+                    gcmkVERIFY_OK(gckOS_FreePagedMemory(Kernel->os,
+                                                        Node->Virtual.physical,
+                                                        Node->Virtual.bytes));
+
+                    /* Release mutex before node is destroyed */
+                    gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
+
+                    acquired = gcvFALSE;
+
+                    /* Destroy the gcuVIDMEM_NODE union. */
+                    gcmkVERIFY_OK(gckVIDMEM_DestroyVirtual(Node));
+
+                    /* Node has been destroyed, so we should not touch it any more */
+                    gcmkFOOTER();
+                    return gcvSTATUS_OK;
+                }
+            }
+
             gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
-                           "gckVIDMEM_Unlock: Unlocking virtual node 0x%x (%d)",
-                           Node,
-                           Node->Virtual.locked);
+                           "Unmapped virtual node 0x%x from 0x%08X",
+                           Node, Node->Virtual.addresses[Kernel->core]);
 
-            /* Get the gckOS object pointer. */
-            os = kernel->os;
-            gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
+        }
 
-            /* Grab the mutex. */
-            gcmkONERROR(
-                gckOS_AcquireMutex(os, Node->Virtual.mutex, gcvINFINITE));
-
+        else
+        {
             /* If we need to unlock a node from virtual memory we have to be
             ** very carefull.  If the node is still inside the caches we
             ** might get a bus error later if the cache line needs to be
             ** replaced.  So - we have to flush the caches before we do
-            ** anything.  We also need to stall to make sure the flush has
-            ** happened.  However - when we get to this point we are inside
-            ** the interrupt handler and we cannot just gckCOMMAND_Wait
-            ** because it will wait forever.  So - what we do here is we
-            ** verify the type of the surface, flush the appropriate cache,
-            ** mark the node as flushed, and issue another unlock to unmap
-            ** the MMU. */
+            ** anything. */
+
+            /* gckCommand_EnterCommit() can't be called in interrupt handler because
+            ** of a dead lock situation:
+            ** process call Command_Commit(), and acquire Command->mutexQueue in
+            ** gckCOMMAND_EnterCommit(). Then it will wait for a signal which depends
+            ** on interrupt handler to generate, if interrupt handler enter
+            ** gckCommand_EnterCommit(), process will never get the signal. */
+
+            /* So, flush cache when we still in process context, and then ask caller to
+            ** schedule a event. */
+
+            gcmkONERROR(
+                gckOS_UnlockPages(os,
+                              Node->Virtual.physical,
+                              Node->Virtual.bytes,
+                              Node->Virtual.logical));
+
             if (!Node->Virtual.contiguous
-            &&  (Node->Virtual.locked == 1)
-#ifdef __QNXTO__
-            &&  !Node->Virtual.unlockPending
-#else
-            &&  !Node->Virtual.pending
-#endif
+            &&  (Node->Virtual.lockeds[Kernel->core] == 1)
             )
             {
                 if (Type == gcvSURF_BITMAP)
@@ -1645,101 +2125,31 @@ gckVIDMEM_Unlock(
 
                 if (requested != 0)
                 {
-                    gcmkONERROR(
-                        gckCOMMAND_Reserve(command,
-                                           requested,
-                                           &buffer,
-                                           &bufferSize));
+                    /* Acquire the command queue. */
+                    gcmkONERROR(gckCOMMAND_EnterCommit(command, gcvFALSE));
+                    commitEntered = gcvTRUE;
 
-                    needRelease = gcvTRUE;
+                    gcmkONERROR(gckCOMMAND_Reserve(
+                        command, requested, &buffer, &bufferSize
+                        ));
 
-                    gcmkONERROR(gckHARDWARE_Flush(hardware,
-                                                  flush,
-                                                  buffer,
-                                                  &bufferSize));
-
-                    gcmkONERROR(
-                        gckEVENT_Unlock(Node->Virtual.kernel->event,
-                                        gcvKERNEL_PIXEL,
-                                        Node,
-                                        Type));
+                    gcmkONERROR(gckHARDWARE_Flush(
+                        hardware, flush, buffer, &bufferSize
+                        ));
 
                     /* Mark node as pending. */
 #ifdef __QNXNTO__
-                    Node->Virtual.unlockPending = gcvTRUE;
-#else
-                    Node->Virtual.pending = gcvTRUE;
+                    Node->Virtual.unlockPendings[Kernel->core] = gcvTRUE;
 #endif
-
-                    needRelease = gcvFALSE;
 
                     gcmkONERROR(gckCOMMAND_Execute(command, requested));
 
-                    pendingUnlock = gcvTRUE;
+                    /* Release the command queue. */
+                    gcmkONERROR(gckCOMMAND_ExitCommit(command, gcvFALSE));
+                    commitEntered = gcvFALSE;
                 }
             }
 
-            if (!pendingUnlock)
-            {
-				if (Node->Virtual.locked == 0)
-				{
-					status = gcvSTATUS_MEMORY_UNLOCKED;
-					goto OnError;
-				}
-
-                /* Decrement lock count. */
-                -- Node->Virtual.locked;
-
-                /* See if we can unlock the resources. */
-                if (Node->Virtual.locked == 0)
-                {
-                    /* Unlock the pages. */
-#ifdef __QNXNTO__
-                    gcmkONERROR(
-                        gckOS_UnlockPages(os,
-                                          Node->Virtual.physical,
-                                          Node->Virtual.userPID,
-                                          Node->Virtual.bytes,
-                                          Node->Virtual.logical));
-#else
-                    gcmkONERROR(
-                        gckOS_UnlockPages(os,
-                                          Node->Virtual.physical,
-                                          Node->Virtual.bytes,
-                                          Node->Virtual.logical));
-#endif
-
-                    /* Free the page table. */
-                    if (Node->Virtual.pageTable != gcvNULL)
-                    {
-                        gcmkONERROR(
-                            gckMMU_FreePages(Node->Virtual.kernel->mmu,
-                                             Node->Virtual.pageTable,
-                                             Node->Virtual.pageCount));
-
-                        /* Mark page table as freed. */
-                        Node->Virtual.pageTable = gcvNULL;
-                    }
-
-                    /* Mark node as unlocked. */
-#ifdef __QNXTO
-                    Node->Virtual.unlockPending = gcvFALSE;
-#else
-                    Node->Virtual.pending = gcvFALSE;
-#endif
-                }
-
-                gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
-                               "Unmapped virtual node 0x%x from 0x%08X",
-                               Node, Node->Virtual.address);
-            }
-
-            /* Release the mutex. */
-            gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
-        }
-
-        else
-        {
             gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_VIDMEM,
                            "Scheduled unlock for virtual node 0x%x",
                            Node);
@@ -1747,6 +2157,11 @@ gckVIDMEM_Unlock(
             /* Schedule the surface to be unlocked. */
             *Asynchroneous = gcvTRUE;
         }
+
+        /* Release the mutex. */
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(os, Node->Virtual.mutex));
+
+        acquired = gcvFALSE;
     }
 
     /* Success. */
@@ -1754,9 +2169,10 @@ gckVIDMEM_Unlock(
     return gcvSTATUS_OK;
 
 OnError:
-    if (needRelease)
+    if (commitEntered)
     {
-        gcmkVERIFY_OK(gckCOMMAND_Release(command));
+        /* Release the command queue mutex. */
+        gcmkVERIFY_OK(gckCOMMAND_ExitCommit(command, gcvFALSE));
     }
 
     if (acquired)
@@ -1769,28 +2185,3 @@ OnError:
     gcmkFOOTER();
     return status;
 }
-
-#ifdef __QNXNTO__
-/* Set the allocating process' PID for this node. */
-gceSTATUS
-gckVIDMEM_SetPID(
-    IN gcuVIDMEM_NODE_PTR Node,
-    IN gctUINT32 Pid
-    )
-{
-    if (Node != gcvNULL)
-    {
-        if (Node->VidMem.memory->object.type != gcvOBJ_VIDMEM)
-        {
-            Node->Virtual.userPID = Pid;
-        }
-
-    }
-    else
-    {
-        return gcvSTATUS_INVALID_OBJECT;
-    }
-
-    return gcvSTATUS_OK;
-}
-#endif
