@@ -144,7 +144,7 @@ module_param(bankSize, long, 0644);
 static int fastClear = -1;
 module_param(fastClear, int, 0644);
 
-static int compression = -1;
+static int compression = 0;
 module_param(compression, int, 0644);
 
 static int signal = 48;
