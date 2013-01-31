@@ -40,11 +40,17 @@
 
 #define _GC_OBJ_ZONE    gcvZONE_OS
 
+#ifdef CONFIG_JZSOC
 extern unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
 				unsigned long len, unsigned long prot,
 				unsigned long flags, unsigned long pgoff);
 extern int plat_do_munmap(struct mm_struct *mm, unsigned long start,
 				size_t len);
+#undef do_mmap_pgoff
+#undef do_munmap
+#define do_mmap_pgoff	plat_do_mmap_pgoff
+#define do_munmap	plat_do_munmap
+#endif
 
 /*******************************************************************************
 ***** Version Signature *******************************************************/
@@ -1642,7 +1648,7 @@ gckOS_MapMemory(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (char *)plat_do_mmap_pgoff(gcvNULL,
+        mdlMap->vmaAddr = (char *)do_mmap_pgoff(gcvNULL,
                     0L,
                     mdl->numPages * PAGE_SIZE,
                     PROT_READ | PROT_WRITE,
@@ -1653,7 +1659,7 @@ gckOS_MapMemory(
         {
             gcmkTRACE(
                 gcvLEVEL_ERROR,
-                "%s(%d): plat_do_mmap_pgoff error",
+                "%s(%d): do_mmap_pgoff error",
                 __FUNCTION__, __LINE__
                 );
 
@@ -1877,7 +1883,7 @@ gckOS_UnmapMemoryEx(
         if (task != gcvNULL && task->mm != gcvNULL)
         {
             down_write(&task->mm->mmap_sem);
-            plat_do_munmap(task->mm, (unsigned long)Logical, mdl->numPages*PAGE_SIZE);
+            do_munmap(task->mm, (unsigned long)Logical, mdl->numPages*PAGE_SIZE);
             up_write(&task->mm->mmap_sem);
         }
         else
@@ -2065,7 +2071,7 @@ gckOS_AllocateNonPagedMemory(
         /* We need to map this to user space. */
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING) plat_do_mmap_pgoff(gcvNULL,
+        mdlMap->vmaAddr = (gctSTRING) do_mmap_pgoff(gcvNULL,
                 0L,
                 mdl->numPages * PAGE_SIZE,
                 PROT_READ | PROT_WRITE,
@@ -2076,7 +2082,7 @@ gckOS_AllocateNonPagedMemory(
         {
             gcmkTRACE_ZONE(
                 gcvLEVEL_WARNING, gcvZONE_OS,
-                "%s(%d): plat_do_mmap_pgoff error",
+                "%s(%d): do_mmap_pgoff error",
                 __FUNCTION__, __LINE__
                 );
 
@@ -2304,7 +2310,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
             {
                 down_write(&task->mm->mmap_sem);
 
-                if (plat_do_munmap(task->mm,
+                if (do_munmap(task->mm,
                               (unsigned long)mdlMap->vmaAddr,
                               mdl->numPages * PAGE_SIZE) < 0)
                 {
@@ -4234,7 +4240,7 @@ gckOS_LockPages(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING)plat_do_mmap_pgoff(gcvNULL,
+        mdlMap->vmaAddr = (gctSTRING)do_mmap_pgoff(gcvNULL,
                         0L,
                         mdl->numPages * PAGE_SIZE,
                         PROT_READ | PROT_WRITE,
@@ -4255,7 +4261,7 @@ gckOS_LockPages(
 
             gcmkTRACE_ZONE(
                 gcvLEVEL_INFO, gcvZONE_OS,
-                "%s(%d): plat_do_mmap_pgoff error",
+                "%s(%d): do_mmap_pgoff error",
                 __FUNCTION__, __LINE__
                 );
 
@@ -4646,7 +4652,7 @@ gckOS_UnlockPages(
             if (task != gcvNULL && task->mm != gcvNULL)
             {
                 down_write(&task->mm->mmap_sem);
-                plat_do_munmap(task->mm, (unsigned long)Logical, mdl->numPages * PAGE_SIZE);
+                do_munmap(task->mm, (unsigned long)mdlMap->vmaAddr, mdl->numPages * PAGE_SIZE);
                 up_write(&task->mm->mmap_sem);
             }
 
