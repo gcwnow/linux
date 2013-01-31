@@ -653,7 +653,6 @@ static int __init gcw0_board_setup(void)
 	return 0;
 }
 
-#if defined(CONFIG_GPU_VIVANTE_GC860)
 unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
 				 unsigned long len, unsigned long prot,
 				 unsigned long flags, unsigned long pgoff)
@@ -667,6 +666,5 @@ int plat_do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 	return do_munmap(mm, start, len);
 }
 EXPORT_SYMBOL(plat_do_munmap);
-#endif
 
 arch_initcall(gcw0_board_setup);
