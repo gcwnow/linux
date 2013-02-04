@@ -1862,12 +1862,20 @@ static inline void __devinit musb_g_init_endpoints(struct musb *musb)
 	}
 }
 
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+static struct musb *the_gadget = NULL;
+#endif
+
 /* called once during driver setup to initialize and link into
  * the driver model; memory is zeroed.
  */
 int __devinit musb_gadget_setup(struct musb *musb)
 {
 	int status;
+
+#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
+	the_gadget = musb;
+#endif
 
 	/* REVISIT minor race:  if (erroneously) setting up two
 	 * musb peripherals at the same time, only the bus lock
@@ -1966,7 +1974,7 @@ static int jz_musb_vbus_hotplug_event(struct notifier_block *n,
 
 			spin_lock_irqsave(&musb->lock, flags);
 
-			musb->xceiv->gadget = &musb->g;
+			otg_set_peripheral(musb->xceiv->otg, &musb->g);
 			musb->xceiv->state = OTG_STATE_B_IDLE;
 			musb->is_active = 1;
 

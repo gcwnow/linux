@@ -49,8 +49,7 @@ This mode is recommended when multiple gadgets are used. Userspace APP is notifi
 
 
 #define D(msg,   fmt...)
-//#define D(msg, fmt...)  \
-	printk(KERN_ERR JZ_VH_PFX": %s(): "msg, __func__, ##fmt)
+//#define D(msg, fmt...) printk(KERN_ERR JZ_VH_PFX": %s(): "msg, __func__, ##fmt)
 
 #define JZ_VH_PFX "jz_vbus_hotplug"
 

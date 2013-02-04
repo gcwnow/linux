@@ -85,10 +85,6 @@ choice
 	  should be able to build all these drivers into one kernel to
 	  allow using DMA on multiplatform kernels.
 
-config USB_MUSB_PERIPHERAL_HOTPLUG
-	bool "Support Ingenic USB Device Controller Hotplug"
-	depends on USB_MUSB_JZ4770
-
 config USB_UX500_DMA
 	bool 'ST Ericsson U8500 and U5500'
 	depends on USB_MUSB_UX500
@@ -126,5 +122,9 @@ config MUSB_PIO_ONLY
 	  parameter.
 
 endchoice
+
+config USB_MUSB_PERIPHERAL_HOTPLUG
+	bool "Support Ingenic USB Device Controller Hotplug"
+	depends on USB_MUSB_JZ4770
 
 endif # USB_MUSB_HDRC
