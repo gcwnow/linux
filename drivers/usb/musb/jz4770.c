@@ -14,6 +14,7 @@
 #include <linux/clk.h>
 #include <linux/dma-mapping.h>
 #include <linux/io.h>
+#include <linux/gpio.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/nop-usb-xceiv.h>
 
@@ -163,8 +164,11 @@ static unsigned int read_gpio_pin(unsigned int pin, unsigned int loop)
 
 static void do_otg_id_pin_state(struct musb *musb)
 {
+	struct device *dev = musb->controller;
 	unsigned int default_a;
 	unsigned int pin = read_gpio_pin(GPIO_OTG_ID_PIN, 5000);
+
+	dev_info(dev, "USB OTG ID pin state: %d\n", pin);
 
 	default_a = !pin;
 
@@ -203,20 +207,33 @@ static irqreturn_t jz_musb_otg_id_irq(int irq, void *data)
 
 static int otg_id_pin_setup(struct musb *musb)
 {
-	int rv;
+	struct device *dev = musb->controller;
+	int ret;
+
+	ret = devm_gpio_request(dev, GPIO_OTG_ID_PIN, "USB OTG ID");
+	if (ret) {
+		dev_err(dev, "Failed to request USB OTG ID pin: %d\n", ret);
+		return ret;
+	}
+	/*
+	 * Note: If pull is enabled, the initial state is read as 0 regardless
+	 *       of whether something is plugged or not.
+	 */
+	__gpio_as_input(GPIO_OTG_ID_PIN);
+	__gpio_disable_pull(GPIO_OTG_ID_PIN);
 
 	/* Update OTG ID PIN state. */
 	do_otg_id_pin_state(musb);
 	setup_timer(&otg_id_pin_stable_timer, otg_id_pin_stable_func, (unsigned long)musb);
 
-	rv = request_irq(GPIO_OTG_ID_IRQ, jz_musb_otg_id_irq,
+	ret = request_irq(GPIO_OTG_ID_IRQ, jz_musb_otg_id_irq,
 				IRQF_DISABLED, "otg-id-irq", musb);
-	if (rv) {
-		pr_err("Failed to request OTG_ID_IRQ.\n");
-		return rv;
+	if (ret) {
+		dev_err(dev, "Failed to request USB OTG ID IRQ: %d\n", ret);
+		return ret;
 	}
 
-	return rv;
+	return ret;
 }
 
 static void otg_id_pin_cleanup(struct musb *musb)
