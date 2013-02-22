@@ -777,7 +777,7 @@ void __init jz_board_setup(void)
 	board_gpio_setup();
 }
 
-#if defined(CONFIG_VIVANTE_GPU_GC860) || defined(CONFIG_VIVANTE_GPU_GC860_MODULE)
+#if defined(CONFIG_GPU_VIVANTE_GC860)
 unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
 				 unsigned long len, unsigned long prot,
 				 unsigned long flags, unsigned long pgoff)
