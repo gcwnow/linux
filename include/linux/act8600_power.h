@@ -38,4 +38,19 @@ struct act8600_platform_pdata_t {
  */
 int act8600_output_enable(int outnum, bool enable);
 
+/**
+ * act8600_q_set - enable/disable a Q switch.
+ * The Q[123] switches are used to control the USB VBUS line.
+ * Q1 connects the line to the 5V input line, powering the line.
+ * Q2 connects it to the VSYS output, powering the line.
+ * Q3 connects it to CHGIN, and is used to power the sysrem from USB.
+ *
+ * Q1 and Q2 switch off automatically when the current is over 700 ma.
+ * Q2 switches off when the CHGIN voltage is over 6v.
+ * @q - q switch index, 1, 2, or 3.
+ * @enable - enable or disable it, 1 or 0.
+ * @returns 0 in success, -error core on failure.
+ */
+int act8600_q_set(int q, bool enable);
+
 #endif  /* __ACT8600_POWER_H__ */
