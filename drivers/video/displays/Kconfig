@@ -10,4 +10,11 @@ config PANEL_NT39016
 	help
 	  Select this if you are using a Novatek NT39016 LCD driver IC.
 
+config PANEL_JZ4770_TVE
+	bool "Ingenic JZ4770 internal TV encoder"
+	depends on MACH_JZ4770
+	help
+	  Select this if you want to enable TV-out support from the internal
+	  TV encoder of the Ingenic JZ4770 SoC.
+
 endmenu

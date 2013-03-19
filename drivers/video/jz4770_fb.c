@@ -45,6 +45,7 @@
 #include <asm/mach-jz4770/jz4770tcu.h>
 
 #include <video/jzpanel.h>
+#include <video/panel-jz4770-tve.h>
 
 #include "console/fbcon.h"
 
@@ -100,6 +101,9 @@ struct jzfb {
 	struct jzfb_platform_data *pdata;
 	struct platform_device *pdev;
 	void *panel;
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	void *tve;
+#endif
 
 	struct { u16 red, green, blue; } palette[NR_PALETTE];
 	uint32_t pseudo_palette[16];
@@ -1076,11 +1080,22 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed;
 
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	ret = jz4770_tve_panel_ops.init(&jzfb->tve, &pdev->dev, NULL);
+	dev_info(&pdev->dev, "TV encoder init: %d\n", ret);
+	if (ret)
+		goto failed_panel;
+#endif
+
 	pdata->panel_ops->enable(jzfb->panel);
 	jzfb->is_enabled = true;
 
 	return 0;
 
+#ifdef CONFIG_PANEL_JZ4770_TVE
+failed_panel:
+	jzfb->pdata->panel_ops->exit(jzfb->panel);
+#endif
 failed:
 	jz4760fb_unmap_smem(fb);
 	jz4760fb_free_fb_info(fb);
@@ -1098,6 +1113,9 @@ static int __devexit jz4760_fb_remove(struct platform_device *pdev)
 	}
 
 	jzfb->pdata->panel_ops->exit(jzfb->panel);
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	jz4770_tve_panel_ops.exit(jzfb->tve);
+#endif
 
 	platform_set_drvdata(pdev, NULL);
 
