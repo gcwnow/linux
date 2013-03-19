@@ -62,10 +62,22 @@ static struct platform_device jz_usb_ohci_device = {
 static struct resource jz_lcd_resources[] = {
 	[0] = {
 		.start          = CPHYSADDR(LCD_BASE),
-		.end            = CPHYSADDR(LCD_BASE) + 0x10000 - 1,
+		.end            = CPHYSADDR(LCD_BASE) + 0x13F,
 		.flags          = IORESOURCE_MEM,
 	},
-	[1] = {
+	{
+		.name           = "tve",
+		.start          = CPHYSADDR(LCD_BASE) + 0x140,
+		.end            = CPHYSADDR(LCD_BASE) + 0x1BF,
+		.flags          = IORESOURCE_MEM,
+	},
+	{
+		.name           = "part2",
+		.start          = CPHYSADDR(LCD_BASE) + 0x1C0,
+		.end            = CPHYSADDR(LCD_BASE) + 0x2FF,
+		.flags          = IORESOURCE_MEM,
+	},
+	{
 		.start          = IRQ_LCD,
 		.end            = IRQ_LCD,
 		.flags          = IORESOURCE_IRQ,
