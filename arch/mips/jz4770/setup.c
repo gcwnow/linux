@@ -45,6 +45,7 @@
 
 #ifdef CONFIG_PM
 #include <asm/suspend.h>
+#include "pm.h"
 #endif
 
 #ifdef CONFIG_PC_KEYB

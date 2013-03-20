@@ -708,8 +708,6 @@ do {							\
 /**************remove me if android's kernel support these operations********end*********  */
 #define __cpm_start_bdma()	(REG_CPM_CLKGR1 &= ~CLKGR1_BDMA)
 
-extern int jz_pm_init(void);
-
 #endif /* __MIPS_ASSEMBLER */
 
 #endif /* __JZ4770CPM_H__ */

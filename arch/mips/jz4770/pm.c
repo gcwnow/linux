@@ -39,6 +39,8 @@
 #include <asm/mach-jz4770/jz4770rtc.h>
 #include <asm/mach-jz4770/jz4770sadc.h>
 
+#include "pm.h"
+
 
 #define CONFIG_PM_POWERDOWN_P0 y
 #define JZ_PM_SIMULATE_BATTERY y
