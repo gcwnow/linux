@@ -385,9 +385,9 @@ static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *f
 	}
 
 	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", var->yoffset);
-	dma0_desc0->databuf = (unsigned int)virt_to_phys((void *)lcd_frame0
+	dma1_desc0->databuf = (unsigned int)virt_to_phys((void *)lcd_frame1
 			+ (fb->fix.line_length * var->yoffset));
-	dma_cache_wback((unsigned int)(dma0_desc0),
+	dma_cache_wback((unsigned int)(dma1_desc0),
 			sizeof(struct jz4760_lcd_dma_desc));
 
 	return 0;
@@ -600,7 +600,7 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 
 	bpp = bpp_to_data_bpp(jzfb->bpp);
 
-	dev_dbg(&jzfb->pdev->dev, "FG0 BPP: %d, Data BPP: %d\n", jzfb->bpp, bpp);
+	dev_dbg(&jzfb->pdev->dev, "FG1 BPP: %d, Data BPP: %d\n", jzfb->bpp, bpp);
 
 	w = jz_panel->w;
 	h = jz_panel->h;
@@ -611,12 +611,12 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 			break;
 
 	lcd_palette = (unsigned char *)__get_free_pages(GFP_KERNEL, 0);
-	lcd_frame0 = (unsigned char *)__get_free_pages(GFP_KERNEL, page_shift);
+	lcd_frame1 = (unsigned char *)__get_free_pages(GFP_KERNEL, page_shift);
 
-	if ((!lcd_palette) || (!lcd_frame0))
+	if ((!lcd_palette) || (!lcd_frame1))
 		return -ENOMEM;
 	memset((void *)lcd_palette, 0, PAGE_SIZE);
-	memset((void *)lcd_frame0, 0, PAGE_SIZE << page_shift);
+	memset((void *)lcd_frame1, 0, PAGE_SIZE << page_shift);
 
 	dma_desc_base = (struct jz4760_lcd_dma_desc *)((void*)lcd_palette + ((PALETTE_SIZE+3)/4)*4);
 
@@ -627,16 +627,16 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	page = (unsigned long)lcd_palette;
 	SetPageReserved(virt_to_page((void*)page));
 
-	for (page = (unsigned long)lcd_frame0;
-	     page < PAGE_ALIGN((unsigned long)lcd_frame0 + (PAGE_SIZE<<page_shift));
+	for (page = (unsigned long)lcd_frame1;
+	     page < PAGE_ALIGN((unsigned long)lcd_frame1 + (PAGE_SIZE<<page_shift));
 	     page += PAGE_SIZE) {
 		SetPageReserved(virt_to_page((void*)page));
 	}
 
-	fb->fix.smem_start = virt_to_phys((void *)lcd_frame0);
+	fb->fix.smem_start = virt_to_phys((void *)lcd_frame1);
 	fb->fix.smem_len = (PAGE_SIZE << page_shift); /* page_shift/2 ??? */
 	fb->screen_base =
-		(unsigned char *)(((unsigned int)lcd_frame0&0x1fffffff) | 0xa0000000);
+		(unsigned char *)(((unsigned int)lcd_frame1&0x1fffffff) | 0xa0000000);
 
 	if (!fb->screen_base) {
 		dev_err(&jzfb->pdev->dev,
@@ -688,14 +688,14 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 		free_pages((int)lcd_palette, 0);
 	}
 
-	if (lcd_frame0) {
-		for (tmp=(unsigned char *)lcd_frame0;
-		     tmp < lcd_frame0 + (PAGE_SIZE << page_shift);
+	if (lcd_frame1) {
+		for (tmp=(unsigned char *)lcd_frame1;
+		     tmp < lcd_frame1 + (PAGE_SIZE << page_shift);
 		     tmp += PAGE_SIZE) {
 			map = virt_to_page(tmp);
 			clear_bit(PG_reserved, &map->flags);
 		}
-		free_pages((int)lcd_frame0, page_shift);
+		free_pages((int)lcd_frame1, page_shift);
 	}
 }
 
@@ -787,33 +787,26 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 {
 	unsigned int bpp = jzfb->bpp;
 	unsigned int ctrl = panel->ctrl;
+	unsigned int osdctrl = 0;
 	unsigned int cfg = panel->cfg;
 
 	switch (bpp) {
-	case 1:
-		ctrl |= LCD_CTRL_BPP_1;
-		break;
-	case 2:
-		ctrl |= LCD_CTRL_BPP_2;
-		break;
-	case 4:
-		ctrl |= LCD_CTRL_BPP_4;
-		break;
-	case 8:
-		ctrl |= LCD_CTRL_BPP_8;
-		break;
 	case 15:
 		ctrl |= LCD_CTRL_BPP_16 | LCD_CTRL_RGB555;
+		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16 | LCD_OSDCTRL_RGB555;
 		break;
 	case 16:
 		ctrl |= LCD_CTRL_BPP_16 | LCD_CTRL_RGB565;
+		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16;
 		break;
 	case 32:
 		ctrl |= LCD_CTRL_BPP_18_24;
+		osdctrl |= LCD_OSDCTRL_OSDBPP_18_24;
 		break;
 	default:
 		dev_err(&jzfb->pdev->dev, "The BPP %d is not supported\n", bpp);
 		ctrl |= LCD_CTRL_BPP_18_24;
+		osdctrl |= LCD_OSDCTRL_OSDBPP_18_24;
 		break;
 	}
 
@@ -832,15 +825,21 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	__lcd_hsync_set_hps(0);
 	__lcd_hsync_set_hpe(panel->hsw);
 	__lcd_vsync_set_vpe(panel->vsw);
+
+	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN;
+	REG_LCD_OSDCTRL = osdctrl;
+
+	/* yellow background helps debugging */
+	REG_LCD_BGC = 0x00FFFF00;
 }
 
 
 static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, unsigned int bpp)
 {
 	/* bytes per line, rounded to word boundary */
-	int fg0_line_size = ((panel->w * bpp + 31) / 32) * 4;
+	int fg1_line_size = ((panel->w * bpp + 31) / 32) * 4;
 	/* bytes per frame */
-	int fg0_frm_size = fg0_line_size * panel->h;
+	int fg1_frm_size = fg1_line_size * panel->h;
 
 	/*
 	 * NOTE:
@@ -854,18 +853,18 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 	 *	4. F1 position
 	 */
 
-	REG_LCD_XYP0 = 0;
+	REG_LCD_XYP1 = 0;
 
 	/* wait change ready??? */
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
 
-	dma0_desc0->cmd = dma0_desc1->cmd = fg0_frm_size/4;
-	dma0_desc0->offsize = dma0_desc1->offsize =0;
-	dma0_desc0->page_width = dma0_desc1->page_width = 0;
+	dma1_desc0->cmd = dma1_desc1->cmd = fg1_frm_size/4;
+	dma1_desc0->offsize = dma1_desc1->offsize =0;
+	dma1_desc0->page_width = dma1_desc1->page_width = 0;
 
-	dma0_desc0->desc_size = dma0_desc1->desc_size
+	dma1_desc0->desc_size = dma1_desc1->desc_size
 		= panel->h << 16 | panel->w;
-	REG_LCD_SIZE0 = (panel->h << 16) | panel->w;
+	REG_LCD_SIZE1 = (panel->h << 16) | panel->w;
 
 	dma_cache_wback((unsigned int)(dma_desc_base), (DMA_DESC_NUM)*sizeof(struct jz4760_lcd_dma_desc));
 }
