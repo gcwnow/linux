@@ -21,6 +21,7 @@
 #include <asm/mach-jz4770/jz4770aosd.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770intc.h>
+#include <asm/mach-jz4770/jz4770ipu.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770msc.h>
 #include <asm/mach-jz4770/jz4770otg.h>
@@ -80,6 +81,20 @@ static struct resource jz_lcd_resources[] = {
 	{
 		.start          = IRQ_LCD,
 		.end            = IRQ_LCD,
+		.flags          = IORESOURCE_IRQ,
+	},
+	/* Image Process Unit (IPU) */
+	/* maybe this should be a separate device at some point */
+	{
+		.name           = "ipu",
+		.start          = CPHYSADDR(IPU_BASE),
+		.end            = CPHYSADDR(IPU_BASE) + 0x7FF,
+		.flags          = IORESOURCE_MEM,
+	},
+	{
+		.name           = "ipu",
+		.start          = IRQ_IPU,
+		.end            = IRQ_IPU,
 		.flags          = IORESOURCE_IRQ,
 	}
 };
