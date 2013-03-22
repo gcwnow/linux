@@ -23,6 +23,7 @@
 #include <linux/list.h>
 #include <linux/err.h>
 
+#include <asm/mach-jz4770/clock.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 
 #include "clock.h"
@@ -436,9 +437,25 @@ static const struct clk_ops jz_clk_msc_ops = {
 	.is_enabled = jz_clk_is_enabled_gating,
 };
 
+enum {
+	JZ_CLK_DIVIDED_LCD,
+};
+
 /* Those clocks can connect to PLL0_half or PLL1 */
 static struct divided_clk jz_clk_divided_clks[] = {
 	/* TODO: Complete this */
+	[JZ_CLK_DIVIDED_LCD] = {
+		.clk = {
+			.name = "lpclk",
+			.gate_register = CPM_CLKGR0_OFFSET,
+			.gate_bit = CLKGR0_LCD,
+			.ops = &jz_clk_divided_ops,
+		},
+		.reg = CPM_LPCDR_OFFSET,
+		.mask = LPCDR_PIXDIV_MASK,
+		.pll_mask = LPCDR_LPCS,
+		.ext_mask = JZ_CLK_DIVIDED_NO_EXT,
+	},
 	{
 		.clk = {
 			.name = "mmc0",
@@ -521,18 +538,6 @@ static struct divided_clk jz_clk_divided_clks[] = {
 		.reg = CPM_BCHCDR_OFFSET,
 		.mask = CPM_BCHCDR_BCHDIV_MASK,
 		.pll_mask = CPM_BCHCDR_BPCS,
-		.ext_mask = JZ_CLK_DIVIDED_NO_EXT,
-	},
-	{
-		.clk = {
-			.name = "lpclk",
-			.gate_register = CPM_CLKGR0_OFFSET,
-			.gate_bit = CLKGR0_LCD,
-			.ops = &jz_clk_divided_ops,
-		},
-		.reg = CPM_LPCDR_OFFSET,
-		.mask = LPCDR_PIXDIV_MASK,
-		.pll_mask = LPCDR_LPCS,
 		.ext_mask = JZ_CLK_DIVIDED_NO_EXT,
 	},
 };
@@ -763,6 +768,21 @@ void clk_put(struct clk *clk)
 }
 EXPORT_SYMBOL_GPL(clk_put);
 
+int jz_clk_set_lcd_output(bool tve)
+{
+	struct clk *lcd_clk = &jz_clk_divided_clks[JZ_CLK_DIVIDED_LCD].clk;
+
+	if (clk_is_enabled(lcd_clk))
+		return -EBUSY;
+
+	if (tve)
+		jz_clk_reg_set_bits(CPM_LPCDR_OFFSET, LPCDR_LTCS);
+	else
+		jz_clk_reg_clear_bits(CPM_LPCDR_OFFSET, LPCDR_LTCS);
+
+	return 0;
+}
+
 static inline void clk_add(struct clk *clk)
 {
 	list_add_tail(&clk->list, &jz_clk_list);
@@ -816,6 +836,11 @@ static int __init clk_init_pll1(unsigned long rate)
 {
 	uint32_t val, jz_clk_ext_rate = jz_clk_ext.rate;
 	int ret;
+
+	// rate = ((parent_rate / n) * m) >> od
+	// n is 5 bits
+	// m is 7 bits
+	// od is 2 bits
 
 	/* Disable PLL1 */
 	jz_clk_reg_clear_bits(CPM_CPPCR1_OFFSET, CPPCR1_PLL1EN);

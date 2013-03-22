@@ -36,6 +36,7 @@
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 
+#include <asm/mach-jz4770/clock.h>
 #include <asm/mach-jz4770/jz4770_fb.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
@@ -80,6 +81,7 @@ struct jz4760lcd_panel_t {
 };
 
 static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
+#if 0
 	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER | /* Underrun recover */
 	       LCD_CFG_MODE_GENERIC_TFT | /* General TFT panel */
 	       LCD_CFG_MODE_TFT_24BIT | 	/* output 24bpp */
@@ -91,6 +93,14 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	/* Note: Data sheet suggests elw=18 and efw=10, but that doesn't
 	 *       line up well with PLL1 at 192 MHz.
 	 */
+#else
+	.cfg = LCD_CFG_TVEN | /* output to tve */
+		LCD_CFG_RECOVER | /* underrun protect */
+		LCD_CFG_MODE_NONINTER_CCIR656, /* Interlace CCIR656 mode */
+	.ctrl = LCD_CTRL_OFUM | LCD_CTRL_BST_16,	/* 16words burst */
+	320, 240, 60, 50, 1, 17, 70, 9, 13,
+	//704, 575, 50, 0, 0, 0, 0, 0, 0,
+#endif
 };
 
 /* default output to lcd panel */
@@ -820,15 +830,27 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	REG_LCD_CFG = cfg; /* LCDC Configure Register */
 	REG_SLCD_CFG = 0; /* Smart LCD Configure Register */
 
+#if 0
 	__lcd_vat_set_ht(panel->blw + panel->w + panel->elw);
 	__lcd_vat_set_vt(panel->bfw + panel->h + panel->efw);
 	__lcd_dah_set_hds(panel->blw);
 	__lcd_dah_set_hde(panel->blw + panel->w);
 	__lcd_dav_set_vds(panel->bfw);
 	__lcd_dav_set_vde(panel->bfw + panel->h);
+#else
+	/* NTSC TV-out */
+	__lcd_vat_set_ht(704); /* line freq in 13.5 MHz ticks */
+	__lcd_vat_set_vt(262); /* half of TV lines because noninterlaced */
+	__lcd_dah_set_hds(0);
+	__lcd_dah_set_hde(704);
+	__lcd_dav_set_vds((262 - 240) / 2);
+	__lcd_dav_set_vde((262 - 240) / 2 + 240);
 	__lcd_hsync_set_hps(0);
-	__lcd_hsync_set_hpe(panel->hsw);
-	__lcd_vsync_set_vpe(panel->vsw);
+	__lcd_hsync_set_hpe(0);
+	__lcd_vsync_set_vpe(0);
+	REG_LCD_XYP1 = 0x00100080;
+	REG_LCD_RGBC = LCD_RGBC_YCC;
+#endif
 
 	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN;
 	REG_LCD_OSDCTRL = osdctrl;
@@ -904,6 +926,37 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 	 * A very short delay seems to be sufficient.
 	 */
 	udelay(1);
+}
+
+static void jzfb_change_clock_tve(struct jzfb *jzfb,
+			      const struct jz4760lcd_panel_t *panel)
+{
+	unsigned int pixticks;
+	unsigned int rate;
+	struct clk *lpclk = jzfb->lpclk;
+
+	pixticks = panel->w;
+
+	rate = panel->fclk * (pixticks + panel->elw + panel->blw)
+	                   * (panel->h + panel->efw + panel->bfw);
+
+	clk_disable(lpclk);
+
+	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
+	__cpm_select_pixclk_tve();
+
+	clk_set_rate(lpclk, 27000000);
+
+	jz_clocks.pixclk = clk_get_rate(lpclk);
+	dev_info(&jzfb->pdev->dev, "PixClock: %d\n", jz_clocks.pixclk);
+
+	clk_enable(lpclk);
+
+	/*
+	 * Enabling the LCDC too soon after the clock will hang the system.
+	 * A very short delay seems to be sufficient.
+	 */
+	udelay(100);
 }
 
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
@@ -1050,13 +1103,43 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 	REG_LCD_STATE = 0; /* clear lcdc status */
 	__lcd_clr_ena(); /* quick disable */
 
+	ret = jz4770_tve_panel_ops.init(&jzfb->tve, &pdev->dev, NULL);
+	dev_info(&pdev->dev, "TV encoder init: %d\n", ret);
+
 	jz4760fb_descriptor_init(jzfb->bpp);
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
 	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
 	jz4760fb_set_var(&fb->var, -1, fb);
-	jzfb_change_clock(jzfb, jz_panel);
+	{
+		u32 cfg = REG_LCD_CFG;
+		cfg |= LCD_CFG_TVEN;
+		//cfg &= ~LCD_CFG_MODE_MASK;
+		//cfg |= LCD_CFG_MODE_NONINTER_CCIR656;
+		REG_LCD_CFG = cfg;
+		dev_info(&pdev->dev, "LCDC cfg:  %08X\n", cfg);
+		dev_info(&pdev->dev, "LCDC ctrl: %08X\n", REG_LCD_CTRL);
+	}
+	//jzfb_change_clock(jzfb, jz_panel);
+	jzfb_change_clock_tve(jzfb, jz_panel);
+
+	//jz4760lcd_info_switch_to_TVE(arg);
+	//jz4760tve_init(arg);   /* tve controller init */
+	//udelay(100);
+	//cpm_start_clock(CGM_TVE);
+	//jz4760tve_enable_tve();
+	//REG_TVE_CTRL |= (1 << 21);
+	/* turn off lcd backlight */
+	//screen_off();
 
 	ctrl_enable();
+	// TODO: clock.c should do this instead if TVE output is active
+	CLRREG32(CPM_CLKGR0, CLKGR0_TVE);
+	mdelay(100);
+	jz4770_tve_panel_ops.enable(jzfb->tve);
+	mdelay(100);
+	jz4770_tve_panel_ops.disable(jzfb->tve);
+	mdelay(100);
+	jz4770_tve_panel_ops.enable(jzfb->tve);
 
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
@@ -1080,11 +1163,37 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed;
 
-#ifdef CONFIG_PANEL_JZ4770_TVE
+#if 0 && defined(CONFIG_PANEL_JZ4770_TVE)
 	ret = jz4770_tve_panel_ops.init(&jzfb->tve, &pdev->dev, NULL);
 	dev_info(&pdev->dev, "TV encoder init: %d\n", ret);
 	if (ret)
 		goto failed_panel;
+
+	// TEST:
+	mdelay(100);
+	ctrl_disable(jzfb->pdev);
+	mdelay(100);
+	clk_disable(jzfb->lpclk);
+	mdelay(100);
+	ret = jz_clk_set_lcd_output(true);
+	dev_info(&pdev->dev, "Set LCDC clock output to TV encoder: %d\n", ret);
+	/*
+	if (ret)
+		goto failed_panel;
+	*/
+	mdelay(100);
+	{
+		u32 cfg = REG_LCD_CFG;
+		cfg |= LCD_CFG_TVEN;
+		cfg &= ~LCD_CFG_MODE_MASK;
+		cfg |= LCD_CFG_MODE_NONINTER_CCIR656;
+		REG_LCD_CFG = cfg;
+	}
+	clk_enable(jzfb->lpclk);
+	mdelay(100);
+	ctrl_enable();
+	mdelay(100);
+	//jz4770_tve_panel_ops.enable(jzfb->tve);
 #endif
 
 	pdata->panel_ops->enable(jzfb->panel);

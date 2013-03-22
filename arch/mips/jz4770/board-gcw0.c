@@ -38,6 +38,7 @@
 #include <media/radio-rda5807.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
+#include <video/panel-jz4770-tve.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/jz4770_fb.h>
@@ -802,7 +803,7 @@ static struct platform_device gcw0_audio_device = {
 struct jz_clk_board_data jz_clk_bdata = {
 	.ext_rate	=   12000000,
 	.rtc_rate	=      32768,
-	.pll1_rate	=  192000000,
+	.pll1_rate	=  216000000,
 };
 
 
