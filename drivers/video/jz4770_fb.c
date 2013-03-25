@@ -41,6 +41,7 @@
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770intc.h>
+#include <asm/mach-jz4770/jz4770ipu.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/jz4770tcu.h>
@@ -49,6 +50,16 @@
 #include <video/panel-jz4770-tve.h>
 
 #include "console/fbcon.h"
+
+
+// TODO: Stop using jz4770ipu.h altogether.
+#define IPU_CTRL_DFIX_SEL	BIT(17)		/* fixed dest addr */
+#define IPU_CTRL_LCDC_SEL	BIT(11)		/* output to LCDC FIFO */
+#define IPU_CTRL_SPKG_SEL	BIT(10)		/* packed input format */
+#define IPU_CTRL_VRSZ_EN	BIT(3)		/* vertical resize */
+#define IPU_CTRL_HRSZ_EN	BIT(2)		/* horizontal resize */
+#define IPU_CTRL_RUN		BIT(1)		/* start conversion */
+#define IPU_CTRL_CHIP_EN	BIT(0)		/* chip enable */
 
 
 #define NR_PALETTE	256
@@ -121,6 +132,7 @@ struct jzfb {
 	unsigned int bpp;	/* bits per pixel */
 
 	struct clk *lpclk;
+	struct clk *ipuclk;
 
 	struct mutex lock;
 	bool is_enabled;
@@ -801,7 +813,7 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 {
 	unsigned int bpp = jzfb->bpp;
 	unsigned int ctrl = panel->ctrl;
-	unsigned int osdctrl = 0;
+	unsigned int osdctrl = LCD_OSDCTRL_IPU;
 	unsigned int cfg = panel->cfg;
 
 	switch (bpp) {
@@ -859,7 +871,6 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	REG_LCD_BGC = 0x00FFFF00;
 }
 
-
 static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, unsigned int bpp)
 {
 	/* bytes per line, rounded to word boundary */
@@ -880,6 +891,37 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 	 */
 
 	REG_LCD_XYP1 = 0;
+
+	/* Init IPU. */
+	// TODO: Actually the panel size should be 640x240 and the frame buffer
+	//       size should be stored elsewhere.
+	// TODO: These are all 1-bit flags, I don't understand why a mask/shift
+	//       naming scheme was used here.
+	//       We should get our own names in the future.
+	REG_IPU_CTRL = IPU_CTRL_DFIX_SEL | IPU_CTRL_LCDC_SEL // destination LCDC
+	             | IPU_CTRL_SPKG_SEL // packed pixels
+	             //| IPU_CTRL_HRSZ_EN  // horizontal resize
+	             | IPU_CTRL_CHIP_EN; // chip enable
+	REG_IPU_D_FMT = (2 << 19) // RGB888
+		      | (0 << 22) // RGB byte order
+		      | (0 << 25) // low 24 bits in use
+		      | (2 << 0); // RGB888 input
+	REG_IPU_Y_ADDR = virt_to_phys((void *)lcd_frame1);
+	// TODO: Is this actually used?
+	REG_IPU_Y_ADDR_N = virt_to_phys((void *)lcd_frame1);
+	// TODO: Unclear if we should specify width in bytes or pixels for RGB.
+	REG_IPU_IN_FM_GS = (panel->w << IN_FM_W_SFT)
+	                 | (panel->h << IN_FM_H_SFT);
+	REG_IPU_Y_STRIDE = fg1_line_size;
+	REG_IPU_OUT_GS = ((320 /*640*/ * 4) << OUT_FM_W_SFT)
+	               | (panel->h << OUT_FM_H_SFT);
+	// TODO: Is stride even relevant when outputting to LCDC?
+	REG_IPU_OUT_STRIDE = 320 /*640*/ * 4;
+
+	/* Note On powerup, bit 30 is set, but this bit is undocumented. */
+	REG_LCD_IPUR = LCD_IPUR_IPUREN
+		     | (REG_LCD_IPUR & ~LCD_IPUR_IPURMASK)
+		     | 0x300;
 
 	/* wait change ready??? */
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
@@ -1081,6 +1123,14 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
+	/* Init IPU clock. */
+	jzfb->ipuclk = devm_clk_get(&pdev->dev, "ipu");
+	if (IS_ERR(jzfb->ipuclk)) {
+		ret = PTR_ERR(jzfb->ipuclk);
+		dev_err(&pdev->dev, "Failed to get IPU clock: %d\n", ret);
+		goto failed;
+	}
+
 	platform_set_drvdata(pdev, jzfb);
 
 	/* configurate sequence:
@@ -1106,6 +1156,8 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 	ret = jz4770_tve_panel_ops.init(&jzfb->tve, &pdev->dev, NULL);
 	dev_info(&pdev->dev, "TV encoder init: %d\n", ret);
 
+	clk_enable(jzfb->ipuclk);
+
 	jz4760fb_descriptor_init(jzfb->bpp);
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
 	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
@@ -1130,6 +1182,8 @@ static int __devinit jz4760_fb_probe(struct platform_device *pdev)
 	//REG_TVE_CTRL |= (1 << 21);
 	/* turn off lcd backlight */
 	//screen_off();
+
+	REG_IPU_CTRL |= IPU_CTRL_RUN;
 
 	ctrl_enable();
 	// TODO: clock.c should do this instead if TVE output is active

@@ -46,8 +46,16 @@
 #define REG_U_PHY_T_ADDR	0x58 /* Input U Physical Table Address Register */
 #define REG_V_PHY_T_ADDR	0x5c /* Input V Physical Table Address Register */
 #define REG_OUT_PHY_T_ADDR	0x60 /* Output Physical Table Address Register */
+#define REG_Y_ADDR_N		0x84  /* Input Y or YUV422 Packaged Data Address Register, for next frame */
 
-#define REG_IPU_CTRL REG32(IPU_V_BASE + REG_CTRL)
+#define REG_IPU_CTRL		REG32(IPU_V_BASE + REG_CTRL)
+#define REG_IPU_D_FMT		REG32(IPU_V_BASE + REG_D_FMT)
+#define REG_IPU_Y_ADDR		REG32(IPU_V_BASE + REG_Y_ADDR)
+#define REG_IPU_IN_FM_GS	REG32(IPU_V_BASE + REG_IN_FM_GS)
+#define REG_IPU_Y_STRIDE	REG32(IPU_V_BASE + REG_Y_STRIDE)
+#define REG_IPU_OUT_GS		REG32(IPU_V_BASE + REG_OUT_GS)
+#define REG_IPU_OUT_STRIDE	REG32(IPU_V_BASE + REG_OUT_STRIDE)
+#define REG_IPU_Y_ADDR_N	REG32(IPU_V_BASE + REG_Y_ADDR_N)
 
 /* REG_CTRL: IPU Control Register */
 #define IPU_CE_SFT	0x0
