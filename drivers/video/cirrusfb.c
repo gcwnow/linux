@@ -535,6 +535,22 @@ static int cirrusfb_check_var(struct fb_var_screeninfo *var,
 	unsigned pixels = info->screen_size * 8 / var->bits_per_pixel;
 	struct cirrusfb_info *cinfo = info->par;
 
+// QEMU GCW0 hack: Hard coded 320x240p-16@60     // Svante
+	var->pixclock = 159034;
+	var->left_margin = 16;
+	var->right_margin = 16;
+	var->upper_margin = 16;
+	var->lower_margin = 4;
+	var->hsync_len = 48;
+	var->vsync_len= 2;
+	var->xres=320;
+	var->yres=240;
+	var->xres_virtual = var->xres;
+	var->yres_virtual = (var->yres);
+	var->vmode &= (!FB_VMODE_DOUBLE);
+	var->bits_per_pixel = 16;
+// End QEMU hack
+
 	switch (var->bits_per_pixel) {
 	case 1:
 		var->red.offset = 0;
@@ -673,6 +689,22 @@ static int cirrusfb_set_par_foo(struct fb_info *info)
 	long freq;
 	int nom, den, div;
 	unsigned int control = 0, format = 0, threshold = 0;
+
+// QEMU GCW0 hack: Hard coded 320x240p-16@60     // Svante
+	var->pixclock = 159034;
+	var->left_margin = 16;
+	var->right_margin = 16;
+	var->upper_margin = 16;
+	var->lower_margin = 4;
+	var->hsync_len = 48;
+	var->vsync_len= 2;
+	var->xres=320;
+	var->yres=240;
+	var->xres_virtual = var->xres;
+	var->yres_virtual = (var->yres);
+	var->vmode &= (!FB_VMODE_DOUBLE);
+	var->bits_per_pixel = 16;
+// End QEMU hack
 
 	dev_dbg(info->device, "Requested mode: %dx%dx%d\n",
 	       var->xres, var->yres, var->bits_per_pixel);
