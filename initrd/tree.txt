@@ -19,6 +19,9 @@ nod	/dev/mmcblk4p4	0644	0 0	b 179	12
 nod	/dev/mmcblk5p5	0644	0 0	b 179	13
 nod	/dev/mmcblk6p6	0644	0 0	b 179	14
 nod	/dev/mmcblk7p7	0644	0 0	b 179	15
+nod	/dev/sda	0644	0 0	b 8	0
+nod	/dev/sda1	0644	0 0	b 8	1
+nod	/dev/sda2	0644	0 0	b 8	2
 # mount points:
 dir	/boot		0755	0 0
 dir	/root		0755	0 0
