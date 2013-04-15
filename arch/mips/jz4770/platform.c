@@ -192,7 +192,7 @@ int __init jz_add_msc_devices(unsigned int id, struct jz_mmc_platform_data *plat
 {
 	struct platform_device	*pdev;
 
-	if (JZ_MSC_ID_INVALID(id))
+	if (id >= ARRAY_SIZE(jz_msc_devices))
 		return -EINVAL;
 
 	pdev = jz_msc_devices[id];
