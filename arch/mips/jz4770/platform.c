@@ -146,6 +146,10 @@ static struct platform_device jz_usb_otg_device = {
 };
 
 /** MMC/SD/SDIO controllers**/
+#define	MSC0_BASE	0xB0021000
+#define	MSC1_BASE	0xB0022000
+#define	MSC2_BASE	0xB0023000
+
 #define JZ_MSC_PLATFORM_DEV(msc_id)				\
 	static struct resource jz_msc##msc_id##_resources[] = {		\
 		{							\
