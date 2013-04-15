@@ -226,9 +226,9 @@ int jz_request_dma(int dev_id, const char *dev_str,
 	chan->source = dma_dev_table[dev_id].dma_source;
 
 	if (i < HALF_DMA_NUM) {
-		REG_DMAC_DMACKS(0) = 1 << i;
+		REG_DMAC_DMACKES(0) = 1 << i;
 	} else {
-		REG_DMAC_DMACKS(1) = 1 << (i - HALF_DMA_NUM);
+		REG_DMAC_DMACKES(1) = 1 << (i - HALF_DMA_NUM);
 	}
 
 	return i;
