@@ -247,9 +247,6 @@
 #define __dmac_test_halt_error(m) ( REG_DMAC_DMACR(m) & DMAC_DMACR_HLT )
 #define __dmac_test_addr_error(m) ( REG_DMAC_DMACR(m) & DMAC_DMACR_AR )
 
-#define __dmac_channel_enable_clk(n)					\
-	REG_DMAC_DMACKE((n)/HALF_DMA_NUM) |= 1 << ((n)-(n)/HALF_DMA_NUM*HALF_DMA_NUM);
-
 #define __dmac_enable_descriptor(n)			\
 	( REG_DMAC_DCCSR((n)) &= ~DMAC_DCCSR_NDES )
 #define __dmac_disable_descriptor(n)			\
