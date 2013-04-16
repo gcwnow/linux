@@ -183,6 +183,10 @@ static unsigned long jz_clk_main_round_rate(struct clk *clk, unsigned long rate)
 	int div;
 
 	div = parent_rate / rate;
+	/* round divider up => round rate down */
+	if (parent_rate > div * rate)
+		div++;
+
 	if (div > 12)
 		return parent_rate / 12;
 	else if (div < 1)
@@ -374,12 +378,18 @@ static unsigned long jz_clk_divided_get_rate(struct clk *clk)
 static int jz_clk_divided_set_rate(struct clk *clk, unsigned long rate)
 {
 	struct divided_clk *dclk = (struct divided_clk *)clk;
+	unsigned long parent_rate;
 	int div;
 
 	if (clk->parent == &jz_clk_ext.clk)
 		return -EINVAL;
 
-	div = clk_get_rate(clk->parent) / rate - 1;
+	parent_rate = clk_get_rate(clk->parent);
+
+	div = (int)(parent_rate / rate) - 1;
+	/* round divider up => round rate down */
+	if (parent_rate > (div + 1) * rate)
+		div++;
 
 	if (div < 0)
 		div = 0;
