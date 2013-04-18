@@ -198,9 +198,6 @@ static int jz_pm_do_sleep(void)
 	unsigned long sadc = REG_SADC_ENA;
 	unsigned long sleep_gpio_save[7*(GPIO_PORT_NUM-1)];
 	unsigned long cpuflags;
-#ifdef CONFIG_JZ_SYSTEM_AT_CARD
-	unsigned int lpm;
-#endif
 
 #if defined(CONFIG_RTC_DRV_JZ4770) && defined(CONFIG_BATTERY_JZ)
 	jz_save_alarm();
@@ -296,9 +293,6 @@ static int jz_pm_do_sleep(void)
 
 	rtc_clr_reg(RTC_RTCCR,RTC_RTCCR_AF);
 
-#ifdef CONFIG_JZ_SYSTEM_AT_CARD
-	lpm = REG_MSC_LPM(0);
-#endif
 	/* *** go zzz *** */
 
 	div = DIV(2,4,8,2,4,4);
@@ -308,10 +302,6 @@ static int jz_pm_do_sleep(void)
 
 	div = DIV(1,4,8,2,4,4);
 	jz_set_div(div);
-
-#ifdef CONFIG_JZ_SYSTEM_AT_CARD
-	REG_MSC_LPM(0) = lpm;
-#endif
 
 #else
 	{
