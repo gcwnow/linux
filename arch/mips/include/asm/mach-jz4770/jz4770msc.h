@@ -25,8 +25,6 @@ struct jz_mmc_platform_data {
 	unsigned char dma_rxid;
 	unsigned char dma_txid;
 
-	void *driver_data;
-
 	void (*init) (struct device *);
 	void (*power_on) (struct device *);
 	void (*power_off) (struct device *);
