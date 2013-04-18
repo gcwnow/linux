@@ -12,6 +12,7 @@
 
 #include <asm/mach-jz4770/jz4770msc.h>
 
+#include "include/chip-msc.h"
 #include "include/jz_mmc_gpio.h"
 #include "include/jz_mmc_msc.h"
 

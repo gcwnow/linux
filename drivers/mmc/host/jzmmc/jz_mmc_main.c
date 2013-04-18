@@ -31,10 +31,12 @@
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770msc.h>
 
+#include "include/chip-msc.h"
 #include "include/jz_mmc_host.h"
 #include "include/jz_mmc_controller.h"
 
 
+#define JZ_MAX_MSC_NUM 3
 struct jz_mmc_controller controller[JZ_MAX_MSC_NUM];
 
 void jz_mmc_finish_request(struct jz_mmc_host *host, struct mmc_request *mrq)
@@ -217,7 +219,7 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	if (JZ_MSC_ID_INVALID(pdev->id))
+	if (pdev->id < 0 || pdev->id >= JZ_MAX_MSC_NUM)
 		return -EINVAL;
 
 	if (pdev->resource == NULL || pdev->num_resources < 2) {
