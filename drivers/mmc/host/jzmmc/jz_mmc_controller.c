@@ -15,8 +15,9 @@
 
 #include <asm/mach-jz4770/jz4770msc.h>
 
-#include "include/jz_mmc_msc.h"
 #include "include/jz_mmc_controller.h"
+#include "include/jz_mmc_host.h"
+#include "include/jz_mmc_msc.h"
 
 
 static int data_transmit_dma(struct jz_mmc_host *host)

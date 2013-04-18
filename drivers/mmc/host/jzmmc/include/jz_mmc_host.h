@@ -11,8 +11,6 @@
 #ifndef __JZ_MMC_HOST_H__
 #define __JZ_MMC_HOST_H__
 
-#include <linux/clk.h>
-#include <linux/device.h>
 #include <linux/semaphore.h>
 
 #include <asm/mach-jz4770/dma.h>
@@ -47,6 +45,9 @@
 #define MSC_8BIT_BUS 2
 
 #define SZ_4K                           0x00001000
+
+
+struct clk;
 
 struct jz_mmc_host {
 	struct mmc_host *mmc;

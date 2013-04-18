@@ -8,6 +8,7 @@
  * Copyright (c) Ingenic Semiconductor Co., Ltd.
  */
 
+#include <linux/clk.h>
 #include <linux/dma-mapping.h>
 #include <linux/semaphore.h>
 #include <linux/export.h>
@@ -23,6 +24,8 @@
 #include <asm/mach-jz4770/jz4770msc.h>
 
 #include "include/chip-msc.h"
+#include "include/jz_mmc_dma.h"
+#include "include/jz_mmc_host.h"
 #include "include/jz_mmc_msc.h"
 #include "include/jz_mmc_pio.h"
 
@@ -32,6 +35,8 @@
 	(MSC_STAT_CRC_RES_ERR |						\
 	 MSC_STAT_CRC_READ_ERROR | MSC_STAT_CRC_WRITE_ERROR_MASK |	\
 	 MSC_STAT_TIME_OUT_RES | MSC_STAT_TIME_OUT_READ)
+
+#define RSP_TYPE(x)	((x) & ~(MMC_RSP_BUSY|MMC_RSP_OPCODE))
 
 #if 1
 

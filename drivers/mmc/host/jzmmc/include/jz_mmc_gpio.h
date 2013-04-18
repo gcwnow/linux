@@ -11,18 +11,10 @@
 #ifndef __JZ_MMC_GPIO_H__
 #define __JZ_MMC_GPIO_H__
 
-#include "jz_mmc_host.h"
-#include <linux/platform_device.h>
-
-#ifndef __JZ_MMC_HOST_H__
-#error "!!!!!!!!!!!!!"
-#endif
-
-//struct jz_mmc_host test;
-//int t = test.dma.len;
+struct jz_mmc_host;
+struct platform_device;
 
 struct jz_mmc_gpio {
-
 	int (*init) (struct jz_mmc_host *, struct platform_device *);
 	void (*deinit) (struct jz_mmc_host *, struct platform_device *);
 };
