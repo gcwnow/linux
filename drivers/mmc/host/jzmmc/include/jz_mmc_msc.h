@@ -13,17 +13,15 @@
 
 struct jz_mmc_host;
 
-struct jz_mmc_msc {
-	int (*init) (struct jz_mmc_host *);
-	void (*deinit) (struct jz_mmc_host *);
-	void (*set_clock) (struct jz_mmc_host *, int);
-	void (*execute_cmd) (struct jz_mmc_host *);
-};
-
-int jz_mmc_msc_register(struct jz_mmc_msc *msc);
-
 void jz_mmc_data_start(struct jz_mmc_host *host);
 
 void jz_mmc_reset(struct jz_mmc_host *host);
+
+void jz_mmc_set_clock(struct jz_mmc_host *host, int rate);
+
+void jz_mmc_execute_cmd(struct jz_mmc_host *host);
+
+int jz_mmc_msc_init(struct jz_mmc_host *host);
+void jz_mmc_msc_deinit(struct jz_mmc_host *host);
 
 #endif /* __JZ_MMC_MSC_H__ */

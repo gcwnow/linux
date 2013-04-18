@@ -14,12 +14,7 @@
 struct jz_mmc_host;
 struct platform_device;
 
-struct jz_mmc_gpio {
-	int (*init) (struct jz_mmc_host *, struct platform_device *);
-	void (*deinit) (struct jz_mmc_host *, struct platform_device *);
-};
-
-int jz_mmc_gpio_register(struct jz_mmc_gpio *);
+int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev);
+void jz_mmc_gpio_deinit(struct jz_mmc_host *host, struct platform_device *pdev);
 
 #endif /* __JZ_MMC_GPIO_H__ */
-

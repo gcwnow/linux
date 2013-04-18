@@ -158,7 +158,7 @@ static irqreturn_t jz_mmc_detect_irq(int irq, void *devid)
 	return IRQ_HANDLED;
 }
 
-static int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
+int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
 {
 	int ret = 0;
 
@@ -203,21 +203,10 @@ static int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pd
 	return 0;
 }
 
-static void jz_mmc_gpio_deinit(struct jz_mmc_host *host, struct platform_device *pdev)
+void jz_mmc_gpio_deinit(struct jz_mmc_host *host, struct platform_device *pdev)
 {
 	if(host->plat->status_irq) {
 		free_irq(host->plat->status_irq, host);
 		device_init_wakeup(&pdev->dev, 0);
 	}
-}
-
-int jz_mmc_gpio_register(struct jz_mmc_gpio *gpio)
-{
-	if(gpio == NULL)
-		return -ENOMEM;
-
-	gpio->init = jz_mmc_gpio_init;
-	gpio->deinit = jz_mmc_gpio_deinit;
-
-	return 0;
 }

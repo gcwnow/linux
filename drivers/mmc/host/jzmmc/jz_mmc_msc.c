@@ -125,7 +125,6 @@ EXPORT_SYMBOL(jz_mmc_dump_regs);
 #define jz_mmc_dump_regs(__mid, __ln) do {  } while(0)
 #endif
 
-void jz_mmc_set_clock(struct jz_mmc_host *host, int rate);
 static int jz_mmc_data_done(struct jz_mmc_host *host);
 
 static void msc_irq_mask_all(int msc_id)
@@ -665,7 +664,7 @@ static int jz_mmc_data_done(struct jz_mmc_host *host)
 	return 0;
 }
 
-static void jz_mmc_execute_cmd(struct jz_mmc_host *host)
+void jz_mmc_execute_cmd(struct jz_mmc_host *host)
 {
 	struct mmc_request *mrq = host->curr_mrq;
 	struct mmc_data *data = mrq->data;
@@ -786,7 +785,7 @@ static char *msc_trans_irq_name[] = {
 	"msc_trans_2",
 };
 
-static int jz_mmc_msc_init(struct jz_mmc_host *host)
+int jz_mmc_msc_init(struct jz_mmc_host *host)
 {
 	int ret = 0;
 
@@ -809,20 +808,7 @@ static int jz_mmc_msc_init(struct jz_mmc_host *host)
 	return 0;
 }
 
-static void jz_mmc_msc_deinit(struct jz_mmc_host *host)
+void jz_mmc_msc_deinit(struct jz_mmc_host *host)
 {
 	free_irq(host->irq, &host);
-}
-
-int jz_mmc_msc_register(struct jz_mmc_msc *msc)
-{
-	if(msc == NULL)
-		return -ENOMEM;
-
-	msc->init = jz_mmc_msc_init;
-	msc->deinit = jz_mmc_msc_deinit;
-	msc->set_clock = jz_mmc_set_clock;
-	msc->execute_cmd = jz_mmc_execute_cmd;
-
-	return 0;
 }

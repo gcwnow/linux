@@ -510,7 +510,7 @@ static char *msc_dma_name[] = {
 	"msc2_dma",
 };
 
-static int jz_mmc_init_dma(struct jz_mmc_host *host)
+int jz_mmc_init_dma(struct jz_mmc_host *host)
 {
 	if (host->dma_id < 0)
 		return 0;     /* not use dma */
@@ -535,18 +535,7 @@ err_out:
 	return -ENODEV;
 }
 
-static void jz_mmc_deinit_dma(struct jz_mmc_host *host)
+void jz_mmc_deinit_dma(struct jz_mmc_host *host)
 {
 	jz_free_dma(host->dma.channel);
-}
-
-int jz_mmc_dma_register(struct jz_mmc_dma *dma)
-{
-	if(dma == NULL)
-		return -ENOMEM;
-
-	dma->init = jz_mmc_init_dma;
-	dma->deinit = jz_mmc_deinit_dma;
-
-	return 0;
 }

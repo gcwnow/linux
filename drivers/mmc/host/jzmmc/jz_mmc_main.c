@@ -32,12 +32,13 @@
 #include <asm/mach-jz4770/jz4770msc.h>
 
 #include "include/chip-msc.h"
+#include "include/jz_mmc_dma.h"
+#include "include/jz_mmc_gpio.h"
 #include "include/jz_mmc_host.h"
-#include "include/jz_mmc_controller.h"
+#include "include/jz_mmc_msc.h"
 
 
 #define JZ_MAX_MSC_NUM 3
-struct jz_mmc_controller controller[JZ_MAX_MSC_NUM];
 
 void jz_mmc_finish_request(struct jz_mmc_host *host, struct mmc_request *mrq)
 {
@@ -49,7 +50,6 @@ void jz_mmc_finish_request(struct jz_mmc_host *host, struct mmc_request *mrq)
 static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-	struct jz_mmc_functions *functions = host->plat->driver_data;
 
 	down(&host->mutex);
 
@@ -74,7 +74,7 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	BUG_ON (host->curr_mrq);
 	host->curr_mrq = mrq;
-	functions->execute_cmd(host);
+	jz_mmc_execute_cmd(host);
 	jz_mmc_finish_request(host, mrq);
 }
 
@@ -103,17 +103,10 @@ static int jz_mmc_get_cd(struct mmc_host *mmc)
 static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-	struct jz_mmc_functions *functions = host->plat->driver_data;
 	//void *dev;
 
-	if(!functions) {
-		printk(KERN_ERR "%s: functions is NULL!\n", __FUNCTION__);
-		return;
-	}
-
-	if (ios->clock) {
-		functions->set_clock(host, ios->clock);
-	}
+	if (ios->clock)
+		jz_mmc_set_clock(host, ios->clock);
 
 	switch(ios->power_mode) {
 	case MMC_POWER_ON:
@@ -196,12 +189,45 @@ void msc_dump_host_info(void) {
 EXPORT_SYMBOL(msc_dump_host_info);
 #endif	/* MSC_DEBUG_DMA */
 
+static int jz_mmc_controller_init(struct jz_mmc_host *host,
+				  struct platform_device *pdev)
+{
+	int ret;
+
+	ret = jz_mmc_msc_init(host);
+	if (ret)
+		return ret;
+
+	ret = jz_mmc_gpio_init(host, pdev);
+	if (ret)
+		goto gpio_failed;
+
+	ret = jz_mmc_init_dma(host);
+	if (ret)
+		goto dma_failed;
+
+	return 0;
+
+dma_failed:
+	jz_mmc_gpio_deinit(host, pdev);
+gpio_failed:
+	jz_mmc_msc_deinit(host);
+	return ret;
+}
+
+static void jz_mmc_controller_deinit(struct jz_mmc_host *host,
+				     struct platform_device *pdev)
+{
+	jz_mmc_deinit_dma(host);
+	jz_mmc_gpio_deinit(host, pdev);
+	jz_mmc_msc_deinit(host);
+}
+
 static int jz_mmc_probe(struct platform_device *pdev)
 {
 	struct jz_mmc_platform_data *plat = pdev->dev.platform_data;
 	struct mmc_host *mmc;
 	struct jz_mmc_host *host = NULL;
-	struct jz_mmc_functions *functions;
 
 	struct resource *irqres = NULL;
 	struct resource *memres = NULL;
@@ -288,14 +314,10 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->max_seg_size = mmc->max_req_size;
 	plat->init(&pdev->dev);
 	plat->power_on(&pdev->dev);
-	/*
-	 * Initialize controller and register some functions
-	 * From here, we can do everything!
-	 */
-	controller_register(&controller[host->pdev_id], host);
-	functions = host->plat->driver_data;
-	if(controller[host->pdev_id].init(&controller[host->pdev_id], host, pdev))
+
+	if (jz_mmc_controller_init(host, pdev))
 		goto out;
+
 	mmc_set_drvdata(pdev, mmc);
 	mmc_add_host(mmc);
 #ifdef MSC_DEBUG_DMA
@@ -319,11 +341,10 @@ static int jz_mmc_remove(struct platform_device *pdev)
 
 	if (mmc) {
 		struct jz_mmc_host *host = mmc_priv(mmc);
-		struct jz_mmc_functions *functions = host->plat->driver_data;
 
 		plat->power_off(&pdev->dev);
 
-		functions->deinit(host, pdev);
+		jz_mmc_controller_deinit(host, pdev);
 
 		clk_put(host->clk);
 

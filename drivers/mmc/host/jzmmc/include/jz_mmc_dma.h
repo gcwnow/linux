@@ -13,13 +13,6 @@
 
 struct jz_mmc_host;
 
-struct jz_mmc_dma {
-	int (*init) (struct jz_mmc_host *);
-	void (*deinit) (struct jz_mmc_host *);
-};
-
-int jz_mmc_dma_register(struct jz_mmc_dma *dma);
-
 void jz_mmc_start_dma(struct jz_mmc_host *host);
 void jz_mmc_stop_dma(struct jz_mmc_host *host);
 
@@ -28,5 +21,8 @@ void jz_mmc_start_normal_dma(struct jz_mmc_host *host, unsigned long phyaddr,
 void jz_mmc_start_scatter_dma(int chan, struct jz_mmc_host *host,
 			      struct scatterlist *sg, unsigned int sg_len,
 			      int mode);
+
+int jz_mmc_init_dma(struct jz_mmc_host *host);
+void jz_mmc_deinit_dma(struct jz_mmc_host *host);
 
 #endif /* __JZ_MMC_DMA_H__ */
