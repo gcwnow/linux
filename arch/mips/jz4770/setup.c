@@ -117,6 +117,23 @@ static void __init jz_soc_setup(void)
 	soc_dmac_setup();
 }
 
+/* XXX: We really should just merge with jz4740. */
+void jz4740_serial_out(struct uart_port *p, int offset, int value)
+{
+	switch (offset) {
+	case UART_FCR:
+		value |= UART_JZ_FCR_UME; /* enable UART module */
+		break;
+	/* XXX: Define a port type, set UART_CAP_RTOIE. */
+	case UART_IER:
+		value |= (value & UART_IER_RLSI) << 2;
+		break;
+	default:
+		break;
+	}
+	writeb(value, p->membase + (offset << p->regshift));
+}
+
 static void __init jz_serial_setup(void)
 {
 #ifdef CONFIG_SERIAL_8250
@@ -127,7 +144,8 @@ static void __init jz_serial_setup(void)
 	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
 	s.iotype = SERIAL_IO_MEM;
 	s.regshift = 2;
-	s.uartclk = jz_clocks.extalclk ;
+	s.uartclk = jz_clocks.extalclk;
+	s.serial_out = jz4740_serial_out;
 
 	s.line = 0;
 	s.membase = (u8 *)UART0_BASE;
