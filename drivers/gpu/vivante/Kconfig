@@ -13,3 +13,9 @@ config GPU_VIVANTE_GC860
 	help
 	  Enable support for the GC860 graphics core found on the
 	  Ingenic JZ4770 SoC designs.
+
+config VIVANTE_GPU
+	tristate "Etnaviv"
+	depends on JZSOC
+	help
+	  Enable support for Vivante GPU cores.
