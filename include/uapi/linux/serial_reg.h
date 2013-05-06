@@ -62,6 +62,8 @@
  * TI16C750:	 1  16  32  56		xx  xx  xx  xx	PORT_16750
  * TI16C752:	 8  16  56  60		 8  16  32  56
  * Tegra:	 1   4   8  14		16   8   4   1	PORT_TEGRA
+ * JZ4740:	 1   4   8  15		xx  xx  xx  xx
+ * JZ4770:	 1   8  16  24		xx  xx  xx  xx
  */
 #define UART_FCR_R_TRIG_00	0x00
 #define UART_FCR_R_TRIG_01	0x40
@@ -384,6 +386,25 @@
 
 #define UART_EXAR_TXTRG		0x0a	/* Tx FIFO trigger level write-only */
 #define UART_EXAR_RXTRG		0x0b	/* Rx FIFO trigger level write-only */
+
+/*
+ * These are definitions for the Ingenic JZ47xx series SoC
+ */
+#define UART_JZ_FCR_UME		(1 << 4)	/* UART module enable */
+
+#define UART_JZ_IIR_FMS		(3 << 6)	/* FIFO mode select */
+#define UART_JZ_IIR_FMS_NONFIFO	(0 << 6)
+#define UART_JZ_IIR_FMS_FIFO	(3 << 6)
+
+#define UART_JZ_MCR_FCM		(1 << 6)	/* Flow control mode */
+#define UART_JZ_MCR_MDCE	(1 << 7)	/* Modem pins enable */
+
+#define UART_JZ_SIRCR		8		/* Slow IrDA Control Register */
+#define UART_JZ_SIRCR_TSIRE	(1 << 0)	/* Tx SIR enable */
+#define UART_JZ_SIRCR_RSIRE	(1 << 1)	/* Rx SIR enable */
+#define UART_JZ_SIRCR_TPWS	(1 << 2)	/* Tx pulse width */
+#define UART_JZ_SIRCR_TDPL	(1 << 3)	/* Tx data polariy */
+#define UART_JZ_SIRCR_RDPL	(1 << 4)	/* Rx data polariy */
 
 #endif /* _LINUX_SERIAL_REG_H */
 
