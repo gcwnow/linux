@@ -316,116 +316,6 @@ static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *f
 	return 0;
 }
 
-static int jz4760fb_set_var(struct fb_var_screeninfo *var, int con,
-			struct fb_info *fb)
-{
-	struct jzfb *jzfb = fb->par;
-	const struct jz4760lcd_panel_t *panel = jz_panel;
-	int chgvar = 0;
-
-	var->height	            = panel->h;
-	var->width	            = panel->w;
-	var->bits_per_pixel	    = jzfb->bpp;
-
-	var->vmode                  = FB_VMODE_NONINTERLACED;
-	var->activate               = fb->var.activate;
-	var->xres                   = var->width;
-	var->yres                   = var->height;
-	var->xres_virtual           = var->width;
-	var->yres_virtual           = var->height;
-	var->xoffset                = 0;
-	var->yoffset                = 0;
-	var->pixclock               = 0;
-	var->left_margin            = 0;
-	var->right_margin           = 0;
-	var->upper_margin           = 0;
-	var->lower_margin           = 0;
-	var->hsync_len              = 0;
-	var->vsync_len              = 0;
-	var->sync                   = 0;
-	var->activate              &= ~FB_ACTIVATE_TEST;
-
-	/*
-	 * CONUPDATE and SMOOTH_XPAN are equal.  However,
-	 * SMOOTH_XPAN is only used internally by fbcon.
-	 */
-	if (var->vmode & FB_VMODE_CONUPDATE) {
-		var->vmode |= FB_VMODE_YWRAP;
-		var->xoffset = fb->var.xoffset;
-		var->yoffset = fb->var.yoffset;
-	}
-
-	if (var->activate & FB_ACTIVATE_TEST)
-		return 0;
-
-	if ((var->activate & FB_ACTIVATE_MASK) != FB_ACTIVATE_NOW)
-		return -EINVAL;
-
-	if (fb->var.xres != var->xres)
-		chgvar = 1;
-	if (fb->var.yres != var->yres)
-		chgvar = 1;
-	if (fb->var.xres_virtual != var->xres_virtual)
-		chgvar = 1;
-	if (fb->var.yres_virtual != var->yres_virtual)
-		chgvar = 1;
-	if (fb->var.bits_per_pixel != var->bits_per_pixel)
-		chgvar = 1;
-
-	//display = fb_display + con;
-
-	var->red.msb_right	= 0;
-	var->green.msb_right	= 0;
-	var->blue.msb_right	= 0;
-
-	if (var->bits_per_pixel == 16) {
-		var->bits_per_pixel	= 16;
-		var->red.offset		= 11;
-		var->red.length		= 5;
-		var->green.offset	= 5;
-		var->green.length	= 6;
-		var->blue.offset	= 0;
-		var->blue.length	= 5;
-
-		fb->fix.visual	= FB_VISUAL_TRUECOLOR;
-		fb->fix.line_length	= var->xres_virtual * 2;
-	} else {
-		if (var->bits_per_pixel != 32) {
-			dev_warn(&jzfb->pdev->dev, "%s: don't support for %dbpp\n",
-				   fb->fix.id, var->bits_per_pixel);
-			var->bits_per_pixel	= 32;
-		}
-
-		var->red.offset		= 16;
-		var->red.length		= 8;
-		var->green.offset	= 8;
-		var->green.length	= 8;
-		var->blue.offset	= 0;
-		var->blue.length	= 8;
-		var->transp.offset	= 24;
-		var->transp.length	= 8;
-
-		fb->fix.visual	= FB_VISUAL_TRUECOLOR;
-		fb->fix.line_length	= var->xres_virtual * 4;
-	}
-
-	fb->var = *var;
-	fb->var.activate &= ~FB_ACTIVATE_ALL;
-
-	/*
-	 * Update the old var.  The fbcon drivers still use this.
-	 * Once they are using fb->var, this can be dropped.
-	 *					--rmk
-	 */
-	//display->var = fb->var;
-	/*
-	 * If we are setting all the virtual consoles, also set the
-	 * defaults used to create new consoles.
-	 */
-
-	return 0;
-}
-
 /*
  * Map screen memory
  */
@@ -795,6 +685,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->var.accel_flags	= FB_ACCELF_TEXT;
 	fb->var.bits_per_pixel = jzfb->bpp;
 
+	jz4760fb_check_var(&fb->var, fb);
+
 	fb->fbops		= &jz4760fb_ops;
 	fb->flags		= FBINFO_FLAG_DEFAULT;
 
@@ -822,9 +714,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, jzfb);
-
-	jz4760fb_set_var(&fb->var, -1, fb);
-	jz4760fb_check_var(&fb->var, fb);
 
 	/* configurate sequence:
 	 * 1. disable lcdc.
