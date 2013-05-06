@@ -31,6 +31,8 @@
 #include <linux/serial_core.h>
 #include <linux/serial_8250.h>
 
+#include <uapi/linux/serial_reg.h>
+
 #include <asm/cpu.h>
 #include <asm/bootinfo.h>
 #include <asm/irq.h>
@@ -120,7 +122,7 @@ static void __init jz_serial_setup(void)
 #ifdef CONFIG_SERIAL_8250
 	struct uart_port s;
 
-	REG8(UART0_FCR) |= UARTFCR_UUE; /* enable UART module */
+	REG8(UART0_FCR) |= UART_JZ_FCR_UME; /* enable UART module */
 	memset(&s, 0, sizeof(s));
 	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
 	s.iotype = SERIAL_IO_MEM;

@@ -39,6 +39,8 @@
 #include <linux/init.h>
 #include <linux/string.h>
 
+#include <uapi/linux/serial_reg.h>
+
 #include <asm/bootinfo.h>
 #include <asm/mach-jz4770/jz4770uart.h>
 
@@ -81,7 +83,7 @@ void prom_putchar(char c)
 	volatile u8 *uart_tdr = (volatile u8 *)(UART2_BASE + OFF_TDR);
 
 	/* Wait for fifo to shift out some bytes */
-	while ( !((*uart_lsr & (UARTLSR_TDRQ | UARTLSR_TEMT)) == 0x60) );
+	while ( !((*uart_lsr & (UART_LSR_THRE | UART_LSR_TEMT)) == 0x60) );
 
 	*uart_tdr = (u8)c;
 }
