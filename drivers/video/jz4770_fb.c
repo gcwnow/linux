@@ -113,7 +113,6 @@ static struct jz4760_lcd_dma_desc *dma0_desc0, *dma0_desc1, *dma1_desc0, *dma1_d
 
 #define DMA_DESC_NUM 		6
 
-static unsigned char *lcd_frame0;
 static unsigned char *lcd_frame1;
 
 static struct jz4760_lcd_dma_desc *dma0_desc_cmd0, *dma0_desc_cmd;
@@ -446,13 +445,6 @@ static void jz4760fb_descriptor_init(unsigned int bpp)
 	 *	TO TV Encoder:
 	 * 		dma1_desc0 <<==>> dma1_desc1
 	 */
-
-	/* DMA0 Descriptor0 */
-	dma0_desc0->next_desc = (unsigned int)virt_to_phys(dma0_desc0);
-	dma0_desc0->databuf = virt_to_phys((void *)lcd_frame0);
-	dma0_desc0->frame_id = (unsigned int)0x0000da00; /* DMA0'0 */
-
-	REG_LCD_DA0 = virt_to_phys(dma0_desc0);
 
 	/* DMA1 Descriptor0 */
 	dma1_desc0->next_desc = (unsigned int)virt_to_phys(dma1_desc0);
