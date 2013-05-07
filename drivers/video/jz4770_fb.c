@@ -648,15 +648,6 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	return 0;
 }
 
-static void jz4760fb_free_fb_info(struct fb_info *fb)
-{
-	if (fb) {
-		//fb_dealloc_cmap(&fb->cmap);
-		fb_alloc_cmap(&fb->cmap, 0, 0);
-		framebuffer_release(fb);
-	}
-}
-
 static void jz4760fb_unmap_smem(struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
@@ -1084,7 +1075,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 failed:
 	jz4760fb_unmap_smem(fb);
-	jz4760fb_free_fb_info(fb);
+	fb_dealloc_cmap(&fb->cmap);
+	framebuffer_release(fb);
 
 	return ret;
 }
