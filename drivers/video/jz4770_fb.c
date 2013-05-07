@@ -225,12 +225,13 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	struct jzfb *jzfb = info->par;
 
 	if (var->bits_per_pixel != 32)
-		return -EINVAL;
+		var->bits_per_pixel = 32;
 
 	if (var->xres != mode->xres)
-		return -EINVAL;
+		var->xres = mode->xres;
 	if (var->yres != mode->yres)
-		return -EINVAL;
+		var->yres = mode->yres;
+
 
 	dev_dbg(&jzfb->pdev->dev, "Found working mode: %s\n", mode->name);
 
