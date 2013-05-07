@@ -254,18 +254,6 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	return 0;
 }
 
-
-/*
- * set the video mode according to info->var
- */
-static int jz4760fb_set_par(struct fb_info *info)
-{
-	struct jzfb *jzfb = info->par;
-
-	dev_warn(&jzfb->pdev->dev, "jz4760fb_set_par, not implemented\n");
-	return 0;
-}
-
 static void jzfb_enable(struct jzfb *jzfb)
 {
 	clk_enable(jzfb->lpclk);
@@ -327,19 +315,6 @@ static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *f
 
 	return 0;
 }
-
-static struct fb_ops jz4760fb_ops = {
-	.owner			= THIS_MODULE,
-	.fb_setcolreg		= jz4760fb_setcolreg,
-	.fb_check_var 		= jz4760fb_check_var,
-	.fb_set_par 		= jz4760fb_set_par,
-	.fb_blank		= jz4760fb_blank,
-	.fb_pan_display		= jz4760fb_pan_display,
-	.fb_fillrect		= sys_fillrect,
-	.fb_copyarea		= sys_copyarea,
-	.fb_imageblit		= sys_imageblit,
-	.fb_mmap		= jz4760fb_mmap,
-};
 
 static int jz4760fb_set_var(struct fb_var_screeninfo *var, int con,
 			struct fb_info *fb)
@@ -704,6 +679,40 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 	udelay(1);
 }
 
+/* set the video mode according to info->var */
+static int jz4760fb_set_par(struct fb_info *info)
+{
+	struct fb_var_screeninfo *var = &info->var;
+	struct fb_fix_screeninfo *fix = &info->fix;
+	struct jzfb *jzfb = info->par;
+
+	__lcd_clr_ena(); /* quick disable */
+
+	jzfb->bpp = var->bits_per_pixel;
+	jz4760fb_set_panel_mode(jzfb, jz_panel);
+	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
+	jzfb_change_clock(jzfb, jz_panel);
+
+	ctrl_enable();
+
+	fix->visual = FB_VISUAL_TRUECOLOR;
+	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
+	return 0;
+}
+
+static struct fb_ops jz4760fb_ops = {
+	.owner			= THIS_MODULE,
+	.fb_setcolreg		= jz4760fb_setcolreg,
+	.fb_check_var 		= jz4760fb_check_var,
+	.fb_set_par 		= jz4760fb_set_par,
+	.fb_blank		= jz4760fb_blank,
+	.fb_pan_display		= jz4760fb_pan_display,
+	.fb_fillrect		= sys_fillrect,
+	.fb_copyarea		= sys_copyarea,
+	.fb_imageblit		= sys_imageblit,
+	.fb_mmap		= jz4760fb_mmap,
+};
+
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 {
 	unsigned int state;
@@ -784,6 +793,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->var.height	= -1;
 	fb->var.width	= -1;
 	fb->var.accel_flags	= FB_ACCELF_TEXT;
+	fb->var.bits_per_pixel = jzfb->bpp;
 
 	fb->fbops		= &jz4760fb_ops;
 	fb->flags		= FBINFO_FLAG_DEFAULT;
@@ -813,6 +823,9 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, jzfb);
 
+	jz4760fb_set_var(&fb->var, -1, fb);
+	jz4760fb_check_var(&fb->var, fb);
+
 	/* configurate sequence:
 	 * 1. disable lcdc.
 	 * 2. init frame descriptor.
@@ -834,12 +847,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	__lcd_clr_ena(); /* quick disable */
 
 	jz4760fb_descriptor_init(jzfb->bpp);
-	jz4760fb_set_panel_mode(jzfb, jz_panel);
-	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
-	jz4760fb_set_var(&fb->var, -1, fb);
-	jzfb_change_clock(jzfb, jz_panel);
-
-	ctrl_enable();
+	jz4760fb_set_par(fb);
 
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
