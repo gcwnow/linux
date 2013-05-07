@@ -100,8 +100,7 @@ struct jzfb {
 	void *panel;
 
 	uint32_t pseudo_palette[16];
-	// TODO(MtH): We could support multiple framebuffer bpp settings.
-	unsigned int bpp;	/* bits per pixel */
+	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
 
 	struct clk *lpclk;
 
@@ -224,7 +223,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	struct fb_videomode *mode = &video_modes[0];
 	struct jzfb *jzfb = info->par;
 
-	if (var->bits_per_pixel != 32)
+	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
 		var->bits_per_pixel = 32;
 
 	if (var->xres != mode->xres)
@@ -242,14 +241,20 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	// TODO(MtH): First try to get it to work without double buffering.
 	var->yres_virtual = var->yres;
 
-	var->transp.offset	= 24;
-	var->transp.length	= 8;
-	var->red.offset		= 16;
-	var->red.length		= 8;
-	var->green.offset	= 8;
-	var->green.length	= 8;
-	var->blue.offset	= 0;
-	var->blue.length	= 8;
+	if (var->bits_per_pixel == 16) {
+		var->blue.length = var->red.length = 5;
+		var->green.length = 6;
+		var->red.offset = 11;
+		var->green.offset = 5;
+		var->blue.offset = 0;
+	} else {
+		var->transp.offset = 24;
+		var->red.offset = 16;
+		var->green.offset = 8;
+		var->blue.offset = 0;
+		var->transp.length = var->red.length =
+				var->green.length = var->blue.length = 8;
+	}
 
 	return 0;
 }
