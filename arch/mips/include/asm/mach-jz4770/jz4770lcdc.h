@@ -712,11 +712,11 @@ do {						\
   ( REG_LCD_OSDCTRL = (REG_LCD_OSDCTRL & ~LCD_OSDCTRL_OSDBPP_MASK) | LCD_OSDCTRL_OSDBPP_18_24 )
 
 /* OSD State Register */
-#define __lcd_start_of_fg1()		( REG_LCD_STATE & LCD_OSDS_SOF1 )
-#define __lcd_end_of_fg1()		( REG_LCD_STATE & LCD_OSDS_EOF1 )
-#define __lcd_start_of_fg0()		( REG_LCD_STATE & LCD_OSDS_SOF0 )
-#define __lcd_end_of_fg0()		( REG_LCD_STATE & LCD_OSDS_EOF0 )
-#define __lcd_change_is_rdy()		( REG_LCD_STATE & LCD_OSDS_READY )
+#define __lcd_start_of_fg1()		( REG_LCD_OSDS & LCD_OSDS_SOF1 )
+#define __lcd_end_of_fg1()		( REG_LCD_OSDS & LCD_OSDS_EOF1 )
+#define __lcd_start_of_fg0()		( REG_LCD_OSDS & LCD_OSDS_SOF0 )
+#define __lcd_end_of_fg0()		( REG_LCD_OSDS & LCD_OSDS_EOF0 )
+#define __lcd_change_is_rdy()		( REG_LCD_OSDS & LCD_OSDS_READY )
 
 /* Foreground Color Key Register 0,1(foreground 0, foreground 1) */
 #define __lcd_enable_colorkey0()	(REG_LCD_KEY0 |= LCD_KEY_KEYEN)
