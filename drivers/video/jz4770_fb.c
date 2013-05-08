@@ -236,9 +236,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	fb_videomode_to_var(var, mode);
 
 	/* Reserve space for double buffering. */
-	//var->yres_virtual = var->yres * 2;
-	// TODO(MtH): First try to get it to work without double buffering.
-	var->yres_virtual = var->yres;
+	var->yres_virtual = var->yres * 2;
 
 	if (var->bits_per_pixel == 16) {
 		var->blue.length = var->red.length = 5;
@@ -312,10 +310,9 @@ static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *f
 	}
 
 	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", var->yoffset);
-	dma1_desc0->databuf = (unsigned int)virt_to_phys((void *)lcd_frame1
-			+ (fb->fix.line_length * var->yoffset));
-	dma_cache_wback((unsigned int)(dma1_desc0),
-			sizeof(struct jz4760_lcd_dma_desc));
+	dma1_desc0->databuf = (unsigned int)virt_to_phys((void *) lcd_frame1)
+			+ fb->fix.line_length * var->yoffset;
+	dma_cache_wback((unsigned int) dma1_desc0, sizeof(*dma1_desc0));
 
 	return 0;
 }
@@ -331,8 +328,8 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 
 	dev_dbg(&jzfb->pdev->dev, "FG1 BPP: %d\n", jzfb->bpp);
 
-	w = jz_panel->w;
-	h = jz_panel->h;
+	w = fb->var.xres_virtual;
+	h = fb->var.yres_virtual;
 	needroom1 = needroom = ((w * jzfb->bpp + 7) >> 3) * h;
 
 	for (page_shift = 0; page_shift < 13; page_shift++)
