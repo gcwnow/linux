@@ -16,15 +16,6 @@
 #include <asm/mach-jz4770/dma.h>
 
 
-#define JZ_MSC_USE_DMA 1
-//#define JZ_MSC_USE_PIO 1
-
-#ifdef JZ_MSC_USE_DMA
-#ifdef JZ_MSC_USE_PIO
-#error "MSC: You must chose one of DMA and PIO, but not both!"
-#endif
-#endif
-
 #define USE_DMA_DESC
 //#define USE_DMA_UNCACHE
 //#define MSC_DEBUG_DMA
@@ -87,9 +78,6 @@ struct jz_mmc_host {
 	volatile int data_ack;
 	volatile int data_err;
 
-#ifdef JZ_MSC_USE_PIO
-	volatile int transfer_end;
-#endif
 #if 0
 	wait_queue_head_t status_check_queue;
 	struct timer_list status_check_timer;

@@ -27,7 +27,6 @@
 #include "include/jz_mmc_dma.h"
 #include "include/jz_mmc_host.h"
 #include "include/jz_mmc_msc.h"
-#include "include/jz_mmc_pio.h"
 
 
 #define MSC_STAT_ERR_BITS 0x3f
@@ -293,8 +292,6 @@ static int jz_mmc_parse_cmd_response(struct jz_mmc_host *host, unsigned int stat
 	return cmd->error;
 }
 
-extern void jz_mmc_start_pio(struct jz_mmc_host *host);
-
 void jz_mmc_data_start(struct jz_mmc_host *host)
 {
 	struct mmc_data *data = host->curr_mrq->data;
@@ -308,12 +305,7 @@ void jz_mmc_data_start(struct jz_mmc_host *host)
 	REG_MSC_NOB(host->pdev_id) = nob;
 	REG_MSC_BLKLEN(host->pdev_id) = block_size;
 
-#ifdef JZ_MSC_USE_PIO
-	jz_mmc_start_pio(host);
-#endif
-#ifdef JZ_MSC_USE_DMA
 	jz_mmc_start_dma(host);
-#endif
 }
 
 volatile u32 junk = 0;
@@ -322,12 +314,7 @@ EXPORT_SYMBOL(junk);
 void jz_mmc_data_stop(struct jz_mmc_host *host) {
 	int junked = 1;
 
-#ifdef JZ_MSC_USE_PIO
-	jz_mmc_stop_pio(host);
-#endif
-#ifdef JZ_MSC_USE_DMA
 	jz_mmc_stop_dma(host);
-#endif
 
 	/* What if the data not arrived imediately? our while exits, but data remain in fifo! */
 	while (!(REG_MSC_STAT(host->pdev_id) & MSC_STAT_DATA_FIFO_EMPTY)) {
