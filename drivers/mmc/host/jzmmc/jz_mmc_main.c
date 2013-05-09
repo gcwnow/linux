@@ -153,46 +153,6 @@ static const struct mmc_host_ops jz_mmc_ops = {
 	.get_cd = jz_mmc_get_cd,
 };
 
-#ifdef MSC_DEBUG_DMA
-static struct jz_mmc_host *msc_hosts[JZ_MAX_MSC_NUM] = { NULL, NULL, NULL };
-
-static void dump_host_info(struct jz_mmc_host *host) {
-	int i = 0;
-	JZ_MSC_DMA_DESC *desc = NULL;
-
-	printk("*** msc%d host info ***\n", host->pdev_id);
-	dump_jz_dma_channel(host->dma.channel);
-	printk("*** last running descriptors = %d direction = %d ***\n", host->num_desc, host->last_direction);
-	desc = host->dma_desc;
-	for (i = 0; i < host->num_desc; i++) {
-		printk("desc address = %p\n", desc + i);
-		printk("dcmd = 0x%08x\n", desc[i].dcmd);
-		printk("dsadr = 0x%08x\n", desc[i].dsadr);
-		printk("dtadr = 0x%08x\n", desc[i].dtadr);
-		printk("ddadr = 0x%08x\n", desc[i].ddadr);
-		printk("dstrd = 0x%08x\n", desc[i].dstrd);
-		printk("dreqt = 0x%08x\n", desc[i].dreqt);
-		printk("resv0 = 0x%08x\n", desc[i].reserved0);
-		printk("resv1 = 0x%08x\n", desc[i].reserved1);
-		printk("==========\n");
-	}
-
-	printk("curr tx_ack = %d\n", host->tx_ack);
-	printk("curr rx_ack = %d\n", host->rx_ack);
-}
-
-void msc_dump_host_info(void) {
-	int i = 0;
-
-	for (i = 0; i < JZ_MAX_MSC_NUM; i++) {
-		if (msc_hosts[i] != NULL) {
-			dump_host_info(msc_hosts[0]);
-		}
-	}
-}
-EXPORT_SYMBOL(msc_dump_host_info);
-#endif	/* MSC_DEBUG_DMA */
-
 static int jz_mmc_controller_init(struct jz_mmc_host *host,
 				  struct platform_device *pdev)
 {
@@ -326,9 +286,6 @@ static int jz_mmc_probe(struct platform_device *pdev)
 
 	mmc_set_drvdata(pdev, mmc);
 	mmc_add_host(mmc);
-#ifdef MSC_DEBUG_DMA
-	msc_hosts[host->pdev_id] = host;
-#endif
 
 	printk("JZ %s driver registered\n", mmc_hostname(host->mmc));
 
