@@ -153,42 +153,9 @@ static const struct mmc_host_ops jz_mmc_ops = {
 	.get_cd = jz_mmc_get_cd,
 };
 
-static int jz_mmc_controller_init(struct jz_mmc_host *host,
-				  struct platform_device *pdev)
-{
-	int ret;
-
-	ret = jz_mmc_msc_init(host);
-	if (ret)
-		return ret;
-
-	ret = jz_mmc_gpio_init(host, pdev);
-	if (ret)
-		goto gpio_failed;
-
-	ret = jz_mmc_init_dma(host);
-	if (ret)
-		goto dma_failed;
-
-	return 0;
-
-dma_failed:
-	jz_mmc_gpio_deinit(host, pdev);
-gpio_failed:
-	jz_mmc_msc_deinit(host);
-	return ret;
-}
-
-static void jz_mmc_controller_deinit(struct jz_mmc_host *host,
-				     struct platform_device *pdev)
-{
-	jz_mmc_deinit_dma(host);
-	jz_mmc_gpio_deinit(host, pdev);
-	jz_mmc_msc_deinit(host);
-}
-
 static int jz_mmc_probe(struct platform_device *pdev)
 {
+	int ret;
 	struct jz_mmc_platform_data *plat = pdev->dev.platform_data;
 	struct mmc_host *mmc;
 	struct jz_mmc_host *host = NULL;
@@ -277,8 +244,17 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->max_req_size = PAGE_SIZE * 16;
 	mmc->max_seg_size = mmc->max_req_size;
 
-	if (jz_mmc_controller_init(host, pdev))
-		goto out;
+	ret = jz_mmc_msc_init(host);
+	if (ret)
+		return ret;
+
+	ret = jz_mmc_gpio_init(host, pdev);
+	if (ret)
+		goto gpio_failed;
+
+	ret = jz_mmc_init_dma(host);
+	if (ret)
+		goto dma_failed;
 
 	if (gpio_is_valid(host->plat->gpio_power))
 		gpio_set_value(host->plat->gpio_power,
@@ -291,8 +267,11 @@ static int jz_mmc_probe(struct platform_device *pdev)
 
 	return 0;
 
-out:
-	return -1;
+dma_failed:
+	jz_mmc_gpio_deinit(host, pdev);
+gpio_failed:
+	jz_mmc_msc_deinit(host);
+	return ret;
 }
 
 static int jz_mmc_remove(struct platform_device *pdev)
@@ -308,7 +287,9 @@ static int jz_mmc_remove(struct platform_device *pdev)
 			gpio_set_value(host->plat->gpio_power,
 				       host->plat->power_active_low);
 
-		jz_mmc_controller_deinit(host, pdev);
+		jz_mmc_deinit_dma(host);
+		jz_mmc_gpio_deinit(host, pdev);
+		jz_mmc_msc_deinit(host);
 
 		clk_put(host->clk);
 
