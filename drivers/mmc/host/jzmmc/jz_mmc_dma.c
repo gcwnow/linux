@@ -510,9 +510,6 @@ static char *msc_dma_name[] = {
 
 int jz_mmc_init_dma(struct jz_mmc_host *host)
 {
-	if (host->dma_id < 0)
-		return 0;     /* not use dma */
-
 	host->dma.channel = jz_request_dma(host->dma_id,
 					   msc_dma_name[host->pdev_id],
 					   jz_mmc_dma_callback,

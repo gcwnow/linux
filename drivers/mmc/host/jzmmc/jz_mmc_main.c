@@ -158,76 +158,57 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	int ret;
 	struct jz_mmc_platform_data *pdata = pdev->dev.platform_data;
 	struct mmc_host *mmc;
-	struct jz_mmc_host *host = NULL;
+	struct jz_mmc_host *host;
 
-	struct resource *irqres = NULL;
-	struct resource *memres = NULL;
-	struct resource *dmares = NULL;
-	int i;
+	struct resource *dmares;
 
 	char clk_name[5];
-
-	if (pdev == NULL) {
-		printk(KERN_ERR "%s: pdev is NULL\n", __func__);
-		return -EINVAL;
-	}
-	if (!pdata) {
-		printk(KERN_ERR "%s: Platform data not available\n", __func__);
-		return -EINVAL;
-	}
 
 	if (pdev->id < 0 || pdev->id >= JZ_MAX_MSC_NUM)
 		return -EINVAL;
 
-	if (pdev->resource == NULL || pdev->num_resources < 2) {
-		printk(KERN_ERR "%s: Invalid resource\n", __func__);
-		return -ENXIO;
-	}
-	for (i = 0; i < pdev->num_resources; i++) {
-		if (pdev->resource[i].flags & IORESOURCE_MEM)
-			memres = &pdev->resource[i];
-		if (pdev->resource[i].flags & IORESOURCE_IRQ)
-			irqres = &pdev->resource[i];
-		if (pdev->resource[i].flags & IORESOURCE_DMA)
-			dmares = &pdev->resource[i];
-	}
-	if (!irqres || !memres) {
-		printk(KERN_ERR "%s: Invalid resource\n", __func__);
-		return -ENXIO;
-	}
-	/*
-	 * Setup our host structure
-	 */
 	mmc = mmc_alloc_host(sizeof(struct jz_mmc_host), &pdev->dev);
 	if (!mmc) {
+		dev_err(&pdev->dev, "Failed to alloc mmc host structure\n");
 		return -ENOMEM;
 	}
+
 	host = mmc_priv(mmc);
-	host->pdev_id = pdev->id;
 	host->pdata = pdata;
-	host->mmc = mmc;
+
+	host->irq = platform_get_irq(pdev, 0);
+	if (host->irq < 0) {
+		ret = host->irq;
+		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+		goto err_free_host;
+	}
 
 	sprintf(clk_name, "mmc%i", pdev->id);
-	host->clk = clk_get(&pdev->dev, clk_name);
-	if (IS_ERR(host->clk))
-		return -ENXIO;
+	host->clk = devm_clk_get(&pdev->dev, clk_name);
+	if (IS_ERR(host->clk)) {
+		ret = PTR_ERR(host->clk);
+		dev_err(&pdev->dev, "Failed to get mmc clock\n");
+		goto err_free_host;
+	}
 
+	// TODO: larsc's driver does this in the set_ios handler.
 	clk_enable(host->clk);
 
-#if 0			      /* Lutts */
-	// base address of MSC controller
-	host->base = ioremap(memres->start, PAGE_SIZE);
-	if (!host->base) {
-		return -ENOMEM;
+	host->base = devm_ioremap_resource(&pdev->dev,
+			platform_get_resource(pdev, IORESOURCE_MEM, 0));
+	if (IS_ERR(host->base)) {
+		ret = PTR_ERR(host->base);
+		dev_err(&pdev->dev, "Failed to get and remap mmio region\n");
+		goto err_free_host;
 	}
-#endif
-	host->irq = irqres->start;
-	if (dmares)
-		host->dma_id = dmares->start;
-	else
-		host->dma_id = -1;
-	//spin_lock_init(&host->lock);
-	sema_init(&host->mutex, 1);
+
+	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+	if (!dmares) {
+		ret = -ENOENT;
+		dev_err(&pdev->dev, "Failed to get platform dma\n");
+		goto err_free_host;
+	}
+	host->dma_id = dmares->start;
 
 	/*
 	 * Setup MMC host structure
@@ -237,48 +218,61 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->f_max = SD_CLOCK_HIGH;
 	mmc->ocr_avail = pdata->ocr_mask;
 	mmc->caps |= host->pdata->max_bus_width;
-	mmc->max_segs = NR_SG;
+
 	mmc->max_blk_size = 4095;
 	mmc->max_blk_count = 65535;
-
 	mmc->max_req_size = PAGE_SIZE * 16;
+
+	mmc->max_segs = 1;
 	mmc->max_seg_size = mmc->max_req_size;
+
+	host->pdev_id = pdev->id;
+	host->mmc = mmc;
+	//spin_lock_init(&host->lock);
+	sema_init(&host->mutex, 1);
 
 	ret = jz_mmc_msc_init(host);
 	if (ret)
-		return ret;
+		goto err_free_host;
 
 	ret = jz_mmc_gpio_init(host, pdev);
 	if (ret)
-		goto gpio_failed;
+		goto err_deinit_msc;
 
 	ret = jz_mmc_init_dma(host);
 	if (ret)
-		goto dma_failed;
+		goto err_deinit_gpio;
 
 	if (gpio_is_valid(host->pdata->gpio_power))
 		gpio_set_value(host->pdata->gpio_power,
 			       !host->pdata->power_active_low);
 
-	mmc_set_drvdata(pdev, mmc);
-	mmc_add_host(mmc);
+	platform_set_drvdata(pdev, mmc);
+	ret = mmc_add_host(mmc);
 
-	printk("JZ %s driver registered\n", mmc_hostname(host->mmc));
+	if (ret) {
+		dev_err(&pdev->dev, "Failed to add mmc host: %d\n", ret);
+		goto err_deinit_dma;
+	}
+	dev_info(&pdev->dev, "JZ SD/MMC card driver registered\n");
 
 	return 0;
 
-dma_failed:
+err_deinit_dma:
+	jz_mmc_deinit_dma(host);
+err_deinit_gpio:
 	jz_mmc_gpio_deinit(host, pdev);
-gpio_failed:
+err_deinit_msc:
 	jz_mmc_msc_deinit(host);
+err_free_host:
+	mmc_free_host(mmc);
+
 	return ret;
 }
 
 static int jz_mmc_remove(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
-
-	platform_set_drvdata(pdev, NULL);
 
 	if (mmc) {
 		struct jz_mmc_host *host = mmc_priv(mmc);
@@ -290,8 +284,6 @@ static int jz_mmc_remove(struct platform_device *pdev)
 		jz_mmc_deinit_dma(host);
 		jz_mmc_gpio_deinit(host, pdev);
 		jz_mmc_msc_deinit(host);
-
-		clk_put(host->clk);
 
 		mmc_remove_host(mmc);
 		mmc_free_host(mmc);
