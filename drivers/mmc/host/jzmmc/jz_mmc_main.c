@@ -247,7 +247,7 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		gpio_set_value(host->pdata->gpio_power,
 			       !host->pdata->power_active_low);
 
-	platform_set_drvdata(pdev, mmc);
+	platform_set_drvdata(pdev, host);
 	ret = mmc_add_host(mmc);
 
 	if (ret) {
@@ -272,22 +272,19 @@ err_free_host:
 
 static int jz_mmc_remove(struct platform_device *pdev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(pdev);
+	struct jz_mmc_host *host = platform_get_drvdata(pdev);
 
-	if (mmc) {
-		struct jz_mmc_host *host = mmc_priv(mmc);
+	if (gpio_is_valid(host->pdata->gpio_power))
+		gpio_set_value(host->pdata->gpio_power,
+				host->pdata->power_active_low);
 
-		if (gpio_is_valid(host->pdata->gpio_power))
-			gpio_set_value(host->pdata->gpio_power,
-				       host->pdata->power_active_low);
+	jz_mmc_deinit_dma(host);
+	jz_mmc_gpio_deinit(host, pdev);
+	jz_mmc_msc_deinit(host);
 
-		jz_mmc_deinit_dma(host);
-		jz_mmc_gpio_deinit(host, pdev);
-		jz_mmc_msc_deinit(host);
+	mmc_remove_host(host->mmc);
+	mmc_free_host(host->mmc);
 
-		mmc_remove_host(mmc);
-		mmc_free_host(mmc);
-	}
 	return 0;
 }
 
@@ -295,26 +292,23 @@ static int jz_mmc_remove(struct platform_device *pdev)
 
 static int jz_mmc_suspend(struct device *dev)
 {
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-	struct jz_mmc_host *host = mmc_priv(mmc);
+	struct jz_mmc_host *host = dev_get_drvdata(dev);
 	int ret = 0;
 
 	host->sleeping = 1;
 
-	if (mmc) {
-		if (mmc->card && mmc->card->type != MMC_TYPE_SDIO) {
-			ret = mmc_suspend_host(mmc);
-		}
-
-		clk_disable(host->clk);
+	if (host->mmc->card && host->mmc->card->type != MMC_TYPE_SDIO) {
+		ret = mmc_suspend_host(host->mmc);
 	}
+
+	clk_disable(host->clk);
+
 	return ret;
 }
 
 static int jz_mmc_resume(struct device *dev)
 {
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-	struct jz_mmc_host *host = mmc_priv(mmc);
+	struct jz_mmc_host *host = dev_get_drvdata(dev);
 
 #ifdef CONFIG_JZ_SYSTEM_AT_CARD
 	if (host->pdev_id == 0){
@@ -326,13 +320,11 @@ static int jz_mmc_resume(struct device *dev)
 	}
 #endif
 
-	if (mmc) {
-		clk_enable(host->clk);
+	clk_enable(host->clk);
 
-		if ( (mmc->card == NULL) || (mmc->card->type != MMC_TYPE_SDIO) )
-			if (host->card_detect_irq >= 0)
-				jz_mmc_detect(host, 1);
-	}
+	if (!host->mmc->card || host->mmc->card->type != MMC_TYPE_SDIO)
+		if (host->card_detect_irq >= 0)
+			jz_mmc_detect(host, 1);
 
 	return 0;
 }
