@@ -362,9 +362,10 @@ static int jz_mmc_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int jz_mmc_suspend(struct platform_device *dev, pm_message_t state)
+
+static int jz_mmc_suspend(struct device *dev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(dev);
+	struct mmc_host *mmc = dev_get_drvdata(dev);
 	struct jz_mmc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
@@ -380,9 +381,9 @@ static int jz_mmc_suspend(struct platform_device *dev, pm_message_t state)
 	return ret;
 }
 
-static int jz_mmc_resume(struct platform_device *dev)
+static int jz_mmc_resume(struct device *dev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(dev);
+	struct mmc_host *mmc = dev_get_drvdata(dev);
 	struct jz_mmc_host *host = mmc_priv(mmc);
 
 #ifdef CONFIG_JZ_SYSTEM_AT_CARD
@@ -405,19 +406,27 @@ static int jz_mmc_resume(struct platform_device *dev)
 
 	return 0;
 }
+
+const struct dev_pm_ops jz_mmc_pm_ops = {
+	.suspend	= jz_mmc_suspend,
+	.resume		= jz_mmc_resume,
+	.poweroff	= jz_mmc_suspend,
+	.restore	= jz_mmc_resume,
+};
+
+#define JZ_MMC_PM_OPS (&jz_mmc_pm_ops)
 #else
-#define jz_mmc_suspend      NULL
-#define jz_mmc_resume       NULL
+#define JZ_MMC_PM_OPS NULL
 #endif
 
 static struct platform_driver jz_msc_driver = {
-	.probe = jz_mmc_probe,
-	.remove = jz_mmc_remove,
-	.suspend = jz_mmc_suspend,
-	.resume = jz_mmc_resume,
+	.probe		= jz_mmc_probe,
+	.remove		= jz_mmc_remove,
 	.driver = {
-		   .name = "jz-msc",
-		   },
+		.name	= "jz-msc",
+		.owner	= THIS_MODULE,
+		.pm	= JZ_MMC_PM_OPS,
+	},
 };
 
 module_platform_driver(jz_msc_driver);
