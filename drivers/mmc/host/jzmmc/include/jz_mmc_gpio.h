@@ -16,5 +16,6 @@ struct platform_device;
 
 int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev);
 void jz_mmc_gpio_deinit(struct jz_mmc_host *host, struct platform_device *pdev);
+int jz_mmc_detect(struct jz_mmc_host *host, int from_resuming);
 
 #endif /* __JZ_MMC_GPIO_H__ */

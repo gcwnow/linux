@@ -380,7 +380,6 @@ static int jz_mmc_suspend(struct platform_device *dev, pm_message_t state)
 	return ret;
 }
 
-extern int jz_mmc_detect(struct jz_mmc_host *host, int from_resuming);
 static int jz_mmc_resume(struct platform_device *dev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(dev);
