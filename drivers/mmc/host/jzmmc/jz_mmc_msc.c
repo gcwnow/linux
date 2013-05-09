@@ -138,11 +138,16 @@ void jz_mmc_reset(struct jz_mmc_host *host)
 
 //	while (REG_MSC_STAT(host->pdev_id) & MSC_STAT_CLK_EN);
 
+	clk_enable(host->clk);
+
 	REG_MSC_STRPCL(host->pdev_id) = MSC_STRPCL_RESET;
  	while (REG_MSC_STAT(host->pdev_id) & MSC_STAT_IS_RESETTING);
 
 	// __msc_start_clk(host->pdev_id);
 	REG_MSC_LPM(host->pdev_id) = 0x1;	// Low power mode
+
+	clk_disable(host->clk);
+
 	msc_irq_mask_all(host->pdev_id);
 
 	REG_MSC_RDTO(host->pdev_id) = 0xffffffff;

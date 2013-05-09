@@ -103,24 +103,26 @@ static int jz_mmc_get_cd(struct mmc_host *mmc)
 static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-	//void *dev;
 
 	if (ios->clock)
 		jz_mmc_set_clock(host, ios->clock);
 
-	switch(ios->power_mode) {
-	case MMC_POWER_ON:
+	switch (ios->power_mode) {
+	case MMC_POWER_UP:
+		jz_mmc_reset(host);
 		if (gpio_is_valid(host->pdata->gpio_power))
 			gpio_set_value(host->pdata->gpio_power,
 				       !host->pdata->power_active_low);
 		host->cmdat |= MSC_CMDAT_INIT;
+		clk_enable(host->clk);
 		break;
-	case MMC_POWER_OFF:
+	case MMC_POWER_ON:
+		break;
+	default:
 		if (gpio_is_valid(host->pdata->gpio_power))
 			gpio_set_value(host->pdata->gpio_power,
 				       host->pdata->power_active_low);
-		break;
-	default:
+		clk_disable(host->clk);
 		break;
 	}
 
@@ -190,9 +192,6 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to get mmc clock\n");
 		goto err_free_host;
 	}
-
-	// TODO: larsc's driver does this in the set_ios handler.
-	clk_enable(host->clk);
 
 	host->base = devm_ioremap_resource(&pdev->dev,
 			platform_get_resource(pdev, IORESOURCE_MEM, 0));
@@ -293,34 +292,28 @@ static int jz_mmc_remove(struct platform_device *pdev)
 static int jz_mmc_suspend(struct device *dev)
 {
 	struct jz_mmc_host *host = dev_get_drvdata(dev);
-	int ret = 0;
 
 	host->sleeping = 1;
 
-	if (host->mmc->card && host->mmc->card->type != MMC_TYPE_SDIO) {
-		ret = mmc_suspend_host(host->mmc);
-	}
-
-	clk_disable(host->clk);
-
-	return ret;
+	return mmc_suspend_host(host->mmc);
 }
 
 static int jz_mmc_resume(struct device *dev)
 {
 	struct jz_mmc_host *host = dev_get_drvdata(dev);
+	int ret;
+
+	ret = mmc_resume_host(host->mmc);
+	if (!ret)
+		return ret;
 
 #ifdef CONFIG_JZ_SYSTEM_AT_CARD
 	if (host->pdev_id == 0){
-		mmc_resume_host(host->mmc);
-		jz_mmc_reset(host);
 		if(cpm_get_clock(CGU_MSC0CLK) > SD_CLOCK_FAST)
 			REG_MSC_LPM(host->pdev_id) |= 1<<31;
 		return 0;
 	}
 #endif
-
-	clk_enable(host->clk);
 
 	if (!host->mmc->card || host->mmc->card->type != MMC_TYPE_SDIO)
 		if (host->card_detect_irq >= 0)
