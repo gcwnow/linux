@@ -54,8 +54,8 @@ static void jiq_de_quiver(struct work_struct *ptr)
 
 	for (time_to_try = 0; time_to_try < RETRY_TIME; time_to_try++) {
 		for (i = 0; i < TRY_TIME; i++) {
-			tmp = !(gpio_get_value(host->plat->gpio_card_detect) ^
-				host->plat->card_detect_active_low);
+			tmp = !(gpio_get_value(host->pdata->gpio_card_detect) ^
+				host->pdata->card_detect_active_low);
 				// tmp = 1 means slot is empty
 			result &= tmp;
 			if( !tmp )
@@ -325,8 +325,8 @@ int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
 		host->sleeping = 0;
 
 		/* Check if there is currently any card present. */
-		host->eject = !(gpio_get_value(host->plat->gpio_card_detect) ^
-				host->plat->card_detect_active_low);
+		host->eject = !(gpio_get_value(host->pdata->gpio_card_detect) ^
+				host->pdata->card_detect_active_low);
 		host->oldstat = host->eject;
 
 		ret = devm_request_irq(&pdev->dev,

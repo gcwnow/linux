@@ -407,7 +407,7 @@ static void jz_mmc_set_cmdat(struct jz_mmc_host *host) {
 static void jz_mmc_set_cmdarg(struct jz_mmc_host *host) {
 	struct mmc_command *cmd = host->curr_mrq->cmd;
 
-	if(host->plat->bus_width == 1) {
+	if(host->pdata->bus_width == 1) {
 		if (cmd->opcode == 6) {
 			/* set  1 bit sd card bus*/
 			if (cmd->arg == 2) {
@@ -420,7 +420,7 @@ static void jz_mmc_set_cmdarg(struct jz_mmc_host *host) {
 			}
 		} else
 			REG_MSC_ARG(host->pdev_id) = cmd->arg;
-	} else if(host->plat->bus_width == 8) {
+	} else if(host->pdata->bus_width == 8) {
 		if (cmd->opcode == 6) {
 			/* set  8 bit mmc card bus*/
 			if (cmd->arg == 0x3b70101) {

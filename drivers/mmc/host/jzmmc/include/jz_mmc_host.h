@@ -54,7 +54,7 @@ struct jz_mmc_host {
 	unsigned int pdev_id;
 	int irq;
 	int dma_id;
-	struct jz_mmc_platform_data *plat;
+	struct jz_mmc_platform_data *pdata;
 
 	/* mmc request related */
 	unsigned int cmdat;

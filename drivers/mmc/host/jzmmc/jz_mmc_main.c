@@ -55,7 +55,7 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	down(&host->mutex);
 
 	if (SD_IO_SEND_OP_COND == mrq->cmd->opcode) {
-		if(host->plat->support_sdio == 0) {
+		if(host->pdata->support_sdio == 0) {
 			mrq->cmd->error = -ETIMEDOUT;
 			jz_mmc_finish_request(host, mrq);
 			return;
@@ -82,21 +82,21 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 static int jz_mmc_get_ro(struct mmc_host *mmc)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-	if (!gpio_is_valid(host->plat->gpio_read_only))
+	if (!gpio_is_valid(host->pdata->gpio_read_only))
 		return -ENOSYS;
 
-	return gpio_get_value(host->plat->gpio_read_only) ^
-		host->plat->read_only_active_low;
+	return gpio_get_value(host->pdata->gpio_read_only) ^
+		host->pdata->read_only_active_low;
 }
 
 static int jz_mmc_get_cd(struct mmc_host *mmc)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-	if (!gpio_is_valid(host->plat->gpio_card_detect))
+	if (!gpio_is_valid(host->pdata->gpio_card_detect))
 		return -ENOSYS;
 
-	return gpio_get_value(host->plat->gpio_card_detect) ^
-			host->plat->card_detect_active_low;
+	return gpio_get_value(host->pdata->gpio_card_detect) ^
+			host->pdata->card_detect_active_low;
 }
 
 /* set clock and power */
@@ -110,15 +110,15 @@ static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch(ios->power_mode) {
 	case MMC_POWER_ON:
-		if (gpio_is_valid(host->plat->gpio_power))
-			gpio_set_value(host->plat->gpio_power,
-				       !host->plat->power_active_low);
+		if (gpio_is_valid(host->pdata->gpio_power))
+			gpio_set_value(host->pdata->gpio_power,
+				       !host->pdata->power_active_low);
 		host->cmdat |= MSC_CMDAT_INIT;
 		break;
 	case MMC_POWER_OFF:
-		if (gpio_is_valid(host->plat->gpio_power))
-			gpio_set_value(host->plat->gpio_power,
-				       host->plat->power_active_low);
+		if (gpio_is_valid(host->pdata->gpio_power))
+			gpio_set_value(host->pdata->gpio_power,
+				       host->pdata->power_active_low);
 		break;
 	default:
 		break;
@@ -128,18 +128,18 @@ static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 		host->cmdat &= ~MSC_CMDAT_BUS_WIDTH_MASK;
 
-		if(host->plat->bus_width == 4)
+		if(host->pdata->bus_width == 4)
 			host->cmdat |= MSC_CMDAT_BUS_WIDTH_4BIT;
 		else
-			host->cmdat |= host->plat->bus_width;
+			host->cmdat |= host->pdata->bus_width;
 	} else if (ios->bus_width == MMC_BUS_WIDTH_8) {
 
 		host->cmdat &= ~MSC_CMDAT_BUS_WIDTH_MASK;
 
-		if(host->plat->bus_width == 8)
+		if(host->pdata->bus_width == 8)
 			host->cmdat |= MSC_CMDAT_BUS_WIDTH_8BIT;
 //		else
-//			host->cmdat |= host->plat->bus_width;
+//			host->cmdat |= host->pdata->bus_width;
 	} else {
 		/* 1 bit bus*/
 		host->cmdat &= ~MSC_CMDAT_BUS_WIDTH_8BIT;
@@ -156,7 +156,7 @@ static const struct mmc_host_ops jz_mmc_ops = {
 static int jz_mmc_probe(struct platform_device *pdev)
 {
 	int ret;
-	struct jz_mmc_platform_data *plat = pdev->dev.platform_data;
+	struct jz_mmc_platform_data *pdata = pdev->dev.platform_data;
 	struct mmc_host *mmc;
 	struct jz_mmc_host *host = NULL;
 
@@ -171,7 +171,7 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		printk(KERN_ERR "%s: pdev is NULL\n", __func__);
 		return -EINVAL;
 	}
-	if (!plat) {
+	if (!pdata) {
 		printk(KERN_ERR "%s: Platform data not available\n", __func__);
 		return -EINVAL;
 	}
@@ -204,7 +204,7 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	}
 	host = mmc_priv(mmc);
 	host->pdev_id = pdev->id;
-	host->plat = plat;
+	host->pdata = pdata;
 	host->mmc = mmc;
 
 	sprintf(clk_name, "mmc%i", pdev->id);
@@ -235,8 +235,8 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->ops = &jz_mmc_ops;
 	mmc->f_min = MMC_CLOCK_SLOW;
 	mmc->f_max = SD_CLOCK_HIGH;
-	mmc->ocr_avail = plat->ocr_mask;
-	mmc->caps |= host->plat->max_bus_width;
+	mmc->ocr_avail = pdata->ocr_mask;
+	mmc->caps |= host->pdata->max_bus_width;
 	mmc->max_segs = NR_SG;
 	mmc->max_blk_size = 4095;
 	mmc->max_blk_count = 65535;
@@ -256,9 +256,9 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	if (ret)
 		goto dma_failed;
 
-	if (gpio_is_valid(host->plat->gpio_power))
-		gpio_set_value(host->plat->gpio_power,
-			       !host->plat->power_active_low);
+	if (gpio_is_valid(host->pdata->gpio_power))
+		gpio_set_value(host->pdata->gpio_power,
+			       !host->pdata->power_active_low);
 
 	mmc_set_drvdata(pdev, mmc);
 	mmc_add_host(mmc);
@@ -283,9 +283,9 @@ static int jz_mmc_remove(struct platform_device *pdev)
 	if (mmc) {
 		struct jz_mmc_host *host = mmc_priv(mmc);
 
-		if (gpio_is_valid(host->plat->gpio_power))
-			gpio_set_value(host->plat->gpio_power,
-				       host->plat->power_active_low);
+		if (gpio_is_valid(host->pdata->gpio_power))
+			gpio_set_value(host->pdata->gpio_power,
+				       host->pdata->power_active_low);
 
 		jz_mmc_deinit_dma(host);
 		jz_mmc_gpio_deinit(host, pdev);
