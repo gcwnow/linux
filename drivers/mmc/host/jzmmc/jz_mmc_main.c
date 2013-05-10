@@ -307,17 +307,13 @@ static int jz_mmc_resume(struct device *dev)
 	if (!ret)
 		return ret;
 
-#ifdef CONFIG_JZ_SYSTEM_AT_CARD
-	if (host->pdev_id == 0){
-		if(cpm_get_clock(CGU_MSC0CLK) > SD_CLOCK_FAST)
-			REG_MSC_LPM(host->pdev_id) |= 1<<31;
-		return 0;
-	}
-#endif
-
-	if (!host->mmc->card || host->mmc->card->type != MMC_TYPE_SDIO)
-		if (host->card_detect_irq >= 0)
+	if (host->card_detect_irq >= 0) {
+		if (!host->mmc->card || host->mmc->card->type != MMC_TYPE_SDIO)
 			jz_mmc_detect(host, 1);
+	} else {
+		if (cpm_get_clock(CGU_MSC0CLK) > SD_CLOCK_FAST)
+			REG_MSC_LPM(host->pdev_id) |= 1 << 31;
+	}
 
 	return 0;
 }
