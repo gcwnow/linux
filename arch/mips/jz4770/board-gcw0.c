@@ -84,11 +84,7 @@ void config_gpio_on_sleep(void)
 
 			.output_high = BIT21 | BIT22 | BIT23 | BIT24 | BIT25 | BIT26, /* NAND: CS1~CS6 */
 			.output_low = 0x0,
-#ifndef CONFIG_JZ_SYSTEM_AT_CARD
-			.no_operation = 0x0,
-#else
 			.no_operation = BITS_H2L(23, 18),
-#endif
 		},
 
 		/* GPB */
@@ -98,11 +94,7 @@ void config_gpio_on_sleep(void)
 
 			.output_high = BIT29,
 			.output_low = BIT31 | BIT28 | BIT21,
-#ifndef CONFIG_JZ_SYSTEM_AT_CARD
-			.no_operation = 0x0,
-#else
 			.no_operation = BIT0,
-#endif
 		},
 
 		/* GPC */
