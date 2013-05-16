@@ -134,7 +134,7 @@
 	typedef unsigned long _irqL;
 	typedef	struct	net_device * _nic_hdl;
 	
-	typedef pid_t		_thread_hdl_;
+	typedef struct	task_struct * _thread_hdl_;
 	typedef int		thread_return;
 	typedef void*	thread_context;
 

@@ -802,18 +802,18 @@ u32 rtw_start_drv_threads(_adapter *padapter)
 
 #ifdef CONFIG_SDIO_HCI
 	padapter->xmitThread = kthread_run(rtw_xmit_thread, padapter, "xmit_thread");
-	if(padapter->xmitThread < 0)
+	if(IS_ERR(padapter->xmitThread))
 		_status = _FAIL;
 #endif
 
 #ifdef CONFIG_RECV_THREAD_MODE
 	padapter->recvThread = kthread_run(recv_thread, padapter, "recv_thread");
-	if(padapter->recvThread < 0)
+	if(IS_ERR(padapter->recvThread))
 		_status = _FAIL;	
 #endif
 
 	padapter->cmdThread = kthread_run(rtw_cmd_thread, padapter, "cmd_thread");
-	if(padapter->cmdThread < 0)
+	if(IS_ERR(padapter->cmdThread))
 		_status = _FAIL;
 	else
 		_rtw_down_sema(&padapter->cmdpriv.terminate_cmdthread_sema); //wait for cmd_thread to run
@@ -821,7 +821,7 @@ u32 rtw_start_drv_threads(_adapter *padapter)
 
 #ifdef CONFIG_EVENT_THREAD_MODE
 	padapter->evtThread = kthread_run(event_thread, padapter, "evt_thread");
-	if(padapter->evtThread < 0)
+	if(IS_ERR(padapter->evtThread))
 		_status = _FAIL;		
 #endif
 

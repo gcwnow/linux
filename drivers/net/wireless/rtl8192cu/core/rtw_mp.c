@@ -1142,7 +1142,7 @@ void SetPacketTx(PADAPTER padapter)
 
 	//3 6. start thread
 	pmp_priv->tx.PktTxThread = kthread_run(mp_xmit_packet_thread, pmp_priv, "pkt_tx");
-	if(pmp_priv->tx.PktTxThread < 0)
+	if(IS_ERR(pmp_priv->tx.PktTxThread))
 		DBG_871X("Create PktTx Thread Fail !!!!!\n");
 
 }
