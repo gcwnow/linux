@@ -114,7 +114,7 @@ struct jzfb {
 
 static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16),
 								  dma1_desc1 __aligned(16);
-static void *lcd_frame1, *black_line;
+static void *lcd_frame1;
 
 static void ctrl_enable(void)
 {
@@ -329,25 +329,17 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	struct jzfb *jzfb = fb->par;
 	unsigned int w = fb->var.xres_virtual,
 				 h = fb->var.yres_virtual,
-				 bytes_per_line = words_per_line(w, jzfb->bpp) * 4,
-				 bytes_per_frame = bytes_per_line * h;
+				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
 	void *page_virt;
 
 	dev_dbg(&jzfb->pdev->dev, "FG1 BPP: %d\n", jzfb->bpp);
 
-	lcd_frame1 = alloc_pages_exact(
-				bytes_per_frame + bytes_per_line, GFP_KERNEL);
+	lcd_frame1 = alloc_pages_exact(bytes_per_frame, GFP_KERNEL);
 	if (!lcd_frame1) {
 		dev_err(&jzfb->pdev->dev,
 					"%s: unable to map screen memory\n", fb->fix.id);
 		return -ENOMEM;
 	}
-
-	black_line = lcd_frame1 + bytes_per_frame;
-	for (page_virt = black_line;
-	     page_virt < black_line + bytes_per_line;
-	     page_virt += PAGE_SIZE)
-		clear_page(page_virt);
 
 	/*
 	 * Set page reserved so that mmap will work. This is necessary
@@ -372,8 +364,7 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 	struct jzfb *jzfb = fb->par;
 	unsigned int w = fb->var.xres_virtual,
 				 h = fb->var.yres_virtual,
-				 bytes_per_line = words_per_line(w, jzfb->bpp) * 4,
-				 bytes_per_frame = bytes_per_line * h;
+				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
 
 	if (fb && fb->screen_base) {
 		iounmap(fb->screen_base);
@@ -388,7 +379,7 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 			 page_virt < lcd_frame1 + bytes_per_frame; page_virt += PAGE_SIZE)
 			ClearPageReserved(virt_to_page(page_virt));
 
-		free_pages_exact(lcd_frame1, bytes_per_frame + bytes_per_line);
+		free_pages_exact(lcd_frame1, bytes_per_frame);
 	}
 }
 
@@ -401,7 +392,7 @@ static void jz4760fb_descriptor_init(unsigned int bpp)
 
 	/* DMA1 Descriptor1 */
 	dma1_desc1.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
-	dma1_desc1.databuf = virt_to_phys(black_line);
+	dma1_desc1.databuf = virt_to_phys(lcd_frame1);
 	dma1_desc1.cmd = LCD_CMD_EOFINT | LCD_CMD_SOFINT;
 
 	dma1_desc0.offsize = dma1_desc1.offsize = 0;
