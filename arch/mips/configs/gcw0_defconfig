@@ -68,8 +68,7 @@ CONFIG_LEGACY_PTY_COUNT=2
 # CONFIG_DEVKMEM is not set
 CONFIG_SERIAL_8250=y
 # CONFIG_SERIAL_8250_DEPRECATED_OPTIONS is not set
-CONFIG_SERIAL_8250_NR_UARTS=2
-CONFIG_SERIAL_8250_RUNTIME_UARTS=2
+CONFIG_SERIAL_8250_CONSOLE=y
 # CONFIG_HW_RANDOM is not set
 CONFIG_I2C=y
 # CONFIG_I2C_COMPAT is not set
@@ -175,6 +174,6 @@ CONFIG_NLS_UTF8=y
 # CONFIG_SCHED_DEBUG is not set
 # CONFIG_FTRACE is not set
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="panic=5 console=tty0 boot=/dev/mmcblk0p2 loop0=/boot/rootfs.bin root=/dev/loop0"
+CONFIG_CMDLINE="panic=5 console=ttyS2,57600 console=tty0 boot=/dev/mmcblk0p2 loop0=/boot/rootfs.bin root=/dev/loop0"
 # CONFIG_CRYPTO_ANSI_CPRNG is not set
 # CONFIG_CRYPTO_HW is not set
