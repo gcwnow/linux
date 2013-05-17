@@ -31,8 +31,10 @@
 #include <linux/pm.h>
 #include <linux/clk.h>
 #include <linux/interrupt.h>
+#include <linux/completion.h>
 
 #include <asm/irq.h>
+#include <asm/page.h>
 #include <asm/pgtable.h>
 #include <asm/uaccess.h>
 #include <asm/processor.h>
@@ -102,14 +104,17 @@ struct jzfb {
 	uint32_t pseudo_palette[16];
 	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
 
+	struct completion vsync;
+
 	struct clk *lpclk;
 
 	struct mutex lock;
 	bool is_enabled;
 };
 
-static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16);
-static void *lcd_frame1;
+static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16),
+								  dma1_desc1 __aligned(16);
+static void *lcd_frame1, *black_line;
 
 static void ctrl_enable(void)
 {
@@ -324,17 +329,25 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	struct jzfb *jzfb = fb->par;
 	unsigned int w = fb->var.xres_virtual,
 				 h = fb->var.yres_virtual,
-				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
+				 bytes_per_line = words_per_line(w, jzfb->bpp) * 4,
+				 bytes_per_frame = bytes_per_line * h;
 	void *page_virt;
 
 	dev_dbg(&jzfb->pdev->dev, "FG1 BPP: %d\n", jzfb->bpp);
 
-	lcd_frame1 = alloc_pages_exact(bytes_per_frame, GFP_KERNEL);
+	lcd_frame1 = alloc_pages_exact(
+				bytes_per_frame + bytes_per_line, GFP_KERNEL);
 	if (!lcd_frame1) {
 		dev_err(&jzfb->pdev->dev,
 					"%s: unable to map screen memory\n", fb->fix.id);
 		return -ENOMEM;
 	}
+
+	black_line = lcd_frame1 + bytes_per_frame;
+	for (page_virt = black_line;
+	     page_virt < black_line + bytes_per_line;
+	     page_virt += PAGE_SIZE)
+		clear_page(page_virt);
 
 	/*
 	 * Set page reserved so that mmap will work. This is necessary
@@ -359,7 +372,8 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 	struct jzfb *jzfb = fb->par;
 	unsigned int w = fb->var.xres_virtual,
 				 h = fb->var.yres_virtual,
-				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
+				 bytes_per_line = words_per_line(w, jzfb->bpp) * 4,
+				 bytes_per_frame = bytes_per_line * h;
 
 	if (fb && fb->screen_base) {
 		iounmap(fb->screen_base);
@@ -374,7 +388,7 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 			 page_virt < lcd_frame1 + bytes_per_frame; page_virt += PAGE_SIZE)
 			ClearPageReserved(virt_to_page(page_virt));
 
-		free_pages_exact(lcd_frame1, bytes_per_frame);
+		free_pages_exact(lcd_frame1, bytes_per_frame + bytes_per_line);
 	}
 }
 
@@ -382,13 +396,19 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 static void jz4760fb_descriptor_init(unsigned int bpp)
 {
 	/* DMA1 Descriptor0 */
-	dma1_desc0.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
+	dma1_desc0.next_desc = (unsigned int) virt_to_phys(&dma1_desc1);
 	dma1_desc0.databuf = virt_to_phys(lcd_frame1);
 
-	dma1_desc0.offsize = 0;
-	dma1_desc0.page_width = 0;
+	/* DMA1 Descriptor1 */
+	dma1_desc1.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
+	dma1_desc1.databuf = virt_to_phys(black_line);
+	dma1_desc1.cmd = LCD_CMD_EOFINT | LCD_CMD_SOFINT;
+
+	dma1_desc0.offsize = dma1_desc1.offsize = 0;
+	dma1_desc0.page_width = dma1_desc1.page_width = 0;
 
 	dma_cache_wback_inv((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
+	dma_cache_wback_inv((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
 
 	REG_LCD_DA1 = virt_to_phys(&dma1_desc0);
 }
@@ -422,13 +442,14 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	__lcd_vat_set_vt(panel->bfw + panel->h + panel->efw);
 	__lcd_dah_set_hds(panel->blw);
 	__lcd_dah_set_hde(panel->blw + panel->w);
-	__lcd_dav_set_vds(panel->bfw);
+	__lcd_dav_set_vds(panel->bfw - 1);
 	__lcd_dav_set_vde(panel->bfw + panel->h);
 	__lcd_hsync_set_hps(0);
 	__lcd_hsync_set_hpe(panel->hsw);
 	__lcd_vsync_set_vpe(panel->vsw);
 
-	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN;
+	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN |
+			LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1;
 	REG_LCD_OSDCTRL = osdctrl;
 
 	/* yellow background helps debugging */
@@ -459,9 +480,12 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
 
 	dma1_desc0.cmd = (dma1_desc0.cmd & 0xff000000) | fg1_words_per_frame;
-	dma1_desc0.desc_size = panel->h << 16 | panel->w;
+	dma1_desc1.cmd = (dma1_desc1.cmd & 0xff000000) | fg1_words_per_line;
+	dma1_desc0.desc_size = dma1_desc1.desc_size =
+				(panel->h + 1) << 16 | panel->w;
 
 	dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
+	dma_cache_wback((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
 }
 
 static void jzfb_change_clock(struct jzfb *jzfb,
@@ -518,6 +542,19 @@ static int jz4760fb_set_par(struct fb_info *info)
 	return 0;
 }
 
+static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
+			unsigned long arg)
+{
+	struct jzfb *jzfb = info->par;
+
+	switch (cmd) {
+		case FBIO_WAITFORVSYNC:
+			return wait_for_completion_interruptible(&jzfb->vsync);
+		default:
+			return -ENOIOCTLCMD;
+	}
+}
+
 static struct fb_ops jz4760fb_ops = {
 	.owner			= THIS_MODULE,
 	.fb_setcolreg		= jz4760fb_setcolreg,
@@ -529,15 +566,20 @@ static struct fb_ops jz4760fb_ops = {
 	.fb_copyarea		= sys_copyarea,
 	.fb_imageblit		= sys_imageblit,
 	.fb_mmap		= jz4760fb_mmap,
+	.fb_ioctl		= jz4760fb_ioctl,
 };
 
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 {
 	unsigned int state;
 	static int irqcnt=0;
+	struct jzfb *jzfb = dev_id;
 
 	state = REG_LCD_STATE;
 	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
+
+	if (state & LCD_STATE_SOF) /* Start of frame */
+		REG_LCD_STATE = state & ~LCD_STATE_SOF;
 
 	if (state & LCD_STATE_EOF) /* End of frame */
 		REG_LCD_STATE = state & ~LCD_STATE_EOF;
@@ -559,6 +601,17 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 			pr_debug("disable Out FiFo underrun irq.\n");
 		}
 		pr_warn("%s, Out FiFo underrun.\n", __FUNCTION__);
+	}
+
+	state = REG_LCD_OSDS;
+	if (state & LCD_OSDS_SOF1) {
+		complete_all(&jzfb->vsync);
+		REG_LCD_OSDS &= ~LCD_OSDS_SOF1;
+	}
+
+	if (state & LCD_OSDS_EOF1) {
+		INIT_COMPLETION(jzfb->vsync);
+		REG_LCD_OSDS &= ~LCD_OSDS_EOF1;
 	}
 
 	return IRQ_HANDLED;
@@ -597,10 +650,13 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	jzfb->pdev = pdev;
 	jzfb->pdata = pdata;
 	jzfb->bpp = 32;
+	init_completion(&jzfb->vsync);
+	complete_all(&jzfb->vsync);
 
 	strcpy(fb->fix.id, "jz-lcd");
 	fb->fix.type	= FB_TYPE_PACKED_PIXELS;
 	fb->fix.type_aux	= 0;
+
 	fb->fix.xpanstep	= 1;
 	fb->fix.ypanstep	= 1;
 	fb->fix.ywrapstep	= 0;
@@ -634,8 +690,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
-	if (request_irq(IRQ_LCD, jz4760fb_interrupt_handler, IRQF_DISABLED,
-				"lcd", 0)) {
+	if (request_irq(IRQ_LCD, jz4760fb_interrupt_handler, 0,
+				"lcd", jzfb)) {
 		dev_err(&pdev->dev, "Failed to request IRQ.\n");
 		ret = -EBUSY;
 		goto failed;
