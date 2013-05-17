@@ -779,9 +779,14 @@ static struct platform_device gcw0_audio_device = {
 
 
 struct jz_clk_board_data jz_clk_bdata = {
+	/* These two are fixed in hardware. */
 	.ext_rate	=   12000000,
 	.rtc_rate	=      32768,
-	.pll1_rate	=  192000000,
+	/*
+	 * Pick 432 MHz as it is the least common multiple of 27 MHz (required
+	 * by TV encoder) and 48 MHz (required by USB host).
+	 */
+	.pll1_rate	=  432000000,
 };
 
 
