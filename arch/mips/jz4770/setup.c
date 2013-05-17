@@ -160,10 +160,10 @@ static void __init jz_serial_setup(void)
 	if (early_serial_setup(&s) != 0) {
 		printk(KERN_ERR "Serial ttyS1 setup failed!\n");
 	}
+
 	s.line = 2;
 	s.membase = (u8 *)UART2_BASE;
 	s.irq = IRQ_UART2;
-
 	if (early_serial_setup(&s) != 0) {
 		printk(KERN_ERR "Serial ttyS2 setup failed!\n");
 	}
