@@ -421,12 +421,12 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	unsigned int osdctrl = 0;
 	unsigned int cfg = panel->cfg;
 
-	if (jzfb->bpp == 16) {
+	if (bpp == 16) {
 		ctrl |= LCD_CTRL_BPP_16 | LCD_CTRL_RGB565;
 		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16;
 	} else {
-		if (WARN_ON(jzfb->bpp != 32))
-			jzfb->bpp = 32;
+		if (WARN_ON(bpp != 32))
+			bpp = 32;
 
 		ctrl |= LCD_CTRL_BPP_18_24;
 		osdctrl |= LCD_OSDCTRL_OSDBPP_18_24;
