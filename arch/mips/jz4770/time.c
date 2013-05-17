@@ -40,16 +40,11 @@
 static struct clocksource clocksource_jz; /* Jz clock source */
 static struct clock_event_device jz_clockevent_device; /* Jz clock event */
 
-void (*jz_timer_callback)(void);
-
 static irqreturn_t jz_timer_interrupt(int irq, void *dev_id)
 {
 	struct clock_event_device *cd = dev_id;
 
 	__tcu_clear_full_match_flag(JZ_TIMER_TCU_CH);
-
-	if (jz_timer_callback)
-		jz_timer_callback();
 
 	cd->event_handler(cd);
 
