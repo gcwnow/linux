@@ -315,18 +315,7 @@ void jz_board_do_resume(unsigned long *ptr)
 	}
 }
 
-extern void (*jz_timer_callback)(void);
 extern int __init jz_add_msc_devices(unsigned int controller, struct jz_mmc_platform_data *plat);
-
-static void dancing(void)
-{
-	static unsigned char slash[] = "\\|/-";
-//	static volatile unsigned char *p = (unsigned char *)0xb6000058;
-	static volatile unsigned char *p = (unsigned char *)0xb6000016;
-	static unsigned int count = 0;
-	*p = slash[count++];
-	count &= 3;
-}
 
 
 /* Video */
@@ -581,16 +570,6 @@ void __init board_msc_init(void)
 	jz_add_msc_devices(1, &gcw_external_sd_data);
 }
 
-
-static void f4770_timer_callback(void)
-{
-	static unsigned long count = 0;
-
-	if ((++count) % 50 == 0) {
-		dancing();
-		count = 0;
-	}
-}
 
 static void __init board_cpm_setup(void)
 {
@@ -853,6 +832,4 @@ void __init jz_board_setup(void)
 //	jz_restart(NULL);
 	board_cpm_setup();
 	board_gpio_setup();
-
-	jz_timer_callback = f4770_timer_callback;
 }
