@@ -86,10 +86,8 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
 	.ctrl = LCD_CTRL_OFUM | LCD_CTRL_BST_16,	/* 16words burst, enable out FIFO underrun irq */
 	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
-	320, 240, 60, 50, 1, 17, 70, 9, 13,
-	/* Note: Data sheet suggests elw=18 and efw=10, but that doesn't
-	 *       line up well with PLL1 at 192 MHz.
-	 */
+	320, 240, 60, 50, 1, 10, 70, 5, 5,
+	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
 /* default output to lcd panel */
