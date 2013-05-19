@@ -686,7 +686,10 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
+	mutex_init(&jzfb->lock);
+
 	platform_set_drvdata(pdev, jzfb);
+	jzfb->fb = fb;
 
 	/* configurate sequence:
 	 * 1. disable lcdc.
@@ -711,19 +714,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	jz4760fb_descriptor_init(jzfb->bpp);
 	jz4760fb_set_par(fb);
 
-	ret = register_framebuffer(fb);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
-		goto failed;
-	}
-	dev_info(&pdev->dev,
-				"fb%d: %s frame buffer device, using %dK of video memory\n",
-				fb->node, fb->fix.id, fb->fix.smem_len>>10);
-
-	mutex_init(&jzfb->lock);
-
-	jzfb->fb = fb;
-
 	// TODO: Panels should be proper modules that register themselves.
 	//       They should be switchable via sysfs.
 	//       And a module parameter should select the default panel.
@@ -736,12 +726,22 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	pdata->panel_ops->enable(jzfb->panel);
 	jzfb->is_enabled = true;
 
+	ret = register_framebuffer(fb);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
+		goto err_exit_panel;
+	}
+	dev_info(&pdev->dev,
+		"fb%d: %s frame buffer device, using %dK of video memory\n",
+		fb->node, fb->fix.id, fb->fix.smem_len>>10);
+
 	return 0;
 
+err_exit_panel:
+	jzfb->pdata->panel_ops->exit(jzfb->panel);
 failed:
 	jz4760fb_unmap_smem(fb);
 	framebuffer_release(fb);
-
 	return ret;
 }
 
@@ -755,8 +755,6 @@ static int jz4760_fb_remove(struct platform_device *pdev)
 	}
 
 	jzfb->pdata->panel_ops->exit(jzfb->panel);
-
-	platform_set_drvdata(pdev, NULL);
 
 	return 0;
 }
