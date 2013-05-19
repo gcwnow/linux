@@ -253,22 +253,42 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	return 0;
 }
 
-static void jzfb_enable(struct jzfb *jzfb)
+static void jzfb_lcdc_enable(struct jzfb *jzfb)
 {
 	clk_enable(jzfb->lpclk);
 
-	// TODO: Configure GPIO pins via pinctrl.
+	/*
+	 * Enabling the LCDC too soon after the clock will hang the system.
+	 * A very short delay seems to be sufficient.
+	 */
+	udelay(1);
 
 	ctrl_enable();
 }
 
-static void jzfb_disable(struct jzfb *jzfb)
+static void jzfb_lcdc_disable(struct jzfb *jzfb)
 {
 	ctrl_disable(jzfb->pdev);
 
+	clk_disable(jzfb->lpclk);
+}
+
+static void jzfb_power_up(struct jzfb *jzfb)
+{
 	// TODO: Configure GPIO pins via pinctrl.
 
-	clk_disable(jzfb->lpclk);
+	jzfb->pdata->panel_ops->enable(jzfb->panel);
+
+	jzfb_lcdc_enable(jzfb);
+}
+
+static void jzfb_power_down(struct jzfb *jzfb)
+{
+	jzfb_lcdc_disable(jzfb);
+
+	jzfb->pdata->panel_ops->disable(jzfb->panel);
+
+	// TODO: Configure GPIO pins via pinctrl.
 }
 
 /*
@@ -282,12 +302,12 @@ static int jz4760fb_blank(int blank_mode, struct fb_info *info)
 
 	if (blank_mode == FB_BLANK_UNBLANK) {
 		if (!jzfb->is_enabled) {
-			jzfb_enable(jzfb);
+			jzfb_power_up(jzfb);
 			jzfb->is_enabled = true;
 		}
 	} else {
 		if (jzfb->is_enabled) {
-			jzfb_disable(jzfb);
+			jzfb_power_down(jzfb);
 			jzfb->is_enabled = false;
 		}
 	}
@@ -482,7 +502,6 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 {
 	unsigned int pixticks;
 	unsigned int rate;
-	struct clk *lpclk = jzfb->lpclk;
 
 	pixticks = panel->w;
 	if ((panel->cfg & LCD_CFG_MODE_MASK) == LCD_CFG_MODE_SERIAL_TFT)
@@ -491,23 +510,13 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 	rate = panel->fclk * (pixticks + panel->elw + panel->blw)
 	                   * (panel->h + panel->efw + panel->bfw);
 
-	clk_disable(lpclk);
-
 	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
 	__cpm_select_pixclk_lcd();
 
-	clk_set_rate(lpclk, rate);
+	clk_set_rate(jzfb->lpclk, rate);
 
-	jz_clocks.pixclk = clk_get_rate(lpclk);
+	jz_clocks.pixclk = clk_get_rate(jzfb->lpclk);
 	dev_dbg(&jzfb->pdev->dev, "PixClock: %d\n", jz_clocks.pixclk);
-
-	clk_enable(lpclk);
-
-	/*
-	 * Enabling the LCDC too soon after the clock will hang the system.
-	 * A very short delay seems to be sufficient.
-	 */
-	udelay(1);
 }
 
 /* set the video mode according to info->var */
@@ -517,14 +526,21 @@ static int jz4760fb_set_par(struct fb_info *info)
 	struct fb_fix_screeninfo *fix = &info->fix;
 	struct jzfb *jzfb = info->par;
 
-	__lcd_clr_ena(); /* quick disable */
+	if (jzfb->is_enabled)
+		ctrl_disable(jzfb->pdev);
+	else
+		clk_enable(jzfb->lpclk);
 
 	jzfb->bpp = var->bits_per_pixel;
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
 	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
+
+	clk_disable(jzfb->lpclk);
+
 	jzfb_change_clock(jzfb, jz_panel);
 
-	ctrl_enable();
+	if (jzfb->is_enabled)
+		jzfb_lcdc_enable(jzfb);
 
 	fix->visual = FB_VISUAL_TRUECOLOR;
 	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
@@ -723,7 +739,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed;
 
-	pdata->panel_ops->enable(jzfb->panel);
+	jzfb_power_up(jzfb);
 	jzfb->is_enabled = true;
 
 	ret = register_framebuffer(fb);
@@ -749,10 +765,8 @@ static int jz4760_fb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
 
-	if (jzfb->is_enabled) {
-		jzfb_disable(jzfb);
-		jzfb->pdata->panel_ops->disable(jzfb->panel);
-	}
+	if (jzfb->is_enabled)
+		jzfb_power_down(jzfb);
 
 	jzfb->pdata->panel_ops->exit(jzfb->panel);
 
@@ -767,10 +781,8 @@ static int jz4760_fb_suspend(struct platform_device *pdev, pm_message_t state)
 
 	dev_dbg(&pdev->dev, "Suspending\n");
 
-	if (jzfb->is_enabled) {
-		jzfb_disable(jzfb);
-		jzfb->pdata->panel_ops->disable(jzfb->panel);
-	}
+	if (jzfb->is_enabled)
+		jzfb_power_down(jzfb);
 
 	return 0;
 }
@@ -781,10 +793,8 @@ static int jz4760_fb_resume(struct platform_device *pdev)
 
 	dev_dbg(&pdev->dev, "Resuming\n");
 
-	if (jzfb->is_enabled) {
-		jzfb->pdata->panel_ops->enable(jzfb->panel);
-		jzfb_enable(jzfb);
-	}
+	if (jzfb->is_enabled)
+		jzfb_power_up(jzfb);
 
 	return 0;
 }
