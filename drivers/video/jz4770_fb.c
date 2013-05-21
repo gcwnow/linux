@@ -590,33 +590,35 @@ static struct fb_ops jz4760fb_ops = {
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 {
 	unsigned int state;
-	static int irqcnt=0;
+	static int irqcnt = 0;
 	struct jzfb *jzfb = dev_id;
 
 	state = REG_LCD_STATE;
 	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
 
 	if (state & LCD_STATE_EOF) /* End of frame */
-		REG_LCD_STATE = state & ~LCD_STATE_EOF;
+		state &= ~LCD_STATE_EOF;
 
 	if (state & LCD_STATE_IFU0) {
 		pr_warn("%s, InFiFo0 underrun\n", __FUNCTION__);
-		REG_LCD_STATE = state & ~LCD_STATE_IFU0;
+		state &= ~LCD_STATE_IFU0;
 	}
 
 	if (state & LCD_STATE_IFU1) {
 		pr_warn("%s, InFiFo1 underrun\n", __FUNCTION__);
-		REG_LCD_STATE = state & ~LCD_STATE_IFU1;
+		state &= ~LCD_STATE_IFU1;
 	}
 
 	if (state & LCD_STATE_OFU) { /* Out fifo underrun */
-		REG_LCD_STATE = state & ~LCD_STATE_OFU;
+		state &= ~LCD_STATE_OFU;
 		if ( irqcnt++ > 100 ) {
 			__lcd_disable_ofu_intr();
 			pr_debug("disable Out FiFo underrun irq.\n");
 		}
 		pr_warn("%s, Out FiFo underrun.\n", __FUNCTION__);
 	}
+
+	REG_LCD_STATE = state;
 
 	state = REG_LCD_OSDS;
 	if (state & LCD_OSDS_EOF1) {
