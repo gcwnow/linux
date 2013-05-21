@@ -109,6 +109,12 @@ struct jzfb {
 
 	struct mutex lock;
 	bool is_enabled;
+	/*
+	 * Number of frames to wait until doing a forced foreground flush.
+	 * If it looks like we are double buffering, we can flush on vertical
+	 * panning instead.
+	 */
+	unsigned int delay_flush;
 };
 
 static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16),
@@ -191,7 +197,7 @@ static int jz4760fb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
 	/* Set cacheability to cacheable, write through, no write-allocate. */
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	pgprot_val(vma->vm_page_prot) &= ~_CACHE_MASK;
-	pgprot_val(vma->vm_page_prot) |= _CACHE_CACHABLE_NO_WA;
+	pgprot_val(vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;
 
 	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
 			       vma->vm_end - vma->vm_start,
@@ -257,6 +263,7 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	clk_enable(jzfb->lpclk);
 
 	REG_LCD_DA1 = virt_to_phys(&dma1_desc1);
+	jzfb->delay_flush = 0;
 
 	/*
 	 * Enabling the LCDC too soon after the clock will hang the system.
@@ -328,6 +335,12 @@ static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *f
 	}
 
 	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", var->yoffset);
+
+	jzfb->delay_flush = 8;
+	dma_cache_wback_inv((unsigned long)(lcd_frame1 +
+					    fb->fix.line_length * var->yoffset),
+			    fb->fix.line_length * var->yres);
+
 	dma1_desc0.databuf = (unsigned int) virt_to_phys(lcd_frame1)
 			+ fb->fix.line_length * var->yoffset;
 	dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
@@ -408,7 +421,7 @@ static void jz4760fb_descriptor_init(unsigned int bpp)
 	/* DMA1 Descriptor0 */
 	dma1_desc0.next_desc = (unsigned int) virt_to_phys(&dma1_desc1);
 	dma1_desc0.databuf = virt_to_phys(lcd_frame1);
-	dma1_desc0.cmd = LCD_CMD_EOFINT;
+	dma1_desc0.cmd = LCD_CMD_SOFINT | LCD_CMD_EOFINT;
 
 	/*
 	 * DMA1 Descriptor1
@@ -462,7 +475,8 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	__lcd_hsync_set_hpe(panel->hsw);
 	__lcd_vsync_set_vpe(panel->vsw);
 
-	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_EOFM1;
+	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN |
+		       LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1;
 	REG_LCD_OSDCTRL = osdctrl;
 
 	/* yellow background helps debugging */
@@ -594,6 +608,9 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	state = REG_LCD_STATE;
 	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
 
+	if (state & LCD_STATE_SOF) /* Start of frame */
+		state &= ~LCD_STATE_SOF;
+
 	if (state & LCD_STATE_EOF) /* End of frame */
 		state &= ~LCD_STATE_EOF;
 
@@ -619,6 +636,19 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	REG_LCD_STATE = state;
 
 	state = REG_LCD_OSDS;
+
+	if (state & LCD_OSDS_SOF1) {
+		if (jzfb->delay_flush == 0) {
+			struct fb_info *fb = jzfb->fb;
+			dma_cache_wback_inv((unsigned long)(lcd_frame1 +
+					fb->fix.line_length * fb->var.yoffset),
+					fb->fix.line_length * fb->var.yres);
+		} else {
+			jzfb->delay_flush--;
+		}
+		REG_LCD_OSDS &= ~LCD_OSDS_SOF1;
+	}
+
 	if (state & LCD_OSDS_EOF1) {
 		jzfb->vsync_count++;
 		wake_up_interruptible_all(&jzfb->wait_vsync);
