@@ -258,6 +258,8 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 {
 	clk_enable(jzfb->lpclk);
 
+	REG_LCD_DA1 = virt_to_phys(&dma1_desc1);
+
 	/*
 	 * Enabling the LCDC too soon after the clock will hang the system.
 	 * A very short delay seems to be sufficient.
@@ -408,19 +410,23 @@ static void jz4760fb_descriptor_init(unsigned int bpp)
 	/* DMA1 Descriptor0 */
 	dma1_desc0.next_desc = (unsigned int) virt_to_phys(&dma1_desc1);
 	dma1_desc0.databuf = virt_to_phys(lcd_frame1);
+	dma1_desc0.cmd = LCD_CMD_EOFINT;
 
-	/* DMA1 Descriptor1 */
+	/*
+	 * DMA1 Descriptor1
+	 * This is a single invisible line that we place just before the start
+	 * of the frame, to force Descriptor0 to be loaded at the last possible
+	 * moment, to make sure any panning changes (for double buffering) will
+	 * take effect in the next frame rather than the one after that.
+	 */
 	dma1_desc1.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
 	dma1_desc1.databuf = virt_to_phys(lcd_frame1);
-	dma1_desc1.cmd = LCD_CMD_SOFINT;
 
 	dma1_desc0.offsize = dma1_desc1.offsize = 0;
 	dma1_desc0.page_width = dma1_desc1.page_width = 0;
 
 	dma_cache_wback_inv((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
 	dma_cache_wback_inv((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
-
-	REG_LCD_DA1 = virt_to_phys(&dma1_desc0);
 }
 
 static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
@@ -458,7 +464,7 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	__lcd_hsync_set_hpe(panel->hsw);
 	__lcd_vsync_set_vpe(panel->vsw);
 
-	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_SOFM1;
+	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_EOFM1;
 	REG_LCD_OSDCTRL = osdctrl;
 
 	/* yellow background helps debugging */
@@ -590,8 +596,8 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	state = REG_LCD_STATE;
 	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
 
-	if (state & LCD_STATE_SOF) /* Start of frame */
-		REG_LCD_STATE = state & ~LCD_STATE_SOF;
+	if (state & LCD_STATE_EOF) /* End of frame */
+		REG_LCD_STATE = state & ~LCD_STATE_EOF;
 
 	if (state & LCD_STATE_IFU0) {
 		pr_warn("%s, InFiFo0 underrun\n", __FUNCTION__);
@@ -613,10 +619,10 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	}
 
 	state = REG_LCD_OSDS;
-	if (state & LCD_OSDS_SOF1) {
+	if (state & LCD_OSDS_EOF1) {
 		jzfb->vsync_count++;
 		wake_up_interruptible_all(&jzfb->wait_vsync);
-		REG_LCD_OSDS &= ~LCD_OSDS_SOF1;
+		REG_LCD_OSDS &= ~LCD_OSDS_EOF1;
 	}
 
 	return IRQ_HANDLED;
