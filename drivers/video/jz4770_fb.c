@@ -31,7 +31,7 @@
 #include <linux/pm.h>
 #include <linux/clk.h>
 #include <linux/interrupt.h>
-#include <linux/completion.h>
+#include <linux/wait.h>
 
 #include <asm/irq.h>
 #include <asm/page.h>
@@ -102,7 +102,8 @@ struct jzfb {
 	uint32_t pseudo_palette[16];
 	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
 
-	struct completion vsync;
+	uint32_t vsync_count;
+	wait_queue_head_t wait_vsync;
 
 	struct clk *lpclk;
 
@@ -411,7 +412,7 @@ static void jz4760fb_descriptor_init(unsigned int bpp)
 	/* DMA1 Descriptor1 */
 	dma1_desc1.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
 	dma1_desc1.databuf = virt_to_phys(lcd_frame1);
-	dma1_desc1.cmd = LCD_CMD_EOFINT | LCD_CMD_SOFINT;
+	dma1_desc1.cmd = LCD_CMD_SOFINT;
 
 	dma1_desc0.offsize = dma1_desc1.offsize = 0;
 	dma1_desc0.page_width = dma1_desc1.page_width = 0;
@@ -457,8 +458,7 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	__lcd_hsync_set_hpe(panel->hsw);
 	__lcd_vsync_set_vpe(panel->vsw);
 
-	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN |
-			LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1;
+	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_SOFM1;
 	REG_LCD_OSDCTRL = osdctrl;
 
 	/* yellow background helps debugging */
@@ -547,6 +547,13 @@ static int jz4760fb_set_par(struct fb_info *info)
 	return 0;
 }
 
+static int jzfb_wait_for_vsync(struct jzfb *jzfb)
+{
+	uint32_t count = jzfb->vsync_count;
+	return wait_event_interruptible(jzfb->wait_vsync,
+					count != jzfb->vsync_count);
+}
+
 static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
@@ -554,7 +561,7 @@ static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
 
 	switch (cmd) {
 		case FBIO_WAITFORVSYNC:
-			return wait_for_completion_interruptible(&jzfb->vsync);
+			return jzfb_wait_for_vsync(jzfb);
 		default:
 			return -ENOIOCTLCMD;
 	}
@@ -586,9 +593,6 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	if (state & LCD_STATE_SOF) /* Start of frame */
 		REG_LCD_STATE = state & ~LCD_STATE_SOF;
 
-	if (state & LCD_STATE_EOF) /* End of frame */
-		REG_LCD_STATE = state & ~LCD_STATE_EOF;
-
 	if (state & LCD_STATE_IFU0) {
 		pr_warn("%s, InFiFo0 underrun\n", __FUNCTION__);
 		REG_LCD_STATE = state & ~LCD_STATE_IFU0;
@@ -610,13 +614,9 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 
 	state = REG_LCD_OSDS;
 	if (state & LCD_OSDS_SOF1) {
-		complete_all(&jzfb->vsync);
+		jzfb->vsync_count++;
+		wake_up_interruptible_all(&jzfb->wait_vsync);
 		REG_LCD_OSDS &= ~LCD_OSDS_SOF1;
-	}
-
-	if (state & LCD_OSDS_EOF1) {
-		INIT_COMPLETION(jzfb->vsync);
-		REG_LCD_OSDS &= ~LCD_OSDS_EOF1;
 	}
 
 	return IRQ_HANDLED;
@@ -655,8 +655,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	jzfb->pdev = pdev;
 	jzfb->pdata = pdata;
 	jzfb->bpp = 32;
-	init_completion(&jzfb->vsync);
-	complete_all(&jzfb->vsync);
+	init_waitqueue_head(&jzfb->wait_vsync);
 
 	strcpy(fb->fix.id, "jz-lcd");
 	fb->fix.type	= FB_TYPE_PACKED_PIXELS;
