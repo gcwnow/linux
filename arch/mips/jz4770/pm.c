@@ -163,7 +163,7 @@ do{									\
 		__asm__ volatile (					\
 				".set mips32\n\t"			\
 				" cache %0, 0(%1)\n\t"			\
-				".set mips32\n\t"			\
+				".set mips0\n\t"			\
 				:					\
 				: "I" (Index_Prefetch_I), "r"(addr));	\
 	}								\
