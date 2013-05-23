@@ -510,14 +510,14 @@ static void gcw_internal_sd_power_off(struct device *dev)
 }
 
 struct jz_mmc_platform_data gcw_internal_sd_data = {
-	.support_sdio   = 0,
-	.ocr_mask	= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.init           = gcw_internal_sd_gpio_init,
-	.power_on       = gcw_internal_sd_power_on,
-	.power_off      = gcw_internal_sd_power_off,
-	.max_bus_width  = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-			  MMC_CAP_4_BIT_DATA,
-	.bus_width      = 4,
+	.support_sdio		= 0,
+	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
+	.init			= gcw_internal_sd_gpio_init,
+	.power_on		= gcw_internal_sd_power_on,
+	.power_off		= gcw_internal_sd_power_off,
+	.max_bus_width		= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+				  MMC_CAP_4_BIT_DATA,
+	.bus_width		= 4,
 };
 
 static void gcw_external_sd_gpio_init(struct device *dev)
@@ -551,17 +551,17 @@ static void gcw_external_sd_plug_change(int state)
 }
 
 struct jz_mmc_platform_data gcw_external_sd_data = {
-	.support_sdio   = 0,
-	.ocr_mask	= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.status_irq	= IRQ_GPIO_0 + GPIO_SD1_CD_N,
-	.detect_pin     = GPIO_SD1_CD_N,
-	.init           = gcw_external_sd_gpio_init,
-	.power_on       = gcw_external_sd_power_on,
-	.power_off      = gcw_external_sd_power_off,
-	.status		= gcw_external_sd_status,
-	.plug_change	= gcw_external_sd_plug_change,
-	.max_bus_width  = MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA,
-	.bus_width      = 4,
+	.support_sdio		= 0,
+	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
+	.status_irq		= IRQ_GPIO_0 + GPIO_SD1_CD_N,
+	.detect_pin		= GPIO_SD1_CD_N,
+	.init			= gcw_external_sd_gpio_init,
+	.power_on		= gcw_external_sd_power_on,
+	.power_off		= gcw_external_sd_power_off,
+	.status			= gcw_external_sd_status,
+	.plug_change		= gcw_external_sd_plug_change,
+	.max_bus_width		= MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA,
+	.bus_width		= 4,
 };
 
 void __init board_msc_init(void)
