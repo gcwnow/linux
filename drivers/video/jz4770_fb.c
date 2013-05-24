@@ -152,22 +152,12 @@ static int jz4760fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 	if (regno >= ARRAY_SIZE(jzfb->pseudo_palette))
 		return 1;
 
-	if (fb->var.bits_per_pixel == 16) {
-		red	>>= 8;
-		green	>>= 8;
-		blue	>>= 8;
-
-		red	&= 0xff;
-		green	&= 0xff;
-		blue	&= 0xff;
-	}
-
 	if (fb->var.bits_per_pixel == 16)
 		((u32 *)fb->pseudo_palette)[regno] =
-				((red >> 3) << 11) | ((green >> 2) << 5) | (blue >> 3);
+				(red & 0xf800) | ((green & 0xfc00) >> 5) | (blue >> 11);
 	else
 		((u32 *)fb->pseudo_palette)[regno] =
-				(red << 16) | (green << 8) | (blue << 0);
+				((red & 0xff00) << 8) | (green & 0xff00) | (blue >> 8);
 
 	return 0;
 }
