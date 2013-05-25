@@ -102,6 +102,7 @@ struct jzfb {
 	uint32_t pseudo_palette[16];
 	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
 
+	uint32_t pan_offset;
 	uint32_t vsync_count;
 	wait_queue_head_t wait_vsync;
 
@@ -248,9 +249,28 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	return 0;
 }
 
+static int jzfb_wait_for_vsync(struct jzfb *jzfb)
+{
+	uint32_t count = jzfb->vsync_count;
+	return wait_event_interruptible(jzfb->wait_vsync,
+					count != jzfb->vsync_count);
+}
+
+static void jzfb_update_frame_address(struct jzfb *jzfb)
+{
+	unsigned int addr = (unsigned int) virt_to_phys(lcd_frame1)
+			    + jzfb->pan_offset;
+	if (dma1_desc0.databuf != addr) {
+		dma1_desc0.databuf = addr;
+		dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
+	}
+}
+
 static void jzfb_lcdc_enable(struct jzfb *jzfb)
 {
 	clk_enable(jzfb->lpclk);
+
+	jzfb_update_frame_address(jzfb);
 
 	REG_LCD_DA1 = virt_to_phys(&dma1_desc1);
 	jzfb->delay_flush = 0;
@@ -315,25 +335,37 @@ static int jz4760fb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
-static int jz4760fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *fb)
+static int jz4760fb_pan_display(struct fb_var_screeninfo *var,
+				struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
+	uint32_t vpan = var->yoffset;
 
 	if (var->xoffset != fb->var.xoffset) {
 		/* No support for X panning for now! */
 		return -EINVAL;
 	}
 
-	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", var->yoffset);
+	jzfb->pan_offset = fb->fix.line_length * vpan;
+	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", vpan);
 
 	jzfb->delay_flush = 8;
-	dma_cache_wback_inv((unsigned long)(lcd_frame1 +
-					    fb->fix.line_length * var->yoffset),
+	dma_cache_wback_inv((unsigned long)(lcd_frame1 + jzfb->pan_offset),
 			    fb->fix.line_length * var->yres);
 
-	dma1_desc0.databuf = (unsigned int) virt_to_phys(lcd_frame1)
-			+ fb->fix.line_length * var->yoffset;
-	dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
+	/*
+	 * The primary use of this function is to implement double buffering.
+	 * Explicitly waiting for vsync and then panning doesn't work in
+	 * practice because the woken up process doesn't always run before the
+	 * next frame has already started: the time between vsync and the start
+	 * of the next frame is typically less than one scheduler time slice.
+	 * Instead, we wait for vsync here in the pan function and apply the
+	 * new panning setting in the vsync interrupt, so we know that the new
+	 * panning setting has taken effect before this function returns.
+	 * Note that fb->var is only updated after we return, so we need our
+	 * own copy of the panning setting (jzfb->pan_offset).
+	 */
+	jzfb_wait_for_vsync(jzfb);
 
 	return 0;
 }
@@ -555,15 +587,8 @@ static int jz4760fb_set_par(struct fb_info *info)
 	return 0;
 }
 
-static int jzfb_wait_for_vsync(struct jzfb *jzfb)
-{
-	uint32_t count = jzfb->vsync_count;
-	return wait_event_interruptible(jzfb->wait_vsync,
-					count != jzfb->vsync_count);
-}
-
 static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
-			unsigned long arg)
+			  unsigned long arg)
 {
 	struct jzfb *jzfb = info->par;
 
@@ -631,7 +656,7 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 		if (jzfb->delay_flush == 0) {
 			struct fb_info *fb = jzfb->fb;
 			dma_cache_wback_inv((unsigned long)(lcd_frame1 +
-					fb->fix.line_length * fb->var.yoffset),
+							    jzfb->pan_offset),
 					fb->fix.line_length * fb->var.yres);
 		} else {
 			jzfb->delay_flush--;
@@ -640,8 +665,11 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	}
 
 	if (state & LCD_OSDS_EOF1) {
+		jzfb_update_frame_address(jzfb);
+
 		jzfb->vsync_count++;
 		wake_up_interruptible_all(&jzfb->wait_vsync);
+
 		REG_LCD_OSDS &= ~LCD_OSDS_EOF1;
 	}
 
