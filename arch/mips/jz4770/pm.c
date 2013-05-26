@@ -35,7 +35,6 @@
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-#include <asm/mach-jz4770/jz4770msc.h>
 #include <asm/mach-jz4770/jz4770rtc.h>
 #include <asm/mach-jz4770/jz4770sadc.h>
 

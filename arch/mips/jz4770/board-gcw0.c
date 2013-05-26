@@ -315,8 +315,6 @@ void jz_board_do_resume(unsigned long *ptr)
 	}
 }
 
-extern int __init jz_add_msc_devices(unsigned int controller, struct jz_mmc_platform_data *plat);
-
 
 /* Video */
 
