@@ -14,6 +14,7 @@
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/dma-mapping.h>
 #include <linux/mmc/host.h>
@@ -81,22 +82,21 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 static int jz_mmc_get_ro(struct mmc_host *mmc)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
+	if (!gpio_is_valid(host->plat->gpio_read_only))
+		return -ENOSYS;
 
-	if(host->plat->write_protect != NULL)
-		return host->plat->write_protect(mmc_dev(host->mmc));
-	else
-		return 0;
+	return gpio_get_value(host->plat->gpio_read_only) ^
+		host->plat->read_only_active_low;
 }
 
 static int jz_mmc_get_cd(struct mmc_host *mmc)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
+	if (!gpio_is_valid(host->plat->gpio_card_detect))
+		return -ENOSYS;
 
-	if(host->plat->status != NULL) {
-		return host->plat->status(mmc_dev(host->mmc));
-	}
-	else
-		return 1;
+	return gpio_get_value(host->plat->gpio_card_detect) ^
+			host->plat->card_detect_active_low;
 }
 
 /* set clock and power */
@@ -110,11 +110,15 @@ static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch(ios->power_mode) {
 	case MMC_POWER_ON:
-		host->plat->power_on(NULL);
+		if (gpio_is_valid(host->plat->gpio_power))
+			gpio_set_value(host->plat->gpio_power,
+				       !host->plat->power_active_low);
 		host->cmdat |= MSC_CMDAT_INIT;
 		break;
 	case MMC_POWER_OFF:
-		host->plat->power_off(NULL);
+		if (gpio_is_valid(host->plat->gpio_power))
+			gpio_set_value(host->plat->gpio_power,
+				       host->plat->power_active_low);
 		break;
 	default:
 		break;
@@ -312,11 +316,13 @@ static int jz_mmc_probe(struct platform_device *pdev)
 
 	mmc->max_req_size = PAGE_SIZE * 16;
 	mmc->max_seg_size = mmc->max_req_size;
-	plat->init(&pdev->dev);
-	plat->power_on(&pdev->dev);
 
 	if (jz_mmc_controller_init(host, pdev))
 		goto out;
+
+	if (gpio_is_valid(host->plat->gpio_power))
+		gpio_set_value(host->plat->gpio_power,
+			       !host->plat->power_active_low);
 
 	mmc_set_drvdata(pdev, mmc);
 	mmc_add_host(mmc);
@@ -335,14 +341,15 @@ out:
 static int jz_mmc_remove(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
-	struct jz_mmc_platform_data *plat = pdev->dev.platform_data;
 
 	platform_set_drvdata(pdev, NULL);
 
 	if (mmc) {
 		struct jz_mmc_host *host = mmc_priv(mmc);
 
-		plat->power_off(&pdev->dev);
+		if (gpio_is_valid(host->plat->gpio_power))
+			gpio_set_value(host->plat->gpio_power,
+				       host->plat->power_active_low);
 
 		jz_mmc_controller_deinit(host, pdev);
 
@@ -393,7 +400,8 @@ static int jz_mmc_resume(struct platform_device *dev)
 		clk_enable(host->clk);
 
 		if ( (mmc->card == NULL) || (mmc->card->type != MMC_TYPE_SDIO) )
-			jz_mmc_detect(host, 1);
+			if (host->card_detect_irq >= 0)
+				jz_mmc_detect(host, 1);
 	}
 
 	return 0;

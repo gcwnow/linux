@@ -9,28 +9,32 @@
 #ifndef __ASM_MACH_JZ4770_MMC_H__
 #define __ASM_MACH_JZ4770_MMC_H__
 
-#define CARD_INSERTED 1
-#define CARD_REMOVED 0
-
 struct jz_mmc_platform_data {
 	unsigned int ocr_mask;			/* available voltages */
 	unsigned long detect_delay;		/* delay in jiffies before detecting cards after interrupt */
-	unsigned char status_irq;
 	unsigned char support_sdio;
 	unsigned char bus_width;
 	unsigned int max_bus_width;
-	unsigned int detect_pin;
 
 	unsigned char msc_irq;
 	unsigned char dma_rxid;
 	unsigned char dma_txid;
 
-	void (*init) (struct device *);
-	void (*power_on) (struct device *);
-	void (*power_off) (struct device *);
-	unsigned int (*status) (struct device *);
-	unsigned int (*write_protect) (struct device *);
-	void (*plug_change) (int);
+	int gpio_card_detect;
+	int gpio_read_only;
+	int gpio_power;
+	unsigned card_detect_active_low:1;
+	unsigned read_only_active_low:1;
+	unsigned power_active_low:1;
+
+	/*
+	 * Each of the three MMC/SD Controllers can either use a private pin
+	 * section with 4 data pins, or a shared pin section with 8 data pins.
+	 * Set this flag if this MSC is the one using the shared pins.
+	 * Note that there are 8 data pins available, but bus_width determines
+	 * how many are actually used.
+	 */
+	unsigned use_shared_8bit_pins:1;
 };
 
 #endif /* __ASM_MACH_JZ4770_MMC_H__ */

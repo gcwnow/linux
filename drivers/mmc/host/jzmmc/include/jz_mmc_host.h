@@ -107,6 +107,12 @@ struct jz_mmc_host {
 	atomic_t detect_refcnt;
 	struct timer_list timer;
 	volatile int sleeping;
+	int card_detect_irq;
+
+	/* labels for gpio pins */
+	char *label_card_detect;
+	char *label_read_only;
+	char *label_power;
 };
 
 void jz_mmc_finish_request(struct jz_mmc_host *host, struct mmc_request *mrq);
