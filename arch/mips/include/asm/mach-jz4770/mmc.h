@@ -1,13 +1,13 @@
 /*
- * linux/include/asm-mips/mach-jz4770/jz4770msc.h
+ * arch/mips/include/asm/mach-jz4770/mmc.h
  *
- * JZ4770 MSC register definition.
+ * JZ4770 MMC/SD Controller platform data
  *
  * Copyright (C) 2010 Ingenic Semiconductor Co., Ltd.
  */
 
-#ifndef __JZ4770MSC_H__
-#define __JZ4770MSC_H__
+#ifndef __ASM_MACH_JZ4770_MMC_H__
+#define __ASM_MACH_JZ4770_MMC_H__
 
 #define CARD_INSERTED 1
 #define CARD_REMOVED 0
@@ -33,4 +33,4 @@ struct jz_mmc_platform_data {
 	void (*plug_change) (int);
 };
 
-#endif /* __JZ4770MSC_H__ */
+#endif /* __ASM_MACH_JZ4770_MMC_H__ */

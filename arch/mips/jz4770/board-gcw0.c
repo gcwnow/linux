@@ -46,7 +46,7 @@
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-#include <asm/mach-jz4770/jz4770msc.h>
+#include <asm/mach-jz4770/mmc.h>
 #include <asm/mach-jz4770/platform.h>
 
 #include "clock.h"
