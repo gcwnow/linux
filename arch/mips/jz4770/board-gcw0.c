@@ -183,18 +183,6 @@ static struct wakeup_key_s wakeup_key[] = {
 		.gpio = GPIO_POWER_ON,
 		.active_low = ACTIVE_LOW_WAKE_UP,
 	},
-/*
-#ifndef CONFIG_JZ_SYSTEM_AT_CARD
-	{
-		.gpio = GPIO_SD0_CD_N,
-		.active_low = ACTIVE_LOW_MSC0_CD,
-	},
-#endif
-	{
-		.gpio = GPIO_SD1_CD_N,
-		.active_low = ACTIVE_LOW_MSC1_CD,
-	},
-*/
 };
 
 static void wakeup_key_setup(void)
@@ -490,76 +478,27 @@ static struct platform_device gcw0_gpio_keys_device = {
 
 /* SD cards */
 
-/* SD0 is probably permanently powered, since it is bootable. */
-#define GPIO_SD1_VCC_EN_N	GPE(9)
-#define GPIO_SD1_CD_N		GPB(2)
-
-static void gcw_internal_sd_gpio_init(struct device *dev)
-{
-	__gpio_as_msc0_boot();
-}
-
-static void gcw_internal_sd_power_on(struct device *dev)
-{
-}
-
-static void gcw_internal_sd_power_off(struct device *dev)
-{
-}
-
 struct jz_mmc_platform_data gcw_internal_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.init			= gcw_internal_sd_gpio_init,
-	.power_on		= gcw_internal_sd_power_on,
-	.power_off		= gcw_internal_sd_power_off,
 	.max_bus_width		= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
 				  MMC_CAP_4_BIT_DATA,
 	.bus_width		= 4,
+	.gpio_card_detect	= -1,
+	.gpio_read_only		= -1,
+	.gpio_power		= -1,
 };
-
-static void gcw_external_sd_gpio_init(struct device *dev)
-{
-	__gpio_as_msc1_4bit();
-	__gpio_as_output1(GPIO_SD1_VCC_EN_N); /* poweroff */
-	__gpio_as_input(GPIO_SD1_CD_N);
-}
-
-static void gcw_external_sd_power_on(struct device *dev)
-{
-	__gpio_as_output0(GPIO_SD1_VCC_EN_N);
-}
-
-static void gcw_external_sd_power_off(struct device *dev)
-{
-	__gpio_as_output1(GPIO_SD1_VCC_EN_N);
-}
-
-static unsigned int gcw_external_sd_status(struct device *dev)
-{
-	return !__gpio_get_pin(GPIO_SD1_CD_N);
-}
-
-static void gcw_external_sd_plug_change(int state)
-{
-	if (state == CARD_INSERTED)	/* wait for remove */
-		__gpio_as_irq_high_level(GPIO_SD1_CD_N);
-	else				/* wait for insert */
-		__gpio_as_irq_low_level(GPIO_SD1_CD_N);
-}
 
 struct jz_mmc_platform_data gcw_external_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.status_irq		= IRQ_GPIO_0 + GPIO_SD1_CD_N,
-	.detect_pin		= GPIO_SD1_CD_N,
-	.init			= gcw_external_sd_gpio_init,
-	.power_on		= gcw_external_sd_power_on,
-	.power_off		= gcw_external_sd_power_off,
-	.status			= gcw_external_sd_status,
-	.plug_change		= gcw_external_sd_plug_change,
 	.max_bus_width		= MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA,
 	.bus_width		= 4,
+	.gpio_card_detect	= GPB(2),
+	.card_detect_active_low	= 1,
+	.gpio_read_only		= -1,
+	.gpio_power		= GPE(9),
+	.power_active_low	= 1,
 };
 
 void __init board_msc_init(void)
