@@ -193,7 +193,8 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->f_min = MMC_CLOCK_SLOW;
 	mmc->f_max = SD_CLOCK_HIGH;
 	mmc->ocr_avail = pdata->ocr_mask;
-	mmc->caps = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED;
+	mmc->caps = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+		    MMC_CAP_ERASE;
 	if (pdata->bus_width >= 4)
 		mmc->caps |= MMC_CAP_4_BIT_DATA;
 	if (pdata->bus_width >= 8)
