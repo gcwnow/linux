@@ -265,9 +265,6 @@ static int jz_mmc_request_gpios(struct jz_mmc_host *host,
 	const char *hostname = mmc_hostname(host->mmc);
 	int ret;
 
-	if (!pdata)
-		return 0;
-
 	host->label_card_detect = kasprintf(GFP_KERNEL, "%s detect change",
 					    hostname);
 	ret = jz_mmc_request_gpio(dev, pdata->gpio_card_detect,
@@ -313,7 +310,7 @@ int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
 	 * Setup card detect change
 	 */
 	host->card_detect_irq = -1;
-	if (pdata && gpio_is_valid(pdata->gpio_card_detect)) {
+	if (gpio_is_valid(pdata->gpio_card_detect)) {
 		int irq = gpio_to_irq(pdata->gpio_card_detect);
 
 		device_init_wakeup(&pdev->dev, 1);

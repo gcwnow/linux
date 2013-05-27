@@ -166,8 +166,15 @@ static int jz_mmc_probe(struct platform_device *pdev)
 
 	char clk_name[5];
 
-	if (pdev->id < 0 || pdev->id >= JZ_MAX_MSC_NUM)
+	if (pdev->id < 0 || pdev->id >= JZ_MAX_MSC_NUM) {
+		dev_err(&pdev->dev, "Device ID out of range: %d\n", pdev->id);
 		return -EINVAL;
+	}
+
+	if (!pdata) {
+		dev_err(&pdev->dev, "Missing platform data\n");
+		return -EINVAL;
+	}
 
 	mmc = mmc_alloc_host(sizeof(struct jz_mmc_host), &pdev->dev);
 	if (!mmc) {
