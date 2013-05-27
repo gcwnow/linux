@@ -178,8 +178,8 @@ static int jz_mmc_request_gpio(struct device *dev, int gpio, const char *name,
 	return 0;
 }
 
-static int jz_mmc_request_card_gpios(struct jz_mmc_host *host,
-				     struct platform_device *pdev)
+static int jz_mmc_request_card_gpios(struct platform_device *pdev,
+				     struct jz_mmc_host *host)
 {
 	struct device *dev = &pdev->dev;
 	struct jz_mmc_platform_data *pdata = dev->platform_data;
@@ -257,8 +257,8 @@ static int jz_mmc_request_card_gpios(struct jz_mmc_host *host,
 	return 0;
 }
 
-static int jz_mmc_request_gpios(struct jz_mmc_host *host,
-				struct platform_device *pdev)
+static int jz_mmc_request_gpios(struct platform_device *pdev,
+				struct jz_mmc_host *host)
 {
 	struct device *dev = &pdev->dev;
 	struct jz_mmc_platform_data *pdata = dev->platform_data;
@@ -293,54 +293,68 @@ err:
 	return ret;
 }
 
-int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
+static int jz_mmc_request_cd_irq(struct platform_device *pdev,
+				 struct jz_mmc_host *host)
 {
 	struct jz_mmc_platform_data *pdata = pdev->dev.platform_data;
+	int irq;
 	int ret;
 
-	ret = jz_mmc_request_card_gpios(host, pdev);
-	if (ret)
-		return ret;
-
-	ret = jz_mmc_request_gpios(host, pdev);
-	if (ret)
-		return ret;
-
-	/*
-	 * Setup card detect change
-	 */
 	host->card_detect_irq = -1;
-	if (gpio_is_valid(pdata->gpio_card_detect)) {
-		int irq = gpio_to_irq(pdata->gpio_card_detect);
 
-		device_init_wakeup(&pdev->dev, 1);
-
-		INIT_DELAYED_WORK(&(host->gpio_jiq_work), jiq_de_quiver);
-		init_timer(&host->timer);
-
-		atomic_set(&host->detect_refcnt, 1);
-		host->sleeping = 0;
-
-		/* Check if there is currently any card present. */
-		host->eject = !(gpio_get_value(host->pdata->gpio_card_detect) ^
-				host->pdata->card_detect_active_low);
-		host->oldstat = host->eject;
-
-		ret = devm_request_irq(&pdev->dev,
-				       irq,
-				       jz_mmc_detect_irq,
-				       IRQF_TRIGGER_RISING |
-						IRQF_TRIGGER_FALLING,
-				       host->label_card_detect,
-				       host);
-		if (ret < 0) {
-			dev_warn(&pdev->dev, "Failed to get card detect IRQ\n");
-			return 0;
-		}
-		host->card_detect_irq = irq;
-	} else {
-		dev_warn(&pdev->dev, "No card detect facilities available\n");
+	if (!gpio_is_valid(pdata->gpio_card_detect)) {
+		dev_info(&pdev->dev, "No card detect facilities available\n");
+		return 0;
 	}
+
+	irq = gpio_to_irq(pdata->gpio_card_detect);
+	if (irq < 0) {
+		dev_warn(&pdev->dev,
+			 "Failed to look up card detect IRQ: %d\n", irq);
+		return 0;
+	}
+
+	device_init_wakeup(&pdev->dev, 1);
+
+	INIT_DELAYED_WORK(&(host->gpio_jiq_work), jiq_de_quiver);
+	init_timer(&host->timer);
+
+	atomic_set(&host->detect_refcnt, 1);
+	host->sleeping = 0;
+
+	/* Check if there is currently any card present. */
+	host->eject = !(gpio_get_value(host->pdata->gpio_card_detect) ^
+		      host->pdata->card_detect_active_low);
+	host->oldstat = host->eject;
+
+	ret = devm_request_irq(&pdev->dev, irq, jz_mmc_detect_irq,
+			       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+			       host->label_card_detect, host);
+	if (ret < 0) {
+		dev_warn(&pdev->dev,
+			 "Failed to request card detect IRQ: %d\n", ret);
+		return ret;
+	}
+	host->card_detect_irq = irq;
+
+	return 0;
+}
+
+int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
+{
+	int ret;
+
+	ret = jz_mmc_request_card_gpios(pdev, host);
+	if (ret)
+		return ret;
+
+	ret = jz_mmc_request_gpios(pdev, host);
+	if (ret)
+		return ret;
+
+	ret = jz_mmc_request_cd_irq(pdev, host);
+	if (ret)
+		return ret;
 
 	return 0;
 }
