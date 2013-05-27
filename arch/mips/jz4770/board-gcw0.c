@@ -473,8 +473,6 @@ static struct platform_device gcw0_gpio_keys_device = {
 struct jz_mmc_platform_data gcw_internal_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.max_bus_width		= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-				  MMC_CAP_4_BIT_DATA,
 	.bus_width		= 4,
 	.gpio_card_detect	= -1,
 	.gpio_read_only		= -1,
@@ -484,7 +482,6 @@ struct jz_mmc_platform_data gcw_internal_sd_data = {
 struct jz_mmc_platform_data gcw_external_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.max_bus_width		= MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA,
 	.bus_width		= 4,
 	.gpio_card_detect	= GPB(2),
 	.card_detect_active_low	= 1,
