@@ -11,14 +11,9 @@
 
 struct jz_mmc_platform_data {
 	unsigned int ocr_mask;			/* available voltages */
-	unsigned long detect_delay;		/* delay in jiffies before detecting cards after interrupt */
 	unsigned char support_sdio;
 	unsigned char bus_width;
 	unsigned int max_bus_width;
-
-	unsigned char msc_irq;
-	unsigned char dma_rxid;
-	unsigned char dma_txid;
 
 	int gpio_card_detect;
 	int gpio_read_only;
