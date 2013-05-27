@@ -477,6 +477,7 @@ struct jz_mmc_platform_data gcw_internal_sd_data = {
 	.gpio_card_detect	= -1,
 	.gpio_read_only		= -1,
 	.gpio_power		= -1,
+	.nonremovable		= 1,
 };
 
 struct jz_mmc_platform_data gcw_external_sd_data = {
