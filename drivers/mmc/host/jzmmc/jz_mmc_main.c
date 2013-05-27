@@ -193,12 +193,16 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	mmc->f_min = MMC_CLOCK_SLOW;
 	mmc->f_max = SD_CLOCK_HIGH;
 	mmc->ocr_avail = pdata->ocr_mask;
+
 	mmc->caps = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
 		    MMC_CAP_ERASE;
 	if (pdata->bus_width >= 4)
 		mmc->caps |= MMC_CAP_4_BIT_DATA;
 	if (pdata->bus_width >= 8)
 		mmc->caps |= MMC_CAP_8_BIT_DATA;
+	if (pdata->nonremovable)
+		mmc->caps |= MMC_CAP_NONREMOVABLE;
+
 	if (!pdata->card_detect_active_low)
 		mmc->caps2 |= MMC_CAP2_CD_ACTIVE_HIGH;
 	if (!pdata->read_only_active_low)
