@@ -62,17 +62,6 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		}
 	}
 
-	if (host->eject) {
-		if (mrq->data && !(mrq->data->flags & MMC_DATA_READ)) {
-			mrq->cmd->error = -EIO;
-			mrq->data->bytes_xfered = 0;
-		} else
-			mrq->cmd->error = -ENOMEDIUM;
-		up(&host->mutex);
-		mmc_request_done(mmc, mrq);
-		return;
-	}
-
 	BUG_ON (host->curr_mrq);
 	host->curr_mrq = mrq;
 	jz_mmc_execute_cmd(host);
@@ -300,8 +289,6 @@ static int jz_mmc_suspend(struct device *dev)
 {
 	struct jz_mmc_host *host = dev_get_drvdata(dev);
 
-	host->sleeping = 1;
-
 	return mmc_suspend_host(host->mmc);
 }
 
@@ -314,13 +301,9 @@ static int jz_mmc_resume(struct device *dev)
 	if (!ret)
 		return ret;
 
-	if (host->card_detect_irq >= 0) {
-		if (!host->mmc->card || host->mmc->card->type != MMC_TYPE_SDIO)
-			jz_mmc_detect(host, 1);
-	} else {
+	if (host->card_detect_irq < 0)
 		if (cpm_get_clock(CGU_MSC0CLK) > SD_CLOCK_FAST)
 			REG_MSC_LPM(host->pdev_id) |= 1 << 31;
-	}
 
 	return 0;
 }

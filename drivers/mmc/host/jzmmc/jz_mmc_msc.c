@@ -516,8 +516,7 @@ static u32 jz_mmc_wait_cmd_done(struct jz_mmc_host *host) {
 			   -1, 1, 0); /* interval: 1jiffie = 10ms */
 #else
 	//wait_cmd_done = 1;
-	while (!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_END_CMD_RES | MSC_STAT_TIME_OUT_RES | MSC_STAT_CRC_RES_ERR)) &&
-	       (host->eject == 0)) {
+	while (!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_END_CMD_RES | MSC_STAT_TIME_OUT_RES | MSC_STAT_CRC_RES_ERR))) {
 #if 0
 		if (error_may_happen)
 			jz_mmc_dump_regs(host->pdev_id, __LINE__);
@@ -529,12 +528,6 @@ static u32 jz_mmc_wait_cmd_done(struct jz_mmc_host *host) {
 
 	if (REG_MSC_STAT(host->pdev_id) & MSC_STAT_TIME_OUT_RES)
 		cmd->error = -ETIMEDOUT;
-	if (host->eject) {
-		/* wait response timeout */
-		//printk("===>eject!!! state = 0x%08x\n", REG_MSC_STAT(host->pdev_id));
-		//while (!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_END_CMD_RES | MSC_STAT_TIME_OUT_RES | MSC_STAT_CRC_RES_ERR)));
-		cmd->error = -ENOMEDIUM;
-	}
 
 	/* Check for status, avoid be cleaned by following command*/
 	stat = REG_MSC_STAT(host->pdev_id);
@@ -546,12 +539,12 @@ static u32 jz_mmc_wait_cmd_done(struct jz_mmc_host *host) {
 
 	if (cmd_succ && need_wait_prog_done(cmd)) {
 		timeout = 0x7fffffff;
-		while (--timeout && !(REG_MSC_IREG(host->pdev_id) & MSC_IREG_PRG_DONE) && (host->eject == 0))
+		while (--timeout && !(REG_MSC_IREG(host->pdev_id) & MSC_IREG_PRG_DONE))
 			;
 
 		stat |= (REG_MSC_STAT(host->pdev_id) & MSC_STAT_ERR_BITS);
 		REG_MSC_IREG(host->pdev_id) = MSC_IREG_PRG_DONE;	/* clear status */
-		if ((timeout == 0) || (host->eject)) {
+		if (timeout == 0) {
 			cmd->error = -ETIMEDOUT;
 			printk("JZ-MSC%d: wait prog_done error when execute_cmd!, state = 0x%08x\n", host->pdev_id, stat);
 		}
@@ -573,8 +566,7 @@ static void jz_mmc_send_stop_cmd(struct jz_mmc_host *host) {
 	REG_MSC_STRPCL(host->pdev_id) |= MSC_STRPCL_START_OP;
 
 	/* Becarefull, maybe endless */
-	while(!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_PRG_DONE | MSC_STAT_ERR_BITS)) &&
-	      !host->eject) ;
+	while(!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_PRG_DONE | MSC_STAT_ERR_BITS)));
 
 	if (REG_MSC_STAT(host->pdev_id) | MSC_STAT_ERR_BITS)
 		stop_cmd->error = -ETIMEDOUT;
@@ -642,8 +634,7 @@ static int jz_mmc_data_done(struct jz_mmc_host *host)
 		if ((!(REG_MSC_STAT(host->pdev_id) & MSC_STAT_AUTO_CMD_DONE)) && data->error)
 			jz_mmc_send_stop_cmd(host);
 		else
-			while(!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_AUTO_CMD_DONE | MSC_STAT_ERR_BITS)) &&
-			      !host->eject) ;
+			while(!(REG_MSC_STAT(host->pdev_id) & (MSC_STAT_AUTO_CMD_DONE | MSC_STAT_ERR_BITS)));
 
 		REG_MSC_CMDAT(host->pdev_id) &= ~(MSC_CMDAT_SEND_AS_STOP);
 	}
@@ -701,12 +692,13 @@ void jz_mmc_execute_cmd(struct jz_mmc_host *host)
 			jz_mmc_data_start(host);
 		}
 
-		err = wait_event_interruptible_timeout(host->data_wait_queue,
-						       ((host->data_ack) || (host->eject)
-							|| (REG_MSC_STAT(host->pdev_id) & WAITMASK)),
-						       6 * HZ);
+		err = wait_event_interruptible_timeout(
+				host->data_wait_queue,
+				host->data_ack ||
+					(REG_MSC_STAT(host->pdev_id) & WAITMASK),
+				6 * HZ);
 
-		while(!((REG_MSC_STAT(host->pdev_id) & MSC_STAT_DATA_TRAN_DONE) || (host->eject)));
+		while(!(REG_MSC_STAT(host->pdev_id) & MSC_STAT_DATA_TRAN_DONE));
 		REG_MSC_STAT(host->pdev_id) &= ~(MSC_STAT_DATA_TRAN_DONE);
 
 		acked = host->data_ack;
@@ -729,23 +721,10 @@ void jz_mmc_execute_cmd(struct jz_mmc_host *host)
 	}
 	return;
 
- cmd_err:
-#if 0
-	if (host->eject)
-		printk("WARNNING: media eject when sending cmd, opcode = %d\n", cmd->opcode);
-#endif
- data_wait_err:
-	if (host->curr_mrq->data){
+cmd_err:
+data_wait_err:
+	if (host->curr_mrq->data)
 		host->curr_mrq->data->bytes_xfered = 0;
-
-#if 0
-		if (host->eject)
-			printk("WARNNING: media eject when transfering data, opcode = %d err = %d\n", cmd->opcode, err);
-#endif
-	}
-
-	if (host->eject)
-		cmd->error = -ENOMEDIUM;
 
 	if (host->curr_mrq->data)
 		jz_mmc_data_stop(host);

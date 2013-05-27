@@ -76,23 +76,7 @@ struct jz_mmc_host {
 	volatile int data_ack;
 	volatile int data_err;
 
-#if 0
-	wait_queue_head_t status_check_queue;
-	struct timer_list status_check_timer;
-	u32 status;
-	u32 st_mask;
-	int st_check_timeout;
-	int st_check_interval;
-	int en_usr_intr;
-#endif
-
 	/* card detect related */
-	volatile unsigned int eject;
-	volatile unsigned int oldstat;
-	struct delayed_work gpio_jiq_work;
-	atomic_t detect_refcnt;
-	struct timer_list timer;
-	volatile int sleeping;
 	int card_detect_irq;
 
 	/* labels for gpio pins */
