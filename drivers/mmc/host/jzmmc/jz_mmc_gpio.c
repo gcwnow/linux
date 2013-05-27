@@ -29,21 +29,12 @@
 #define DETECT_CHANGE_DELAY 50
 
 
-static void set_card_detect_irq_level(struct jz_mmc_host *host)
-{
-	if (host->eject ^ host->plat->card_detect_active_low)
-		__gpio_as_irq_high_level(host->plat->gpio_card_detect);
-	else
-		__gpio_as_irq_low_level(host->plat->gpio_card_detect);
-}
-
 static void jz_mmc_enable_detect(unsigned long arg)
 {
 	struct jz_mmc_host *host = (struct jz_mmc_host *)arg;
 
 	atomic_inc(&host->detect_refcnt);
 
-	set_card_detect_irq_level(host);
 	enable_irq(host->card_detect_irq);
 }
 
@@ -337,12 +328,12 @@ int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
 		host->eject = !(gpio_get_value(host->plat->gpio_card_detect) ^
 				host->plat->card_detect_active_low);
 		host->oldstat = host->eject;
-		set_card_detect_irq_level(host);
 
 		ret = devm_request_irq(&pdev->dev,
 				       irq,
 				       jz_mmc_detect_irq,
-				       0,
+				       IRQF_TRIGGER_RISING |
+						IRQF_TRIGGER_FALLING,
 				       host->label_card_detect,
 				       host);
 		if (ret < 0) {
