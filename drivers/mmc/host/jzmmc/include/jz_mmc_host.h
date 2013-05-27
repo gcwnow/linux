@@ -80,8 +80,6 @@ struct jz_mmc_host {
 	int card_detect_irq;
 
 	/* labels for gpio pins */
-	char *label_card_detect;
-	char *label_read_only;
 	char *label_power;
 };
 

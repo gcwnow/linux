@@ -22,6 +22,7 @@
 #include <linux/mmc/sd.h>
 #include <linux/mmc/sdio.h>
 #include <linux/mmc/card.h>
+#include <linux/mmc/slot-gpio.h>
 #include <linux/mm.h>
 #include <linux/signal.h>
 #include <linux/pm.h>
@@ -66,26 +67,6 @@ static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	host->curr_mrq = mrq;
 	jz_mmc_execute_cmd(host);
 	jz_mmc_finish_request(host, mrq);
-}
-
-static int jz_mmc_get_ro(struct mmc_host *mmc)
-{
-	struct jz_mmc_host *host = mmc_priv(mmc);
-	if (!gpio_is_valid(host->pdata->gpio_read_only))
-		return -ENOSYS;
-
-	return gpio_get_value(host->pdata->gpio_read_only) ^
-		host->pdata->read_only_active_low;
-}
-
-static int jz_mmc_get_cd(struct mmc_host *mmc)
-{
-	struct jz_mmc_host *host = mmc_priv(mmc);
-	if (!gpio_is_valid(host->pdata->gpio_card_detect))
-		return -ENOSYS;
-
-	return gpio_get_value(host->pdata->gpio_card_detect) ^
-			host->pdata->card_detect_active_low;
 }
 
 /* set clock and power */
@@ -139,9 +120,9 @@ static void jz_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 static const struct mmc_host_ops jz_mmc_ops = {
 	.request = jz_mmc_request,
-	.get_ro = jz_mmc_get_ro,
 	.set_ios = jz_mmc_set_ios,
-	.get_cd = jz_mmc_get_cd,
+	.get_cd = mmc_gpio_get_cd,
+	.get_ro = mmc_gpio_get_ro,
 };
 
 static int jz_mmc_probe(struct platform_device *pdev)
@@ -217,6 +198,10 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		mmc->caps |= MMC_CAP_4_BIT_DATA;
 	if (pdata->bus_width >= 8)
 		mmc->caps |= MMC_CAP_8_BIT_DATA;
+	if (!pdata->card_detect_active_low)
+		mmc->caps2 |= MMC_CAP2_CD_ACTIVE_HIGH;
+	if (!pdata->read_only_active_low)
+		mmc->caps2 |= MMC_CAP2_RO_ACTIVE_HIGH;
 
 	mmc->max_blk_size = 4095;
 	mmc->max_blk_count = 65535;
