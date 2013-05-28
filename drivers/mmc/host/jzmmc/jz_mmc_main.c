@@ -45,15 +45,12 @@
 void jz_mmc_finish_request(struct jz_mmc_host *host, struct mmc_request *mrq)
 {
 	host->curr_mrq = NULL;
-	up(&host->mutex);
 	mmc_request_done(host->mmc, mrq);
 }
 
 static void jz_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct jz_mmc_host *host = mmc_priv(mmc);
-
-	down(&host->mutex);
 
 	if (SD_IO_SEND_OP_COND == mrq->cmd->opcode) {
 		if(host->pdata->support_sdio == 0) {
@@ -218,7 +215,6 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	host->pdev_id = pdev->id;
 	host->mmc = mmc;
 	//spin_lock_init(&host->lock);
-	sema_init(&host->mutex, 1);
 
 	ret = jz_mmc_msc_init(host);
 	if (ret)

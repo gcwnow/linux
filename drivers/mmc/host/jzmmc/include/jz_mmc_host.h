@@ -11,8 +11,6 @@
 #ifndef __JZ_MMC_HOST_H__
 #define __JZ_MMC_HOST_H__
 
-#include <linux/semaphore.h>
-
 #include <asm/mach-jz4770/dma.h>
 
 
@@ -40,10 +38,6 @@ struct clk;
 
 struct jz_mmc_host {
 	struct mmc_host *mmc;
-	// TODO(MtH): If it is a semaphore, name it as such.
-	//            This naming confusion used to exist all over the kernel
-	//            but has already been cleaned up in mainline.
-	struct semaphore mutex;
 
 	struct clk *clk;
 
