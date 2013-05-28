@@ -25,13 +25,6 @@
 #define MMC_CLOCK_FAST  20000000      /* 20 MHz for maximum for normal operation */
 #define SD_CLOCK_HIGH   48000000      /* 24 MHz for SD Cards */
 #define SD_CLOCK_FAST   24000000      /* 24 MHz for SD Cards */
-#define MMC_NO_ERROR  0
-
-#define MSC_1BIT_BUS 0
-#define MSC_4BIT_BUS 1
-#define MSC_8BIT_BUS 2
-
-#define SZ_4K                           0x00001000
 
 
 struct clk;
