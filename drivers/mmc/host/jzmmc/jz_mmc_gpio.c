@@ -149,7 +149,7 @@ int jz_mmc_gpio_init(struct jz_mmc_host *host, struct platform_device *pdev)
 		ret = mmc_gpio_request_cd(host->mmc, pdata->gpio_card_detect);
 		if (ret)
 			return ret;
-	} else {
+	} else if (!pdata->nonremovable) {
 		dev_info(&pdev->dev, "No card detect facilities available\n");
 	}
 
