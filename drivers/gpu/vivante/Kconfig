@@ -19,3 +19,16 @@ config VIVANTE_GPU
 	depends on JZSOC
 	help
 	  Enable support for Vivante GPU cores.
+
+config VIVANTE_GPU_DEBUG
+	boolean "Etnaviv debug"
+	depends on VIVANTE_GPU
+	help
+	  Extra debug logging support for Etnaviv driver.
+
+config VIVANTE_GPU_PROFILER
+	boolean "Etnaviv profiler"
+	depends on VIVANTE_GPU
+	help
+	  Profiling support for Etnaviv driver.
+

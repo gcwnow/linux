@@ -37,7 +37,8 @@
 #if defined(CONFIG_MODULES) && defined(MODULE)
 extern unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
                                       unsigned long len, unsigned long prot,
-                                      unsigned long flags, unsigned long pgoff);
+                                      unsigned long flags, unsigned long pgoff,
+                                      long *populate);
 
 extern int plat_do_munmap(struct mm_struct *mm, unsigned long start,
                                       size_t len);
@@ -963,12 +964,14 @@ gckOS_MapMemory(
 {
     PLINUX_MDL_MAP  mdlMap;
     PLINUX_MDL      mdl = (PLINUX_MDL)Physical;
+    long            populate;
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Physical != 0);
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Logical != NULL);
+
 
     MEMORY_LOCK(Os);
 
@@ -995,7 +998,7 @@ gckOS_MapMemory(
                     mdl->numPages * PAGE_SIZE,
                     PROT_READ | PROT_WRITE,
                     MAP_SHARED,
-                    0);
+                    0, &populate);
 
         if (mdlMap->vmaAddr == gcvNULL)
         {
@@ -1245,6 +1248,7 @@ gckOS_AllocateNonPagedMemory(
     PLINUX_MDL      mdl;
     PLINUX_MDL_MAP  mdlMap = 0;
     gctSTRING       addr;
+    long            populate;
 
 #ifdef NO_DMA_COHERENT
     struct page *   page;
@@ -1388,7 +1392,7 @@ gckOS_AllocateNonPagedMemory(
                 mdl->numPages * PAGE_SIZE,
                 PROT_READ | PROT_WRITE,
                 MAP_SHARED,
-                0);
+                0, &populate);
 
         if (mdlMap->vmaAddr == gcvNULL)
         {
@@ -2999,6 +3003,7 @@ gceSTATUS gckOS_LockPages(
     unsigned long   start;
     unsigned long   pfn;
     gctINT          i;
+    long            populate;
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
@@ -3037,7 +3042,7 @@ gceSTATUS gckOS_LockPages(
                         mdl->numPages * PAGE_SIZE,
                         PROT_READ | PROT_WRITE,
                         MAP_SHARED,
-                        0);
+                        0, &populate);
 
         up_write(&current->mm->mmap_sem);
 

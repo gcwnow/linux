@@ -655,9 +655,10 @@ static int __init gcw0_board_setup(void)
 
 unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
 				 unsigned long len, unsigned long prot,
-				 unsigned long flags, unsigned long pgoff)
+				 unsigned long flags, unsigned long pgoff,
+                                 long *populate)
 {
-	return do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+	return do_mmap_pgoff(file, addr, len, prot, flags, pgoff, populate);
 }
 EXPORT_SYMBOL(plat_do_mmap_pgoff);
 

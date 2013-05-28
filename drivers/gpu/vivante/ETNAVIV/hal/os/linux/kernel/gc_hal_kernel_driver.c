@@ -829,7 +829,7 @@ module_exit(drv_exit);
 #endif
 
 
-static int __devinit gpu_probe(struct platform_device *pdev)
+static int gpu_probe(struct platform_device *pdev)
 {
     int ret = -ENODEV;
     struct resource *res;
@@ -897,14 +897,14 @@ gpu_probe_fail:
     return ret;
 }
 
-static int __devinit gpu_remove(struct platform_device *pdev)
+static int gpu_remove(struct platform_device *pdev)
 {
     drv_exit();
 
     return 0;
 }
 
-static int __devinit gpu_suspend(struct platform_device *dev, pm_message_t state)
+static int gpu_suspend(struct platform_device *dev, pm_message_t state)
 {
     gceSTATUS status;
     gckGALDEVICE device;
@@ -927,7 +927,7 @@ static int __devinit gpu_suspend(struct platform_device *dev, pm_message_t state
     return 0;
 }
 
-static int __devinit gpu_resume(struct platform_device *dev)
+static int gpu_resume(struct platform_device *dev)
 {
     gceSTATUS status;
     gckGALDEVICE device;
