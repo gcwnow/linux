@@ -47,17 +47,6 @@ enum {
 	JZ_ICDC_AGC3		= 0x21,
 	JZ_ICDC_AGC4		= 0x22,
 	JZ_ICDC_AGC5		= 0x23,
-	JZ_ICDC_MAX_REGNUM,
-
-	/* virtual registers */
-	JZ_ICDC_LHPSEL  = 0x24,
-	JZ_ICDC_RHPSEL  = 0x25,
-
-	JZ_ICDC_LLOSEL = 0x26,
-	JZ_ICDC_RLOSEL = 0x27,
-
-	JZ_ICDC_LINSEL	= 0x28,
-	JZ_ICDC_RINSEL	= 0x29,
 
 	JZ_ICDC_MAX_NUM
 };

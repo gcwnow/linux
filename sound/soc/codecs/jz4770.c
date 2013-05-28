@@ -148,7 +148,7 @@ static int jz_icdc_write(struct snd_soc_codec *codec, unsigned int reg,
 
 	jz_icdc_write_reg_cache(codec, reg, value);
 
-	if (reg < JZ_ICDC_MAX_REGNUM) {
+	if (reg < JZ_ICDC_MAX_NUM) {
 		if (codec->hw_write(codec->control_data, data, 2) == 2)
 			return 0;
 		else
@@ -175,7 +175,7 @@ __attribute__((__unused__)) static void dump_icdc_regs(
 	unsigned int i;
 
 	printk("codec register dump, %s:%d:\n", func, line);
-	for (i = 0; i < JZ_ICDC_MAX_REGNUM; i++)
+	for (i = 0; i < JZ_ICDC_MAX_NUM; i++)
 		printk("address = 0x%02x, data = 0x%02x\n",
 			i, jz_icdc_read_reg_cache(codec, i));
 }
@@ -589,226 +589,15 @@ static int lineout_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static const char *jz_icdc_mic_sel[] = {
+	"Mono", "Stereo"
+};
 static const char *jz_icdc_input_sel[] = {
 	"Mic 1", "Mic 2", "Line In"
 };
-static const char *jz_icdc_hp_sel[] = {
-	"Mic 1b", "Mic 2b", "Line Inb", "Stereo DAC"
+static const char *jz_icdc_output_sel[] = {
+	"Mic 1", "Mic 2", "Line In", "Stereo DAC"
 };
-static const char *jz_icdc_lineout_sel[] = {
-	"Mic 1_lo", "Mic 2_lo", "Line In_lo", "Stereo DAC"
-};
-
-#define INSEL_FROM_MIC1		0
-#define INSEL_FROM_MIC2		1
-#define INSEL_FROM_LINEIN	2
-
-#define HP_SEL_FROM_MIC1	0
-#define HP_SEL_FROM_MIC2	1
-#define HP_SEL_FROM_LINEIN	2
-#define HP_SEL_FROM_DAC		3
-
-#define LO_SEL_FROM_MIC1	0
-#define LO_SEL_FROM_MIC2	1
-#define LO_SEL_FROM_LINEIN	2
-#define LO_SEL_FROM_DAC		3
-
-static int hp_out_mux_event(struct snd_soc_dapm_widget *w,
-			      struct snd_kcontrol *kcontrol, int event) {
-
-	struct snd_soc_codec *codec = w->codec;
-	u8 *cache = codec->reg_cache;
-
-	int mic_stereo = 0;
-	u8 outsel = 0xff;      /* an invalid value */
-
-	switch (event) {
-	case SND_SOC_DAPM_POST_REG:
-		DEBUG_MSG("%s:%d, POST_REG, lhpsel = %d rhpsel = %d\n",
-			  __func__, __LINE__,
-			  cache[JZ_ICDC_LHPSEL], cache[JZ_ICDC_RHPSEL]);
-
-		/*
-		 * panda out, take care!!!
-		 * only the following are supported, else the result is unexpected!
-		 *	* L(mic1) + R(mic1)
-		 *	* L(mic2) + R(mic2)
-		 *	* L(mic1) + R(mic2)
-		 *	* L(mic2) + R(mic1)
-		 *	* L(linein) + R(linein)
-		 *	* L(DAC) + R(DAC)
-		 **/
-		if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_DAC) &&
-		    (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_DAC)) {
-			outsel = 3;
-		} else if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_MIC1) &&
-		    (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_MIC1)) {
-			outsel = 0;
-		} else if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_MIC2)) {
-			outsel = 1;
-		} else if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_MIC1) &&
-			   (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_MIC2)) {
-			mic_stereo = 1;
-			outsel = 0;
-		} else if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_MIC1)) {
-			mic_stereo = 1;
-			outsel = 1;
-		} else if ((cache[JZ_ICDC_LHPSEL] == HP_SEL_FROM_LINEIN) &&
-			   (cache[JZ_ICDC_RHPSEL] == HP_SEL_FROM_LINEIN)) {
-			outsel = 2;
-		}
-
-		DEBUG_MSG("%s:%d, outsel = %d, mic_stereo = %d\n",
-		       __func__, __LINE__, outsel, mic_stereo);
-
-		if (outsel != 0xff) {
-			jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 0, 0x3, outsel);
-
-			if (mic_stereo)
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 1);
-			else
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 0);
-
-			if (outsel != 3)
-				bypass_to_hp = 1;
-		}
-
-		break;
-	}
-
-	return 0;
-}
-
-static int lineout_mux_event(struct snd_soc_dapm_widget *w,
-			    struct snd_kcontrol *kcontrol, int event) {
-
-	struct snd_soc_codec *codec = w->codec;
-	u8 *cache = codec->reg_cache;
-
-	int mic_stereo = 0;
-	u8 outsel = 0xff;      /* an invalid value */
-
-	switch (event) {
-	case SND_SOC_DAPM_POST_REG:
-		DEBUG_MSG("%s:%d, POST_REG, llosel = %d rlosel = %d\n",
-			  __func__, __LINE__, cache[JZ_ICDC_LLOSEL], cache[JZ_ICDC_RLOSEL]);
-
-		/*
-		 * panda out, take care!!!
-		 * only the following are supported, else the result is unexpected!
-		 *	* L(mic1) + R(mic1)
-		 *	* L(mic2) + R(mic2)
-		 *	* L(mic1) + R(mic2)
-		 *	* L(mic2) + R(mic1) (the same as above)
-		 *	* L(linein) + R(linein)
-		 *	* L(DAC) + R(DAC)
-		 **/
-		if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_DAC) &&
-		    (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_DAC)) {
-			outsel = 3;
-		} else if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_MIC1) &&
-			   (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_MIC1)) {
-			outsel = 0;
-		} else if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_MIC2)) {
-			outsel = 1;
-		} else if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_MIC1) &&
-			   (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_MIC2)) {
-			mic_stereo = 1;
-			outsel = 0;
-		} else if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_MIC1)) {
-			mic_stereo = 1;
-			outsel = 1;
-		} else if ((cache[JZ_ICDC_LLOSEL] == LO_SEL_FROM_LINEIN) &&
-			    (cache[JZ_ICDC_RLOSEL] == LO_SEL_FROM_LINEIN)) {
-			outsel = 2;
-		}
-
-		DEBUG_MSG("%s:%d, outsel = %d, mic_stereo = %d\n",
-			  __func__, __LINE__, outsel, mic_stereo);
-
-		if (outsel != 0xff) {
-			jz_icdc_update_reg(codec, JZ_ICDC_CR_LO, 0, 0x3, outsel);
-
-			if (mic_stereo)
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 1);
-			else
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 0);
-
-			if (outsel != 3)
-				bypass_to_lineout = 1;
-		}
-
-		break;
-	}
-
-	return 0;
-}
-
-static int capture_mux_event(struct snd_soc_dapm_widget *w,
-			      struct snd_kcontrol *kcontrol, int event) {
-
-	struct snd_soc_codec *codec = w->codec;
-	u8 *cache = codec->reg_cache;
-
-	int mic_stereo = 0;
-	u8 insel = 0xff;      /* an invalid value */
-
-	switch (event) {
-	case SND_SOC_DAPM_POST_REG:
-		DEBUG_MSG("%s:%d, POST_REG, linsel = %d rinsel = %d\n",
-			  __func__, __LINE__, cache[JZ_ICDC_LINSEL], cache[JZ_ICDC_RINSEL]);
-
-		/*
-		 * panda out, take care!!!
-		 * only the following are supported, else the result is unexpected!
-		 *	* L(mic1) + R(mic1)
-		 *	* L(mic2) + R(mic2)
-		 *	* L(mic1) + R(mic2)
-		 *	* L(mic2) + R(mic1)
-		 *	* L(linein) + R(linein)
-		 **/
-		if ((cache[JZ_ICDC_LINSEL] == INSEL_FROM_MIC1) &&
-		    (cache[JZ_ICDC_RINSEL] == INSEL_FROM_MIC1)) {
-			insel = 0;
-		} else if ((cache[JZ_ICDC_LINSEL] == INSEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RINSEL] == INSEL_FROM_MIC2)) {
-			insel = 1;
-		} else if ((cache[JZ_ICDC_LINSEL] == INSEL_FROM_LINEIN) &&
-			   (cache[JZ_ICDC_RINSEL] == INSEL_FROM_LINEIN)) {
-			insel = 2;
-		} else if ((cache[JZ_ICDC_LINSEL] == INSEL_FROM_MIC1) &&
-			   (cache[JZ_ICDC_RINSEL] == INSEL_FROM_MIC2)) {
-			insel = 0;
-			mic_stereo = 1;
-		} else if ((cache[JZ_ICDC_LINSEL] == INSEL_FROM_MIC2) &&
-			   (cache[JZ_ICDC_RINSEL] == INSEL_FROM_MIC1)) {
-			insel = 1;
-			mic_stereo = 1;
-		}
-
-		DEBUG_MSG("%s:%d, insel = %d, mic_stereo = %d\n",
-			  __func__, __LINE__, insel, mic_stereo);
-
-		if (insel != 0xff) {
-			jz_icdc_update_reg(codec, JZ_ICDC_CR_ADC, 0, 0x3, insel);
-
-			if (mic_stereo)
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 1);
-			else
-				jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 0);
-		}
-
-		break;
-
-	default:
-		break;
-	}
-	return 0;
-}
 
 static int micbias_event(struct snd_soc_dapm_widget *w,
 			     struct snd_kcontrol *kcontrol, int event) {
@@ -844,35 +633,26 @@ static int adc_poweron_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static const SOC_ENUM_SINGLE_DECL(jz_icdc_mic_enum,
+				  JZ_ICDC_CR_MIC, 7, jz_icdc_mic_sel);
+static const SOC_ENUM_SINGLE_DECL(jz_icdc_hp_enum,
+				  JZ_ICDC_CR_HP,  0, jz_icdc_output_sel);
+static const SOC_ENUM_SINGLE_DECL(jz_icdc_lo_enum,
+				  JZ_ICDC_CR_LO,  0, jz_icdc_output_sel);
+static const SOC_ENUM_SINGLE_DECL(jz_icdc_adc_enum,
+				  JZ_ICDC_CR_ADC, 0, jz_icdc_input_sel);
 
-static const struct soc_enum jz_icdc_enum[] = {
-	SOC_ENUM_SINGLE(JZ_ICDC_LHPSEL, 0, 4, jz_icdc_hp_sel),
-	SOC_ENUM_SINGLE(JZ_ICDC_RHPSEL, 0, 4, jz_icdc_hp_sel),
+static const struct snd_kcontrol_new icdc_mic_mux_controls =
+	SOC_DAPM_ENUM("Route", jz_icdc_mic_enum);
 
-	SOC_ENUM_SINGLE(JZ_ICDC_LLOSEL, 0, 4, jz_icdc_lineout_sel),
-	SOC_ENUM_SINGLE(JZ_ICDC_RLOSEL, 0, 4, jz_icdc_lineout_sel),
+static const struct snd_kcontrol_new icdc_hp_mux_controls =
+	SOC_DAPM_ENUM("Route", jz_icdc_hp_enum);
 
-	SOC_ENUM_SINGLE(JZ_ICDC_LINSEL, 0, 3, jz_icdc_input_sel),
-	SOC_ENUM_SINGLE(JZ_ICDC_RINSEL, 0, 3, jz_icdc_input_sel),
-};
+static const struct snd_kcontrol_new icdc_lo_mux_controls =
+	SOC_DAPM_ENUM("Route", jz_icdc_lo_enum);
 
-static const struct snd_kcontrol_new icdc_left_hp_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[0]);
-
-static const struct snd_kcontrol_new icdc_right_hp_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[1]);
-
-static const struct snd_kcontrol_new icdc_left_lo_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[2]);
-
-static const struct snd_kcontrol_new icdc_right_lo_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[3]);
-
-static const struct snd_kcontrol_new icdc_adc_left_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[4]);
-
-static const struct snd_kcontrol_new icdc_adc_right_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_enum[5]);
+static const struct snd_kcontrol_new icdc_adc_controls =
+	SOC_DAPM_ENUM("Route", jz_icdc_adc_enum);
 
 
 static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
@@ -901,35 +681,17 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			       micbias_event,
 			       SND_SOC_DAPM_POST_REG),
 
-	SND_SOC_DAPM_MUX_E("Playback HP Left Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_left_hp_mux_controls,
-			   hp_out_mux_event,
-			   SND_SOC_DAPM_POST_REG),
+	SND_SOC_DAPM_MUX("Microphone Mux", SND_SOC_NOPM, 0, 0,
+			 &icdc_mic_mux_controls),
 
-	SND_SOC_DAPM_MUX_E("Playback HP Right Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_right_hp_mux_controls,
-			   hp_out_mux_event,
-			   SND_SOC_DAPM_POST_REG),
+	SND_SOC_DAPM_MUX("Playback HP Mux", SND_SOC_NOPM, 0, 0,
+			 &icdc_hp_mux_controls),
 
-	SND_SOC_DAPM_MUX_E("Playback Lineout Left Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_left_lo_mux_controls,
-			   lineout_mux_event,
-			   SND_SOC_DAPM_POST_REG),
+	SND_SOC_DAPM_MUX("Playback Lineout Mux", SND_SOC_NOPM, 0, 0,
+			 &icdc_lo_mux_controls),
 
-	SND_SOC_DAPM_MUX_E("Playback Lineout Right Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_right_lo_mux_controls,
-			   lineout_mux_event,
-			   SND_SOC_DAPM_POST_REG),
-
-	SND_SOC_DAPM_MUX_E("Capture Left Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_adc_left_controls,
-			   capture_mux_event,
-			   SND_SOC_DAPM_POST_REG),
-
-	SND_SOC_DAPM_MUX_E("Capture Right Mux", SND_SOC_NOPM, 0, 0,
-			   &icdc_adc_right_controls,
-			   capture_mux_event,
-			   SND_SOC_DAPM_POST_REG),
+	SND_SOC_DAPM_MUX("Capture Mux", SND_SOC_NOPM, 0, 0,
+			 &icdc_adc_controls),
 
 	SND_SOC_DAPM_OUTPUT("LHPOUT"),
 	SND_SOC_DAPM_OUTPUT("RHPOUT"),
@@ -959,46 +721,40 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "Line Input", NULL, "RLINEIN" },
 
 
-	{ "Capture Left Mux", "Mic 1", "Mic1 Input"  },
-	{ "Capture Left Mux", "Mic 2", "Mic2 Input"  },
-	{ "Capture Left Mux", "Line In", "Line Input" },
-
-	{ "Capture Right Mux", "Mic 1", "Mic1 Input"  },
-	{ "Capture Right Mux", "Mic 2", "Mic2 Input"  },
-	{ "Capture Right Mux", "Line In", "Line Input" },
-
-	{ "ADC", NULL, "Capture Right Mux" },
-
-	{ "Playback HP Left Mux", "Mic 1b", "Mic1 Input" },
-	{ "Playback HP Left Mux", "Mic 2b", "Mic2 Input" },
-	{ "Playback HP Left Mux", "Line Inb", "Line Input" },
-	{ "Playback HP Left Mux", "Stereo DAC", "DAC" },
+	{ "Microphone Mux", "Stereo", "Mic1 Input" },
+	{ "Microphone Mux", "Stereo", "Mic2 Input" },
 
 
-	{ "Playback HP Right Mux", "Mic 1b", "Mic1 Input" },
-	{ "Playback HP Right Mux", "Mic 2b", "Mic2 Input" },
-	{ "Playback HP Right Mux", "Line Inb", "Line Input" },
-	{ "Playback HP Right Mux", "Stereo DAC", "DAC" },
+	{ "Capture Mux", "Mic 1", "Mic1 Input" },
+	{ "Capture Mux", "Mic 1", "Microphone Mux" },
+	{ "Capture Mux", "Mic 2", "Mic2 Input" },
+	{ "Capture Mux", "Mic 2", "Microphone Mux" },
+	{ "Capture Mux", "Line In", "Line Input" },
 
-	{ "HP Out", NULL, "Playback HP Left Mux" },
-	{ "HP Out", NULL, "Playback HP Right Mux" },
+	{ "ADC", NULL, "Capture Mux" },
+
+
+	{ "Playback HP Mux", "Mic 1", "Mic1 Input" },
+	{ "Playback HP Mux", "Mic 1", "Microphone Mux" },
+	{ "Playback HP Mux", "Mic 2", "Mic2 Input" },
+	{ "Playback HP Mux", "Mic 2", "Microphone Mux" },
+	{ "Playback HP Mux", "Line In", "Line Input" },
+	{ "Playback HP Mux", "Stereo DAC", "DAC" },
+
+	{ "HP Out", NULL, "Playback HP Mux" },
 
 	{ "LHPOUT", NULL, "HP Out"},
 	{ "RHPOUT", NULL, "HP Out"},
 
 
-	{ "Playback Lineout Left Mux", "Mic 1_lo", "Mic1 Input" },
-	{ "Playback Lineout Left Mux", "Mic 2_lo", "Mic2 Input" },
-	{ "Playback Lineout Left Mux", "Line In_lo", "Line Input" },
-	{ "Playback Lineout Left Mux", "Stereo DAC", "DAC" },
+	{ "Playback Lineout Mux", "Mic 1", "Mic1 Input" },
+	{ "Playback Lineout Mux", "Mic 1", "Microphone Mux" },
+	{ "Playback Lineout Mux", "Mic 2", "Mic2 Input" },
+	{ "Playback Lineout Mux", "Mic 2", "Microphone Mux" },
+	{ "Playback Lineout Mux", "Line In", "Line Input" },
+	{ "Playback Lineout Mux", "Stereo DAC", "DAC" },
 
-	{ "Playback Lineout Right Mux", "Mic 1_lo", "Mic1 Input" },
-	{ "Playback Lineout Right Mux", "Mic 2_lo", "Mic2 Input" },
-	{ "Playback Lineout Right Mux", "Line In_lo", "Line Input" },
-	{ "Playback Lineout Right Mux", "Stereo DAC", "DAC" },
-
-	{ "Line Out", NULL, "Playback Lineout Left Mux" },
-	{ "Line Out", NULL, "Playback Lineout Right Mux" },
+	{ "Line Out", NULL, "Playback Lineout Mux" },
 
 	{ "LOUT", NULL, "Line Out"},
 	{ "ROUT", NULL, "Line Out"},
@@ -1032,7 +788,7 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 	codec->hw_write = jz_icdc_hw_write;
 
 	/* Initialize cache with current hardware state. */
-	for (i = 0; i < JZ_ICDC_MAX_REGNUM; i++)
+	for (i = 0; i < JZ_ICDC_MAX_NUM; i++)
 		cache[i] = jz_icdc_read_reg_hw(codec, i);
 
 	//dump_icdc_regs(codec, __func__, __LINE__);
@@ -1048,15 +804,6 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_ADC, 0, 0x3, 0x0);
 	/* mic mono */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 0);
-
-	cache[JZ_ICDC_LHPSEL] = HP_SEL_FROM_DAC;
-	cache[JZ_ICDC_RHPSEL] = HP_SEL_FROM_DAC;
-
-	cache[JZ_ICDC_LLOSEL] = LO_SEL_FROM_DAC;
-	cache[JZ_ICDC_RLOSEL] = LO_SEL_FROM_DAC;
-
-	cache[JZ_ICDC_LINSEL] = INSEL_FROM_MIC1;
-	cache[JZ_ICDC_RINSEL] = INSEL_FROM_MIC1;
 
 	/* init codec params */
 	/* ADC/DAC: serial + i2s */
