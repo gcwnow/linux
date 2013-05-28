@@ -2,6 +2,8 @@
 # Reverse engineered Vivante Driver w/JZ4770 support.
 #
 obj-$(CONFIG_VIVANTE_GPU) += etnaviv.o
+ccflags-$(CONFIG_VIVANTE_GPU_DEBUG) += -DDEBUG -D_DEBUG -DDBG=1
+ccflags-$(CONFIG_VIVANTE_GPU_PROFILER) += -DVIVANTE_PROFILER=1
 
 etnaviv-objs := hal/os/linux/kernel/gc_hal_kernel_linux.o		\
 	      hal/os/linux/kernel/gc_hal_kernel_debug.o		\
