@@ -47,6 +47,7 @@ module_param(jz_icdc_debug, int, 0644);
 
 /* codec private data */
 struct jz_icdc {
+	struct regmap *regmap;
 	void __iomem *base;
 };
 
@@ -54,131 +55,6 @@ static int hpout_enable = 0;
 //static int lineout_enable = 0;
 static int bypass_to_hp = 0;
 static int bypass_to_lineout = 0;
-
-/*
- * read register cache
- */
-static inline unsigned int jz_icdc_read_reg_cache(struct snd_soc_codec *codec,
-						 unsigned int reg)
-{
-	u8 *cache = codec->reg_cache;
-
-	if (ICDC_REG_IS_MISSING(reg))
-		return 0;
-
-	if (reg >= JZ_ICDC_MAX_NUM)
-		return -1;
-
-	return cache[reg];
-}
-
-/*
- * write register cache
- */
-static inline void jz_icdc_write_reg_cache(struct snd_soc_codec *codec,
-					  unsigned int reg, unsigned int value)
-{
-	u8 *cache = codec->reg_cache;
-
-	if (ICDC_REG_IS_MISSING(reg))
-		return;
-
-	if (reg >= JZ_ICDC_MAX_NUM)
-		return;
-
-	cache[reg] = (u8)value;
-}
-
-static inline u8 jz_icdc_read_reg_hw(struct snd_soc_codec *codec, unsigned int reg)
-{
-	volatile int val;
-	u8 *cache = codec->reg_cache;
-
-	if (ICDC_REG_IS_MISSING(reg))
-		return 0;
-
-	while (__icdc_rgwr_ready());
-
-	__icdc_set_addr(reg);
-
-	/* wait 4+ cycle */
-	val = __icdc_get_value();
-	val = __icdc_get_value();
-	val = __icdc_get_value();
-	val = __icdc_get_value();
-	val = __icdc_get_value();
-
-	val = __icdc_get_value();
-
-	cache[reg] = (u8)val;
-
-	return cache[reg];
-}
-
-static inline void jz_icdc_write_reg_hw(unsigned int reg, u8 value)
-{
-	if (ICDC_REG_IS_MISSING(reg))
-		return;
-
-	while (__icdc_rgwr_ready());
-
-	REG_ICDC_RGADW = ICDC_RGADW_RGWR | ((reg << ICDC_RGADW_RGADDR_LSB) | value);
-
-	while (__icdc_rgwr_ready());
-}
-
-static int jz_icdc_hw_write(void * unused, const char* data, int num) {
-	jz_icdc_write_reg_hw(data[0], data[1]);
-
-	return 2;
-}
-
-/*
- * write to the register space
- */
-static int jz_icdc_write(struct snd_soc_codec *codec, unsigned int reg,
-			unsigned int value)
-{
-	u8 data[2];
-
-	data[0] = reg;
-	data[1] = value;
-
-	DEBUG_MSG("write reg=0x%02x to val=0x%02x\n", reg, value);
-
-	jz_icdc_write_reg_cache(codec, reg, value);
-
-	if (reg < JZ_ICDC_MAX_NUM) {
-		if (codec->hw_write(codec->control_data, data, 2) == 2)
-			return 0;
-		else
-			return -EIO;
-	}
-
-	return 0;
-}
-
-static inline void jz_icdc_update_reg(struct snd_soc_codec *codec,
-				      unsigned int reg,
-				      int lsb, int mask, u8 nval) {
-	u8 oval = jz_icdc_read_reg_cache(codec, reg);
-
-	oval &= ~(mask << lsb);
-	oval |= (nval << lsb);
-
-	jz_icdc_write(codec, reg, oval);
-}
-
-__attribute__((__unused__)) static void dump_icdc_regs(
-		struct snd_soc_codec *codec, const char *func, int line)
-{
-	unsigned int i;
-
-	printk("codec register dump, %s:%d:\n", func, line);
-	for (i = 0; i < JZ_ICDC_MAX_NUM; i++)
-		printk("address = 0x%02x, data = 0x%02x\n",
-			i, jz_icdc_read_reg_cache(codec, i));
-}
 
 __attribute__((__unused__)) static void dump_aic_regs(const char *func, int line)
 {
@@ -194,8 +70,28 @@ __attribute__((__unused__)) static void dump_aic_regs(const char *func, int line
 	}
 }
 
-static void turn_on_sb_hp(struct snd_soc_codec *codec) {
-	if (jz_icdc_read_reg_cache(codec, JZ_ICDC_CR_HP) & (1 << 4)) {
+static unsigned int jz_icdc_read_reg(struct snd_soc_codec *codec,
+				     unsigned int reg)
+{
+	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
+	unsigned int val;
+
+	regmap_read(jz_icdc->regmap, reg, &val);
+
+	return val;
+}
+
+static void jz_icdc_update_reg(struct snd_soc_codec *codec, unsigned int reg,
+			       unsigned int lsb, u8 mask, u8 val)
+{
+	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
+
+	regmap_update_bits(jz_icdc->regmap, reg, mask << lsb, val << lsb);
+}
+
+static void turn_on_sb_hp(struct snd_soc_codec *codec)
+{
+	if (jz_icdc_read_reg(codec, JZ_ICDC_CR_HP) & (1 << 4)) {
 		/* set cap-less */
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 0);
 
@@ -203,7 +99,7 @@ static void turn_on_sb_hp(struct snd_soc_codec *codec) {
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 4, 0x1, 0);
 
 
-		while( !(jz_icdc_read_reg_hw(codec, JZ_ICDC_IFR) & (1 << 3)))
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 3)))
 			mdelay(10);
 
 		mdelay(1);
@@ -213,8 +109,9 @@ static void turn_on_sb_hp(struct snd_soc_codec *codec) {
 	}
 }
 
-static void turn_off_sb_hp(struct snd_soc_codec *codec) {
-	if (!(jz_icdc_read_reg_cache(codec, JZ_ICDC_CR_HP) & (1 << 4))) {
+static void turn_off_sb_hp(struct snd_soc_codec *codec)
+{
+	if (!(jz_icdc_read_reg(codec, JZ_ICDC_CR_HP) & (1 << 4))) {
 
 		/* set cap-couple */
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 1);
@@ -222,7 +119,7 @@ static void turn_off_sb_hp(struct snd_soc_codec *codec) {
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 4, 0x1, 1);
 
 
-		while( !(jz_icdc_read_reg_hw(codec, JZ_ICDC_IFR) & (1 << 2)))
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 2)))
 			mdelay(10);
 
 		mdelay(1);
@@ -232,14 +129,15 @@ static void turn_off_sb_hp(struct snd_soc_codec *codec) {
 	}
 }
 
-static void turn_on_dac(struct snd_soc_codec *codec) {
+static void turn_on_dac(struct snd_soc_codec *codec)
+{
 	/* DAC_MUTE */
-	if (jz_icdc_read_reg_cache(codec, JZ_ICDC_CR_DAC) & (1 << 7)) {
+	if (jz_icdc_read_reg(codec, JZ_ICDC_CR_DAC) & (1 << 7)) {
 		/* power on sb hp */
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 7, 0x1, 0);
 
 
-		while( !(jz_icdc_read_reg_hw(codec, JZ_ICDC_IFR) & (1 << 1)))
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 1)))
 			mdelay(10);
 
 		mdelay(1);
@@ -249,13 +147,14 @@ static void turn_on_dac(struct snd_soc_codec *codec) {
 	}
 }
 
-static void turn_off_dac(struct snd_soc_codec *codec) {
-	if (!(jz_icdc_read_reg_cache(codec, JZ_ICDC_CR_DAC) & (1 << 7))) {
+static void turn_off_dac(struct snd_soc_codec *codec)
+{
+	if (!(jz_icdc_read_reg(codec, JZ_ICDC_CR_DAC) & (1 << 7))) {
 		/* power on sb hp */
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 7, 0x1, 1);
 
 
-		while( !(jz_icdc_read_reg_hw(codec, JZ_ICDC_IFR) & (1 << 0)))
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 0)))
 			mdelay(10);
 
 		mdelay(1);
@@ -450,13 +349,11 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 
 			turn_on_dac(codec);
 
-			//dump_icdc_regs(codec, __func__, __LINE__);
 			//dump_aic_regs(__func__, __LINE__);
 		} else {
 			jz_icdc_set_bias_level(codec, SND_SOC_BIAS_ON);
 			mdelay(2);
 
-			//dump_icdc_regs(codec, __func__, __LINE__);
 			//dump_aic_regs(__func__, __LINE__);
 		}
 
@@ -779,19 +676,9 @@ static int jz_icdc_resume(struct snd_soc_codec *codec)
 
 static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 {
-	u8 *cache = codec->reg_cache;
-	int i;
-
 	cpm_start_clock(CGM_AIC);
 	mdelay(1);
 
-	codec->hw_write = jz_icdc_hw_write;
-
-	/* Initialize cache with current hardware state. */
-	for (i = 0; i < JZ_ICDC_MAX_NUM; i++)
-		cache[i] = jz_icdc_read_reg_hw(codec, i);
-
-	//dump_icdc_regs(codec, __func__, __LINE__);
 	//dump_aic_regs(__func__, __LINE__);
 
 	/* default: DAC */
@@ -817,7 +704,6 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 			    (1 << 2) | (1 << 3) | (1 << 5)));
 
 	jz_icdc_update_reg(codec, JZ_ICDC_IFR, 0, 0x7f, 0x7f);
-	cache[JZ_ICDC_IFR] = jz_icdc_read_reg_hw(codec, JZ_ICDC_IFR);
 
 	/* 12M */
 	jz_icdc_update_reg(codec, JZ_ICDC_CCR, 0, 0xf, 0x0);
@@ -881,13 +767,82 @@ const struct snd_soc_codec_driver jz_icdc_soc_codec_dev = {
 	.dapm_routes		= jz_icdc_dapm_routes,
 	.num_dapm_routes	= ARRAY_SIZE(jz_icdc_dapm_routes),
 
-	.read			= jz_icdc_read_reg_cache,
-	.write			= jz_icdc_write,
-
-	.reg_cache_size		= JZ_ICDC_MAX_NUM,
-	.reg_word_size		= sizeof(u8),
-
 	.set_bias_level		= jz_icdc_set_bias_level,
+};
+
+static bool jz_icdc_volatile(struct device *dev, unsigned int reg)
+{
+	return reg == JZ_ICDC_SR || reg == JZ_ICDC_IFR;
+}
+
+static bool jz_icdc_readable(struct device *dev, unsigned int reg)
+{
+	return reg != JZ_ICDC_MISSING_REG1 && reg != JZ_ICDC_MISSING_REG2;
+}
+
+static bool jz_icdc_writeable(struct device *dev, unsigned int reg)
+{
+	return reg != JZ_ICDC_SR &&
+	       reg != JZ_ICDC_MISSING_REG1 && reg != JZ_ICDC_MISSING_REG2;
+}
+
+static int jz_icdc_reg_read(void *context, unsigned int reg, unsigned int *val)
+{
+	volatile unsigned int dummy;
+
+	while (__icdc_rgwr_ready());
+
+	__icdc_set_addr(reg);
+
+	/* wait 4+ cycle */
+	dummy = __icdc_get_value();
+	dummy = __icdc_get_value();
+	dummy = __icdc_get_value();
+	dummy = __icdc_get_value();
+	dummy = __icdc_get_value();
+
+	*val = __icdc_get_value();
+
+	printk("read %02X from codec[%02X]\n", *val, reg);
+
+	return 0;
+}
+
+static int jz_icdc_reg_write(void *context, unsigned int reg, unsigned int val)
+{
+	while (__icdc_rgwr_ready());
+
+	REG_ICDC_RGADW = ICDC_RGADW_RGWR | (reg << ICDC_RGADW_RGADDR_LSB) | val;
+
+	while (__icdc_rgwr_ready());
+
+	return 0;
+}
+
+static const u8 jz_icdc_reg_defaults[] = {
+	0x00, 0xC3, 0xC3, 0x90, 0x98, 0xFF, 0x90, 0xB1,
+	0x11, 0x10, 0x00, 0x03, 0x00, 0x00, 0x40, 0x00,
+	0xFF, 0x00, 0x06, 0x06, 0x06, 0x06, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x34,
+	0x07, 0x44, 0x1F, 0x00
+};
+
+static struct regmap_config jz_icdc_regmap_config = {
+	.reg_bits = 7,
+	.val_bits = 8,
+
+	.max_register = JZ_ICDC_MAX_NUM - 1,
+	.volatile_reg = jz_icdc_volatile,
+	.readable_reg = jz_icdc_readable,
+	.writeable_reg = jz_icdc_writeable,
+
+	.reg_read = jz_icdc_reg_read,
+	.reg_write = jz_icdc_reg_write,
+
+	.reg_defaults_raw = jz_icdc_reg_defaults,
+	.num_reg_defaults_raw = ARRAY_SIZE(jz_icdc_reg_defaults),
+	.use_single_rw = 1,
+	.cache_type = REGCACHE_FLAT,
 };
 
 static int jz_icdc_probe(struct platform_device *pdev)
@@ -911,6 +866,11 @@ static int jz_icdc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to request and map mmio memory\n");
 		return -EBUSY;
 	}
+
+	jz_icdc->regmap = devm_regmap_init(&pdev->dev, NULL, NULL,
+					   &jz_icdc_regmap_config);
+	if (IS_ERR(jz_icdc->regmap))
+		return PTR_ERR(jz_icdc->regmap);
 
 	platform_set_drvdata(pdev, jz_icdc);
 

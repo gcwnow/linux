@@ -51,7 +51,4 @@ enum {
 	JZ_ICDC_MAX_NUM
 };
 
-#define ICDC_REG_IS_MISSING(r) \
-	(( (r) == JZ_ICDC_MISSING_REG1 ) || ( (r) == JZ_ICDC_MISSING_REG2 ))
-
 #endif	/* _JZ4770_ICDC_H */
