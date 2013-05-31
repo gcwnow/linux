@@ -36,6 +36,15 @@
 #include "jz4770.h"
 
 
+/*
+ * Note: On the GCW Zero, left and right are the wrong way around. This define
+ *       toggles the code that compensates for it. However, I don't know where
+ *       exactly in the audio flow  the problem is, so it is possible more
+ *       compensation is needed.
+ */
+#define SWAP_LR 1
+
+
 static int jz_icdc_debug = 0;
 module_param(jz_icdc_debug, int, 0644);
 
@@ -427,9 +436,19 @@ static const DECLARE_TLV_DB_SCALE(linein_tlv, -2500, 100, 0);
 static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 	/* playback gain control */
 	SOC_DOUBLE_R_TLV("PCM Volume",
-			 JZ_ICDC_GCR_DACL, JZ_ICDC_GCR_DACR, 0, 31, 1, dac_tlv),
+#if SWAP_LR
+			 JZ_ICDC_GCR_DACR, JZ_ICDC_GCR_DACL,
+#else
+			 JZ_ICDC_GCR_DACL, JZ_ICDC_GCR_DACR,
+#endif
+			 0, 31, 1, dac_tlv),
 	SOC_DOUBLE_R_TLV("Master Playback Volume",
-			 JZ_ICDC_GCR_HPL, JZ_ICDC_GCR_HPR, 0, 31, 1, out_tlv),
+#if SWAP_LR
+			 JZ_ICDC_GCR_HPR, JZ_ICDC_GCR_HPL,
+#else
+			 JZ_ICDC_GCR_HPL, JZ_ICDC_GCR_HPR,
+#endif
+			 0, 31, 1, out_tlv),
 
 	/* record gain control */
 	SOC_DOUBLE_R_TLV("ADC Capture Volume",
@@ -726,7 +745,11 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 1);
 
 	/* DAC lrswap */
+#if SWAP_LR
+	jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 3, 0x1, 0);
+#else
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 3, 0x1, 1);
+#endif
 
 	/* ADC lrswap */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_ADC, 3, 0x1, 1);
