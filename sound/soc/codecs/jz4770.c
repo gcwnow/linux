@@ -676,8 +676,14 @@ static int jz_icdc_resume(struct snd_soc_codec *codec)
 
 static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 {
+	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
+	struct regmap *regmap = jz_icdc->regmap;
+
 	cpm_start_clock(CGM_AIC);
 	mdelay(1);
+
+	/* Collect updates for later sending. */
+	regcache_cache_only(regmap, true);
 
 	//dump_aic_regs(__func__, __LINE__);
 
@@ -703,8 +709,6 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 			   ((1 << 0) | (1 << 1) |
 			    (1 << 2) | (1 << 3) | (1 << 5)));
 
-	jz_icdc_update_reg(codec, JZ_ICDC_IFR, 0, 0x7f, 0x7f);
-
 	/* 12M */
 	jz_icdc_update_reg(codec, JZ_ICDC_CCR, 0, 0xf, 0x0);
 
@@ -729,6 +733,13 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 
 	/* default to cap-less mode(0) */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 0);
+
+	/* Send collected updates. */
+	regcache_cache_only(regmap, false);
+	regcache_sync(regmap);
+
+	/* Reset all interrupt flags. */
+	regmap_write(regmap, JZ_ICDC_IFR, 0xFF);
 
 	/* These steps are too time consuming, so we do it here */
 	/* clr SB */
