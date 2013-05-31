@@ -1,34 +1,36 @@
 #
 # Vivante GPU support.
 #
-menuconfig GPU_VIVANTE_V4
+config GPU_VIVANTE_V4
 	tristate "Open Vivante V4 support"
 	depends on JZSOC
 	help
-	  Enable support for Vivante GPU cores.
+	  Enable support for Vivante GPU cores. Version 4 interface.
+          If built as module, this builds a module named "galcore.ko".
 
 config GPU_VIVANTE_GC860
-	boolean "Vivante GC860 support"
+	boolean "Vivante GC860 support for V4 driver"
 	depends on GPU_VIVANTE_V4 && MACH_JZ4770
 	help
 	  Enable support for the GC860 graphics core found on the
 	  Ingenic JZ4770 SoC designs.
 
-config VIVANTE_GPU
-	tristate "Etnaviv"
+config GPU_VIVANTE_V2
+	tristate "Open Vivante V2 support"
 	depends on JZSOC
 	help
-	  Enable support for Vivante GPU cores.
+	  Enable support for Vivante GPU cores. Version 2 interface.
+          If built as module, this builds a module named "etnaviv.ko".
 
-config VIVANTE_GPU_DEBUG
-	boolean "Etnaviv debug"
-	depends on VIVANTE_GPU
+config GPU_VIVANTE_V2_DEBUG
+	boolean "Debugging support for V2 driver"
+	depends on GPU_VIVANTE_V2
 	help
-	  Extra debug logging support for Etnaviv driver.
+	  Extra debug logging support for Vivante driver.
 
-config VIVANTE_GPU_PROFILER
-	boolean "Etnaviv profiler"
-	depends on VIVANTE_GPU
+config GPU_VIVANTE_V2_PROFILER
+	boolean "Profiling support for V2 driver"
+	depends on GPU_VIVANTE_V2
 	help
-	  Profiling support for Etnaviv driver.
+	  Profiling support for Vivante driver.
 
