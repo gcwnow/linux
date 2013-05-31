@@ -803,8 +803,6 @@ static int jz_icdc_reg_read(void *context, unsigned int reg, unsigned int *val)
 
 	*val = __icdc_get_value();
 
-	printk("read %02X from codec[%02X]\n", *val, reg);
-
 	return 0;
 }
 
