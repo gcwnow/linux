@@ -245,6 +245,7 @@ config SND_SOC_JZ4740_CODEC
 	tristate
 
 config SND_SOC_JZ4770_CODEC
+	select REGMAP
 	tristate
 
 config SND_SOC_L3
