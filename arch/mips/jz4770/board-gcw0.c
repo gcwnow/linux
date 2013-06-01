@@ -653,6 +653,9 @@ static int __init gcw0_board_setup(void)
 	return 0;
 }
 
+/* Workaround to allow access of do_map_pgoff and do_munmap from modules 
+ * as these are not exported by default.
+ * (used by VIVANTE drivers) */
 unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
 				 unsigned long len, unsigned long prot,
 				 unsigned long flags, unsigned long pgoff,
