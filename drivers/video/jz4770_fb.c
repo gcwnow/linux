@@ -232,8 +232,10 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	var->yres_virtual = var->yres * 2;
 
 	if (var->bits_per_pixel == 16) {
+		var->transp.length = 0;
 		var->blue.length = var->red.length = 5;
 		var->green.length = 6;
+		var->transp.offset = 0;
 		var->red.offset = 11;
 		var->green.offset = 5;
 		var->blue.offset = 0;
