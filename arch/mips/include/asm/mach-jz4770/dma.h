@@ -83,20 +83,6 @@ enum {
 #define DMA_AUTOINIT	0x2
 #define DMA_MODE_MASK	0x3
 
-struct jz_dma_chan {
-	int dev_id;	/* DMA ID: this channel is allocated if >=0, free otherwise */
-	unsigned int io;        /* DMA channel number */
-	const char *dev_str;    /* string describes the DMA channel */
-	int irq;                /* DMA irq number */
-	void *irq_dev;          /* DMA private device structure */
-	unsigned int fifo_addr; /* physical fifo address of the requested device */
-	unsigned int cntl;	/* DMA controll */
-	unsigned int mode;      /* DMA configuration */
-	unsigned int source;    /* DMA request source */
-};
-
-extern struct jz_dma_chan jz_dma_table[];
-
 
 #define DMA_8BIT_RX_CMD					\
 	DMAC_DCMD_DAI |					\
@@ -219,14 +205,6 @@ static __inline__ unsigned long claim_dma_lock(void)
 static __inline__ void release_dma_lock(unsigned long flags)
 {
 	spin_unlock_irqrestore(&dma_spin_lock, flags);
-}
-
-static __inline__ struct jz_dma_chan *get_dma_chan(unsigned int dmanr)
-{
-	if (dmanr > MAX_DMA_NUM
-	    || jz_dma_table[dmanr].dev_id < 0)
-		return NULL;
-	return &jz_dma_table[dmanr];
 }
 
 #endif  /* __ASM_JZ4770_DMA_H__ */

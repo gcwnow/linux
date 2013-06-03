@@ -51,7 +51,19 @@
  * returned from jz_request_dma().
  */
 
-struct jz_dma_chan jz_dma_table[MAX_DMA_NUM] = {
+struct jz_dma_chan {
+	int dev_id;	/* DMA ID: this channel is allocated if >=0, free otherwise */
+	unsigned int io;        /* DMA channel number */
+	const char *dev_str;    /* string describes the DMA channel */
+	int irq;                /* DMA irq number */
+	void *irq_dev;          /* DMA private device structure */
+	unsigned int fifo_addr; /* physical fifo address of the requested device */
+	unsigned int cntl;	/* DMA controll */
+	unsigned int mode;      /* DMA configuration */
+	unsigned int source;    /* DMA request source */
+};
+
+static struct jz_dma_chan jz_dma_table[MAX_DMA_NUM] = {
 	{ dev_id: DMA_ID_MSC0, },	/* DMAC0 channel 0, reserved for MSC0 */
 	{ dev_id: -1, },		/* DMAC0 channel 1 */
 	{ dev_id: -1, },		/* DMAC0 channel 2 */
@@ -67,7 +79,6 @@ struct jz_dma_chan jz_dma_table[MAX_DMA_NUM] = {
 	{ dev_id: -1, },		/* DMAC0 channel 4 */
 	{ dev_id: -1, },			/* DMAC0 channel 5 --- unavailable */
 };
-EXPORT_SYMBOL(jz_dma_table);
 
 // Device FIFO addresses and default DMA modes
 static const struct {
@@ -108,6 +119,14 @@ static const struct {
 	[DMA_ID_I2C1_TX] = { 0, 0, 0 },
 	[DMA_ID_I2C2_TX] = { 0, 0, 0 },
 };
+
+static struct jz_dma_chan *get_dma_chan(unsigned int dmanr)
+{
+	if (dmanr > MAX_DMA_NUM
+	    || jz_dma_table[dmanr].dev_id < 0)
+		return NULL;
+	return &jz_dma_table[dmanr];
+}
 
 
 /**
