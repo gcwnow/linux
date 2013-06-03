@@ -15,6 +15,7 @@
 #include <linux/mmc/host.h>
 
 #include <asm/mach-jz4770/dma.h>
+#include <asm/mach-jz4770/jz4770dmac.h>
 
 #include "include/chip-msc.h"
 #include "include/jz_mmc_dma.h"
