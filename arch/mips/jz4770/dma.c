@@ -67,6 +67,7 @@ struct jz_dma_chan jz_dma_table[MAX_DMA_NUM] = {
 	{ dev_id: -1, },		/* DMAC0 channel 4 */
 	{ dev_id: -1, },			/* DMAC0 channel 5 --- unavailable */
 };
+EXPORT_SYMBOL(jz_dma_table);
 
 // Device FIFO addresses and default DMA modes
 static const struct {
@@ -154,6 +155,7 @@ void dump_jz_dma_channel(unsigned int dmanr)
 	printk("  DDA  = 0x%08x\n", REG_DMAC_DDA(dmanr));
 	printk("  DMADBR = 0x%08x\n", REG_DMAC_DMADBR(chan->io/HALF_DMA_NUM));
 }
+EXPORT_SYMBOL(dump_jz_dma_channel);
 
 
 /**
@@ -233,6 +235,7 @@ int jz_request_dma(int dev_id, const char *dev_str,
 
 	return i;
 }
+EXPORT_SYMBOL(jz_request_dma);
 
 /**
  * can be called while wait dma finish interrupt
@@ -281,6 +284,7 @@ void jz_free_dma(unsigned int dmanr)
 	chan->irq_dev = NULL;
 	chan->dev_id = -1;
 }
+EXPORT_SYMBOL(jz_free_dma);
 
 void jz_set_dma_dest_width(int dmanr, int nbit)
 {
@@ -302,6 +306,7 @@ void jz_set_dma_dest_width(int dmanr, int nbit)
 		break;
 	}
 }
+EXPORT_SYMBOL(jz_set_dma_dest_width);
 
 void jz_set_dma_src_width(int dmanr, int nbit)
 {
@@ -323,6 +328,7 @@ void jz_set_dma_src_width(int dmanr, int nbit)
 		break;
 	}
 }
+EXPORT_SYMBOL(jz_set_dma_src_width);
 
 void jz_set_dma_block_size(int dmanr, int nbyte)
 {
@@ -350,6 +356,7 @@ void jz_set_dma_block_size(int dmanr, int nbyte)
 		break;
 	}
 }
+EXPORT_SYMBOL(jz_set_dma_block_size);
 
 unsigned int jz_get_dma_command(int dmanr)
 {
@@ -415,6 +422,7 @@ int jz_set_dma_mode(unsigned int dmanr, unsigned int mode,
 
 	return dmanr;
 }
+EXPORT_SYMBOL(jz_set_dma_mode);
 
 void enable_dma(unsigned int dmanr)
 {
@@ -429,6 +437,7 @@ void enable_dma(unsigned int dmanr)
 	if (chan->irq)
 		__dmac_channel_enable_irq(dmanr);
 }
+EXPORT_SYMBOL(enable_dma);
 
 #define DMA_DISABLE_POLL 0x10000
 
@@ -455,6 +464,7 @@ void disable_dma(unsigned int dmanr)
 	if (chan->irq)
 		__dmac_channel_disable_irq(dmanr);
 }
+EXPORT_SYMBOL(disable_dma);
 
 /* Note: DMA_MODE_MASK is simulated by sw */
 void set_dma_mode(unsigned int dmanr, unsigned int mode)
@@ -478,6 +488,7 @@ void set_dma_mode(unsigned int dmanr, unsigned int mode)
 	REG_DMAC_DCMD(chan->io) = chan->mode & ~DMA_MODE_MASK;
 	REG_DMAC_DRSR(chan->io) = chan->source;
 }
+EXPORT_SYMBOL(set_dma_mode);
 
 void set_dma_addr(unsigned int dmanr, unsigned int phyaddr)
 {
@@ -497,6 +508,7 @@ void set_dma_addr(unsigned int dmanr, unsigned int phyaddr)
 	} else
 		printk(KERN_DEBUG "Driver should call set_dma_mode() ahead set_dma_addr()!\n");
 }
+EXPORT_SYMBOL(set_dma_addr);
 
 void set_dma_count(unsigned int dmanr, unsigned int bytecnt)
 {
@@ -510,6 +522,7 @@ void set_dma_count(unsigned int dmanr, unsigned int bytecnt)
 	ds = (chan->mode & DMAC_DCMD_DS_MASK) >> DMAC_DCMD_DS_BIT;
 	REG_DMAC_DTCR(chan->io) = bytecnt / dma_ds[ds]; // transfer count
 }
+EXPORT_SYMBOL(set_dma_count);
 
 unsigned int get_dma_residue(unsigned int dmanr)
 {
@@ -525,6 +538,7 @@ unsigned int get_dma_residue(unsigned int dmanr)
 
 	return count;
 }
+EXPORT_SYMBOL(get_dma_residue);
 
 void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt)
 {
@@ -560,6 +574,7 @@ void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fm
 		break;
 	}
 }
+EXPORT_SYMBOL(jz_set_oss_dma);
 
 void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt)
 {
@@ -594,6 +609,7 @@ void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_f
 		break;
 	}
 }
+EXPORT_SYMBOL(jz_set_alsa_dma);
 
 //#define JZ4770_DMAC_TEST_ENABLE
 #undef JZ4770_DMAC_TEST_ENABLE
@@ -860,21 +876,3 @@ void dma_two_desc_test(void) {
 }
 
 #endif
-
-//EXPORT_SYMBOL_NOVERS(jz_dma_table);
-EXPORT_SYMBOL(jz_dma_table);
-EXPORT_SYMBOL(jz_request_dma);
-EXPORT_SYMBOL(jz_free_dma);
-EXPORT_SYMBOL(jz_set_dma_src_width);
-EXPORT_SYMBOL(jz_set_dma_dest_width);
-EXPORT_SYMBOL(jz_set_dma_block_size);
-EXPORT_SYMBOL(jz_set_dma_mode);
-EXPORT_SYMBOL(set_dma_mode);
-EXPORT_SYMBOL(jz_set_oss_dma);
-EXPORT_SYMBOL(jz_set_alsa_dma);
-EXPORT_SYMBOL(set_dma_addr);
-EXPORT_SYMBOL(set_dma_count);
-EXPORT_SYMBOL(get_dma_residue);
-EXPORT_SYMBOL(enable_dma);
-EXPORT_SYMBOL(disable_dma);
-EXPORT_SYMBOL(dump_jz_dma_channel);
