@@ -205,22 +205,8 @@ extern int jz_request_dma(int dev_id,
 extern void jz_stop_dma(unsigned int chan);
 extern void jz_free_dma(unsigned int dmanr);
 
-extern int jz_dma_read_proc(char *buf, char **start, off_t fpos,
-			      int length, int *eof, void *data);
-extern void dump_jz_dma_channel(unsigned int dmanr);
-extern void dump_jz_bdma_channel(unsigned int dmanr);
-
 extern void enable_dma(unsigned int dmanr);
 extern void disable_dma(unsigned int dmanr);
-extern void set_dma_addr(unsigned int dmanr, unsigned int phyaddr);
-extern void set_dma_count(unsigned int dmanr, unsigned int bytecnt);
-extern void set_dma_mode(unsigned int dmanr, unsigned int mode);
-extern void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt);
-extern void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt);
-extern void jz_set_dma_src_width(int dmanr, int nbit);
-extern void jz_set_dma_dest_width(int dmanr, int nbit);
-extern void jz_set_dma_block_size(int dmanr, int nbyte);
-extern unsigned int get_dma_residue(unsigned int dmanr);
 extern spinlock_t  dma_spin_lock;
 
 static __inline__ unsigned long claim_dma_lock(void)
@@ -235,81 +221,12 @@ static __inline__ void release_dma_lock(unsigned long flags)
 	spin_unlock_irqrestore(&dma_spin_lock, flags);
 }
 
-/* Clear the 'DMA Pointer Flip Flop'.
- * Write 0 for LSB/MSB, 1 for MSB/LSB access.
- */
-#define clear_dma_ff(channel)
-
 static __inline__ struct jz_dma_chan *get_dma_chan(unsigned int dmanr)
 {
 	if (dmanr > MAX_DMA_NUM
 	    || jz_dma_table[dmanr].dev_id < 0)
 		return NULL;
 	return &jz_dma_table[dmanr];
-}
-
-static __inline__ int dma_halted(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return 1;
-	return  __dmac_channel_transmit_halt_detected(dmanr) ? 1 : 0;
-}
-
-static __inline__ unsigned int get_dma_mode(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return 0;
-	return chan->mode;
-}
-
-static __inline__ void clear_dma_done(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return;
-	REG_DMAC_DCCSR(chan->io) &= ~(DMAC_DCCSR_HLT | DMAC_DCCSR_TT | DMAC_DCCSR_AR);
-}
-
-static __inline__ void clear_dma_halt(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return;
-	REG_DMAC_DCCSR(chan->io) &= ~(DMAC_DCCSR_HLT);
-	REG_DMAC_DMACR((chan->io)/HALF_DMA_NUM) &= ~(DMAC_DMACR_HLT);
-}
-
-static __inline__ void clear_dma_flag(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return;
-	REG_DMAC_DCCSR(chan->io) &= ~(DMAC_DCCSR_HLT | DMAC_DCCSR_TT | DMAC_DCCSR_AR);
-	REG_DMAC_DMACR((chan->io)/HALF_DMA_NUM) &= ~(DMAC_DMACR_HLT | DMAC_DMACR_AR);
-}
-
-static __inline__ void set_dma_page(unsigned int dmanr, char pagenr)
-{
-}
-
-static __inline__ unsigned int get_dma_done_status(unsigned int dmanr)
-{
-	unsigned long dccsr;
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return 0;
-	dccsr = REG_DMAC_DCCSR(chan->io);
-	return dccsr & (DMAC_DCCSR_HLT | DMAC_DCCSR_TT | DMAC_DCCSR_AR);
-}
-
-static __inline__ int get_dma_done_irq(unsigned int dmanr)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-	if (!chan)
-		return -1;
-	return chan->irq;
 }
 
 #endif  /* __ASM_JZ4770_DMA_H__ */
