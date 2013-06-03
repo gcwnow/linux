@@ -254,8 +254,10 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 static int jzfb_wait_for_vsync(struct jzfb *jzfb)
 {
 	uint32_t count = jzfb->vsync_count;
-	return wait_event_interruptible(jzfb->wait_vsync,
-					count != jzfb->vsync_count);
+	long t = wait_event_interruptible_timeout(jzfb->wait_vsync,
+						  count != jzfb->vsync_count,
+						  HZ / 10);
+	return t > 0 ? 0 : (t < 0 ? (int)t : -ETIMEDOUT);
 }
 
 static void jzfb_update_frame_address(struct jzfb *jzfb)
