@@ -28,6 +28,7 @@
 
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
+#include <asm/mach-jz4770/jz4770dmac.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 
