@@ -28,16 +28,8 @@
  * Note: this structure must always be aligned to a 16-bytes boundary.
  */
 
-/* old descriptor 4-word */
-typedef struct {
-	volatile u32 dcmd;	/* DCMD value for the current transfer */
-	volatile u32 dsadr;	/* DSAR value for the current transfer */
-	volatile u32 dtadr;	/* DTAR value for the current transfer */
-	volatile u32 ddadr;	/* Points to the next descriptor + transfer count */
-} jz_dma_desc;
-
 /* new descriptor 8-word */
-typedef struct {
+struct jz_dma_desc_8word {
 	volatile u32 dcmd;	/* DCMD value for the current transfer */
 	volatile u32 dsadr;	/* DSAR value for the current transfer */
 	volatile u32 dtadr;	/* DTAR value for the current transfer */
@@ -46,19 +38,7 @@ typedef struct {
 	volatile u32 dreqt;     /* DMA request type for current transfer */
 	volatile u32 reserved0;	/* Reserved */
 	volatile u32 reserved1;	/* Reserved */
-} jz_dma_desc_8word;
-
-/* new descriptor 8-word */
-typedef struct {
-	volatile u32 dcmd;	/* DCMD value for the current transfer */
-	volatile u32 dsadr;	/* DSAR value for the current transfer */
-	volatile u32 dtadr;	/* DTAR value for the current transfer */
-	volatile u32 dcnt;	/* transfer count */
-	volatile u32 dstrd; /* DMA source and target stride address */
-	volatile u32 dreqt; /* DMA request type for current transfer */
-	volatile u32 dnt;	/* NAND detect timer enable(15) and value(0~5), and Tail counter(22~16)*/
-	volatile u32 ddadr;	/* Next descriptor address(31~4)  */
-} jz_bdma_desc_8word;
+};
 
 /* DMA Device ID's follow */
 enum {
