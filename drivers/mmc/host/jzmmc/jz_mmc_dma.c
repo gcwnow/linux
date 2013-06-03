@@ -14,6 +14,8 @@
 #include <linux/mmc/core.h>
 #include <linux/mmc/host.h>
 
+#include <asm/mach-jz4770/dma.h>
+
 #include "include/chip-msc.h"
 #include "include/jz_mmc_dma.h"
 #include "include/jz_mmc_host.h"
@@ -116,10 +118,11 @@ static inline int best_burst_size(unsigned int dma_len) {
 	} while (0)
 
 #ifdef USE_DMA_DESC
-static void sg_to_desc(struct scatterlist *sgentry, JZ_MSC_DMA_DESC *first_desc,
+static void sg_to_desc(struct scatterlist *sgentry,
+		       struct jz_dma_desc_8word *first_desc,
 		       int *desc_pos /* IN OUT */, int mode, int ctrl_id,
 		       struct jz_mmc_host *host) {
-	JZ_MSC_DMA_DESC *desc = NULL;
+	struct jz_dma_desc_8word *desc = NULL;
 	int pos = *desc_pos;
 	unsigned int ds = 32; /* ehh, 32byte is the best */
 	unsigned int next;
@@ -168,7 +171,7 @@ static void sg_to_desc(struct scatterlist *sgentry, JZ_MSC_DMA_DESC *first_desc,
 
 	if (head_unalign_size) {
 		desc = first_desc + pos;
-		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(JZ_MSC_DMA_DESC))) >> 4;
+		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(struct jz_dma_desc_8word))) >> 4;
 		desc->dcmd = DMAC_DCMD_SWDH_32 | DMAC_DCMD_DWDH_32 | DMAC_DCMD_DS_32BIT | DMAC_DCMD_RDIL_IGN | DMAC_DCMD_LINK;
 		if (DMA_MODE_WRITE == mode) {
 			desc->dcmd |= DMAC_DCMD_SAI;
@@ -188,7 +191,7 @@ static void sg_to_desc(struct scatterlist *sgentry, JZ_MSC_DMA_DESC *first_desc,
 
 	if (aligned_size) {
 		desc = first_desc + pos;
-		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(JZ_MSC_DMA_DESC))) >> 4;
+		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(struct jz_dma_desc_8word))) >> 4;
 
 		desc->dcmd = DMAC_DCMD_SWDH_32 | DMAC_DCMD_DWDH_32 | DMAC_DCMD_RDIL_IGN | DMAC_DCMD_LINK;
 		switch (ds) {
@@ -233,7 +236,7 @@ static void sg_to_desc(struct scatterlist *sgentry, JZ_MSC_DMA_DESC *first_desc,
 
 	if (tail_unalign_size) {
 		desc = first_desc + pos;
-		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(JZ_MSC_DMA_DESC))) >> 4;
+		next = (dma_desc_phys_addr + (pos + 1) * (sizeof(struct jz_dma_desc_8word))) >> 4;
 
 		desc->dcmd = DMAC_DCMD_SWDH_32 | DMAC_DCMD_DWDH_32 | DMAC_DCMD_DS_32BIT |   DMAC_DCMD_RDIL_IGN | DMAC_DCMD_LINK;
 		if (DMA_MODE_WRITE == mode) {
@@ -269,8 +272,8 @@ void jz_mmc_start_scatter_dma(int chan, struct jz_mmc_host *host,
 	dma_addr_t dma_desc_phy_addr = 0;
 	struct mmc_data *data = host->curr_mrq->data;
 	struct scatterlist *sgentry;
-	JZ_MSC_DMA_DESC *desc;
-	JZ_MSC_DMA_DESC *desc_first;
+	struct jz_dma_desc_8word *desc;
+	struct jz_dma_desc_8word *desc_first;
 	unsigned long flags;
 	unsigned long start_time = jiffies;
 
@@ -522,7 +525,7 @@ int jz_mmc_init_dma(struct jz_mmc_host *host)
 	REG_DMAC_DMACR(host->dma.channel / HALF_DMA_NUM) |= DMAC_DMACR_FMSC;
 
 #ifdef USE_DMA_DESC
-	host->dma_desc = (JZ_MSC_DMA_DESC *)__get_free_pages(GFP_KERNEL, 0);
+	host->dma_desc = (struct jz_dma_desc_8word *)__get_free_pages(GFP_KERNEL, 0);
 #endif
 
 	return 0;

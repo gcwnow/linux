@@ -11,14 +11,10 @@
 #ifndef __JZ_MMC_HOST_H__
 #define __JZ_MMC_HOST_H__
 
-#include <asm/mach-jz4770/dma.h>
-
-
 #define USE_DMA_DESC
 //#define USE_DMA_UNCACHE
 //#define MSC_DEBUG_DMA
 
-#define JZ_MSC_DMA_DESC jz_dma_desc_8word
 #define USE_DMA_BUSRT_64
 
 #define MMC_CLOCK_SLOW    400000      /* 400 kHz for initial setup */
@@ -57,7 +53,7 @@ struct jz_mmc_host {
 	int num_desc;
 	int last_direction;
 #endif
-	JZ_MSC_DMA_DESC *dma_desc;
+	struct jz_dma_desc_8word *dma_desc;
 #endif
 	wait_queue_head_t data_wait_queue;
 	volatile int data_ack;
