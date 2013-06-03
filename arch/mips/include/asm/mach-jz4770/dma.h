@@ -20,8 +20,6 @@
 #include <linux/spinlock.h>		/* And spinlocks */
 #include <linux/delay.h>
 
-#include <asm/mach-jz4770/jz4770dmac.h>
-
 
 /*
  * Descriptor structure for JZ4770 DMA engine
