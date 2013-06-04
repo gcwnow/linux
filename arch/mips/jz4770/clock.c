@@ -656,13 +656,6 @@ static struct clk jz_clk_simple_clks[] = {
 		.ops = &jz_clk_simple_ops,
 	},
 	{
-		.name = "uart4",
-		.parent = &jz_clk_ext.clk,
-		.gate_register = CPM_CLKGR1_OFFSET,
-		.gate_bit = CLKGR1_UART4,
-		.ops = &jz_clk_simple_ops,
-	},
-	{
 		.name = "ipu",
 		.parent = &jz_clk_ext.clk,
 		.gate_register = CPM_CLKGR0_OFFSET,

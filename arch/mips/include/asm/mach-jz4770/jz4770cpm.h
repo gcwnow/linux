@@ -231,7 +231,6 @@
 #define CLKGR1_AUX              BIT14
 #define CLKGR1_I2S2             BIT13
 #define CLKGR1_OSD              BIT12
-#define CLKGR1_UART4            BIT11
 #define CLKGR1_PCM1             BIT10
 #define CLKGR1_GPU              BIT9
 #define CLKGR1_PCM0             BIT8

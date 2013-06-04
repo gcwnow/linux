@@ -530,13 +530,6 @@ do {						\
 	REG_GPIO_PXPENS(4)  = 0x00000328;	\
 }
 
-#define __gpio_as_uart4()			\
-do {						\
-	REG_GPIO_PXINTC(2)  = 0x00100400;	\
-	REG_GPIO_PXMASKC(2) = 0x00100400;	\
-	REG_GPIO_PXPAT1C(2) = 0x00100400;	\
-	REG_GPIO_PXPAT0C(2) = 0x00100400;	\
-} while (0)
 /*
  * SD0 ~ SD7, CS1#, CLE, ALE, FRE#, FWE#, FRB#
  * @n: chip select number(1 ~ 6)
