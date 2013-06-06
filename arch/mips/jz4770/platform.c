@@ -9,6 +9,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -29,29 +30,26 @@
 
 
 /* OHCI (USB full speed host controller) */
-#define UHC_BASE		0xB3430000
+#define JZ4770_UHC_BASE_ADDR 0x13430000
 static struct resource jz_usb_ohci_resources[] = {
-	[0] = {
-		.start		= CPHYSADDR(UHC_BASE), // phys addr for ioremap
-		.end		= CPHYSADDR(UHC_BASE) + 0x10000 - 1,
+	{
+		.start		= JZ4770_UHC_BASE_ADDR,
+		.end		= JZ4770_UHC_BASE_ADDR + 0x1000 - 1,
 		.flags		= IORESOURCE_MEM,
 	},
-	[1] = {
+	{
 		.start		= IRQ_UHC,
 		.end		= IRQ_UHC,
 		.flags		= IORESOURCE_IRQ,
 	},
 };
 
-/* The dmamask must be set for OHCI to work */
-static u64 ohci_dmamask = ~(u32)0;
-
 static struct platform_device jz_usb_ohci_device = {
-	.name		= "jz-ohci",
-	.id		= 0,
+	.name		= "jz4770-ohci",
+	.id		= -1,
 	.dev = {
-		.dma_mask		= &ohci_dmamask,
-		.coherent_dma_mask	= 0xffffffff,
+		.dma_mask = &jz_usb_ohci_device.dev.coherent_dma_mask,
+		.coherent_dma_mask = DMA_BIT_MASK(32),
 	},
 	.num_resources	= ARRAY_SIZE(jz_usb_ohci_resources),
 	.resource	= jz_usb_ohci_resources,
