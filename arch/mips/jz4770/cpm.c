@@ -605,8 +605,11 @@ EXPORT_SYMBOL(cpm_set_clock);
   */
 void cpm_uhc_phy(unsigned int en)
 {
-	if (en)
+	if (en) {
 		CLRREG32(CPM_OPCR, OPCR_UHCPHY_DISABLE);
-	else
+		SETREG32(CPM_USBPCR1, USBPCR1_UHC_POWON);
+	} else {
+		CLRREG32(CPM_USBPCR1, USBPCR1_UHC_POWON);
 		SETREG32(CPM_OPCR, OPCR_UHCPHY_DISABLE);
+	}
 }
