@@ -491,12 +491,6 @@ struct jz_mmc_platform_data gcw_external_sd_data = {
 	.power_active_low	= 1,
 };
 
-void __init board_msc_init(void)
-{
-	jz_add_msc_devices(0, &gcw_internal_sd_data);
-	jz_add_msc_devices(1, &gcw_external_sd_data);
-}
-
 
 static void __init board_cpm_setup(void)
 {
@@ -730,12 +724,16 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_gpio_keys_device,
 	&gcw0_backlight_device,
 	&gcw0_audio_device,
+	&jz_msc0_device,
+	&jz_msc1_device,
 };
 
 void __init board_pdata_init(void)
 {
 	jz_lcd_device.dev.platform_data = &gcw0_fb_pdata;
 	jz_adc_device.dev.platform_data = &gcw0_battery_pdata;
+	jz_msc0_device.dev.platform_data = &gcw_internal_sd_data;
+	jz_msc1_device.dev.platform_data = &gcw_external_sd_data;
 }
 
 void __init board_devices_init(void)
