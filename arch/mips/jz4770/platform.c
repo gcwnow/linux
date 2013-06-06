@@ -168,7 +168,7 @@ static struct platform_device jz_usb_otg_device = {
 									\
 	static u64 jz_msc##msc_id##_dmamask =  ~(u32)0;			\
 									\
-	static struct platform_device jz_msc##msc_id##_device = {	\
+	struct platform_device jz_msc##msc_id##_device = {		\
 		.name = "jz-msc",					\
 		.id = msc_id,						\
 		.dev = {						\
@@ -182,24 +182,6 @@ static struct platform_device jz_usb_otg_device = {
 JZ_MSC_PLATFORM_DEV(0)
 JZ_MSC_PLATFORM_DEV(1)
 JZ_MSC_PLATFORM_DEV(2)
-
-static struct platform_device *jz_msc_devices[] __initdata = {
-	&jz_msc0_device,
-	&jz_msc1_device,
-	&jz_msc2_device,
-};
-
-int __init jz_add_msc_devices(unsigned int id, struct jz_mmc_platform_data *plat)
-{
-	struct platform_device	*pdev;
-
-	if (id >= ARRAY_SIZE(jz_msc_devices))
-		return -EINVAL;
-
-	pdev = jz_msc_devices[id];
-	pdev->dev.platform_data = plat;
-	return platform_device_register(pdev);
-}
 
 /* Sound devices */
 
@@ -438,7 +420,6 @@ static int __init jz_platform_init(void)
 	board_devices_init();
 
 	printk("jz_platform_init\n");
-	board_msc_init();
 	return ret;
 }
 
