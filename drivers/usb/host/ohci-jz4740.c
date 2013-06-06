@@ -16,6 +16,15 @@
 #include <linux/clk.h>
 #include <linux/regulator/consumer.h>
 
+#if defined(CONFIG_MACH_JZ4770)
+#include <asm/mach-jz4770/jz4770cpm.h>
+#endif
+
+enum jz4740_ohci_devtype {
+	DEVTYPE_JZ4740,
+	DEVTYPE_JZ4770,
+};
+
 struct jz4740_ohci_hcd {
 	struct ohci_hcd ohci_hcd;
 
@@ -205,6 +214,12 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 
 	clk_set_rate(jz4740_ohci->clk, 48000000);
 	clk_enable(jz4740_ohci->clk);
+
+#if defined(CONFIG_MACH_JZ4770)
+	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
+		cpm_uhc_phy(1);
+#endif
+
 	if (jz4740_ohci->vbus)
 		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
 
@@ -222,6 +237,10 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 
 err_disable:
 	platform_set_drvdata(pdev, NULL);
+#if defined(CONFIG_MACH_JZ4770)
+	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
+		cpm_uhc_phy(0);
+#endif
 	if (jz4740_ohci->vbus) {
 		regulator_disable(jz4740_ohci->vbus);
 		regulator_put(jz4740_ohci->vbus);
@@ -248,6 +267,11 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, NULL);
 
+#if defined(CONFIG_MACH_JZ4770)
+	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
+		cpm_uhc_phy(0);
+#endif
+
 	if (jz4740_ohci->vbus) {
 		regulator_disable(jz4740_ohci->vbus);
 		regulator_put(jz4740_ohci->vbus);
@@ -264,6 +288,12 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct platform_device_id jz4740_ohci_id_table[] = {
+	{ .name = "jz4740-ohci", .driver_data = DEVTYPE_JZ4740, },
+	{ .name = "jz4770-ohci", .driver_data = DEVTYPE_JZ4770, },
+	{ /* sentinel */ }
+};
+
 static struct platform_driver ohci_hcd_jz4740_driver = {
 	.probe = jz4740_ohci_probe,
 	.remove = jz4740_ohci_remove,
@@ -271,6 +301,7 @@ static struct platform_driver ohci_hcd_jz4740_driver = {
 		.name = "jz4740-ohci",
 		.owner = THIS_MODULE,
 	},
+	.id_table = jz4740_ohci_id_table,
 };
 
 MODULE_ALIAS("platform:jz4740-ohci");
