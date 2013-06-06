@@ -279,6 +279,8 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	REG_LCD_DA1 = virt_to_phys(&dma1_desc1);
 	jzfb->delay_flush = 0;
 
+	REG_LCD_STATE = 0; /* clear lcdc status */
+
 	/*
 	 * Enabling the LCDC too soon after the clock will hang the system.
 	 * A very short delay seems to be sufficient.
@@ -764,25 +766,10 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, jzfb);
 	jzfb->fb = fb;
 
-	/* configurate sequence:
-	 * 1. disable lcdc.
-	 * 2. init frame descriptor.
-	 * 3. set panel mode
-	 * 4. set osd mode
-	 * 5. start lcd clock in CPM
-	 * 6. enable lcdc.
-	 */
-
 	/*
-	 * We expect the LCDC to be disabled when this driver is loaded,
-	 * since having DMA activity going on outside of the kernel's
-	 * knowledge is asking for trouble. Unfortunately, there does not
-	 * seem to be a way to check whether the LCDC is currently enabled.
-	 * So we do a few harmless writes just in case it was left in a
-	 * not fully disabled state for some reason.
+	 * We assume the LCDC is disabled initially. If you really must have
+	 * video in your boot loader, you'll have to update this driver.
 	 */
-	REG_LCD_STATE = 0; /* clear lcdc status */
-	__lcd_clr_ena(); /* quick disable */
 
 	jz4760fb_descriptor_init(jzfb->bpp);
 	jz4760fb_set_par(fb);
