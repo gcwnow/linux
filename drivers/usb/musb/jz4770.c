@@ -226,8 +226,8 @@ static int otg_id_pin_setup(struct musb *musb)
 	do_otg_id_pin_state(musb);
 	setup_timer(&otg_id_pin_stable_timer, otg_id_pin_stable_func, (unsigned long)musb);
 
-	ret = request_irq(GPIO_OTG_ID_IRQ, jz_musb_otg_id_irq,
-				IRQF_DISABLED, "otg-id-irq", musb);
+	ret = devm_request_irq(dev, GPIO_OTG_ID_IRQ, jz_musb_otg_id_irq, 0,
+			       "otg-id-irq", musb);
 	if (ret) {
 		dev_err(dev, "Failed to request USB OTG ID IRQ: %d\n", ret);
 		return ret;
@@ -238,7 +238,9 @@ static int otg_id_pin_setup(struct musb *musb)
 
 static void otg_id_pin_cleanup(struct musb *musb)
 {
-	free_irq(GPIO_OTG_ID_IRQ, "otg-id-irq");
+	struct device *dev = musb->controller;
+
+	devm_free_irq(dev, GPIO_OTG_ID_IRQ, musb);
 	del_timer(&otg_id_pin_stable_timer);
 }
 
@@ -274,7 +276,7 @@ static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
 	return rv;
 }
 
-static int __init jz_musb_platform_init(struct musb *musb)
+static int jz_musb_platform_init(struct musb *musb)
 {
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
 	if (!musb->xceiv) {
@@ -322,9 +324,7 @@ static const struct musb_platform_ops jz_musb_ops = {
 	.set_vbus	= jz_musb_set_vbus,
 };
 
-static u64 jz_musb_dmamask = DMA_BIT_MASK(32);
-
-static int __init jz_musb_probe(struct platform_device *pdev)
+static int jz_musb_probe(struct platform_device *pdev)
 {
 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
 	struct platform_device		*musb;
@@ -345,8 +345,8 @@ static int __init jz_musb_probe(struct platform_device *pdev)
 	}
 
 	musb->dev.parent		= &pdev->dev;
-	musb->dev.dma_mask		= &jz_musb_dmamask;
-	musb->dev.coherent_dma_mask	= jz_musb_dmamask;
+	musb->dev.dma_mask		= &musb->dev.coherent_dma_mask;
+	musb->dev.coherent_dma_mask	= DMA_BIT_MASK(32);
 
 	glue->dev			= &pdev->dev;
 	glue->musb			= musb;
@@ -386,35 +386,26 @@ err0:
 	return ret;
 }
 
-static int __exit jz_musb_remove(struct platform_device *pdev)
+static int jz_musb_remove(struct platform_device *pdev)
 {
-	struct jz_musb_glue		*glue = platform_get_drvdata(pdev);
+	struct jz_musb_glue *glue = platform_get_drvdata(pdev);
 
-	platform_device_del(glue->musb);
-	platform_device_put(glue->musb);
+	platform_device_unregister(glue->musb);
 	kfree(glue);
 
 	return 0;
 }
 
 static struct platform_driver jz_musb_driver = {
-	.remove		= __exit_p(jz_musb_remove),
+	.probe		= jz_musb_probe,
+	.remove		= jz_musb_remove,
 	.driver		= {
 		.name	= "musb-jz",
+		.owner	= THIS_MODULE,
 	},
 };
 
-static int __init jz_musb_init(void)
-{
-	return platform_driver_probe(&jz_musb_driver, jz_musb_probe);
-}
-subsys_initcall(jz_musb_init);
-
-static void __exit jz_musb_exit(void)
-{
-	platform_driver_unregister(&jz_musb_driver);
-}
-module_exit(jz_musb_exit);
+module_platform_driver(jz_musb_driver);
 
 MODULE_DESCRIPTION("JZ4770 MUSB Glue Layer");
 MODULE_AUTHOR("River <zwang@ingenic.cn>");
