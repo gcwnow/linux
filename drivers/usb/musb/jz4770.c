@@ -29,6 +29,7 @@
 struct jz_musb_glue {
 	struct device		*dev;
 	struct platform_device	*musb;
+	struct clk *clk;
 };
 
 static inline void jz_musb_phy_enable(void)
@@ -278,6 +279,10 @@ static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
 
 static int jz_musb_platform_init(struct musb *musb)
 {
+	struct device *dev = musb->controller;
+	struct jz_musb_glue *glue = dev_get_drvdata(dev->parent);
+	struct clk *clk;
+
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
 	if (!musb->xceiv) {
 		pr_err("HS USB OTG: no transceiver configured\n");
@@ -287,6 +292,15 @@ static int jz_musb_platform_init(struct musb *musb)
 	musb->b_dma_share_usb_irq = 1;
 	musb->isr = jz_musb_interrupt;
 
+	clk = devm_clk_get(dev, "usb");
+	if (IS_ERR(clk)) {
+		int ret = PTR_ERR(clk);
+		dev_err(dev, "Failed to get clock: %d\n", ret);
+		return ret;
+	}
+	glue->clk = clk;
+	clk_enable(clk);
+
 	jz_musb_init_regs(musb);
 
 	/* host mode and otg(host) depend on the id pin */
@@ -295,7 +309,11 @@ static int jz_musb_platform_init(struct musb *musb)
 
 static int jz_musb_platform_exit(struct musb *musb)
 {
+	struct jz_musb_glue *glue = dev_get_drvdata(musb->controller->parent);
+
 	jz_musb_phy_disable();
+
+	clk_disable(glue->clk);
 
 	otg_id_pin_cleanup(musb);
 
