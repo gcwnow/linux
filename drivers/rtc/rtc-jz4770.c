@@ -374,7 +374,7 @@ static int jz4770_rtc_probe(struct platform_device *pdev)
 	 *
 	 * For other situations, we remain the rtc status unchanged.
 	 */
-	cpm_set_clock(CGU_RTCCLK, 32768);
+	SETREG32(CPM_OPCR, OPCR_ERCS);
 
 	//unsigned int ppr = IN_RTC_REG(REG_RTC_HWRSR);
 	cfc = HSPR_RTCV;
