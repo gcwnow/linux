@@ -20,7 +20,6 @@
 #include <linux/moduleparam.h>
 #include <linux/scatterlist.h>
 
-#include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/mmc.h>
 
 #include "include/chip-msc.h"

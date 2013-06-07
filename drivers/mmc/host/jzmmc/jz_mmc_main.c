@@ -30,7 +30,6 @@
 #include <asm/io.h>
 #include <asm/scatterlist.h>
 
-#include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/mmc.h>
 
 #include "include/chip-msc.h"
@@ -292,7 +291,7 @@ static int jz_mmc_resume(struct device *dev)
 		return ret;
 
 	if (host->card_detect_irq < 0)
-		if (cpm_get_clock(CGU_MSC0CLK) > SD_CLOCK_FAST)
+		if (clk_get_rate(host->clk) > SD_CLOCK_FAST)
 			REG_MSC_LPM(host->pdev_id) |= 1 << 31;
 
 	return 0;

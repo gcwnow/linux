@@ -9,6 +9,8 @@
 #ifndef __CHIP_MSC_H__
 #define __CHIP_MSC_H__
 
+#include <asm/mach-jz4770/jz4770misc.h>
+
 
 #define MSC0_BASE	0xB0021000
 #define MSC1_BASE	0xB0022000
