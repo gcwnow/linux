@@ -570,10 +570,6 @@ unsigned int cpm_set_clock(cgu_clock clock_name, unsigned int clock_hz)
 		}
 		break;
 
-	case CGU_RTCCLK:
-		SETREG32(CPM_OPCR, OPCR_ERCS);
-		break;
-
 	case CGU_CIMCLK:
 		div = ceil(pllclk , clock_hz) - 1;
 		div = __check_div(div, CIMCDR_CIMDIV_LSB, CIMCDR_CIMDIV_MASK);
