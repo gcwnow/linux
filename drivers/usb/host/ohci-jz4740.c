@@ -43,6 +43,14 @@ static inline struct usb_hcd *jz4740_hcd_to_hcd(struct jz4740_ohci_hcd *jz4740_o
 	return container_of((void *)jz4740_ohci, struct usb_hcd, hcd_priv);
 }
 
+static inline void phy_set_enabled(struct platform_device *pdev, bool enabled)
+{
+#if defined(CONFIG_MACH_JZ4770)
+	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
+		cpm_uhc_phy(enabled);
+#endif
+}
+
 static int ohci_jz4740_start(struct usb_hcd *hcd)
 {
 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
@@ -215,10 +223,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 	clk_set_rate(jz4740_ohci->clk, 48000000);
 	clk_enable(jz4740_ohci->clk);
 
-#if defined(CONFIG_MACH_JZ4770)
-	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
-		cpm_uhc_phy(1);
-#endif
+	phy_set_enabled(pdev, true);
 
 	if (jz4740_ohci->vbus)
 		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
@@ -237,10 +242,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 
 err_disable:
 	platform_set_drvdata(pdev, NULL);
-#if defined(CONFIG_MACH_JZ4770)
-	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
-		cpm_uhc_phy(0);
-#endif
+	phy_set_enabled(pdev, false);
 	if (jz4740_ohci->vbus) {
 		regulator_disable(jz4740_ohci->vbus);
 		regulator_put(jz4740_ohci->vbus);
@@ -267,10 +269,7 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, NULL);
 
-#if defined(CONFIG_MACH_JZ4770)
-	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
-		cpm_uhc_phy(0);
-#endif
+	phy_set_enabled(pdev, false);
 
 	if (jz4740_ohci->vbus) {
 		regulator_disable(jz4740_ohci->vbus);
