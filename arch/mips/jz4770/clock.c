@@ -311,8 +311,17 @@ static const struct clk_ops jz_clk_main_ops = {
 	.round_rate = jz_clk_main_round_rate,
 };
 
+enum {
+	JZ_CLK_MAIN_CCLK,
+	JZ_CLK_MAIN_H0CLK,
+	JZ_CLK_MAIN_H1CLK,
+	JZ_CLK_MAIN_H2CLK,
+	JZ_CLK_MAIN_C1CLK,
+	JZ_CLK_MAIN_PCLK,
+};
+
 static struct main_clk jz_clk_main_clks[] = {
-	{
+	[JZ_CLK_MAIN_CCLK] = {
 		.clk = {
 			.name = "cclk",
 			.parent = &jz_clk_pll0,
@@ -320,7 +329,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		},
 		.div_offset = CPCCR_CDIV_LSB,
 	},
-	{
+	[JZ_CLK_MAIN_H0CLK] = {
 		.clk = {
 			.name = "h0clk",
 			.parent = &jz_clk_pll0,
@@ -328,7 +337,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		},
 		.div_offset = CPCCR_H0DIV_LSB,
 	},
-	{
+	[JZ_CLK_MAIN_H1CLK] = {
 		.clk = {
 			.name = "h1clk",
 			.parent = &jz_clk_pll0,
@@ -336,7 +345,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		},
 		.div_offset = CPCCR_H1DIV_LSB,
 	},
-	{
+	[JZ_CLK_MAIN_H2CLK] = {
 		.clk = {
 			.name = "h2clk",
 			.parent = &jz_clk_pll0,
@@ -344,7 +353,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		},
 		.div_offset = CPCCR_H2DIV_LSB,
 	},
-	{
+	[JZ_CLK_MAIN_C1CLK] = {
 		.clk = {
 			.name = "c1clk",
 			.parent = &jz_clk_pll0,
@@ -352,7 +361,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		},
 		.div_offset = CPCCR_C1DIV_LSB,
 	},
-	{
+	[JZ_CLK_MAIN_PCLK] = {
 		.clk = {
 			.name = "pclk",
 			.parent = &jz_clk_pll0,
@@ -607,6 +616,13 @@ static const struct clk_ops jz_clk_simple_ops = {
 
 static struct clk jz_clk_simple_clks[] = {
 	{
+		.name = "dma",
+		.parent = &jz_clk_main_clks[JZ_CLK_MAIN_H2CLK].clk,
+		.gate_register = CPM_CLKGR0_OFFSET,
+		.gate_bit = CLKGR0_DMAC,
+		.ops = &jz_clk_simple_ops,
+	},
+	{
 		.name = "i2c0",
 		.parent = &jz_clk_ext.clk,
 		.gate_register = CPM_CLKGR0_OFFSET,
@@ -657,7 +673,7 @@ static struct clk jz_clk_simple_clks[] = {
 	},
 	{
 		.name = "ipu",
-		.parent = &jz_clk_ext.clk,
+		.parent = &jz_clk_main_clks[JZ_CLK_MAIN_H0CLK].clk,
 		.gate_register = CPM_CLKGR0_OFFSET,
 		.gate_bit = CLKGR0_IPU,
 		.ops = &jz_clk_simple_ops,
