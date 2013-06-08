@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/soundcard.h>
+#include <linux/clk.h>
 
 #include <asm/addrspace.h>
 
@@ -228,6 +229,8 @@ static struct jz_dma_chan *get_dma_chan(unsigned int dmanr)
 }
 
 
+static struct clk *dma_clk = NULL;
+
 /**
  * jz_request_dma - dynamically allcate an idle DMA channel to return
  * @dev_id: the specified dma device id or DMA_ID_RAW_SET
@@ -254,6 +257,22 @@ int jz_request_dma(int dev_id, const char *dev_str,
 {
 	struct jz_dma_chan *chan;
 	int i, ret;
+
+	if (!dma_clk) {
+		struct clk *clk = clk_get(NULL, "dma");
+		if (IS_ERR(clk)) {
+			int ret = PTR_ERR(clk);
+			printk("Failed to get DMA clock: %d\n", ret);
+			return ret;
+		}
+		dma_clk = clk;
+		clk_enable(clk);
+		/*
+		 * Note: We don't bother to disable the clock again when the
+		 *       DMAC is idle, since this code is going to be replaced
+		 *       by the dmaengine driver.
+		 */
+	}
 
 	if (dev_id < 0 || dev_id >= DMA_ID_MAX)
 		return -EINVAL;
