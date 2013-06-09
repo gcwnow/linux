@@ -22,7 +22,6 @@
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
 
-#include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770tcu.h>
 
