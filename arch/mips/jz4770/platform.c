@@ -19,7 +19,6 @@
 
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/jz4770aic.h>
-#include <asm/mach-jz4770/jz4770aosd.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>
@@ -299,33 +298,6 @@ struct platform_device jz_i2c2_device = {
 	.resource       = jz_i2c2_resources,
 };
 
-/*AOSD*/
-static struct resource jz_aosd_resources[] = {
-	[0] = {
-		.start          = CPHYSADDR(AOSD_BASE),
-		.end            = CPHYSADDR(AOSD_BASE) + 0x1000 - 1,
-		.flags          = IORESOURCE_MEM,
-	},
-	[1] = {
-		.start          = IRQ_AOSD,
-		.end            = IRQ_AOSD,
-		.flags          = IORESOURCE_IRQ,
-	},
-};
-
-static u64 jz_aosd_dmamask =  ~(u32)0;
-
-static struct platform_device jz_aosd_device = {
-	.name = "jz-aosd",
-	.id = 0,
-	.dev = {
-		.dma_mask               = &jz_aosd_dmamask,
-		.coherent_dma_mask      = 0xffffffff,
-	},
-	.num_resources  = ARRAY_SIZE(jz_aosd_resources),
-	.resource       = jz_aosd_resources,
-};
-
 /* TCU */
 static struct resource jz_tcu_resources[] = {
 	[0] = {
@@ -392,7 +364,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_otg_xceiv_device,
 	&jz_usb_otg_device,
 	&jz_lcd_device,
-	&jz_aosd_device,
 	&jz_i2s_device,
 	&jz_pcm_device,
 	&jz_icdc_device,
