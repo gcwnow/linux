@@ -24,7 +24,6 @@
 #include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770otg.h>
 #include <asm/mach-jz4770/jz4770sadc.h>
-#include <asm/mach-jz4770/jz4770tcu.h>
 #include <asm/mach-jz4770/platform.h>
 
 
@@ -298,27 +297,6 @@ struct platform_device jz_i2c2_device = {
 	.resource       = jz_i2c2_resources,
 };
 
-/* TCU */
-static struct resource jz_tcu_resources[] = {
-	[0] = {
-		.start		= CPHYSADDR(TCU_BASE),
-		.end		= CPHYSADDR(TCU_BASE) + 0x1000 - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	[1] = {
-		.start		= IRQ_TCU0,
-		.end		= IRQ_TCU0,
-		.flags		= IORESOURCE_IRQ,
-	},
-};
-
-static struct platform_device jz_tcu_device = {
-	.name = "JZ-TCU",
-	.id = 0,
-	.num_resources = ARRAY_SIZE(jz_tcu_resources),
-	.resource = jz_tcu_resources,
-};
-
 /* PWM */
 static struct platform_device jz_pwm_device = {
 	.name = "jz4770-pwm",
@@ -374,7 +352,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_i2c0_device,
 	&jz_i2c1_device,
 	&jz_i2c2_device,
-	&jz_tcu_device,
 	&jz_pwm_device,
 	&jz_adc_device,
 	&rtc_device,
