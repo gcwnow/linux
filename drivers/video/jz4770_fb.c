@@ -546,14 +546,9 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 static void jzfb_change_clock(struct jzfb *jzfb,
 			      const struct jz4760lcd_panel_t *panel)
 {
-	unsigned int pixticks;
 	unsigned int rate;
 
-	pixticks = panel->w;
-	if ((panel->cfg & LCD_CFG_MODE_MASK) == LCD_CFG_MODE_SERIAL_TFT)
-		pixticks *= 3; /* send R,G,B serially: 8 bits at a time */
-
-	rate = panel->fclk * (pixticks + panel->elw + panel->blw)
+	rate = panel->fclk * (panel->w + panel->elw + panel->blw)
 	                   * (panel->h + panel->efw + panel->bfw);
 
 	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
