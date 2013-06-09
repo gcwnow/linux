@@ -30,7 +30,6 @@
 #include <linux/mfd/core.h>
 
 #include <linux/jz4770-adc.h>
-#include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770sadc.h>
 
 
@@ -113,7 +112,7 @@ static int jz4770_adc_set_clock(struct jz4770_adc *adc, unsigned int freq)
 	if (freq < 20000 || freq > 200000)
 		return -EINVAL;
 
-	div = JZ_EXTAL / freq - 1;
+	div = clk_get_rate(adc->clk) / freq - 1;
 	if (div >= 0x100)
 		return -EINVAL;
 
