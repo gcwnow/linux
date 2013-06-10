@@ -41,7 +41,6 @@
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/jz4770_fb.h>
-#include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770misc.h>
@@ -246,13 +245,6 @@ struct jz_mmc_platform_data gcw_external_sd_data = {
 	.power_active_low	= 1,
 };
 
-
-static void __init board_cpm_setup(void)
-{
-	/* Stop unused module clocks here.
-	 * We have started all module clocks at arch/mips/jz4770/setup.c.
-	 */
-}
 
 static void __init board_gpio_setup(void)
 {
@@ -515,6 +507,5 @@ void __init jz_board_setup(void)
 
 	printk("JZ4770 GCW0 board setup\n");
 //	jz_restart(NULL);
-	board_cpm_setup();
 	board_gpio_setup();
 }
