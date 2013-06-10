@@ -42,6 +42,7 @@
 #include <asm/time.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
+#include <asm/mach-jz4770/jz4770dmac.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770uart.h>
 

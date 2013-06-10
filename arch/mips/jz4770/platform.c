@@ -19,7 +19,7 @@
 
 #include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/dma.h>
-#include <asm/mach-jz4770/jz4770intc.h>
+#include <asm/mach-jz4770/irq.h>
 #include <asm/mach-jz4770/platform.h>
 
 

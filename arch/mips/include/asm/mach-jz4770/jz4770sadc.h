@@ -15,7 +15,6 @@
 
 
 #define	SADC_BASE	CKSEG1ADDR(JZ4770_SADC_BASE_ADDR)
-#define SADC_IRQ_NUM	6
 
 /*************************************************************************
  * SADC (Smart A/D Controller)

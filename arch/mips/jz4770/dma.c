@@ -31,6 +31,7 @@
 
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/jz4770aic.h>
+#include <asm/mach-jz4770/jz4770dmac.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770pcm.h>
 #include <asm/mach-jz4770/jz4770uart.h>
