@@ -9,12 +9,14 @@
 #ifndef __JZ4770INTC_H__
 #define __JZ4770INTC_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/jz4770sadc.h>
 
 
-#define	INTC_BASE	0xB0001000
+#define	INTC_BASE	CKSEG1ADDR(JZ4770_INTC_BASE_ADDR)
 
 /*************************************************************************
  * INTC (Interrupt Controller)

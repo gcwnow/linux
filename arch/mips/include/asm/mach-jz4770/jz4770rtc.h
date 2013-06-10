@@ -9,10 +9,12 @@
 #ifndef __JZ4770RTC_H__
 #define __JZ4770RTC_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
-#define	RTC_BASE	0xB0003000
+#define	RTC_BASE	CKSEG1ADDR(JZ4770_RTC_BASE_ADDR)
 
 /*************************************************************************
  * RTC

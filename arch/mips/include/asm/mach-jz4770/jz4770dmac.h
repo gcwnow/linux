@@ -9,10 +9,12 @@
 #ifndef __JZ4770DMAC_H__
 #define __JZ4770DMAC_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
-#define DMAC_BASE	0xB3420000
+#define DMAC_BASE	CKSEG1ADDR(JZ4770_DMAC_BASE_ADDR)
 
 
 /*************************************************************************

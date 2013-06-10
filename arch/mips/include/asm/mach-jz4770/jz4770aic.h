@@ -10,10 +10,12 @@
 #ifndef __CHIP_AIC_H__
 #define __CHIP_AIC_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
-#define	AIC_BASE	0xb0020000
+#define	AIC_BASE	CKSEG1ADDR(JZ4770_AIC_BASE_ADDR)
 
 #define AIC_FR		(AIC_BASE + 0x00)
 #define AIC_CR		(AIC_BASE + 0x04)
@@ -37,9 +39,9 @@
 #define SPDIF_CFG2	(AIC_BASE + 0x90)
 #define SPDIF_FIFO	(AIC_BASE + 0x94)
 
-#define ICDC_CKCFG	(0xb0020000 + 0xa0)
-#define ICDC_RGADW	(0xb0020000 + 0xa4)
-#define ICDC_RGDATA	(0xb0020000 + 0xa8)
+#define ICDC_CKCFG	(AIC_BASE + 0xa0)
+#define ICDC_RGADW	(AIC_BASE + 0xa4)
+#define ICDC_RGDATA	(AIC_BASE + 0xa8)
 
 
 /* AIC_FR definition */

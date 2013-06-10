@@ -23,6 +23,7 @@
 #include <linux/list.h>
 #include <linux/err.h>
 
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 
 #include "clock.h"
@@ -870,7 +871,7 @@ static int __init jz_clk_init(void)
 {
 	size_t i;
 
-	jz_clock_base = ioremap_nocache(CPHYSADDR(CPM_BASE), 0x100);
+	jz_clock_base = ioremap_nocache(JZ4770_CPM_BASE_ADDR, 0x100);
 	if (!jz_clock_base)
 		return -EBUSY;
 

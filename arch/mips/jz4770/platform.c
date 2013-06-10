@@ -17,18 +17,13 @@
 
 #include <linux/usb/musb.h>
 
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/dma.h>
-#include <asm/mach-jz4770/jz4770aic.h>
-#include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770intc.h>
-#include <asm/mach-jz4770/jz4770lcdc.h>
-#include <asm/mach-jz4770/jz4770otg.h>
-#include <asm/mach-jz4770/jz4770sadc.h>
 #include <asm/mach-jz4770/platform.h>
 
 
 /* OHCI (USB full speed host controller) */
-#define JZ4770_UHC_BASE_ADDR 0x13430000
 static struct resource jz_usb_ohci_resources[] = {
 	{
 		.start		= JZ4770_UHC_BASE_ADDR,
@@ -56,20 +51,20 @@ static struct platform_device jz_usb_ohci_device = {
 /*** LCD controller ***/
 static struct resource jz_lcd_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(LCD_BASE),
-		.end            = CPHYSADDR(LCD_BASE) + 0x13F,
+		.start          = JZ4770_LCD_BASE_ADDR,
+		.end            = JZ4770_LCD_BASE_ADDR + 0x13F,
 		.flags          = IORESOURCE_MEM,
 	},
 	{
 		.name           = "tve",
-		.start          = CPHYSADDR(LCD_BASE) + 0x140,
-		.end            = CPHYSADDR(LCD_BASE) + 0x1BF,
+		.start          = JZ4770_LCD_BASE_ADDR + 0x140,
+		.end            = JZ4770_LCD_BASE_ADDR + 0x1BF,
 		.flags          = IORESOURCE_MEM,
 	},
 	{
 		.name           = "part2",
-		.start          = CPHYSADDR(LCD_BASE) + 0x1C0,
-		.end            = CPHYSADDR(LCD_BASE) + 0x2FF,
+		.start          = JZ4770_LCD_BASE_ADDR + 0x1C0,
+		.end            = JZ4770_LCD_BASE_ADDR + 0x2FF,
 		.flags          = IORESOURCE_MEM,
 	},
 	{
@@ -114,8 +109,8 @@ static struct musb_hdrc_platform_data jz_usb_otg_platform_data = {
 
 static struct resource jz_usb_otg_resources[] = {
 	[0] = {
-		.start		= CPHYSADDR(UDC_BASE),
-		.end		= CPHYSADDR(UDC_BASE) + 0x10000 - 1,
+		.start		= JZ4770_UDC_BASE_ADDR,
+		.end		= JZ4770_UDC_BASE_ADDR + 0x10000 - 1,
 		.flags		= IORESOURCE_MEM,
 	},
 	[1] = {
@@ -141,26 +136,23 @@ static struct platform_device jz_usb_otg_device = {
 };
 
 /** MMC/SD/SDIO controllers**/
-#define	MSC0_BASE	0xB0021000
-#define	MSC1_BASE	0xB0022000
-#define	MSC2_BASE	0xB0023000
 
-#define JZ_MSC_PLATFORM_DEV(msc_id)				\
+#define JZ_MSC_PLATFORM_DEV(msc_id)					\
 	static struct resource jz_msc##msc_id##_resources[] = {		\
 		{							\
-			.start          = CPHYSADDR(MSC##msc_id##_BASE), \
-			.end            = CPHYSADDR(MSC##msc_id##_BASE) + 0x1000 - 1, \
-			.flags          = IORESOURCE_MEM,		\
+			.start	= JZ4770_MSC##msc_id##_BASE_ADDR,	\
+			.end	= JZ4770_MSC##msc_id##_BASE_ADDR + 0x1000 - 1, \
+			.flags	= IORESOURCE_MEM,			\
 		},							\
 		{							\
-			.start          = IRQ_MSC##msc_id,		\
-			.end            = IRQ_MSC##msc_id,		\
-			.flags          = IORESOURCE_IRQ,		\
+			.start	= IRQ_MSC##msc_id,			\
+			.end	= IRQ_MSC##msc_id,			\
+			.flags	= IORESOURCE_IRQ,			\
 		},							\
 		{							\
-			.start          = DMA_ID_MSC##msc_id,		\
-			.end            = DMA_ID_MSC##msc_id,		\
-			.flags          = IORESOURCE_DMA,		\
+			.start	= DMA_ID_MSC##msc_id,			\
+			.end	= DMA_ID_MSC##msc_id,			\
+			.flags	= IORESOURCE_DMA,			\
 		},							\
 	};								\
 									\
@@ -186,8 +178,8 @@ JZ_MSC_PLATFORM_DEV(2)
 /* I2S */
 static struct resource jz_i2s_resources[] = {
 	{
-		.start	= CPHYSADDR(AIC_BASE),
-		.end	= CPHYSADDR(AIC_BASE) + 0x38 - 1,
+		.start	= JZ4770_AIC_BASE_ADDR,
+		.end	= JZ4770_AIC_BASE_ADDR + 0x38 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 };
@@ -208,8 +200,8 @@ struct platform_device jz_pcm_device = {
 /* Codec */
 static struct resource jz_icdc_resources[] = {
 	{
-		.start	= CPHYSADDR(AIC_BASE) + 0xA0,
-		.end	= CPHYSADDR(AIC_BASE) + 0xB0 - 1,
+		.start	= JZ4770_AIC_BASE_ADDR + 0xA0,
+		.end	= JZ4770_AIC_BASE_ADDR + 0xB0 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 };
@@ -225,8 +217,8 @@ struct platform_device jz_icdc_device = {
 
 static struct resource jz_i2c0_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(I2C_BASE(0)),
-		.end            = CPHYSADDR(I2C_BASE(0)) + 0x1000 - 1,
+		.start          = JZ4770_I2C0_BASE_ADDR,
+		.end            = JZ4770_I2C0_BASE_ADDR + 0x1000 - 1,
 		.flags          = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -238,8 +230,8 @@ static struct resource jz_i2c0_resources[] = {
 
 static struct resource jz_i2c1_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(I2C_BASE(1)),
-		.end            = CPHYSADDR(I2C_BASE(1)) + 0x1000 - 1,
+		.start          = JZ4770_I2C1_BASE_ADDR,
+		.end            = JZ4770_I2C1_BASE_ADDR + 0x1000 - 1,
 		.flags          = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -251,8 +243,8 @@ static struct resource jz_i2c1_resources[] = {
 
 static struct resource jz_i2c2_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(I2C_BASE(2)),
-		.end            = CPHYSADDR(I2C_BASE(2)) + 0x1000 - 1,
+		.start          = JZ4770_I2C2_BASE_ADDR,
+		.end            = JZ4770_I2C2_BASE_ADDR + 0x1000 - 1,
 		.flags          = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -313,8 +305,8 @@ static struct platform_device rtc_device = {
 static struct resource jz_adc_resources[] = {
 	{
 		/* Assign only the shared registers to the MFD driver. */
-		.start	= CPHYSADDR(SADC_BASE),
-		.end	= CPHYSADDR(SADC_BASE) + 0x2F,
+		.start	= JZ4770_SADC_BASE_ADDR,
+		.end	= JZ4770_SADC_BASE_ADDR + 0x2F,
 		.flags	= IORESOURCE_MEM,
 	},
 	{

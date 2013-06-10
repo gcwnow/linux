@@ -9,10 +9,12 @@
 #ifndef __JZ4770TCU_H__
 #define __JZ4770TCU_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
-#define	TCU_BASE	0xB0002000
+#define	TCU_BASE	CKSEG1ADDR(JZ4770_TCU_BASE_ADDR)
 
 
 /*************************************************************************

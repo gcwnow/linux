@@ -9,6 +9,8 @@
 #ifndef __JZ4770GPIO_H__
 #define __JZ4770GPIO_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
@@ -226,7 +228,7 @@
 
 
 
-#define	GPIO_BASE	0xB0010000
+#define	GPIO_BASE	CKSEG1ADDR(JZ4770_GPIO_BASE_ADDR)
 
 /* GPIO group offset */
 #define GPIO_GOS	0x100

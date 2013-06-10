@@ -9,6 +9,8 @@
 #ifndef __JZ4770CPM_H__
 #define __JZ4770CPM_H__
 
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
 
@@ -22,7 +24,7 @@
 /*
  * Clock reset and power controller module(CPM) address definition
  */
-#define	CPM_BASE	0xb0000000
+#define	CPM_BASE	CKSEG1ADDR(JZ4770_CPM_BASE_ADDR)
 
 
 /*

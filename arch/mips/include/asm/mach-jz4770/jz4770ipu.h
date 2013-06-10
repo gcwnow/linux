@@ -9,16 +9,10 @@
 #ifndef __JZ4770IPU_H__
 #define __JZ4770IPU_H__
 
-#include <asm/mach-jz4770/jz4770misc.h>
-
-
-#define	IPU_BASE	0xB3080000
 
 /*************************************************************************
  * IPU (Image Processing Unit)
  *************************************************************************/
-#define IPU_V_BASE		0xB3080000
-#define IPU_P_BASE		0x13080000
 
 /* Register offset */
 #define REG_CTRL		0x0  /* IPU Control Register */
@@ -46,8 +40,6 @@
 #define REG_U_PHY_T_ADDR	0x58 /* Input U Physical Table Address Register */
 #define REG_V_PHY_T_ADDR	0x5c /* Input V Physical Table Address Register */
 #define REG_OUT_PHY_T_ADDR	0x60 /* Output Physical Table Address Register */
-
-#define REG_IPU_CTRL REG32(IPU_V_BASE + REG_CTRL)
 
 /* REG_CTRL: IPU Control Register */
 #define IPU_CE_SFT	0x0

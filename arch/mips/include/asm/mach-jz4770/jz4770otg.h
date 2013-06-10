@@ -9,13 +9,13 @@
 #ifndef __JZ4770OTG_H__
 #define __JZ4770OTG_H__
 
-
-#define UDC_BASE	0xB3440000
+#include <asm/addrspace.h>
+#include <asm/mach-jz4770/base.h>
 
 /*************************************************************************
  * USB Device
  *************************************************************************/
-#define USB_BASE  UDC_BASE
+#define USB_BASE		CKSEG1ADDR(JZ4770_UDC_BASE_ADDR)
 
 #define USB_REG_FADDR		(USB_BASE + 0x00) /* Function Address 8-bit */
 #define USB_REG_POWER		(USB_BASE + 0x01) /* Power Managemetn 8-bit */
