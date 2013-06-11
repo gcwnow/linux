@@ -25,12 +25,15 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 
-#include <asm/mach-jz4740/timer.h>
-
 #define JZ_REG_WDT_TIMER_DATA     0x0
 #define JZ_REG_WDT_COUNTER_ENABLE 0x4
 #define JZ_REG_WDT_TIMER_COUNTER  0x8
 #define JZ_REG_WDT_TIMER_CONTROL  0xC
+
+#define JZ_REG_TCU_TIMER_STOP_SET	0x2c
+#define JZ_REG_TCU_TIMER_STOP_CLEAR	0x3c
+
+#define JZ_TCU_TIMER_WDT BIT(16)
 
 #define JZ_WDT_CLOCK_PCLK 0x1
 #define JZ_WDT_CLOCK_RTC  0x2
@@ -113,7 +116,10 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 
 static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
 {
-	jz4740_timer_enable_watchdog();
+	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
+
+	unsigned int reg = readw(drvdata->base + JZ_REG_TCU_TIMER_STOP_CLEAR);
+	writew(reg & JZ_TCU_TIMER_WDT, drvdata->base + JZ_REG_TCU_TIMER_STOP_CLEAR);
 	jz4740_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
 
 	return 0;
@@ -123,7 +129,8 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
-	jz4740_timer_disable_watchdog();
+	unsigned int reg = readw(drvdata->base + JZ_REG_TCU_TIMER_STOP_SET);
+	writew(reg & JZ_TCU_TIMER_WDT, drvdata->base + JZ_REG_TCU_TIMER_STOP_SET);
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 
 	return 0;
