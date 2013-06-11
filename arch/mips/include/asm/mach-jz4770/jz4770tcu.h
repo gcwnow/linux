@@ -20,50 +20,50 @@
 /*************************************************************************
  * TCU (Timer Counter Unit)
  *************************************************************************/
-#define TCU_TSTR	(TCU_BASE + 0xF0) /* Timer Status Register,Only Used In Tcu2 Mode */
-#define TCU_TSTSR	(TCU_BASE + 0xF4) /* Timer Status Set Register */
-#define TCU_TSTCR	(TCU_BASE + 0xF8) /* Timer Status Clear Register */
-#define TCU_TSR		(TCU_BASE + 0x1C) /* Timer Stop Register */
-#define TCU_TSSR	(TCU_BASE + 0x2C) /* Timer Stop Set Register */
-#define TCU_TSCR	(TCU_BASE + 0x3C) /* Timer Stop Clear Register */
-#define TCU_TER		(TCU_BASE + 0x10) /* Timer Counter Enable Register */
-#define TCU_TESR	(TCU_BASE + 0x14) /* Timer Counter Enable Set Register */
-#define TCU_TECR	(TCU_BASE + 0x18) /* Timer Counter Enable Clear Register */
-#define TCU_TFR		(TCU_BASE + 0x20) /* Timer Flag Register */
-#define TCU_TFSR	(TCU_BASE + 0x24) /* Timer Flag Set Register */
-#define TCU_TFCR	(TCU_BASE + 0x28) /* Timer Flag Clear Register */
-#define TCU_TMR		(TCU_BASE + 0x30) /* Timer Mask Register */
-#define TCU_TMSR	(TCU_BASE + 0x34) /* Timer Mask Set Register */
-#define TCU_TMCR	(TCU_BASE + 0x38) /* Timer Mask Clear Register */
+#define TCU_TSTR	(TCU_BASE + 0xE0) /* Timer Status Register,Only Used In Tcu2 Mode */
+#define TCU_TSTSR	(TCU_BASE + 0xE4) /* Timer Status Set Register */
+#define TCU_TSTCR	(TCU_BASE + 0xE8) /* Timer Status Clear Register */
+#define TCU_TSR		(TCU_BASE + 0x0C) /* Timer Stop Register */
+#define TCU_TSSR	(TCU_BASE + 0x1C) /* Timer Stop Set Register */
+#define TCU_TSCR	(TCU_BASE + 0x2C) /* Timer Stop Clear Register */
+#define TCU_TER		(TCU_BASE + 0x00) /* Timer Counter Enable Register */
+#define TCU_TESR	(TCU_BASE + 0x04) /* Timer Counter Enable Set Register */
+#define TCU_TECR	(TCU_BASE + 0x08) /* Timer Counter Enable Clear Register */
+#define TCU_TFR		(TCU_BASE + 0x10) /* Timer Flag Register */
+#define TCU_TFSR	(TCU_BASE + 0x14) /* Timer Flag Set Register */
+#define TCU_TFCR	(TCU_BASE + 0x18) /* Timer Flag Clear Register */
+#define TCU_TMR		(TCU_BASE + 0x20) /* Timer Mask Register */
+#define TCU_TMSR	(TCU_BASE + 0x24) /* Timer Mask Set Register */
+#define TCU_TMCR	(TCU_BASE + 0x28) /* Timer Mask Clear Register */
 
-#define TCU_TDFR0	(TCU_BASE + 0x40) /* Timer Data Full Register */
-#define TCU_TDHR0	(TCU_BASE + 0x44) /* Timer Data Half Register */
-#define TCU_TCNT0	(TCU_BASE + 0x48) /* Timer Counter Register */
-#define TCU_TCSR0	(TCU_BASE + 0x4C) /* Timer Control Register */
-#define TCU_TDFR1	(TCU_BASE + 0x50)
-#define TCU_TDHR1	(TCU_BASE + 0x54)
-#define TCU_TCNT1	(TCU_BASE + 0x58)
-#define TCU_TCSR1	(TCU_BASE + 0x5C)
-#define TCU_TDFR2	(TCU_BASE + 0x60)
-#define TCU_TDHR2	(TCU_BASE + 0x64)
-#define TCU_TCNT2	(TCU_BASE + 0x68)
-#define TCU_TCSR2	(TCU_BASE + 0x6C)
-#define TCU_TDFR3	(TCU_BASE + 0x70)
-#define TCU_TDHR3	(TCU_BASE + 0x74)
-#define TCU_TCNT3	(TCU_BASE + 0x78)
-#define TCU_TCSR3	(TCU_BASE + 0x7C)
-#define TCU_TDFR4	(TCU_BASE + 0x80)
-#define TCU_TDHR4	(TCU_BASE + 0x84)
-#define TCU_TCNT4	(TCU_BASE + 0x88)
-#define TCU_TCSR4	(TCU_BASE + 0x8C)
-#define TCU_TDFR5	(TCU_BASE + 0x90)
-#define TCU_TDHR5	(TCU_BASE + 0x94)
-#define TCU_TCNT5	(TCU_BASE + 0x98)
-#define TCU_TCSR5	(TCU_BASE + 0x9C)
+#define TCU_TDFR0	(TCU_BASE + 0x30) /* Timer Data Full Register */
+#define TCU_TDHR0	(TCU_BASE + 0x34) /* Timer Data Half Register */
+#define TCU_TCNT0	(TCU_BASE + 0x38) /* Timer Counter Register */
+#define TCU_TCSR0	(TCU_BASE + 0x3C) /* Timer Control Register */
+#define TCU_TDFR1	(TCU_BASE + 0x40)
+#define TCU_TDHR1	(TCU_BASE + 0x44)
+#define TCU_TCNT1	(TCU_BASE + 0x48)
+#define TCU_TCSR1	(TCU_BASE + 0x4C)
+#define TCU_TDFR2	(TCU_BASE + 0x50)
+#define TCU_TDHR2	(TCU_BASE + 0x54)
+#define TCU_TCNT2	(TCU_BASE + 0x58)
+#define TCU_TCSR2	(TCU_BASE + 0x5C)
+#define TCU_TDFR3	(TCU_BASE + 0x60)
+#define TCU_TDHR3	(TCU_BASE + 0x64)
+#define TCU_TCNT3	(TCU_BASE + 0x68)
+#define TCU_TCSR3	(TCU_BASE + 0x6C)
+#define TCU_TDFR4	(TCU_BASE + 0x70)
+#define TCU_TDHR4	(TCU_BASE + 0x74)
+#define TCU_TCNT4	(TCU_BASE + 0x78)
+#define TCU_TCSR4	(TCU_BASE + 0x7C)
+#define TCU_TDFR5	(TCU_BASE + 0x80)
+#define TCU_TDHR5	(TCU_BASE + 0x84)
+#define TCU_TCNT5	(TCU_BASE + 0x88)
+#define TCU_TCSR5	(TCU_BASE + 0x8C)
 ///////////////////////////////////////////new register for jz4810
-#define TCU_MOD(n)	(TCU_BASE + 0x100 + ((n) ? (((n) - 2) * 0x10) : 0x0))
-#define TCU_TFWD(n)	(TCU_BASE + 0x104 + ((n) ? (((n) - 2) * 0x10) : 0x0))
-#define TCU_TFIFOSR(n)	(TCU_BASE + 0x108 + ((n) ? (((n) - 2) * 0x10) : 0x0))
+#define TCU_MOD(n)	(TCU_BASE + 0xF0 + ((n) ? (((n) - 2) * 0x10) : 0x0))
+#define TCU_TFWD(n)	(TCU_BASE + 0xF4 + ((n) ? (((n) - 2) * 0x10) : 0x0))
+#define TCU_TFIFOSR(n)	(TCU_BASE + 0xF8 + ((n) ? (((n) - 2) * 0x10) : 0x0))
 
 #define REG_TCU_TSTR	REG32(TCU_TSTR)
 #define REG_TCU_TSTSR	REG32(TCU_TSTSR)
@@ -106,13 +106,13 @@
 #define REG_TCU_TFIFOSR(n)	REG32(TCU_TFIFOSR((n)))
 
 // n = 0,1,2,3,4,5
-#define TCU_TDFR(n)	(TCU_BASE + (0x40 + (n)*0x10)) /* Timer Data Full Reg */
-#define TCU_TDHR(n)	(TCU_BASE + (0x44 + (n)*0x10)) /* Timer Data Half Reg */
-#define TCU_TCNT(n)	(TCU_BASE + (0x48 + (n)*0x10)) /* Timer Counter Reg */
-#define TCU_TCSR(n)	(TCU_BASE + (0x4C + (n)*0x10)) /* Timer Control Reg */
-#define TCU_OSTDR	(TCU_BASE + 0xe0) /* Operating System Timer Data Reg */
-#define TCU_OSTCNT	(TCU_BASE + 0xe4) /* Operating System Timer Counter Reg */
-#define TCU_OSTCSR	(TCU_BASE + 0xeC) /* Operating System Timer Control Reg */
+#define TCU_TDFR(n)	(TCU_BASE + (0x30 + (n)*0x10)) /* Timer Data Full Reg */
+#define TCU_TDHR(n)	(TCU_BASE + (0x34 + (n)*0x10)) /* Timer Data Half Reg */
+#define TCU_TCNT(n)	(TCU_BASE + (0x38 + (n)*0x10)) /* Timer Counter Reg */
+#define TCU_TCSR(n)	(TCU_BASE + (0x3C + (n)*0x10)) /* Timer Control Reg */
+#define TCU_OSTDR	(TCU_BASE + 0xD0) /* Operating System Timer Data Reg */
+#define TCU_OSTCNT	(TCU_BASE + 0xD4) /* Operating System Timer Counter Reg */
+#define TCU_OSTCSR	(TCU_BASE + 0xDC) /* Operating System Timer Control Reg */
 
 #define REG_TCU_TDFR(n)	REG16(TCU_TDFR((n)))
 #define REG_TCU_TDHR(n)	REG16(TCU_TDHR((n)))

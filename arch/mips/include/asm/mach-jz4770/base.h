@@ -4,9 +4,8 @@
 /* APB devices */
 #define JZ4770_CPM_BASE_ADDR	0x10000000
 #define JZ4770_INTC_BASE_ADDR	0x10001000
-// TODO: The JZ4740 code puts the TCU base 0x10 higher,
-//       since the first registers are exclusive to the WDT.
-#define JZ4770_TCU_BASE_ADDR	0x10002000
+#define JZ4770_WDT_BASE_ADDR	0x10002000
+#define JZ4770_TCU_BASE_ADDR	0x10002010
 #define JZ4770_RTC_BASE_ADDR	0x10003000
 #define	JZ4770_GPIO_BASE_ADDR	0x10010000
 #define JZ4770_AIC_BASE_ADDR	0x10020000
