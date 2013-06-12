@@ -24,6 +24,7 @@
 #include <linux/i2c-gpio.h>
 #include <linux/input.h>
 #include <linux/gpio_keys.h>
+#include <linux/leds.h>
 #include <linux/platform_device.h>
 #include <linux/pwm_backlight.h>
 
@@ -457,6 +458,30 @@ struct jz_clk_board_data jz_clk_bdata = {
 	.pll1_rate	=  432000000,
 };
 
+/* Power LED */
+
+static struct gpio_led gcw0_leds[] = {
+	{
+		.name = "power",
+		.gpio = GPB(30),
+		.active_low = 1,
+		.default_state = LEDS_GPIO_DEFSTATE_ON,
+	},
+};
+
+static struct gpio_led_platform_data gcw0_led_pdata = {
+	.leds = gcw0_leds,
+	.num_leds = ARRAY_SIZE(gcw0_leds),
+};
+
+struct platform_device jz_led_device = {
+	.name = "leds-gpio",
+	.id = -1,
+	.dev = {
+		.platform_data = &gcw0_led_pdata,
+	},
+};
+
 
 /* Device registration */
 
@@ -473,6 +498,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_audio_device,
 	&jz_msc0_device,
 	&jz_msc1_device,
+	&jz_led_device,
 };
 
 void __init board_pdata_init(void)
