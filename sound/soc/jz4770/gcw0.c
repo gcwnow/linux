@@ -26,12 +26,12 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 
-#include <asm/mach-jz4770/jz4770gpio.h>
+#include <asm/mach-jz4770/gpio.h>
 
 
-#define GCW0_AVOUT_DETECT_GPIO	GPF(21)
-#define GCW0_AVOUT_GPIO		GPF(3)
-#define GCW0_SPEAKER_GPIO	GPF(20)
+#define GCW0_AVOUT_DETECT_GPIO	JZ_GPIO_PORTF(21)
+#define GCW0_AVOUT_GPIO		JZ_GPIO_PORTF(3)
+#define GCW0_SPEAKER_GPIO	JZ_GPIO_PORTF(20)
 
 
 /* AV-out jack: plug insert detection */
@@ -192,7 +192,7 @@ static int gcw0_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	__gpio_disable_pull(GCW0_AVOUT_DETECT_GPIO);
+	jz_gpio_disable_pullup(GCW0_AVOUT_DETECT_GPIO);
 	gpio_direction_output(GCW0_AVOUT_GPIO, 1);
 	gpio_direction_output(GCW0_SPEAKER_GPIO, 0);
 
