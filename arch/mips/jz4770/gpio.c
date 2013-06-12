@@ -24,7 +24,9 @@
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
+#include <linux/export.h>
 
+#include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 
@@ -123,6 +125,18 @@ static int jz4770_gpiolib_output(struct gpio_chip *chip,
 	local_irq_restore(flags);
 	return 0;
 }
+
+void jz_gpio_enable_pullup(unsigned gpio)
+{
+	__gpio_enable_pull(gpio);
+}
+EXPORT_SYMBOL_GPL(jz_gpio_enable_pullup);
+
+void jz_gpio_disable_pullup(unsigned gpio)
+{
+	__gpio_disable_pull(gpio);
+}
+EXPORT_SYMBOL_GPL(jz_gpio_disable_pullup);
 
 int gpio_to_irq(unsigned gpio)
 {
