@@ -120,8 +120,4 @@ config MUSB_PIO_ONLY
 
 endchoice
 
-config USB_MUSB_PERIPHERAL_HOTPLUG
-	bool "Support Ingenic USB Device Controller Hotplug"
-	depends on USB_MUSB_JZ4770
-
 endif # USB_MUSB_HDRC
