@@ -7,13 +7,3 @@ config JZ4770_GCW0
 	bool "GCW Zero handheld game/media player"
 
 endchoice
-
-config JZ4770_PROC_JZ
-	bool "Enable /proc/jz directory"
-	depends on PROC_FS
-	help
-	  Enable additional debug and control facilities through a subdirectory
-	  in the proc file system.
-
-	  Use of these custom interfaces is discouraged, but might be useful
-	  during the development of non-custom alternatives.
