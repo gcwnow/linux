@@ -20,7 +20,6 @@
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 
 #include "musb_core.h"
