@@ -288,10 +288,27 @@ static struct jz_battery_platform_data gcw0_battery_pdata = {
 
 /* Charger */
 
+#define GPIO_DC_CHARGER		GPF(5)
 #define GPIO_USB_CHARGER	GPB(5)
 
 static char *gcw0_batteries[] = {
 	"battery",
+};
+
+static struct gpio_charger_platform_data gcw0_dc_charger_pdata = {
+	.name = "dc",
+	.type = POWER_SUPPLY_TYPE_MAINS,
+	.gpio = GPIO_DC_CHARGER,
+	.supplied_to = gcw0_batteries,
+	.num_supplicants = ARRAY_SIZE(gcw0_batteries),
+};
+
+static struct platform_device gcw0_dc_charger_device = {
+	.name = "gpio-charger",
+	.id = 0,
+	.dev = {
+		.platform_data = &gcw0_dc_charger_pdata,
+	},
 };
 
 static struct gpio_charger_platform_data gcw0_usb_charger_pdata = {
@@ -304,6 +321,7 @@ static struct gpio_charger_platform_data gcw0_usb_charger_pdata = {
 
 static struct platform_device gcw0_usb_charger_device = {
 	.name = "gpio-charger",
+	.id = 1,
 	.dev = {
 		.platform_data = &gcw0_usb_charger_pdata,
 	},
@@ -506,6 +524,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_msc0_device,
 	&jz_msc1_device,
 	&jz_led_device,
+	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 };
 
@@ -544,13 +563,15 @@ static void __init board_gpio_setup(void)
 	/* WiFi enable (low active) */
 	__gpio_as_output0(GPF(10));
 
+	/* DC power source present (high active) */
+	__gpio_disable_pull(GPIO_DC_CHARGER);
+
 	/* USB power source present (high active) */
 	__gpio_disable_pull(GPIO_USB_CHARGER);
 
 	/* TODO(MtH): Figure out the purpose of these pins. */
 	__gpio_as_output0(GPB(28));
 	__gpio_as_output1(GPE(8));
-	__gpio_disable_pull(GPF(5));
 }
 
 void __init jz_board_setup(void)
