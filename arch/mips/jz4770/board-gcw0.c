@@ -499,7 +499,7 @@ static struct gpio_led_platform_data gcw0_led_pdata = {
 	.num_leds = ARRAY_SIZE(gcw0_leds),
 };
 
-struct platform_device jz_led_device = {
+struct platform_device gcw0_led_device = {
 	.name = "leds-gpio",
 	.id = -1,
 	.dev = {
@@ -511,42 +511,53 @@ struct platform_device jz_led_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-#if !defined(CONFIG_I2C_JZ4770)
+	&jz4770_usb_ohci_device,
+	&jz4770_usb_otg_xceiv_device,
+	&jz4770_usb_otg_device,
+	&jz4770_lcd_device,
+	&jz4770_i2s_device,
+	&jz4770_pcm_device,
+	&jz4770_icdc_device,
+#if defined(CONFIG_I2C_JZ4770)
+	&jz4770_i2c0_device,
+	&jz4770_i2c1_device,
+	&jz4770_i2c2_device,
+#else
 	&gcw0_i2c0_gpio_device,
 	&gcw0_i2c1_gpio_device,
 	&gcw0_i2c2_gpio_device,
 #endif
 	&gcw0_i2c3_gpio_device,
 	&gcw0_i2c4_gpio_device,
+	&jz4770_pwm_device,
+	&jz4770_adc_device,
+	&jz4770_rtc_device,
 	&gcw0_gpio_keys_device,
 	&gcw0_backlight_device,
 	&gcw0_audio_device,
-	&jz_msc0_device,
-	&jz_msc1_device,
-	&jz_led_device,
+	&jz4770_msc0_device,
+	&jz4770_msc1_device,
+	&gcw0_led_device,
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 };
 
-void __init board_pdata_init(void)
+static int __init gcw0_init_platform_devices(void)
 {
-	jz_lcd_device.dev.platform_data = &gcw0_fb_pdata;
-	jz_adc_device.dev.platform_data = &gcw0_battery_pdata;
-	jz_msc0_device.dev.platform_data = &gcw_internal_sd_data;
-	jz_msc1_device.dev.platform_data = &gcw_external_sd_data;
+	jz4770_lcd_device.dev.platform_data = &gcw0_fb_pdata;
+	jz4770_adc_device.dev.platform_data = &gcw0_battery_pdata;
+	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
+	jz4770_msc1_device.dev.platform_data = &gcw_external_sd_data;
+
+	return platform_add_devices(jz_platform_devices,
+				    ARRAY_SIZE(jz_platform_devices));
 }
 
-void __init board_devices_init(void)
+static void __init board_i2c_init(void)
 {
-	platform_add_devices(jz_platform_devices,
-					ARRAY_SIZE(jz_platform_devices));
-}
-
-
-void __init board_i2c_init(void) {
-	jz_i2c0_device.dev.platform_data = &gcw0_i2c0_platform_data;
-	jz_i2c1_device.dev.platform_data = &gcw0_i2c1_platform_data;
-	jz_i2c2_device.dev.platform_data = &gcw0_i2c2_platform_data;
+	jz4770_i2c0_device.dev.platform_data = &gcw0_i2c0_platform_data;
+	jz4770_i2c1_device.dev.platform_data = &gcw0_i2c1_platform_data;
+	jz4770_i2c2_device.dev.platform_data = &gcw0_i2c2_platform_data;
 
 	i2c_register_board_info(0, gcw0_i2c0_devs, ARRAY_SIZE(gcw0_i2c0_devs));
 	i2c_register_board_info(1, gcw0_i2c1_devs, ARRAY_SIZE(gcw0_i2c1_devs));
@@ -570,10 +581,17 @@ static void __init board_gpio_setup(void)
 	__gpio_disable_pull(GPIO_USB_CHARGER);
 }
 
-void __init jz_board_setup(void)
+static int __init gcw0_board_setup(void)
 {
+	printk(KERN_INFO "GCW Zero JZ4770 setup\n");
 
-	printk("JZ4770 GCW0 board setup\n");
-//	jz_restart(NULL);
 	board_gpio_setup();
+	board_i2c_init();
+
+	if (gcw0_init_platform_devices())
+		panic("Failed to initialize platform devices");
+
+	return 0;
 }
+
+arch_initcall(gcw0_board_setup);
