@@ -35,6 +35,7 @@
 
 #include <linux/mmc/host.h>
 #include <linux/act8600_power.h>
+#include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
 #include <media/radio-rda5807.h>
 #include <video/jzpanel.h>
@@ -247,24 +248,6 @@ struct jz_mmc_platform_data gcw_external_sd_data = {
 };
 
 
-static void __init board_gpio_setup(void)
-{
-	/* SELECT button */
-	__gpio_disable_pull(GPD(18));
-
-	/* WiFi enable (low active) */
-	__gpio_as_output0(GPF(10));
-
-	/* USB plug inserted (high active) */
-	__gpio_disable_pull(GPB(5));
-
-	/* TODO(MtH): Figure out the purpose of these pins. */
-	__gpio_as_output0(GPB(28));
-	__gpio_as_output1(GPE(8));
-	__gpio_disable_pull(GPF(5));
-}
-
-
 /* FM radio receiver */
 
 static struct rda5807_platform_data gcw0_rda5807_pdata = {
@@ -299,6 +282,30 @@ static struct jz_battery_platform_data gcw0_battery_pdata = {
 		.technology = POWER_SUPPLY_TECHNOLOGY_LIPO,
 		.voltage_max_design = 5700000,
 		.voltage_min_design = 4600000,
+	},
+};
+
+
+/* Charger */
+
+#define GPIO_USB_CHARGER	GPB(5)
+
+static char *gcw0_batteries[] = {
+	"battery",
+};
+
+static struct gpio_charger_platform_data gcw0_usb_charger_pdata = {
+	.name = "usb",
+	.type = POWER_SUPPLY_TYPE_USB,
+	.gpio = GPIO_USB_CHARGER,
+	.supplied_to = gcw0_batteries,
+	.num_supplicants = ARRAY_SIZE(gcw0_batteries),
+};
+
+static struct platform_device gcw0_usb_charger_device = {
+	.name = "gpio-charger",
+	.dev = {
+		.platform_data = &gcw0_usb_charger_pdata,
 	},
 };
 
@@ -499,6 +506,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_msc0_device,
 	&jz_msc1_device,
 	&jz_led_device,
+	&gcw0_usb_charger_device,
 };
 
 void __init board_pdata_init(void)
@@ -526,6 +534,23 @@ void __init board_i2c_init(void) {
 	i2c_register_board_info(2, gcw0_i2c2_devs, ARRAY_SIZE(gcw0_i2c2_devs));
 	i2c_register_board_info(3, gcw0_i2c3_devs, ARRAY_SIZE(gcw0_i2c3_devs));
 	i2c_register_board_info(4, gcw0_i2c4_devs, ARRAY_SIZE(gcw0_i2c4_devs));
+}
+
+static void __init board_gpio_setup(void)
+{
+	/* SELECT button */
+	__gpio_disable_pull(GPD(18));
+
+	/* WiFi enable (low active) */
+	__gpio_as_output0(GPF(10));
+
+	/* USB power source present (high active) */
+	__gpio_disable_pull(GPIO_USB_CHARGER);
+
+	/* TODO(MtH): Figure out the purpose of these pins. */
+	__gpio_as_output0(GPB(28));
+	__gpio_as_output1(GPE(8));
+	__gpio_disable_pull(GPF(5));
 }
 
 void __init jz_board_setup(void)
