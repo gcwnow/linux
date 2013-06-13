@@ -198,7 +198,6 @@ void __init plat_mem_setup(void)
 
 	jz_soc_setup();
 	jz_serial_setup();
-	jz_board_setup();
 
 #ifdef CONFIG_PM
 	jz_pm_init();

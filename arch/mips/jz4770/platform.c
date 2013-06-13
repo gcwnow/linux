@@ -37,11 +37,11 @@ static struct resource jz_usb_ohci_resources[] = {
 	},
 };
 
-static struct platform_device jz_usb_ohci_device = {
+struct platform_device jz4770_usb_ohci_device = {
 	.name		= "jz4770-ohci",
 	.id		= -1,
 	.dev = {
-		.dma_mask = &jz_usb_ohci_device.dev.coherent_dma_mask,
+		.dma_mask = &jz4770_usb_ohci_device.dev.coherent_dma_mask,
 		.coherent_dma_mask = DMA_BIT_MASK(32),
 	},
 	.num_resources	= ARRAY_SIZE(jz_usb_ohci_resources),
@@ -76,7 +76,7 @@ static struct resource jz_lcd_resources[] = {
 
 static u64 jz_lcd_dmamask = ~(u32)0;
 
-struct platform_device jz_lcd_device = {
+struct platform_device jz4770_lcd_device = {
 	.name           = "jz-lcd",
 	.id             = 0,
 	.dev = {
@@ -88,7 +88,7 @@ struct platform_device jz_lcd_device = {
 };
 
 /* USB OTG Controller */
-static struct platform_device jz_usb_otg_xceiv_device = {
+struct platform_device jz4770_usb_otg_xceiv_device = {
 	.name	= "nop_usb_xceiv",
 	.id	= 0,
 };
@@ -123,7 +123,7 @@ static struct resource jz_usb_otg_resources[] = {
 
 static u64  usb_otg_dmamask = ~(u32)0;
 
-static struct platform_device jz_usb_otg_device = {
+struct platform_device jz4770_usb_otg_device = {
 	.name	= "musb-jz",
 	.id	= 0,
 	.dev = {
@@ -138,7 +138,7 @@ static struct platform_device jz_usb_otg_device = {
 /** MMC/SD/SDIO controllers**/
 
 #define JZ_MSC_PLATFORM_DEV(msc_id)					\
-	static struct resource jz_msc##msc_id##_resources[] = {		\
+	static struct resource jz4770_msc##msc_id##_resources[] = {		\
 		{							\
 			.start	= JZ4770_MSC##msc_id##_BASE_ADDR,	\
 			.end	= JZ4770_MSC##msc_id##_BASE_ADDR + 0x1000 - 1, \
@@ -156,17 +156,17 @@ static struct platform_device jz_usb_otg_device = {
 		},							\
 	};								\
 									\
-	static u64 jz_msc##msc_id##_dmamask =  ~(u32)0;			\
+	static u64 jz4770_msc##msc_id##_dmamask =  ~(u32)0;			\
 									\
-	struct platform_device jz_msc##msc_id##_device = {		\
+	struct platform_device jz4770_msc##msc_id##_device = {		\
 		.name = "jz-msc",					\
 		.id = msc_id,						\
 		.dev = {						\
-			.dma_mask               = &jz_msc##msc_id##_dmamask, \
+			.dma_mask               = &jz4770_msc##msc_id##_dmamask, \
 			.coherent_dma_mask      = 0xffffffff,		\
 		},							\
-		.num_resources  = ARRAY_SIZE(jz_msc##msc_id##_resources), \
-		.resource       = jz_msc##msc_id##_resources,		\
+		.num_resources  = ARRAY_SIZE(jz4770_msc##msc_id##_resources), \
+		.resource       = jz4770_msc##msc_id##_resources,		\
 	};
 
 JZ_MSC_PLATFORM_DEV(0)
@@ -184,7 +184,7 @@ static struct resource jz_i2s_resources[] = {
 	},
 };
 
-struct platform_device jz_i2s_device = {
+struct platform_device jz4770_i2s_device = {
 	.name		= "jz4770-i2s",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(jz_i2s_resources),
@@ -192,7 +192,7 @@ struct platform_device jz_i2s_device = {
 };
 
 /* PCM */
-struct platform_device jz_pcm_device = {
+struct platform_device jz4770_pcm_device = {
 	.name		= "jz4770-pcm-audio",
 	.id		= -1,
 };
@@ -206,7 +206,7 @@ static struct resource jz_icdc_resources[] = {
 	},
 };
 
-struct platform_device jz_icdc_device = {
+struct platform_device jz4770_icdc_device = {
 	.name		= "jz4770-icdc",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(jz_icdc_resources),
@@ -256,7 +256,7 @@ static struct resource jz_i2c2_resources[] = {
 
 static u64 jz_i2c_dmamask =  ~(u32)0;
 
-struct platform_device jz_i2c0_device = {
+struct platform_device jz4770_i2c0_device = {
 	.name = "i2c-jz4770",
 	.id = 0,
 	.dev = {
@@ -267,7 +267,7 @@ struct platform_device jz_i2c0_device = {
 	.resource       = jz_i2c0_resources,
 };
 
-struct platform_device jz_i2c1_device = {
+struct platform_device jz4770_i2c1_device = {
 	.name = "i2c-jz4770",
 	.id = 1,
 	.dev = {
@@ -278,7 +278,7 @@ struct platform_device jz_i2c1_device = {
 	.resource       = jz_i2c1_resources,
 };
 
-struct platform_device jz_i2c2_device = {
+struct platform_device jz4770_i2c2_device = {
 	.name = "i2c-jz4770",
 	.id = 2,
 	.dev = {
@@ -290,18 +290,21 @@ struct platform_device jz_i2c2_device = {
 };
 
 /* PWM */
-static struct platform_device jz_pwm_device = {
+
+struct platform_device jz4770_pwm_device = {
 	.name = "jz4770-pwm",
 	.id   = -1,
 };
 
 /* RTC */
-static struct platform_device rtc_device = {
+
+struct platform_device jz4770_rtc_device = {
 	.name		= "jz4770-rtc",
 	.id		= -1,
 };
 
 /* ADC controller */
+
 static struct resource jz_adc_resources[] = {
 	{
 		/* Assign only the shared registers to the MFD driver. */
@@ -321,46 +324,9 @@ static struct resource jz_adc_resources[] = {
 	},
 };
 
-struct platform_device jz_adc_device = {
+struct platform_device jz4770_adc_device = {
 	.name		= "jz4770-adc",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(jz_adc_resources),
 	.resource	= jz_adc_resources,
 };
-
-/* All */
-static struct platform_device *jz_platform_devices[] __initdata = {
-	&jz_usb_ohci_device,
-	&jz_usb_otg_xceiv_device,
-	&jz_usb_otg_device,
-	&jz_lcd_device,
-	&jz_i2s_device,
-	&jz_pcm_device,
-	&jz_icdc_device,
-	/*
-	 * All three I2C devices are listed, but they will only be instantiated
-	 * if the corresponding platform data is set by board_i2c_init().
-	 */
-	&jz_i2c0_device,
-	&jz_i2c1_device,
-	&jz_i2c2_device,
-	&jz_pwm_device,
-	&jz_adc_device,
-	&rtc_device,
-};
-
-static int __init jz_platform_init(void)
-{
-	int ret;
-
-	board_i2c_init();
-	board_pdata_init();
-	ret = platform_add_devices(jz_platform_devices,
-				   ARRAY_SIZE(jz_platform_devices));
-	board_devices_init();
-
-	printk("jz_platform_init\n");
-	return ret;
-}
-
-arch_initcall(jz_platform_init);
