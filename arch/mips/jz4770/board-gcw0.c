@@ -568,10 +568,6 @@ static void __init board_gpio_setup(void)
 
 	/* USB power source present (high active) */
 	__gpio_disable_pull(GPIO_USB_CHARGER);
-
-	/* TODO(MtH): Figure out the purpose of these pins. */
-	__gpio_as_output0(GPB(28));
-	__gpio_as_output1(GPE(8));
 }
 
 void __init jz_board_setup(void)
