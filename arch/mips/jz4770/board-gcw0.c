@@ -37,6 +37,8 @@
 #include <linux/act8600_power.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
+#include <linux/regulator/fixed.h>
+#include <linux/regulator/machine.h>
 #include <media/radio-rda5807.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
@@ -328,6 +330,39 @@ static struct platform_device gcw0_usb_charger_device = {
 };
 
 
+/* USB 1.1 Host (OHCI) */
+
+static struct regulator_consumer_supply gcw0_internal_usb_regulator_consumer =
+	REGULATOR_SUPPLY("vbus", "jz4770-ohci");
+
+static struct regulator_init_data gcw0_internal_usb_regulator_init_data = {
+	.num_consumer_supplies = 1,
+	.consumer_supplies = &gcw0_internal_usb_regulator_consumer,
+	.constraints = {
+		.name = "USB power",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.valid_modes_mask = REGULATOR_MODE_NORMAL,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+};
+
+static struct fixed_voltage_config gcw0_internal_usb_regulator_data = {
+	.supply_name = "USB power",
+	.microvolts = 3300000,
+	.gpio = GPF(10),
+	.init_data = &gcw0_internal_usb_regulator_init_data,
+};
+
+static struct platform_device gcw0_internal_usb_regulator_device = {
+	.name = "reg-fixed-voltage",
+	.id = -1,
+	.dev = {
+		.platform_data = &gcw0_internal_usb_regulator_data,
+	}
+};
+
+
 /* I2C devices */
 
 static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
@@ -511,6 +546,7 @@ struct platform_device gcw0_led_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
+	&gcw0_internal_usb_regulator_device,
 	&jz4770_usb_ohci_device,
 	&jz4770_usb_otg_xceiv_device,
 	&jz4770_usb_otg_device,
@@ -570,9 +606,6 @@ static void __init board_gpio_setup(void)
 {
 	/* SELECT button */
 	__gpio_disable_pull(GPD(18));
-
-	/* WiFi enable (low active) */
-	__gpio_as_output0(GPF(10));
 
 	/* DC power source present (high active) */
 	__gpio_disable_pull(GPIO_DC_CHARGER);
