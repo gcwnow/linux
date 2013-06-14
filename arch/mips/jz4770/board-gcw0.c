@@ -44,8 +44,8 @@
 #include <video/panel-nt39016.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
+#include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770_fb.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/mmc.h>
@@ -56,7 +56,7 @@
 
 /* Video */
 
-#define GPIO_PANEL_SOMETHING	GPF(0)
+#define GPIO_PANEL_SOMETHING	JZ_GPIO_PORTF(0)
 
 static int gcw0_panel_init(void **out_panel,
 				     struct device *dev, void *panel_pdata)
@@ -99,10 +99,10 @@ static void gcw0_panel_disable(void *panel)
 }
 
 static struct nt39016_platform_data gcw0_panel_pdata = {
-	.gpio_reset		= GPE(2),
-	.gpio_clock		= GPE(15),
-	.gpio_enable		= GPE(16),
-	.gpio_data		= GPE(17),
+	.gpio_reset		= JZ_GPIO_PORTE(2),
+	.gpio_clock		= JZ_GPIO_PORTE(15),
+	.gpio_enable		= JZ_GPIO_PORTE(16),
+	.gpio_data		= JZ_GPIO_PORTE(17),
 };
 
 static struct panel_ops gcw0_panel_ops = {
@@ -122,73 +122,73 @@ static struct jzfb_platform_data gcw0_fb_pdata = {
 
 static struct gpio_keys_button gcw0_buttons[] = {
 	/* D-pad up */ {
-		.gpio			= GPE(21),
+		.gpio			= JZ_GPIO_PORTE(21),
 		.active_low		= 1,
 		.code			= KEY_UP,
 		.debounce_interval	= 10,
 	},
 	/* D-pad down */ {
-		.gpio			= GPE(25),
+		.gpio			= JZ_GPIO_PORTE(25),
 		.active_low		= 1,
 		.code			= KEY_DOWN,
 		.debounce_interval	= 10,
 	},
 	/* D-pad left */ {
-		.gpio			= GPE(23),
+		.gpio			= JZ_GPIO_PORTE(23),
 		.active_low		= 1,
 		.code			= KEY_LEFT,
 		.debounce_interval	= 10,
 	},
 	/* D-pad right */ {
-		.gpio			= GPE(24),
+		.gpio			= JZ_GPIO_PORTE(24),
 		.active_low		= 1,
 		.code			= KEY_RIGHT,
 		.debounce_interval	= 10,
 	},
 	/* A button */ {
-		.gpio			= GPE(29),
+		.gpio			= JZ_GPIO_PORTE(29),
 		.active_low		= 1,
 		.code			= KEY_LEFTCTRL,
 		.debounce_interval	= 10,
 	},
 	/* B button */ {
-		.gpio			= GPE(20),
+		.gpio			= JZ_GPIO_PORTE(20),
 		.active_low		= 1,
 		.code			= KEY_LEFTALT,
 		.debounce_interval	= 10,
 	},
 	/* Top button (labeled Y, should be X) */ {
-		.gpio			= GPE(27),
+		.gpio			= JZ_GPIO_PORTE(27),
 		.active_low		= 1,
 		.code			= KEY_SPACE,
 		.debounce_interval	= 10,
 	},
 	/* Left button (labeled X, should be Y) */ {
-		.gpio			= GPE(28),
+		.gpio			= JZ_GPIO_PORTE(28),
 		.active_low		= 1,
 		.code			= KEY_LEFTSHIFT,
 		.debounce_interval	= 10,
 	},
 	/* Left shoulder button */ {
-		.gpio			= GPB(20),
+		.gpio			= JZ_GPIO_PORTB(20),
 		.active_low		= 1,
 		.code			= KEY_TAB,
 		.debounce_interval	= 10,
 	},
 	/* Right shoulder button */ {
-		.gpio			= GPE(26),
+		.gpio			= JZ_GPIO_PORTE(26),
 		.active_low		= 1,
 		.code			= KEY_BACKSPACE,
 		.debounce_interval	= 10,
 	},
 	/* START button */ {
-		.gpio			= GPB(21),
+		.gpio			= JZ_GPIO_PORTB(21),
 		.active_low		= 1,
 		.code			= KEY_ENTER,
 		.debounce_interval	= 10,
 	},
 	/* SELECT button */ {
-		.gpio			= GPD(18),
+		.gpio			= JZ_GPIO_PORTD(18),
 		/* This is the only button that is active high,
 		 * since it doubles as BOOT_SEL1.
 		 */
@@ -197,14 +197,14 @@ static struct gpio_keys_button gcw0_buttons[] = {
 		.debounce_interval	= 10,
 	},
 	/* POWER slider */ {
-		.gpio			= GPA(30),
+		.gpio			= JZ_GPIO_PORTA(30),
 		.active_low		= 1,
 		.code			= KEY_POWER,
 		.debounce_interval	= 10,
 		.wakeup			= 1,
 	},
 	/* POWER hold */ {
-		.gpio			= GPF(11),
+		.gpio			= JZ_GPIO_PORTF(11),
 		.active_low		= 1,
 		.code			= KEY_PAUSE,
 		.debounce_interval	= 10,
@@ -242,10 +242,10 @@ struct jz_mmc_platform_data gcw_external_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
 	.bus_width		= 4,
-	.gpio_card_detect	= GPB(2),
+	.gpio_card_detect	= JZ_GPIO_PORTB(2),
 	.card_detect_active_low	= 1,
 	.gpio_read_only		= -1,
-	.gpio_power		= GPE(9),
+	.gpio_power		= JZ_GPIO_PORTE(9),
 	.power_active_low	= 1,
 };
 
@@ -290,8 +290,8 @@ static struct jz_battery_platform_data gcw0_battery_pdata = {
 
 /* Charger */
 
-#define GPIO_DC_CHARGER		GPF(5)
-#define GPIO_USB_CHARGER	GPB(5)
+#define GPIO_DC_CHARGER		JZ_GPIO_PORTF(5)
+#define GPIO_USB_CHARGER	JZ_GPIO_PORTB(5)
 
 static char *gcw0_batteries[] = {
 	"battery",
@@ -350,7 +350,7 @@ static struct regulator_init_data gcw0_internal_usb_regulator_init_data = {
 static struct fixed_voltage_config gcw0_internal_usb_regulator_data = {
 	.supply_name = "USB power",
 	.microvolts = 3300000,
-	.gpio = GPF(10),
+	.gpio = JZ_GPIO_PORTF(10),
 	.init_data = &gcw0_internal_usb_regulator_init_data,
 };
 
@@ -409,8 +409,8 @@ static struct i2c_jz4770_platform_data gcw0_i2c2_platform_data __initdata = {
 #if !defined(CONFIG_I2C_JZ4770)
 
 static struct i2c_gpio_platform_data gcw0_i2c0_gpio_data = {
-	.sda_pin		= GPD(30),
-	.scl_pin		= GPD(31),
+	.sda_pin		= JZ_GPIO_PORTD(30),
+	.scl_pin		= JZ_GPIO_PORTD(31),
 	.udelay			= 2, /* 250 kHz */
 };
 
@@ -423,8 +423,8 @@ static struct platform_device gcw0_i2c0_gpio_device = {
 };
 
 static struct i2c_gpio_platform_data gcw0_i2c1_gpio_data = {
-	.sda_pin		= GPE(30),
-	.scl_pin		= GPE(31),
+	.sda_pin		= JZ_GPIO_PORTE(30),
+	.scl_pin		= JZ_GPIO_PORTE(31),
 	.udelay			= 2, /* 250 kHz */
 };
 
@@ -437,8 +437,8 @@ static struct platform_device gcw0_i2c1_gpio_device = {
 };
 
 static struct i2c_gpio_platform_data gcw0_i2c2_gpio_data = {
-	.sda_pin		= GPF(16),
-	.scl_pin		= GPF(17),
+	.sda_pin		= JZ_GPIO_PORTF(16),
+	.scl_pin		= JZ_GPIO_PORTF(17),
 	.udelay			= 2, /* 250 kHz */
 };
 
@@ -453,8 +453,8 @@ static struct platform_device gcw0_i2c2_gpio_device = {
 #endif
 
 static struct i2c_gpio_platform_data gcw0_i2c3_gpio_data = {
-	.sda_pin		= GPD(5),
-	.scl_pin		= GPD(4),
+	.sda_pin		= JZ_GPIO_PORTD(5),
+	.scl_pin		= JZ_GPIO_PORTD(4),
 	.udelay			= 2, /* 250 kHz */
 };
 
@@ -467,8 +467,8 @@ static struct platform_device gcw0_i2c3_gpio_device = {
 };
 
 static struct i2c_gpio_platform_data gcw0_i2c4_gpio_data = {
-	.sda_pin		= GPD(6),
-	.scl_pin		= GPD(7),
+	.sda_pin		= JZ_GPIO_PORTD(6),
+	.scl_pin		= JZ_GPIO_PORTD(7),
 	.udelay			= 5, /* 100 kHz */
 };
 
@@ -523,7 +523,7 @@ struct jz_clk_board_data jz_clk_bdata = {
 static struct gpio_led gcw0_leds[] = {
 	{
 		.name = "power",
-		.gpio = GPB(30),
+		.gpio = JZ_GPIO_PORTB(30),
 		.active_low = 1,
 		.default_state = LEDS_GPIO_DEFSTATE_ON,
 	},
@@ -605,13 +605,13 @@ static void __init board_i2c_init(void)
 static void __init board_gpio_setup(void)
 {
 	/* SELECT button */
-	__gpio_disable_pull(GPD(18));
+	jz_gpio_disable_pullup(JZ_GPIO_PORTD(18));
 
 	/* DC power source present (high active) */
-	__gpio_disable_pull(GPIO_DC_CHARGER);
+	jz_gpio_disable_pullup(GPIO_DC_CHARGER);
 
 	/* USB power source present (high active) */
-	__gpio_disable_pull(GPIO_USB_CHARGER);
+	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
 }
 
 static int __init gcw0_board_setup(void)
