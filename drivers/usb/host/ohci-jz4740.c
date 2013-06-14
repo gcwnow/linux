@@ -99,21 +99,17 @@ static int ohci_jz4740_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 	u16 wIndex, char *buf, u16 wLength)
 {
 	struct jz4740_ohci_hcd *jz4740_ohci = hcd_to_jz4740_hcd(hcd);
-	int ret;
 
 	switch (typeReq) {
-	case SetHubFeature:
+	case SetPortFeature:
 		if (wValue == USB_PORT_FEAT_POWER)
-			ret = ohci_jz4740_set_vbus_power(jz4740_ohci, true);
+			return ohci_jz4740_set_vbus_power(jz4740_ohci, true);
 		break;
-	case ClearHubFeature:
+	case ClearPortFeature:
 		if (wValue == USB_PORT_FEAT_POWER)
-			ret = ohci_jz4740_set_vbus_power(jz4740_ohci, false);
+			return ohci_jz4740_set_vbus_power(jz4740_ohci, false);
 		break;
 	}
-
-	if (ret)
-		return ret;
 
 	return ohci_hub_control(hcd, typeReq, wValue, wIndex, buf, wLength);
 }
@@ -224,9 +220,6 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 	clk_enable(jz4740_ohci->clk);
 
 	phy_set_enabled(pdev, true);
-
-	if (jz4740_ohci->vbus)
-		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
 
 	platform_set_drvdata(pdev, hcd);
 
