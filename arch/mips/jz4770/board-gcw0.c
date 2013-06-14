@@ -35,10 +35,12 @@
 
 #include <linux/mmc/host.h>
 #include <linux/act8600_power.h>
+#include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
+#include <linux/usb/musb.h>
 #include <media/radio-rda5807.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
@@ -363,6 +365,14 @@ static struct platform_device gcw0_internal_usb_regulator_device = {
 };
 
 
+/* USB OTG (musb) */
+
+static struct jz_otg_board_data gcw0_otg_board_data = {
+	.gpio_id_pin = JZ_GPIO_PORTF(18),
+	.gpio_id_debounce_ms = 100,
+};
+
+
 /* I2C devices */
 
 static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
@@ -580,6 +590,10 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 
 static int __init gcw0_init_platform_devices(void)
 {
+	struct musb_hdrc_platform_data *otg_platform_data =
+			jz4770_usb_otg_device.dev.platform_data;
+	otg_platform_data->board_data = &gcw0_otg_board_data;
+
 	jz4770_lcd_device.dev.platform_data = &gcw0_fb_pdata;
 	jz4770_adc_device.dev.platform_data = &gcw0_battery_pdata;
 	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
