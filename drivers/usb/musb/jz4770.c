@@ -178,15 +178,9 @@ static void do_otg_id_pin_state(struct musb *musb)
 
 	if (pin) {
 		/* B */
-#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
-		__gpio_unmask_irq(OTG_HOTPLUG_PIN);
-#endif
 		__gpio_as_irq_fall_edge(GPIO_OTG_ID_PIN);
 	} else {
 		/* A */
-#ifdef CONFIG_USB_MUSB_PERIPHERAL_HOTPLUG
-		__gpio_mask_irq(OTG_HOTPLUG_PIN); // otg's host mode not support hotplug
-#endif
 		__gpio_as_irq_rise_edge(GPIO_OTG_ID_PIN);
 	}
 }
