@@ -367,8 +367,10 @@ static struct platform_device gcw0_internal_usb_regulator_device = {
 
 /* USB OTG (musb) */
 
+#define GPIO_USB_OTG_ID_PIN	JZ_GPIO_PORTF(18)
+
 static struct jz_otg_board_data gcw0_otg_board_data = {
-	.gpio_id_pin = JZ_GPIO_PORTF(18),
+	.gpio_id_pin = GPIO_USB_OTG_ID_PIN,
 	.gpio_id_debounce_ms = 100,
 };
 
@@ -626,6 +628,9 @@ static void __init board_gpio_setup(void)
 
 	/* USB power source present (high active) */
 	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
+
+	/* USB OTG ID pin (high->B, low->A) */
+	jz_gpio_disable_pullup(GPIO_USB_OTG_ID_PIN);
 }
 
 static int __init gcw0_board_setup(void)
