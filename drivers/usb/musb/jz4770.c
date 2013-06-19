@@ -30,6 +30,7 @@ struct jz_musb_glue {
 	struct device *dev;
 	struct platform_device *musb;
 	struct clk *clk;
+	struct timer_list gpio_id_debounce_timer;
 	unsigned long gpio_id_debounce_jiffies;
 };
 
@@ -142,8 +143,6 @@ static void jz_musb_set_vbus(struct musb *musb, int is_on)
 
 /* ---------------------- OTG ID PIN Routines ---------------------------- */
 
-static struct timer_list otg_id_pin_stable_timer;
-
 static unsigned int read_gpio_pin(unsigned int pin, unsigned int loop)
 {
 	unsigned int t, v;
@@ -200,7 +199,7 @@ static irqreturn_t jz_musb_otg_id_irq(int irq, void *data)
 {
 	struct jz_musb_glue *glue = data;
 
-	mod_timer(&otg_id_pin_stable_timer,
+	mod_timer(&glue->gpio_id_debounce_timer,
 		  jiffies + glue->gpio_id_debounce_jiffies);
 
 	return IRQ_HANDLED;
@@ -233,7 +232,8 @@ static int otg_id_pin_setup(struct musb *musb)
 
 	/* Update OTG ID PIN state. */
 	do_otg_id_pin_state(musb);
-	setup_timer(&otg_id_pin_stable_timer, otg_id_pin_stable_func, (unsigned long)musb);
+	setup_timer(&glue->gpio_id_debounce_timer, otg_id_pin_stable_func,
+		    (unsigned long)musb);
 
 	ret = devm_request_irq(dev, gpio_to_irq(id_pin), jz_musb_otg_id_irq, 0,
 			       "otg-id-irq", glue);
@@ -253,7 +253,7 @@ static void otg_id_pin_cleanup(struct musb *musb)
 	struct jz_otg_board_data *board_data = pdata->board_data;
 
 	devm_free_irq(dev, gpio_to_irq(board_data->gpio_id_pin), glue);
-	del_timer(&otg_id_pin_stable_timer);
+	del_timer(&glue->gpio_id_debounce_timer);
 }
 
 /* ---------------------------------------------------------------- */
