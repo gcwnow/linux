@@ -143,49 +143,19 @@ static void jz_musb_set_vbus(struct musb *musb, int is_on)
 
 /* ---------------------- OTG ID PIN Routines ---------------------------- */
 
-static unsigned int read_gpio_pin(unsigned int pin, unsigned int loop)
-{
-	unsigned int t, v;
-	unsigned int i;
-
-	i = loop;
-
-	v = t = 0;
-
-	while (i--) {
-		t = __gpio_get_pin(pin);
-		if (v != t)
-			i = loop;
-
-		v = t;
-	}
-
-	return v;
-}
-
 static void do_otg_id_pin_state(struct musb *musb)
 {
 	struct device *dev = musb->controller;
 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
 	struct jz_otg_board_data *board_data = pdata->board_data;
-	unsigned int default_a;
-	unsigned int pin = read_gpio_pin(board_data->gpio_id_pin, 5000);
 
-	dev_info(dev, "USB OTG ID pin state: %d\n", pin);
+	unsigned int default_a = !gpio_get_value(board_data->gpio_id_pin);
 
-	default_a = !pin;
+	dev_info(dev, "USB OTG default mode: %s\n", default_a ? "A" : "B");
 
 	musb->xceiv->otg->default_a = default_a;
 
 	jz_musb_set_vbus(musb, default_a);
-
-	if (pin) {
-		/* B */
-		__gpio_as_irq_fall_edge(board_data->gpio_id_pin);
-	} else {
-		/* A */
-		__gpio_as_irq_rise_edge(board_data->gpio_id_pin);
-	}
 }
 
 static void otg_id_pin_stable_func(unsigned long data)
@@ -220,12 +190,8 @@ static int otg_id_pin_setup(struct musb *musb)
 			id_pin, ret);
 		return ret;
 	}
-	/*
-	 * Note: If pull is enabled, the initial state is read as 0 regardless
-	 *       of whether something is plugged or not.
-	 */
-	__gpio_as_input(id_pin);
-	__gpio_disable_pull(id_pin);
+
+	gpio_direction_input(id_pin);
 
 	glue->gpio_id_debounce_jiffies =
 			msecs_to_jiffies(board_data->gpio_id_debounce_ms);
@@ -235,7 +201,8 @@ static int otg_id_pin_setup(struct musb *musb)
 	setup_timer(&glue->gpio_id_debounce_timer, otg_id_pin_stable_func,
 		    (unsigned long)musb);
 
-	ret = devm_request_irq(dev, gpio_to_irq(id_pin), jz_musb_otg_id_irq, 0,
+	ret = devm_request_irq(dev, gpio_to_irq(id_pin), jz_musb_otg_id_irq,
+			       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
 			       "otg-id-irq", glue);
 	if (ret) {
 		dev_err(dev, "Failed to request USB OTG ID IRQ: %d\n", ret);
