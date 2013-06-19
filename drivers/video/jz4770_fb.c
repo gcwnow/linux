@@ -554,8 +554,8 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 
 	clk_set_rate(jzfb->lpclk, rate);
 
-	jz_clocks.pixclk = clk_get_rate(jzfb->lpclk);
-	dev_dbg(&jzfb->pdev->dev, "PixClock: %d\n", jz_clocks.pixclk);
+	dev_dbg(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
+		rate, clk_get_rate(jzfb->lpclk));
 }
 
 /* set the video mode according to info->var */
