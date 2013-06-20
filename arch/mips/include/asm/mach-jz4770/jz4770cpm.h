@@ -526,40 +526,6 @@ typedef enum {
         CGU_CLOCK_MAX,
 } cgu_clock;
 
-/*
- * JZ4760B clocks structure
- */
-typedef struct {
-	unsigned int cclk;	/* CPU clock				*/
-	unsigned int hclk;	/* System bus clock: AHB0,AHB1		*/
-	unsigned int h1clk;	/* For compatible, the same as h1clk	*/
-	unsigned int h2clk;	/* System bus clock: AHB2		*/
-	unsigned int pclk;	/* Peripheral bus clock			*/
-	unsigned int c1clk;
-	unsigned int mclk;	/* EMC or DDR controller clock		*/
-	unsigned int sclk;	/* NEMC controller clock		*/
-	unsigned int cko;	/* SDRAM or DDR clock			*/
-	unsigned int pixclk;	/* LCD pixel clock			*/
-	unsigned int tveclk;	/* TV encoder 27M  clock		*/
-	unsigned int cimmclk;	/* Clock output from CIM module		*/
-	unsigned int cimpclk;	/* Clock input to CIM module		*/
-	unsigned int gpuclk;	/* GPU clock				*/
-	unsigned int gpsclk;	/* GPS clock				*/
-	unsigned int i2sclk;	/* I2S codec clock			*/
-	unsigned int bitclk;	/* AC97 bit clock			*/
-	unsigned int pcmclk;	/* PCM clock				*/
-	unsigned int msc0clk;	/* MSC0 clock				*/
-	unsigned int msc1clk;	/* MSC1 clock				*/
-	unsigned int msc2clk;	/* MSC2 clock				*/
-	unsigned int ssiclk;	/* SSI clock				*/
-	unsigned int tssiclk;	/* TSSI clock				*/
-	unsigned int otgclk;	/* USB OTG clock			*/
-	unsigned int uhcclk;	/* USB UHCI clock			*/
-	unsigned int extalclk;	/* EXTAL clock for
-				   UART,I2C,TCU,USB2.0-PHY,AUDIO CODEC	*/
-	unsigned int rtcclk;	/* RTC clock for CPM,INTC,RTC,TCU,WDT	*/
-} jz_clocks_t;
-
 void cpm_start_clock(clock_gate_module module_name);
 void cpm_stop_clock(clock_gate_module module_name);
 
@@ -615,8 +581,6 @@ static __inline__ unsigned int __cpm_get_rtcclk(void)
 {
 	return JZ_EXTAL2;
 }
-
-extern jz_clocks_t jz_clocks;
 
 #define __cpm_select_i2sclk_exclk()	(REG_CPM_I2SCDR &= ~I2SCDR_I2CS)
 #define __cpm_enable_pll_change()	(REG_CPM_CPCCR |= CPCCR_CE)

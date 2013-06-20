@@ -58,33 +58,7 @@
 #include "reset.h"
 
 
-jz_clocks_t jz_clocks;
-
 extern void __init jz_board_setup(void);
-
-static void __init sysclocks_setup(void)
-{
-	jz_clocks.cclk = cpm_get_clock(CGU_CCLK);
-	jz_clocks.hclk = cpm_get_clock(CGU_HCLK);
-	jz_clocks.pclk = cpm_get_clock(CGU_PCLK);
-	jz_clocks.c1clk = cpm_get_clock(CGU_C1CLK);
-	jz_clocks.mclk = cpm_get_clock(CGU_MCLK);
-	jz_clocks.h1clk = cpm_get_clock(CGU_H1CLK);
-	jz_clocks.pixclk = cpm_get_clock(CGU_LPCLK);
-	jz_clocks.i2sclk = cpm_get_clock(CGU_I2SCLK);
-	jz_clocks.otgclk = cpm_get_clock(CGU_OTGCLK);
-	jz_clocks.msc0clk = cpm_get_clock(CGU_MSC0CLK);
-	jz_clocks.msc1clk = cpm_get_clock(CGU_MSC1CLK);
-	jz_clocks.msc2clk = cpm_get_clock(CGU_MSC2CLK);
-	jz_clocks.extalclk = __cpm_get_extalclk();
-	jz_clocks.rtcclk = __cpm_get_rtcclk();
-
-	printk("CPU clock: %dMHz, System clock: %dMHz, Peripheral clock: %dMHz, Memory clock: %dMHz\n",
-	       (jz_clocks.cclk + 500000) / 1000000,
-	       (jz_clocks.hclk + 500000) / 1000000,
-	       (jz_clocks.pclk + 500000) / 1000000,
-	       (jz_clocks.mclk + 500000) / 1000000);
-}
 
 static void __init soc_cpm_setup(void)
 {
@@ -95,7 +69,12 @@ static void __init soc_cpm_setup(void)
 	CMSREG32(CPM_LCR, LCR_LPM_IDLE, LCR_LPM_MASK);
 
 	/* Setup system clocks */
-	sysclocks_setup();
+	printk("CPU clock: %dMHz, System clock: %dMHz, "
+	       "Peripheral clock: %dMHz, Memory clock: %dMHz\n",
+	       (cpm_get_clock(CGU_CCLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_HCLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_PCLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_MCLK) + 500000) / 1000000);
 }
 
 static void __init soc_harb_setup(void)
@@ -145,7 +124,7 @@ static void __init jz_serial_setup(void)
 	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
 	s.iotype = SERIAL_IO_MEM;
 	s.regshift = 2;
-	s.uartclk = jz_clocks.extalclk;
+	s.uartclk = __cpm_get_extalclk();
 	s.serial_out = jz4740_serial_out;
 
 	s.line = 0;
