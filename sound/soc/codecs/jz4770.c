@@ -429,14 +429,14 @@ static const DECLARE_TLV_DB_SCALE(linein_tlv, -2500, 100, 0);
 
 static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 	/* playback gain control */
-	SOC_DOUBLE_R_TLV("PCM Volume",
+	SOC_DOUBLE_R_TLV("PCM Playback Volume",
 #if SWAP_LR
 			 JZ_ICDC_GCR_DACR, JZ_ICDC_GCR_DACL,
 #else
 			 JZ_ICDC_GCR_DACL, JZ_ICDC_GCR_DACR,
 #endif
 			 0, 31, 1, dac_tlv),
-	SOC_DOUBLE_R_TLV("Master Playback Volume",
+	SOC_DOUBLE_R_TLV("Headphone Playback Volume",
 #if SWAP_LR
 			 JZ_ICDC_GCR_HPR, JZ_ICDC_GCR_HPL,
 #else
@@ -445,15 +445,15 @@ static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 			 0, 31, 1, out_tlv),
 
 	/* record gain control */
-	SOC_DOUBLE_R_TLV("ADC Capture Volume",
+	SOC_DOUBLE_R_TLV("PCM Capture Volume",
 			 JZ_ICDC_GCR_ADCL, JZ_ICDC_GCR_ADCR, 0, 23, 0, adc_tlv),
 
-	SOC_SINGLE_TLV("Mic1 Capture Volume",
+	SOC_SINGLE_TLV("Mic 1 Volume",
 		       JZ_ICDC_GCR_MIC1, 0, 5, 0, mic1_boost_tlv),
-	SOC_SINGLE_TLV("Mic2 Capture Volume",
+	SOC_SINGLE_TLV("Mic 2 Volume",
 		       JZ_ICDC_GCR_MIC2, 0, 5, 0, mic2_boost_tlv),
 
-	SOC_DOUBLE_R_TLV("Linein Bypass Capture Volume",
+	SOC_DOUBLE_R_TLV("Line In Bypass Volume",
 			 JZ_ICDC_GCR_LIBYL, JZ_ICDC_GCR_LIBYR, 0, 31, 1, linein_tlv),
 };
 
@@ -506,7 +506,7 @@ static const char *jz_icdc_input_sel[] = {
 	"Mic 1", "Mic 2", "Line In"
 };
 static const char *jz_icdc_output_sel[] = {
-	"Mic 1", "Mic 2", "Line In", "Stereo DAC"
+	"Mic 1", "Mic 2", "Line In", "PCM"
 };
 
 static int micbias_event(struct snd_soc_dapm_widget *w,
@@ -574,13 +574,13 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			   lineout_event,
 			   SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 
-	SND_SOC_DAPM_PGA("Line Input", JZ_ICDC_CR_LI, 0, 1, NULL, 0),
+	SND_SOC_DAPM_PGA("Line In", JZ_ICDC_CR_LI, 0, 1, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Mic1 Input", JZ_ICDC_CR_MIC, 4, 1, NULL, 0),
+	SND_SOC_DAPM_PGA("Mic 1 In", JZ_ICDC_CR_MIC, 4, 1, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Mic2 Input", JZ_ICDC_CR_MIC, 5, 1, NULL, 0),
+	SND_SOC_DAPM_PGA("Mic 2 In", JZ_ICDC_CR_MIC, 5, 1, NULL, 0),
 
-	SND_SOC_DAPM_PGA("Linein Bypass", JZ_ICDC_CR_LI, 4, 1, NULL, 0),
+	SND_SOC_DAPM_PGA("Line In Bypass", JZ_ICDC_CR_LI, 4, 1, NULL, 0),
 
 	SND_SOC_DAPM_ADC_E("ADC", "HiFi Capture", JZ_ICDC_CR_ADC, 4, 1,
 			   adc_poweron_event,
@@ -591,16 +591,16 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			       micbias_event,
 			       SND_SOC_DAPM_POST_REG),
 
-	SND_SOC_DAPM_MUX("Microphone Mux", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_MUX("Mic Channels Route", SND_SOC_NOPM, 0, 0,
 			 &icdc_mic_mux_controls),
 
-	SND_SOC_DAPM_MUX("Playback HP Mux", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_MUX("Headphone Source", SND_SOC_NOPM, 0, 0,
 			 &icdc_hp_mux_controls),
 
-	SND_SOC_DAPM_MUX("Playback Lineout Mux", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_MUX("Line Out Source", SND_SOC_NOPM, 0, 0,
 			 &icdc_lo_mux_controls),
 
-	SND_SOC_DAPM_MUX("Capture Mux", SND_SOC_NOPM, 0, 0,
+	SND_SOC_DAPM_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
 			 &icdc_adc_controls),
 
 	SND_SOC_DAPM_OUTPUT("LHPOUT"),
@@ -621,50 +621,50 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	/* Destination Widget  <=== Path Name <=== Source Widget */
-	{ "Mic1 Input", NULL, "MIC1P" },
-	{ "Mic1 Input", NULL, "MIC1N" },
+	{ "Mic 1 In", NULL, "MIC1P" },
+	{ "Mic 1 In", NULL, "MIC1N" },
 
-	{ "Mic2 Input", NULL, "MIC2P" },
-	{ "Mic2 Input", NULL, "MIC2N" },
+	{ "Mic 2 In", NULL, "MIC2P" },
+	{ "Mic 2 In", NULL, "MIC2N" },
 
-	{ "Line Input", NULL, "LLINEIN" },
-	{ "Line Input", NULL, "RLINEIN" },
-
-
-	{ "Microphone Mux", "Stereo", "Mic1 Input" },
-	{ "Microphone Mux", "Stereo", "Mic2 Input" },
+	{ "Line In", NULL, "LLINEIN" },
+	{ "Line In", NULL, "RLINEIN" },
 
 
-	{ "Capture Mux", "Mic 1", "Mic1 Input" },
-	{ "Capture Mux", "Mic 1", "Microphone Mux" },
-	{ "Capture Mux", "Mic 2", "Mic2 Input" },
-	{ "Capture Mux", "Mic 2", "Microphone Mux" },
-	{ "Capture Mux", "Line In", "Line Input" },
-
-	{ "ADC", NULL, "Capture Mux" },
+	{ "Mic Channels Route", "Stereo", "Mic 1 In" },
+	{ "Mic Channels Route", "Stereo", "Mic 2 In" },
 
 
-	{ "Playback HP Mux", "Mic 1", "Mic1 Input" },
-	{ "Playback HP Mux", "Mic 1", "Microphone Mux" },
-	{ "Playback HP Mux", "Mic 2", "Mic2 Input" },
-	{ "Playback HP Mux", "Mic 2", "Microphone Mux" },
-	{ "Playback HP Mux", "Line In", "Line Input" },
-	{ "Playback HP Mux", "Stereo DAC", "DAC" },
+	{ "Capture Source", "Mic 1", "Mic 1 In" },
+	{ "Capture Source", "Mic 1", "Mic Channels Route" },
+	{ "Capture Source", "Mic 2", "Mic 2 In" },
+	{ "Capture Source", "Mic 2", "Mic Channels Route" },
+	{ "Capture Source", "Line In", "Line In" },
 
-	{ "HP Out", NULL, "Playback HP Mux" },
+	{ "ADC", NULL, "Capture Source" },
+
+
+	{ "Headphone Source", "Mic 1", "Mic 1 In" },
+	{ "Headphone Source", "Mic 1", "Mic Channels Route" },
+	{ "Headphone Source", "Mic 2", "Mic 2 In" },
+	{ "Headphone Source", "Mic 2", "Mic Channels Route" },
+	{ "Headphone Source", "Line In", "Line In" },
+	{ "Headphone Source", "PCM", "DAC" },
+
+	{ "HP Out", NULL, "Headphone Source" },
 
 	{ "LHPOUT", NULL, "HP Out"},
 	{ "RHPOUT", NULL, "HP Out"},
 
 
-	{ "Playback Lineout Mux", "Mic 1", "Mic1 Input" },
-	{ "Playback Lineout Mux", "Mic 1", "Microphone Mux" },
-	{ "Playback Lineout Mux", "Mic 2", "Mic2 Input" },
-	{ "Playback Lineout Mux", "Mic 2", "Microphone Mux" },
-	{ "Playback Lineout Mux", "Line In", "Line Input" },
-	{ "Playback Lineout Mux", "Stereo DAC", "DAC" },
+	{ "Line Out Source", "Mic 1", "Mic 1 In" },
+	{ "Line Out Source", "Mic 1", "Mic Channels Route" },
+	{ "Line Out Source", "Mic 2", "Mic 2 In" },
+	{ "Line Out Source", "Mic 2", "Mic Channels Route" },
+	{ "Line Out Source", "Line In", "Line In" },
+	{ "Line Out Source", "PCM", "DAC" },
 
-	{ "Line Out", NULL, "Playback Lineout Mux" },
+	{ "Line Out", NULL, "Line Out Source" },
 
 	{ "LOUT", NULL, "Line Out"},
 	{ "ROUT", NULL, "Line Out"},
