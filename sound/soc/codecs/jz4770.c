@@ -39,7 +39,7 @@
 /*
  * Note: On the GCW Zero, left and right are the wrong way around. This define
  *       toggles the code that compensates for it. However, I don't know where
- *       exactly in the audio flow  the problem is, so it is possible more
+ *       exactly in the audio flow the problem is, so it is possible more
  *       compensation is needed.
  */
 #define SWAP_LR 1
@@ -381,6 +381,7 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 
 static int jz_icdc_mute(struct snd_soc_dai *dai, int mute)
 {
+	jz_icdc_update_reg(dai->codec, JZ_ICDC_CR_DAC, 7, 0x1, mute);
 	return 0;
 }
 
