@@ -385,12 +385,6 @@ static int jz_icdc_mute(struct snd_soc_dai *dai, int mute)
 	return 0;
 }
 
-static int jz_icdc_set_dai_sysclk(struct snd_soc_dai *codec_dai,
-				  int clk_id, unsigned int freq, int dir)
-{
-	return 0;
-}
-
 #define JZ_ICDC_RATES (SNDRV_PCM_RATE_8000  | SNDRV_PCM_RATE_11025 | \
 		       SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_22050 | \
 		       SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 | \
@@ -404,7 +398,6 @@ static const struct snd_soc_dai_ops jz_icdc_dai_ops = {
 	.trigger	= jz_icdc_pcm_trigger,
 	.shutdown       = jz_icdc_shutdown,
 	.digital_mute	= jz_icdc_mute,
-	.set_sysclk	= jz_icdc_set_dai_sysclk,
 };
 
 static struct snd_soc_dai_driver jz_icdc_dai = {
