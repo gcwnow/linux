@@ -85,8 +85,8 @@ static const struct snd_kcontrol_new gcw0_controls[] = {
 static const struct snd_soc_dapm_widget gcw0_widgets[] = {
 	SND_SOC_DAPM_HP("AV-out", gcw0_avout_event),
 	SND_SOC_DAPM_SPK("Speakers", gcw0_speaker_event),
-	SND_SOC_DAPM_MIC("Mic1 Jack", NULL),
-	SND_SOC_DAPM_MIC("Mic2 Jack", NULL),
+	SND_SOC_DAPM_LINE("FM Radio", NULL),
+	SND_SOC_DAPM_MIC("Built-in Mic", NULL),
 };
 
 /* GCW0 machine audio map (connections to the codec pins) */
@@ -99,14 +99,12 @@ static const struct snd_soc_dapm_route gcw0_routes[] = {
 	{ "Speakers", NULL, "LOUT" },
 	{ "Speakers", NULL, "ROUT" },
 
-	/* mic is connected to MICIN (via right channel of headphone jack) */
+	{ "LLINEIN", NULL, "FM Radio" },
+	{ "RLINEIN", NULL, "FM Radio" },
+
 	{ "MIC1P", NULL, "Mic Bias" },
 	{ "MIC1N", NULL, "Mic Bias" }, /* no such connection, but not harm */
-	{ "Mic Bias", NULL, "Mic1 Jack" },
-
-	{ "MIC2P", NULL, "Mic Bias" },
-	{ "MIC2N", NULL, "Mic Bias" },
-	{ "Mic Bias", NULL, "Mic2 Jack" },
+	{ "Mic Bias", NULL, "Built-in Mic" },
 };
 
 /*
@@ -120,9 +118,8 @@ static int gcw0_codec_init(struct snd_soc_pcm_runtime *rtd)
 	int ret;
 
 	/* set up codec pins not used */
-	/* on Pisces board, linein pin are not connected */
-	snd_soc_dapm_nc_pin(dapm, "LLINEIN");
-	snd_soc_dapm_nc_pin(dapm, "RLINEIN");
+	snd_soc_dapm_nc_pin(dapm, "MIC2P");
+	snd_soc_dapm_nc_pin(dapm, "MIC2N");
 
 	/* set up AV-out plug detection */
 	snd_soc_jack_new(codec, "AV-out Jack",
