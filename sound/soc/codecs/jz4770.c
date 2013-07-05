@@ -634,6 +634,8 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "Mic Channels Route", "Stereo", "Mic 1 In" },
 	{ "Mic Channels Route", "Stereo", "Mic 2 In" },
 
+	{ "Line In Bypass", NULL, "Line In" },
+
 
 	{ "Capture Source", "Mic 1", "Mic 1 In" },
 	{ "Capture Source", "Mic 1", "Mic Channels Route" },
@@ -648,7 +650,7 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "Headphone Source", "Mic 1", "Mic Channels Route" },
 	{ "Headphone Source", "Mic 2", "Mic 2 In" },
 	{ "Headphone Source", "Mic 2", "Mic Channels Route" },
-	{ "Headphone Source", "Line In", "Line In" },
+	{ "Headphone Source", "Line In", "Line In Bypass" },
 	{ "Headphone Source", "PCM", "DAC" },
 
 	{ "HP Out", NULL, "Headphone Source" },
@@ -661,7 +663,7 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "Line Out Source", "Mic 1", "Mic Channels Route" },
 	{ "Line Out Source", "Mic 2", "Mic 2 In" },
 	{ "Line Out Source", "Mic 2", "Mic Channels Route" },
-	{ "Line Out Source", "Line In", "Line In" },
+	{ "Line Out Source", "Line In", "Line In Bypass" },
 	{ "Line Out Source", "PCM", "DAC" },
 
 	{ "Line Out", NULL, "Line Out Source" },
