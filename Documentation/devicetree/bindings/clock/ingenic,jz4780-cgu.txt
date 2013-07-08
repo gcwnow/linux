@@ -1,0 +1,58 @@
+Ingenic jz4780 SoC CGU binding
+
+The CGU in a jz4780 SoC provides all the clocks generated on-chip. It includes
+PLLs, multiplexers, dividers & gates in order to provide a variety of different
+clock signals derived from only 2 external source clocks.
+
+Required properties:
+- compatible: Should be "ingenic,jz4780-cgu"
+- reg: Should be the address & length of the CGU registers
+- clocks: Should contain the phandle & clock specifier for two clocks external
+          to the TCU. First the external crystal "extal" and second the RTC
+          clock source "rtclk".
+- clock-names: Should be set to strings naming the clocks specified in the
+               "clocks" property.
+- #clock-cells: Should be 1.
+                Clock consumers specify this argument to identify a clock. The
+                valid values may be found in <dt-bindings/clock/jz4780-cgu.h>.
+
+Example SoC include file:
+
+/ {
+	cgu: jz4780-cgu {
+		compatible = "ingenic,jz4780-cgu";
+		reg = <0x10000000 0xe0>;
+		#clock-cells = <1>;
+	};
+
+	uart0: serial@10030000 {
+		clocks = <&cgu JZ4780_CLK_UART0>;
+	};
+};
+
+Example board file:
+
+/ {
+	clocks {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		extal: clock@0 {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <48000000>;
+		};
+
+		rtclk: clock@1 {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+		};
+	};
+
+	&cgu {
+		clocks = <&extal> <&rtclk>;
+		clock-names: "extal", "rtclk";
+	};
+};
