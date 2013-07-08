@@ -51,7 +51,9 @@
 #include <rtw_br_ext.h>
 #endif //CONFIG_BR_EXT
 
-#include<linux/kthread.h>
+#include <linux/kthread.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Realtek Wireless Lan Driver");
@@ -257,6 +259,61 @@ static char rtw_proc_name[IFNAMSIZ];
 static struct proc_dir_entry *rtw_proc = NULL;
 static int	rtw_proc_cnt = 0;
 
+static int rtw_proc_open(struct inode *inode, struct file *file)
+{
+	struct net_device *dev = proc_get_parent_data(inode);
+	int (*show)(struct seq_file *, void *) = PDE_DATA(inode);
+
+	return single_open(file, show, dev);
+}
+
+static const struct file_operations rtw_ro_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations rtw_write_reg_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.write		= proc_set_write_reg,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations rtw_read_reg_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.write		= proc_set_read_reg,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations rtw_rx_signal_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.write		= proc_set_rx_signal,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations rtw_ampdu_enable_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.write		= proc_set_ampdu_enable,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations rtw_rssi_disp_fops = {
+	.open		= rtw_proc_open,
+	.read		= seq_read,
+	.write		= proc_set_rssi_disp,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
 void rtw_proc_init_one(struct net_device *dev)
 {
 	struct proc_dir_entry *dir_dev = NULL;
@@ -274,19 +331,15 @@ void rtw_proc_init_one(struct net_device *dev)
 			_rtw_memcpy(rtw_proc_name, RTL8192D_PROC_NAME, sizeof(RTL8192D_PROC_NAME));
 		}
 
-#if(LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24))
-		rtw_proc=create_proc_entry(rtw_proc_name, S_IFDIR, proc_net);
-#else
-		rtw_proc=create_proc_entry(rtw_proc_name, S_IFDIR, init_net.proc_net);
-#endif
+		rtw_proc = proc_mkdir(rtw_proc_name, init_net.proc_net);
 		if (rtw_proc == NULL) {
 			DBG_8192C(KERN_ERR "Unable to create rtw_proc directory\n");
 			return;
 		}
 
-		entry = create_proc_read_entry("ver_info", S_IFREG | S_IRUGO, rtw_proc, proc_get_drv_version, dev);				   
+		entry = proc_create_data("ver_info", S_IFREG | S_IRUGO, rtw_proc, &rtw_ro_fops, &proc_get_drv_version);
 		if (!entry) {
-			DBG_871X("Unable to create_proc_read_entry!\n"); 
+			DBG_871X("Unable to proc_create_data!\n");
 			return;
 		}
 	}
@@ -295,9 +348,7 @@ void rtw_proc_init_one(struct net_device *dev)
 
 	if(padapter->dir_dev == NULL)
 	{
-		padapter->dir_dev = create_proc_entry(dev->name, 
-					  S_IFDIR | S_IRUGO | S_IXUGO, 
-					  rtw_proc);
+		padapter->dir_dev = proc_mkdir_data(dev->name, 0, rtw_proc, dev);
 
 		dir_dev = padapter->dir_dev;
 
@@ -306,11 +357,7 @@ void rtw_proc_init_one(struct net_device *dev)
 			if(rtw_proc_cnt == 0)
 			{
 				if(rtw_proc){
-#if(LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24))
-					remove_proc_entry(rtw_proc_name, proc_net);
-#else
 					remove_proc_entry(rtw_proc_name, init_net.proc_net);
-#endif		
 					rtw_proc = NULL;
 				}
 			}
@@ -326,140 +373,134 @@ void rtw_proc_init_one(struct net_device *dev)
 
 	rtw_proc_cnt++;
 
-	entry = create_proc_read_entry("write_reg", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_write_reg, dev);				   
+	entry = proc_create_data("write_reg", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_write_reg_fops, &proc_get_write_reg);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
-	entry->write_proc = proc_set_write_reg;
 
-	entry = create_proc_read_entry("read_reg", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_read_reg, dev);				   
+	entry = proc_create_data("read_reg", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_read_reg_fops, &proc_get_read_reg);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
-	entry->write_proc = proc_set_read_reg;
 
-	
-	entry = create_proc_read_entry("fwstate", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_fwstate, dev);				   
+	entry = proc_create_data("fwstate", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_fwstate);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
 
-	entry = create_proc_read_entry("sec_info", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_sec_info, dev);				   
+	entry = proc_create_data("sec_info", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_sec_info);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
 
-	entry = create_proc_read_entry("mlmext_state", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_mlmext_state, dev);				   
+	entry = proc_create_data("mlmext_state", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_mlmext_state);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
 
-	entry = create_proc_read_entry("qos_option", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_qos_option, dev);				   
+	entry = proc_create_data("qos_option", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_qos_option);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
-	entry = create_proc_read_entry("ht_option", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_ht_option, dev);				   
+	entry = proc_create_data("ht_option", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_ht_option);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
-	entry = create_proc_read_entry("rf_info", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_rf_info, dev);				   
+	entry = proc_create_data("rf_info", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_rf_info);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 	
-	entry = create_proc_read_entry("ap_info", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_ap_info, dev);				   
+	entry = proc_create_data("ap_info", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_ap_info);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
-	entry = create_proc_read_entry("adapter_state", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_adapter_state, dev);				   
+	entry = proc_create_data("adapter_state", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_adapter_state);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
-	entry = create_proc_read_entry("trx_info", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_trx_info, dev);				   
+	entry = proc_create_data("trx_info", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_trx_info);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 
 #ifdef CONFIG_AP_MODE
 
-	entry = create_proc_read_entry("all_sta_info", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_all_sta_info, dev);				   
+	entry = proc_create_data("all_sta_info", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_all_sta_info);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 #endif
 
 #ifdef DBG_MEMORY_LEAK
-	entry = create_proc_read_entry("_malloc_cnt", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_malloc_cnt, dev);				   
+	entry = proc_create_data("_malloc_cnt", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_malloc_cnt);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 #endif
 
 #ifdef CONFIG_FIND_BEST_CHANNEL
-	entry = create_proc_read_entry("best_channel", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_best_channel, dev);				   
+	entry = proc_create_data("best_channel", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ro_fops, &proc_get_best_channel);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
 #endif
 
-	entry = create_proc_read_entry("rx_signal", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_rx_signal, dev);				   
+	entry = proc_create_data("rx_signal", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_rx_signal_fops, &proc_get_rx_signal);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
-	entry->write_proc = proc_set_rx_signal;
 
-	entry = create_proc_read_entry("ampdu_enable", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_ampdu_enable, dev);				   
+	entry = proc_create_data("ampdu_enable", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_ampdu_enable_fops, &proc_get_ampdu_enable);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
-	entry->write_proc = proc_set_ampdu_enable;
 
-	entry = create_proc_read_entry("rssi_disp", S_IFREG | S_IRUGO,
-				   dir_dev, proc_get_rssi_disp, dev);				   
+	entry = proc_create_data("rssi_disp", S_IFREG | S_IRUGO,
+				 dir_dev, &rtw_rssi_disp_fops, &proc_get_rssi_disp);
 	if (!entry) {
-		DBG_871X("Unable to create_proc_read_entry!\n"); 
+		DBG_871X("Unable to proc_create_data!\n");
 		return;
 	}
-	entry->write_proc = proc_set_rssi_disp;
 
 }
 
@@ -518,12 +559,7 @@ void rtw_proc_remove_one(struct net_device *dev)
 	{
 		if(rtw_proc){
 			remove_proc_entry("ver_info", rtw_proc);
-			
-#if(LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24))
-			remove_proc_entry(rtw_proc_name, proc_net);
-#else
 			remove_proc_entry(rtw_proc_name, init_net.proc_net);
-#endif		
 			rtw_proc = NULL;
 		}
 	}

@@ -282,106 +282,46 @@ extern void rtl871x_cedbg(const char *fmt, ...);
 #endif
 
 
-
 #ifdef CONFIG_PROC_DEBUG
 
-	int proc_get_drv_version(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_write_reg(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
- 	int proc_set_write_reg(struct file *file, const char *buffer,
-		unsigned long count, void *data);
-
-	int proc_get_read_reg(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_set_read_reg(struct file *file, const char *buffer,
-		unsigned long count, void *data);
-
-
-	int proc_get_fwstate(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_sec_info(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_mlmext_state(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_qos_option(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_ht_option(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_rf_info(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_ap_info(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_adapter_state(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_get_trx_info(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
+	int proc_get_drv_version(struct seq_file *m, void *v);
+	int proc_get_write_reg(struct seq_file *m, void *v);
+	ssize_t proc_set_write_reg(struct file *file, const char __user *buf,
+				   size_t size, loff_t *ppos);
+	int proc_get_read_reg(struct seq_file *m, void *v);
+	ssize_t proc_set_read_reg(struct file *file, const char __user *buf,
+				  size_t size, loff_t *ppos);
+	int proc_get_fwstate(struct seq_file *m, void *v);
+	int proc_get_sec_info(struct seq_file *m, void *v);
+	int proc_get_mlmext_state(struct seq_file *m, void *v);
+	int proc_get_qos_option(struct seq_file *m, void *v);
+	int proc_get_ht_option(struct seq_file *m, void *v);
+	int proc_get_rf_info(struct seq_file *m, void *v);
+	int proc_get_ap_info(struct seq_file *m, void *v);
+	int proc_get_adapter_state(struct seq_file *m, void *v);
+	int proc_get_trx_info(struct seq_file *m, void *v);
 
 #ifdef CONFIG_AP_MODE
-
-	int proc_get_all_sta_info(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
+	int proc_get_all_sta_info(struct seq_file *m, void *v);
 #endif
 
 #ifdef DBG_MEMORY_LEAK
-	int proc_get_malloc_cnt(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
+	int proc_get_malloc_cnt(struct seq_file *m, void *v);
 #endif
 
 #ifdef CONFIG_FIND_BEST_CHANNEL
-	int proc_get_best_channel(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
+	int proc_get_best_channel(struct seq_file *m, void *v);
 #endif
 
-	int proc_get_rx_signal(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_set_rx_signal(struct file *file, const char *buffer,
-		unsigned long count, void *data);
-
-	int proc_get_ampdu_enable(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-			  
-	int proc_set_ampdu_enable(struct file *file, const char *buffer,
-		unsigned long count, void *data);
-
-	int proc_get_rssi_disp(char *page, char **start,
-			  off_t offset, int count,
-			  int *eof, void *data);
-
-	int proc_set_rssi_disp(struct file *file, const char *buffer,
-		unsigned long count, void *data);
-	
+	int proc_get_rx_signal(struct seq_file *m, void *v);
+	ssize_t proc_set_rx_signal(struct file *file, const char __user *buf,
+				   size_t size, loff_t *ppos);
+	int proc_get_ampdu_enable(struct seq_file *m, void *v);
+	ssize_t proc_set_ampdu_enable(struct file *file, const char __user *buf,
+				      size_t size, loff_t *ppos);
+	int proc_get_rssi_disp(struct seq_file *m, void *v);
+	ssize_t proc_set_rssi_disp(struct file *file, const char __user *buf,
+				   size_t size, loff_t *ppos);
 
 #endif //CONFIG_PROC_DEBUG
 
