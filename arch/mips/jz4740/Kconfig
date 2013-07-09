@@ -16,5 +16,6 @@ config MACH_JZ4740
 config MACH_JZ4780
 	bool
 	select MIPS_CPU_SCACHE
+	select PINCTRL
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
