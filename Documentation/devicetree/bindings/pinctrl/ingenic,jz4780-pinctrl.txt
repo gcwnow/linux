@@ -1,0 +1,120 @@
+Ingenic jz4780 pin controller
+
+Required properties:
+- compatible: "ingenic,jz4780-pinctrl"
+
+- reg: Should contain the physical address and length of the GPIO port
+  configuration registers (PAPIN..PFDRVHC).
+
+Please refer to pinctrl-bindings.txt in this directory for details of the
+common pinctrl bindings used by client devices, including the meaning of the
+phrase "pin configuration node".
+
+For the jz4780, pin control is tightly bound with GPIO ports. All pins may
+be used as GPIOs, multiplexed device functions are configured within the
+GPIO port configuration registers and it is typical to refer to pins using the
+naming scheme "PxN" where x is a character identifying the GPIO port with
+which the pin is associated and N is an integer from 0 to 31 identifying the
+pin within that GPIO port. For example PA0 is the first pin in GPIO port A, and
+PB31 is the last pin in GPIO port B. The jz4780 contains 6 GPIO ports, PA to
+PF, for a total of 192 pins.
+
+Each subnode of the pin controller node is either a GPIO controller node, a pin
+configuration node or a pin function node.
+
+Required GPIO controller node properties:
+- gpio-controller: Identifies this node as a GPIO controller.
+
+- #gpio-cells: Should contain the integer 2.
+
+Optional GPIO controller node properties:
+- ingenic,pull-ups: A bit mask identifying the pins associated with this GPIO
+  port which feature a pull-up resistor.
+
+- ingenic,pull-downs: A bit mask identifying the pins associated with this GPIO
+  port which feature a pull-down resistor.
+
+Each pin of the jz4780 may feature a single bias resistor, thus there should be
+no bits which are set in both ingenic,pull-ups & ingenic,pull-downs.
+
+Pin configuration nodes use generic pinconf properties to specify an electrical
+configuration of a pin. The only configurable property of a jz4780 pin is
+whether to enable its bias resistor. Thus the only supported pinconf properties
+are:
+
+- bias-disable
+- bias-pull-up
+- bias-pull-down
+
+No arguments are supported for any of these properties, and any subnode of the
+pin controller node which contains any of these properties will be treated as a
+pin configuration node. For more information about generic pinconfig properties,
+see Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+
+Every other subnode of the pin controller node (that is, every subnode which
+does not contain a gpio-controller or bias-* property) will be treated as a pin
+function node. These subnodes represent a functionality of the SoC which may be
+exposed through one or more groups of pins, represented as subnodes of the pin
+function node. For example a function may be uart0, which may be exposed
+through the group of pins PF0 to PF3.
+
+Required pin function node properties:
+- None.
+
+Optional pin function node properties:
+- None.
+
+Each subnode of a pin function node is a pin group node.
+
+Required pin group node properties:
+- ingenic,pins: A set of values representing the pins within this pin group and
+  their configuration. Four values should be provided for each pin:
+
+  - The phandle of the GPIO controller node for the GPIO port within which the
+    pin is found.
+
+  - The index of the pin within its GPIO port (an integer in the range 0 to 31
+    inclusive).
+
+  - The index of the shared function port to be programmed in the GPIO port
+    registers. Tables of these may be found in the jz4780 programming manual
+    within the "General-Purpose I/O Ports" -> "Overview" section.
+
+  - The phandle of a pin configuration node specifying the electrical
+    configuration that should be applied to the pin.
+
+For example the function 'msc0' may be exposed through 2 different pin groups,
+one in GPIO port A and one in GPIO port E:
+
+  pincfg_nobias: nobias {
+    bias-disable;
+  };
+
+  pinfunc_msc0: msc0 {
+    pins_msc0_pa: msc0-pa {
+      ingenic,pins = <&gpa  4 1 &pincfg_nobias   /* d4 */
+                      &gpa  5 1 &pincfg_nobias   /* d5 */
+                      &gpa  6 1 &pincfg_nobias   /* d6 */
+                      &gpa  7 1 &pincfg_nobias   /* d7 */
+                      &gpa 18 1 &pincfg_nobias   /* clk */
+                      &gpa 19 1 &pincfg_nobias   /* cmd */
+                      &gpa 20 1 &pincfg_nobias   /* d0 */
+                      &gpa 21 1 &pincfg_nobias   /* d1 */
+                      &gpa 22 1 &pincfg_nobias   /* d2 */
+                      &gpa 23 1 &pincfg_nobias   /* d3 */
+                      &gpa 24 1 &pincfg_nobias>; /* rst */
+    };
+
+    pins_msc0_pe: msc0-pe {
+      ingenic,pins = <&gpe 20 0 &pincfg_nobias   /* d0 */
+                      &gpe 21 0 &pincfg_nobias   /* d1 */
+                      &gpe 22 0 &pincfg_nobias   /* d2 */
+                      &gpe 23 0 &pincfg_nobias   /* d3 */
+                      &gpe 28 0 &pincfg_nobias   /* clk */
+                      &gpe 29 0 &pincfg_nobias>; /* cmd */
+    };
+  };
+
+For the jz4780 pin controller, a pin configuration node is synonymous with a
+pin group node. Thus in the msc0 example above the nodes labeled pins_msc0_pa
+and pins_msc0_pe may be used as pin configuration nodes.
