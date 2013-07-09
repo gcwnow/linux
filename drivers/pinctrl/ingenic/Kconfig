@@ -1,0 +1,14 @@
+#
+# Ingenic SoCs pin control drivers
+#
+config PINCTRL_INGENIC
+	bool
+	select PINMUX
+	select GPIOLIB_IRQCHIP
+	select GENERIC_PINCONF
+
+config PINCTRL_JZ4740
+	bool "Pinctrl driver for the Ingenic JZ4740 SoC"
+	default y
+	depends on MACH_JZ4740 || COMPILE_TEST
+	select PINCTRL_INGENIC
