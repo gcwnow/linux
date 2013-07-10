@@ -689,10 +689,12 @@ static int jz_icdc_resume(struct snd_soc_codec *codec)
 #define jz_icdc_resume NULL
 #endif
 
-static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
+static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 {
 	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
 	struct regmap *regmap = jz_icdc->regmap;
+
+	snd_soc_codec_set_cache_io(codec, 5, 8, SND_SOC_REGMAP);
 
 	cpm_start_clock(CGM_AIC);
 	mdelay(1);
@@ -772,7 +774,7 @@ static int jz_icdc_dev_probe(struct snd_soc_codec *codec)
 	return jz_icdc_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 }
 
-static int jz_icdc_dev_remove(struct snd_soc_codec *codec)
+static int jz_icdc_codec_remove(struct snd_soc_codec *codec)
 {
 	/* clr SB_SLEEP */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 1, 0x1, 1);
@@ -784,9 +786,9 @@ static int jz_icdc_dev_remove(struct snd_soc_codec *codec)
 	return jz_icdc_set_bias_level(codec, SND_SOC_BIAS_OFF);
 }
 
-const struct snd_soc_codec_driver jz_icdc_soc_codec_dev = {
-	.probe			= jz_icdc_dev_probe,
-	.remove			= jz_icdc_dev_remove,
+static const struct snd_soc_codec_driver jz_icdc_soc_codec_dev = {
+	.probe			= jz_icdc_codec_probe,
+	.remove			= jz_icdc_codec_remove,
 	.suspend		= jz_icdc_suspend,
 	.resume			= jz_icdc_resume,
 
