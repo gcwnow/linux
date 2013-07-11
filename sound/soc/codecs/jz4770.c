@@ -27,6 +27,7 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <sound/jz4770.h>
 
 #include <asm/div64.h>
 #include <asm/types.h>
@@ -58,6 +59,7 @@ module_param(jz_icdc_debug, int, 0644);
 struct jz_icdc {
 	struct regmap *regmap;
 	void __iomem *base;
+	enum jz4770_icdc_mic_mode mic_mode;
 };
 
 static int hpout_enable = 0;
@@ -423,10 +425,10 @@ static struct snd_soc_dai_driver jz_icdc_dai = {
 static const DECLARE_TLV_DB_SCALE(dac_tlv, -3100, 100, 0);
 static const DECLARE_TLV_DB_SCALE(adc_tlv, 0, 100, 0);
 static const DECLARE_TLV_DB_SCALE(out_tlv, -2500, 100, 0);
-static const DECLARE_TLV_DB_SCALE(mic1_boost_tlv, 0, 400, 0);
-static const DECLARE_TLV_DB_SCALE(mic2_boost_tlv, 0, 400, 0);
+static const DECLARE_TLV_DB_SCALE(mic_boost_tlv, 0, 400, 0);
 static const DECLARE_TLV_DB_SCALE(linein_tlv, -2500, 100, 0);
 
+/* Unconditional controls. */
 static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 	/* playback gain control */
 	SOC_DOUBLE_R_TLV("PCM Playback Volume",
@@ -448,14 +450,39 @@ static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 	SOC_DOUBLE_R_TLV("PCM Capture Volume",
 			 JZ_ICDC_GCR_ADCL, JZ_ICDC_GCR_ADCR, 0, 23, 0, adc_tlv),
 
-	SOC_SINGLE_TLV("Mic 1 Volume",
-		       JZ_ICDC_GCR_MIC1, 0, 5, 0, mic1_boost_tlv),
-	SOC_SINGLE_TLV("Mic 2 Volume",
-		       JZ_ICDC_GCR_MIC2, 0, 5, 0, mic2_boost_tlv),
-
 	SOC_DOUBLE_R_TLV("Line In Bypass Volume",
 			 JZ_ICDC_GCR_LIBYL, JZ_ICDC_GCR_LIBYR, 0, 31, 1, linein_tlv),
 };
+
+/* Controls for micless boards. */
+static const struct snd_kcontrol_new icdc_mic_controls_nomic[] = { };
+
+/* Controls for mono mic 1 boards. */
+static const struct snd_kcontrol_new icdc_mic_controls_mic1[] = {
+	SOC_SINGLE_TLV("Mic Volume", JZ_ICDC_GCR_MIC1, 0, 5, 0, mic_boost_tlv),
+};
+
+/* Controls for mono mic 2 boards. */
+static const struct snd_kcontrol_new icdc_mic_controls_mic2[] = {
+	SOC_SINGLE_TLV("Mic Volume", JZ_ICDC_GCR_MIC2, 0, 5, 0, mic_boost_tlv),
+};
+
+/* Controls for mono mic 1 + 2 boards. */
+static const struct snd_kcontrol_new icdc_mic_controls_mic12[] = {
+	SOC_SINGLE_TLV("Mic 1 Volume", JZ_ICDC_GCR_MIC1, 0, 5, 0, mic_boost_tlv),
+	SOC_SINGLE_TLV("Mic 2 Volume", JZ_ICDC_GCR_MIC2, 0, 5, 0, mic_boost_tlv),
+};
+
+/* Controls for stereo mic boards. */
+static const struct snd_kcontrol_new icdc_mic_controls_mic1l2r[] = {
+	SOC_DOUBLE_R_TLV("Mic Volume", JZ_ICDC_GCR_MIC1, JZ_ICDC_GCR_MIC2,
+			 0, 5, 0, mic_boost_tlv),
+};
+static const struct snd_kcontrol_new icdc_mic_controls_mic1r2l[] = {
+	SOC_DOUBLE_R_TLV("Mic Volume", JZ_ICDC_GCR_MIC2, JZ_ICDC_GCR_MIC1,
+			 0, 5, 0, mic_boost_tlv),
+};
+
 
 static int hpout_event(struct snd_soc_dapm_widget *w,
 			 struct snd_kcontrol *kcontrol, int event) {
@@ -499,16 +526,6 @@ static int lineout_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static const char *jz_icdc_mic_sel[] = {
-	"Mono", "Stereo"
-};
-static const char *jz_icdc_input_sel[] = {
-	"Mic 1", "Mic 2", "Line In"
-};
-static const char *jz_icdc_output_sel[] = {
-	"Mic 1", "Mic 2", "Line In", "PCM"
-};
-
 static int micbias_event(struct snd_soc_dapm_widget *w,
 			     struct snd_kcontrol *kcontrol, int event) {
 
@@ -543,26 +560,67 @@ static int adc_poweron_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static const SOC_ENUM_SINGLE_DECL(jz_icdc_mic_enum,
-				  JZ_ICDC_CR_MIC, 7, jz_icdc_mic_sel);
-static const SOC_ENUM_SINGLE_DECL(jz_icdc_hp_enum,
-				  JZ_ICDC_CR_HP,  0, jz_icdc_output_sel);
-static const SOC_ENUM_SINGLE_DECL(jz_icdc_lo_enum,
-				  JZ_ICDC_CR_LO,  0, jz_icdc_output_sel);
-static const SOC_ENUM_SINGLE_DECL(jz_icdc_adc_enum,
-				  JZ_ICDC_CR_ADC, 0, jz_icdc_input_sel);
+/* ADC source select. */
 
-static const struct snd_kcontrol_new icdc_mic_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_mic_enum);
+static const char *input_sel_texts_nomic[] = { "Line In" };
+static const unsigned int input_sel_values_nomic[] = { 2 };
+static const char *input_sel_texts_singlemic[] = { "Line In", "Mic" };
+static const unsigned int input_sel_values_mic1[] = { 2, 0 };
+static const unsigned int input_sel_values_mic2[] = { 2, 1 };
+static const char *input_sel_texts_dualmic[] = { "Line In", "Mic 1", "Mic 2" };
+static const unsigned int input_sel_values_mic12[] = { 2, 0, 1 };
 
-static const struct snd_kcontrol_new icdc_hp_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_hp_enum);
+#define ADC_ENUM_DECL(name, texts, values) \
+	static const SOC_VALUE_ENUM_SINGLE_DECL( \
+		jz_icdc_adc_enum_ ## name, JZ_ICDC_CR_ADC, 0, 0x3, \
+		input_sel_texts_ ## texts, input_sel_values_ ## values); \
+	static const struct snd_kcontrol_new icdc_adc_controls_ ## name = \
+		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_adc_enum_ ## name);
 
-static const struct snd_kcontrol_new icdc_lo_mux_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_lo_enum);
+ADC_ENUM_DECL(nomic, nomic, nomic)
+ADC_ENUM_DECL(mic1, singlemic, mic1)
+ADC_ENUM_DECL(mic2, singlemic, mic2)
+ADC_ENUM_DECL(mic12, dualmic, mic12)
+ADC_ENUM_DECL(mic1l2r, singlemic, mic1)
+ADC_ENUM_DECL(mic1r2l, singlemic, mic2)
 
-static const struct snd_kcontrol_new icdc_adc_controls =
-	SOC_DAPM_ENUM("Route", jz_icdc_adc_enum);
+/* Headphone and line-out source select. */
+
+static const char *output_sel_texts_nomic[] = { "PCM", "Line In" };
+static const unsigned int output_sel_values_nomic[] = { 3, 2 };
+static const char *output_sel_texts_singlemic[] = { "PCM", "Line In", "Mic" };
+static const unsigned int output_sel_values_mic1[] = { 3, 2, 0 };
+static const unsigned int output_sel_values_mic2[] = { 3, 2, 1 };
+static const char *output_sel_texts_dualmic[] = { "PCM", "Line In", "Mic 1", "Mic 2" };
+static const unsigned int output_sel_values_mic12[] = { 3, 2, 0, 1 };
+
+#define HP_ENUM_DECL(name, texts, values) \
+	static const SOC_VALUE_ENUM_SINGLE_DECL( \
+		jz_icdc_hp_enum_ ## name, JZ_ICDC_CR_HP, 0, 0x3, \
+		output_sel_texts_ ## texts, output_sel_values_ ## values); \
+	static const struct snd_kcontrol_new icdc_hp_controls_ ## name = \
+		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_hp_enum_ ## name);
+
+HP_ENUM_DECL(nomic, nomic, nomic)
+HP_ENUM_DECL(mic1, singlemic, mic1)
+HP_ENUM_DECL(mic2, singlemic, mic2)
+HP_ENUM_DECL(mic12, dualmic, mic12)
+HP_ENUM_DECL(mic1l2r, singlemic, mic1)
+HP_ENUM_DECL(mic1r2l, singlemic, mic2)
+
+#define LO_ENUM_DECL(name, texts, values) \
+	static const SOC_VALUE_ENUM_SINGLE_DECL( \
+		jz_icdc_lo_enum_ ## name, JZ_ICDC_CR_LO, 0, 0x3, \
+		output_sel_texts_ ## texts, output_sel_values_ ## values); \
+	static const struct snd_kcontrol_new icdc_lo_controls_ ## name = \
+		SOC_DAPM_VALUE_ENUM("Route", jz_icdc_lo_enum_ ## name);
+
+LO_ENUM_DECL(nomic, nomic, nomic)
+LO_ENUM_DECL(mic1, singlemic, mic1)
+LO_ENUM_DECL(mic2, singlemic, mic2)
+LO_ENUM_DECL(mic12, dualmic, mic12)
+LO_ENUM_DECL(mic1l2r, singlemic, mic1)
+LO_ENUM_DECL(mic1r2l, singlemic, mic2)
 
 
 static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
@@ -591,18 +649,6 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			       micbias_event,
 			       SND_SOC_DAPM_POST_REG),
 
-	SND_SOC_DAPM_MUX("Mic Channels Route", SND_SOC_NOPM, 0, 0,
-			 &icdc_mic_mux_controls),
-
-	SND_SOC_DAPM_MUX("Headphone Source", SND_SOC_NOPM, 0, 0,
-			 &icdc_hp_mux_controls),
-
-	SND_SOC_DAPM_MUX("Line Out Source", SND_SOC_NOPM, 0, 0,
-			 &icdc_lo_mux_controls),
-
-	SND_SOC_DAPM_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
-			 &icdc_adc_controls),
-
 	SND_SOC_DAPM_OUTPUT("LHPOUT"),
 	SND_SOC_DAPM_OUTPUT("RHPOUT"),
 
@@ -619,6 +665,7 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("RLINEIN"),
 };
 
+/* Unconditional routes. */
 static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	/* Destination Widget  <=== Path Name <=== Source Widget */
 	{ "Mic 1 In", NULL, "MIC1P" },
@@ -631,25 +678,14 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "Line In", NULL, "RLINEIN" },
 
 
-	{ "Mic Channels Route", "Stereo", "Mic 1 In" },
-	{ "Mic Channels Route", "Stereo", "Mic 2 In" },
-
 	{ "Line In Bypass", NULL, "Line In" },
 
 
-	{ "Capture Source", "Mic 1", "Mic 1 In" },
-	{ "Capture Source", "Mic 1", "Mic Channels Route" },
-	{ "Capture Source", "Mic 2", "Mic 2 In" },
-	{ "Capture Source", "Mic 2", "Mic Channels Route" },
 	{ "Capture Source", "Line In", "Line In" },
 
 	{ "ADC", NULL, "Capture Source" },
 
 
-	{ "Headphone Source", "Mic 1", "Mic 1 In" },
-	{ "Headphone Source", "Mic 1", "Mic Channels Route" },
-	{ "Headphone Source", "Mic 2", "Mic 2 In" },
-	{ "Headphone Source", "Mic 2", "Mic Channels Route" },
 	{ "Headphone Source", "Line In", "Line In Bypass" },
 	{ "Headphone Source", "PCM", "DAC" },
 
@@ -659,10 +695,6 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "RHPOUT", NULL, "HP Out"},
 
 
-	{ "Line Out Source", "Mic 1", "Mic 1 In" },
-	{ "Line Out Source", "Mic 1", "Mic Channels Route" },
-	{ "Line Out Source", "Mic 2", "Mic 2 In" },
-	{ "Line Out Source", "Mic 2", "Mic Channels Route" },
 	{ "Line Out Source", "Line In", "Line In Bypass" },
 	{ "Line Out Source", "PCM", "DAC" },
 
@@ -671,6 +703,53 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 	{ "LOUT", NULL, "Line Out"},
 	{ "ROUT", NULL, "Line Out"},
 };
+
+/* Routes for micless boards. */
+static const struct snd_soc_dapm_route icdc_mic_routes_nomic[] = { };
+
+/* Routes for mono mic 1 boards. */
+static const struct snd_soc_dapm_route icdc_mic_routes_mic1[] = {
+	{ "Capture Source", "Mic", "Mic 1 In" },
+
+	{ "Headphone Source", "Mic", "Mic 1 In" },
+
+	{ "Line Out Source", "Mic", "Mic 1 In" },
+};
+
+/* Routes for mono mic 2 boards. */
+static const struct snd_soc_dapm_route icdc_mic_routes_mic2[] = {
+	{ "Capture Source", "Mic", "Mic 2 In" },
+
+	{ "Headphone Source", "Mic", "Mic 2 In" },
+
+	{ "Line Out Source", "Mic", "Mic 2 In" },
+};
+
+/* Routes for dual mono mic boards. */
+static const struct snd_soc_dapm_route icdc_mic_routes_mic12[] = {
+	{ "Capture Source", "Mic 1", "Mic 1 In" },
+	{ "Capture Source", "Mic 2", "Mic 2 In" },
+
+	{ "Headphone Source", "Mic 1", "Mic 1 In" },
+	{ "Headphone Source", "Mic 2", "Mic 2 In" },
+
+	{ "Line Out Source", "Mic 1", "Mic 1 In" },
+	{ "Line Out Source", "Mic 2", "Mic 2 In" },
+};
+
+/* Routes for stereo mic boards. */
+static const struct snd_soc_dapm_route icdc_mic_routes_micst[] = {
+	{ "Capture Source", "Mic", "Mic 1 In" },
+	{ "Capture Source", "Mic", "Mic 2 In" },
+
+	{ "Headphone Source", "Mic", "Mic 1 In" },
+	{ "Headphone Source", "Mic", "Mic 2 In" },
+
+	{ "Line Out Source", "Mic", "Mic 1 In" },
+	{ "Line Out Source", "Mic", "Mic 2 In" },
+};
+#define icdc_mic_routes_mic1l2r icdc_mic_routes_micst
+#define icdc_mic_routes_mic1r2l icdc_mic_routes_micst
 
 #ifdef CONFIG_PM_SLEEP
 
@@ -689,12 +768,10 @@ static int jz_icdc_resume(struct snd_soc_codec *codec)
 #define jz_icdc_resume NULL
 #endif
 
-static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
+static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 {
 	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
 	struct regmap *regmap = jz_icdc->regmap;
-
-	snd_soc_codec_set_cache_io(codec, 5, 8, SND_SOC_REGMAP);
 
 	cpm_start_clock(CGM_AIC);
 	mdelay(1);
@@ -710,10 +787,12 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 	/* default: DAC */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_LO, 0, 0x3, 0x3);
 
-	/* default: L(mic1) + R(mic1) */
-	jz_icdc_update_reg(codec, JZ_ICDC_CR_ADC, 0, 0x3, 0x0);
-	/* mic mono */
-	jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1, 0);
+	/* default: line in */
+	jz_icdc_update_reg(codec, JZ_ICDC_CR_ADC, 0, 0x3, 0x2);
+	/* mic mono/stereo */
+	jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 7, 0x1,
+			   jz_icdc->mic_mode == JZ4770_MIC_STEREO_1L2R ||
+			   jz_icdc->mic_mode == JZ4770_MIC_STEREO_1R2L);
 
 	/* init codec params */
 	/* ADC/DAC: serial + i2s */
@@ -770,6 +849,66 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 	/* clr SB_SLEEP */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 1, 0x1, 0);
 	mdelay(400);
+}
+
+#define MIC_CONFIG_DECL(mode) { \
+	.capture_mux_controls = &icdc_adc_controls_ ## mode, \
+	.hp_mux_controls = &icdc_hp_controls_ ## mode, \
+	.lo_mux_controls = &icdc_lo_controls_ ## mode, \
+	.controls = icdc_mic_controls_ ## mode, \
+	.num_controls = ARRAY_SIZE(icdc_mic_controls_ ## mode), \
+	.routes = icdc_mic_routes_ ## mode, \
+	.num_routes = ARRAY_SIZE(icdc_mic_routes_ ## mode), \
+	}
+static const struct mic_config {
+	const struct snd_kcontrol_new *capture_mux_controls;
+	const struct snd_kcontrol_new *hp_mux_controls;
+	const struct snd_kcontrol_new *lo_mux_controls;
+	const struct snd_kcontrol_new *controls;
+	int num_controls;
+	const struct snd_soc_dapm_route *routes;
+	int num_routes;
+} mic_configs[] = {
+	[JZ4770_MIC_NONE]		= MIC_CONFIG_DECL(nomic),
+	[JZ4770_MIC_1]			= MIC_CONFIG_DECL(mic1),
+	[JZ4770_MIC_2]			= MIC_CONFIG_DECL(mic2),
+	[JZ4770_MIC_DUAL_MONO]		= MIC_CONFIG_DECL(mic12),
+	[JZ4770_MIC_STEREO_1L2R]	= MIC_CONFIG_DECL(mic1l2r),
+	[JZ4770_MIC_STEREO_1R2L]	= MIC_CONFIG_DECL(mic1r2l),
+};
+
+static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
+{
+	struct snd_soc_dapm_context *dapm = &codec->dapm;
+	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
+	const struct mic_config *mic_cfg = &mic_configs[jz_icdc->mic_mode];
+	struct snd_soc_dapm_widget widgets[] = {
+		SND_SOC_DAPM_VALUE_MUX("Capture Source", SND_SOC_NOPM, 0, 0,
+				       mic_cfg->capture_mux_controls),
+		SND_SOC_DAPM_VALUE_MUX("Headphone Source", SND_SOC_NOPM, 0, 0,
+				       mic_cfg->hp_mux_controls),
+		SND_SOC_DAPM_VALUE_MUX("Line Out Source", SND_SOC_NOPM, 0, 0,
+				       mic_cfg->lo_mux_controls),
+	};
+	int ret;
+
+	snd_soc_codec_set_cache_io(codec, 5, 8, SND_SOC_REGMAP);
+
+	jz_icdc_codec_init_regs(codec);
+
+	/* Add mic related widgets, controls and routes. */
+	ret = snd_soc_dapm_new_controls(&codec->dapm, widgets,
+					ARRAY_SIZE(widgets));
+	if (ret)
+		return ret;
+	ret = snd_soc_add_codec_controls(codec, mic_cfg->controls,
+					 mic_cfg->num_controls);
+	if (ret)
+		return ret;
+	ret = snd_soc_dapm_add_routes(dapm, mic_cfg->routes,
+				      mic_cfg->num_routes);
+	if (ret)
+		return ret;
 
 	return jz_icdc_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 }
@@ -880,6 +1019,7 @@ static int jz_icdc_probe(struct platform_device *pdev)
 	int ret;
 	struct jz_icdc *jz_icdc;
 	struct resource *mem;
+	struct jz4770_icdc_platform_data *pdata = pdev->dev.platform_data;
 
 	jz_icdc = devm_kzalloc(&pdev->dev, sizeof(*jz_icdc), GFP_KERNEL);
 	if (!jz_icdc)
@@ -901,6 +1041,11 @@ static int jz_icdc_probe(struct platform_device *pdev)
 					   &jz_icdc_regmap_config);
 	if (IS_ERR(jz_icdc->regmap))
 		return PTR_ERR(jz_icdc->regmap);
+
+	if (pdata)
+		jz_icdc->mic_mode = pdata->mic_mode;
+	else
+		dev_warn(&pdev->dev, "No pdata, assuming no mics\n");
 
 	platform_set_drvdata(pdev, jz_icdc);
 
