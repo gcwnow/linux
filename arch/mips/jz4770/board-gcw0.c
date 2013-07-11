@@ -42,6 +42,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/usb/musb.h>
 #include <media/radio-rda5807.h>
+#include <sound/jz4770.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
 
@@ -513,6 +514,10 @@ static struct platform_device gcw0_backlight_device = {
 
 /* Audio */
 
+static struct jz4770_icdc_platform_data gcw0_icdc_pdata = {
+	.mic_mode = JZ4770_MIC_1,
+};
+
 static struct platform_device gcw0_audio_device = {
 	.name = "gcw0-audio",
 	.id = -1,
@@ -600,6 +605,7 @@ static int __init gcw0_init_platform_devices(void)
 	jz4770_adc_device.dev.platform_data = &gcw0_battery_pdata;
 	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
 	jz4770_msc1_device.dev.platform_data = &gcw_external_sd_data;
+	jz4770_icdc_device.dev.platform_data = &gcw0_icdc_pdata;
 
 	return platform_add_devices(jz_platform_devices,
 				    ARRAY_SIZE(jz_platform_devices));
