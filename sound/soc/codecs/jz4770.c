@@ -62,10 +62,6 @@ struct jz_icdc {
 	enum jz4770_icdc_mic_mode mic_mode;
 };
 
-//static int lineout_enable = 0;
-static int bypass_to_hp = 0;
-static int bypass_to_lineout = 0;
-
 __attribute__((__unused__)) static void dump_aic_regs(const char *func, int line)
 {
 	char *regname[] = {"aicfr","aiccr","aiccr1","aiccr2","i2scr","aicsr","acsr","i2ssr",
@@ -258,7 +254,7 @@ static void jz_icdc_shutdown(struct snd_pcm_substream *substream,
 
 	DEBUG_MSG("enter jz_icdc_shutdown, playback = %d\n", playback);
 
-	if (playback || bypass_to_hp || bypass_to_lineout) {
+	if (playback) {
 		turn_off_dac(codec);
 
 		/* anti-pop workaround */
@@ -285,18 +281,16 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	struct snd_soc_codec *codec = dai->codec;
 	int ret = 0;
 
-	DEBUG_MSG("enter %s:%d substream = %s bypass_to_hp = %d bypassto_lineout = %d cmd = %d\n",
+	DEBUG_MSG("enter %s:%d substream = %s cmd = %d\n",
 		  __func__, __LINE__,
 		  (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture"),
-		  bypass_to_hp, bypass_to_lineout,
 		  cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		if ((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ||
-		    bypass_to_hp || bypass_to_lineout){
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 #if 0
 			/* HP_MUTE */
 			jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 0);
@@ -494,13 +488,11 @@ static int lineout_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_POST_PMU:
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_LO, 7, 0x1, 0);
 		msleep(1);
-		//lineout_enable = 1;
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_LO, 7, 0x1, 1);
 		msleep(1);
-		//lineout_enable = 0;
 		break;
 	}
 
