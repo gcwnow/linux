@@ -34,13 +34,13 @@
 #define GCW0_SPEAKER_GPIO	JZ_GPIO_PORTF(20)
 
 
-/* AV-out jack: plug insert detection */
+/* Headphone jack: plug insert detection */
 
 static struct snd_soc_jack gcw0_avout_jack;
 
 static struct snd_soc_jack_pin gcw0_avout_jack_pins[] = {
 	{
-		.pin		= "AV-out",
+		.pin		= "Headphone",
 		.mask		= SND_JACK_HEADPHONE,
 	},
 	{
@@ -52,7 +52,7 @@ static struct snd_soc_jack_pin gcw0_avout_jack_pins[] = {
 
 static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 	{
-		.name		= "AV-out Detect",
+		.name		= "Headphone Detect",
 		.report		= SND_JACK_HEADPHONE,
 		.gpio		= GCW0_AVOUT_DETECT_GPIO,
 		.invert		= 1,
@@ -60,7 +60,7 @@ static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 	},
 };
 
-/* AV-out and speaker switches */
+/* Headphone and speaker switches */
 
 static int gcw0_avout_event(struct snd_soc_dapm_widget *widget,
 			    struct snd_kcontrol *ctrl, int event)
@@ -77,13 +77,13 @@ static int gcw0_speaker_event(struct snd_soc_dapm_widget *widget,
 }
 
 static const struct snd_kcontrol_new gcw0_controls[] = {
-	SOC_DAPM_PIN_SWITCH("AV-out"),
+	SOC_DAPM_PIN_SWITCH("Headphone"),
 	SOC_DAPM_PIN_SWITCH("Speakers"),
 };
 
 /* GCW0 machine dapm widgets */
 static const struct snd_soc_dapm_widget gcw0_widgets[] = {
-	SND_SOC_DAPM_HP("AV-out", gcw0_avout_event),
+	SND_SOC_DAPM_HP("Headphone", gcw0_avout_event),
 	SND_SOC_DAPM_SPK("Speakers", gcw0_speaker_event),
 	SND_SOC_DAPM_LINE("FM Radio", NULL),
 	SND_SOC_DAPM_MIC("Built-in Mic", NULL),
@@ -93,8 +93,8 @@ static const struct snd_soc_dapm_widget gcw0_widgets[] = {
 static const struct snd_soc_dapm_route gcw0_routes[] = {
 	/* Destination Widget(sink)  <=== Path Name <=== Source Widget */
 
-	{ "AV-out", NULL, "LHPOUT" },
-	{ "AV-out", NULL, "RHPOUT" },
+	{ "Headphone", NULL, "LHPOUT" },
+	{ "Headphone", NULL, "RHPOUT" },
 
 	{ "Speakers", NULL, "LOUT" },
 	{ "Speakers", NULL, "ROUT" },
@@ -121,8 +121,8 @@ static int gcw0_codec_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_nc_pin(dapm, "MIC2P");
 	snd_soc_dapm_nc_pin(dapm, "MIC2N");
 
-	/* set up AV-out plug detection */
-	snd_soc_jack_new(codec, "AV-out Jack",
+	/* set up headphone plug detection */
+	snd_soc_jack_new(codec, "Headphone Jack",
 			 SND_JACK_VIDEOOUT | SND_JACK_HEADPHONE,
 			 &gcw0_avout_jack);
 	snd_soc_jack_add_pins(&gcw0_avout_jack,
@@ -175,9 +175,9 @@ static int gcw0_probe(struct platform_device *pdev)
 	struct snd_soc_card *card = &gcw0_card;
 	int ret;
 
-	ret = devm_gpio_request(&pdev->dev, GCW0_AVOUT_GPIO, "AV-out");
+	ret = devm_gpio_request(&pdev->dev, GCW0_AVOUT_GPIO, "Headphone");
 	if (ret) {
-		dev_err(&pdev->dev, "Failed to request AV-out GPIO(%d): %d\n",
+		dev_err(&pdev->dev, "Failed to request headphone GPIO(%d): %d\n",
 			GCW0_AVOUT_GPIO, ret);
 		return ret;
 	}
