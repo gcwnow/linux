@@ -319,10 +319,6 @@ static void jz_icdc_shutdown(struct snd_pcm_substream *substream,
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 1);
 		mdelay(1);
 #endif
-
-		/* power down SB_DAC */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 4, 0x1, 1);
-		mdelay(10);
 	}
 
 	mdelay(10);
@@ -345,10 +341,6 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		if ((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ||
 		    bypass_to_hp || bypass_to_lineout){
-			/* SB_DAC */
-			jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 4, 0x1, 0);
-			mdelay(1);
-
 #if 0
 			/* HP_MUTE */
 			jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 0);
@@ -560,6 +552,23 @@ static int adc_poweron_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int dac_poweron_event(struct snd_soc_dapm_widget *w,
+			 struct snd_kcontrol *kcontrol, int event) {
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		mdelay(1);
+		break;
+	case SND_SOC_DAPM_POST_PMD:
+		mdelay(10);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 /* ADC source select. */
 
 static const char *input_sel_texts_nomic[] = { "Line In" };
@@ -643,7 +652,9 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 	SND_SOC_DAPM_ADC_E("ADC", "HiFi Capture", JZ_ICDC_CR_ADC, 4, 1,
 			   adc_poweron_event,
 			   SND_SOC_DAPM_POST_PMU),
-	SND_SOC_DAPM_DAC("DAC", "HiFi Playback", SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_DAC_E("DAC", "HiFi Playback", JZ_ICDC_CR_DAC, 4, 1,
+			   dac_poweron_event,
+			   SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 
 	SND_SOC_DAPM_SUPPLY("Mic Bias", JZ_ICDC_CR_MIC, 0, 1,
 			       micbias_event,
