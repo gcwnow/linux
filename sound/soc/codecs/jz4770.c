@@ -62,7 +62,6 @@ struct jz_icdc {
 	enum jz4770_icdc_mic_mode mic_mode;
 };
 
-static int hpout_enable = 0;
 //static int lineout_enable = 0;
 static int bypass_to_hp = 0;
 static int bypass_to_lineout = 0;
@@ -98,46 +97,6 @@ static void jz_icdc_update_reg(struct snd_soc_codec *codec, unsigned int reg,
 	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
 
 	regmap_update_bits(jz_icdc->regmap, reg, mask << lsb, val << lsb);
-}
-
-static void turn_on_sb_hp(struct snd_soc_codec *codec)
-{
-	if (jz_icdc_read_reg(codec, JZ_ICDC_CR_HP) & (1 << 4)) {
-		/* set cap-less */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 0);
-
-		/* power on sb hp */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 4, 0x1, 0);
-
-
-		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 3)))
-			mdelay(10);
-
-		mdelay(1);
-
-		/* clear RUP flag */
-		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 3, 0x1, 1);
-	}
-}
-
-static void turn_off_sb_hp(struct snd_soc_codec *codec)
-{
-	if (!(jz_icdc_read_reg(codec, JZ_ICDC_CR_HP) & (1 << 4))) {
-
-		/* set cap-couple */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 1);
-		/* power on sb hp */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 4, 0x1, 1);
-
-
-		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 2)))
-			mdelay(10);
-
-		mdelay(1);
-
-		/* clear RUP flag */
-		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 2, 0x1, 1);
-	}
 }
 
 static void turn_on_dac(struct snd_soc_codec *codec)
@@ -311,9 +270,6 @@ static void jz_icdc_shutdown(struct snd_pcm_substream *substream,
 		__i2s_disable_replay();
 		__i2s_disable();
 
-		if (hpout_enable)
-			turn_off_sb_hp(codec);
-
 #if 0
 		/* mute headphone */
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 1);
@@ -346,9 +302,6 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 			jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 0);
 			mdelay(1);
 #endif
-
-			if (hpout_enable)
-				turn_on_sb_hp(codec);
 
 			turn_on_dac(codec);
 
@@ -477,18 +430,54 @@ static const struct snd_kcontrol_new icdc_mic_controls_mic1r2l[] = {
 
 
 static int hpout_event(struct snd_soc_dapm_widget *w,
-			 struct snd_kcontrol *kcontrol, int event) {
+		       struct snd_kcontrol *kcontrol, int event) {
+	struct snd_soc_codec *codec = w->codec;
+
 	DEBUG_MSG("enter %s, event = 0x%08x\n", __func__, event);
 
 	mdelay(1);
 
 	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+
+		/* set cap-less */
+		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 0);
+
+		/* unmute hp */
+		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 0);
+
+		break;
+
 	case SND_SOC_DAPM_POST_PMU:
-		hpout_enable = 1;
+
+		/* wait for ramp-up complete (RUP) */
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 3)))
+			mdelay(10);
+
+		mdelay(1);
+
+		/* clear RUP flag */
+		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 3, 0x1, 1);
+
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
-		hpout_enable = 0;
+
+		/* set cap-couple */
+		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 3, 0x1, 1);
+
+		/* mute hp */
+		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 1);
+
+		/* wait for ramp-down complete (RDO) */
+		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 2)))
+			mdelay(10);
+
+		mdelay(1);
+
+		/* clear RDO flag */
+		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 2, 0x1, 1);
+
 		break;
 	}
 
@@ -633,9 +622,10 @@ LO_ENUM_DECL(mic1r2l, singlemic, mic2)
 
 
 static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
-	SND_SOC_DAPM_PGA_E("HP Out", JZ_ICDC_CR_HP, 7, 1, NULL, 0,
+	SND_SOC_DAPM_PGA_E("HP Out", JZ_ICDC_CR_HP, 4, 1, NULL, 0,
 			   hpout_event,
-			   SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+			   SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
+			   SND_SOC_DAPM_POST_PMD),
 
 	SND_SOC_DAPM_PGA_E("Line Out", JZ_ICDC_CR_LO, 4, 1, NULL, 0,
 			   lineout_event,
