@@ -458,29 +458,6 @@ static int adc_poweron_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static int dac_power_event(struct snd_soc_dapm_widget *w,
-			   struct snd_kcontrol *kcontrol, int event) {
-
-	switch (event) {
-	case SND_SOC_DAPM_PRE_PMD:
-		/* anti-pop workaround */
-		/* TODO: This module should not access AIC regs other than the
-		 *       ones we ioremapped.
-		 */
-		__aic_write_tfifo(0x0);
-		__aic_write_tfifo(0x0);
-		__i2s_enable_replay();
-		__i2s_enable();
-		mdelay(1);
-		__i2s_disable_replay();
-		__i2s_disable();
-
-		break;
-	}
-
-	return 0;
-}
-
 /* ADC source select. */
 
 static const char *input_sel_texts_nomic[] = { "Line In" };
@@ -565,9 +542,7 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 	SND_SOC_DAPM_ADC_E("ADC", "HiFi Capture", JZ_ICDC_CR_ADC, 4, 1,
 			   adc_poweron_event,
 			   SND_SOC_DAPM_POST_PMU),
-	SND_SOC_DAPM_DAC_E("DAC", "HiFi Playback", JZ_ICDC_CR_DAC, 4, 1,
-			   dac_power_event,
-			   SND_SOC_DAPM_PRE_PMD),
+	SND_SOC_DAPM_DAC("DAC", "HiFi Playback", JZ_ICDC_CR_DAC, 4, 1),
 
 	SND_SOC_DAPM_SUPPLY("Mic Bias", JZ_ICDC_CR_MIC, 0, 1,
 			       micbias_event,
