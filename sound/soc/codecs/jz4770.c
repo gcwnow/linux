@@ -46,15 +46,6 @@
 #define SWAP_LR 1
 
 
-static int jz_icdc_debug = 0;
-module_param(jz_icdc_debug, int, 0644);
-
-#define DEBUG_MSG(msg...)			\
-	do {					\
-		if (jz_icdc_debug)		\
-			printk("ICDC: " msg);	\
-	} while(0)
-
 /* codec private data */
 struct jz_icdc {
 	struct regmap *regmap;
@@ -215,11 +206,6 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	struct snd_soc_codec *codec = dai->codec;
 	int ret = 0;
 
-	DEBUG_MSG("enter %s:%d substream = %s cmd = %d\n",
-		  __func__, __LINE__,
-		  (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture"),
-		  cmd);
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -370,8 +356,6 @@ static int hpout_event(struct snd_soc_dapm_widget *w,
 		       struct snd_kcontrol *kcontrol, int event) {
 	struct snd_soc_codec *codec = w->codec;
 
-	DEBUG_MSG("enter %s, event = 0x%08x\n", __func__, event);
-
 	mdelay(1);
 
 	switch (event) {
@@ -424,8 +408,6 @@ static int hpout_event(struct snd_soc_dapm_widget *w,
 static int lineout_event(struct snd_soc_dapm_widget *w,
 		     struct snd_kcontrol *kcontrol, int event) {
 	struct snd_soc_codec *codec = w->codec;
-
-	DEBUG_MSG("enter %s, event = 0x%08x\n", __func__, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
