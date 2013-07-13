@@ -105,6 +105,27 @@ static int jz_icdc_set_bias_level(struct snd_soc_codec *codec,
 	return 0;
 }
 
+static int jz_icdc_startup(struct snd_pcm_substream *substream,
+			   struct snd_soc_dai *dai)
+{
+	struct snd_soc_codec *codec = dai->codec;
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		snd_soc_dapm_force_enable_pin(&codec->dapm, "SYSCLK");
+
+	return 0;
+}
+
+static void jz_icdc_shutdown(struct snd_pcm_substream *substream,
+			     struct snd_soc_dai *dai)
+{
+	struct snd_soc_codec *codec = dai->codec;
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		snd_soc_dapm_disable_pin(&codec->dapm, "SYSCLK");
+}
+
+
 static int jz_icdc_hw_params(struct snd_pcm_substream *substream,
 			     struct snd_pcm_hw_params *params,
 			     struct snd_soc_dai *dai)
@@ -265,6 +286,8 @@ static int jz_icdc_digital_mute(struct snd_soc_dai *dai, int mute)
 			 SNDRV_PCM_FMTBIT_S20_3LE |SNDRV_PCM_FMTBIT_S24_3LE)
 
 static const struct snd_soc_dai_ops jz_icdc_dai_ops = {
+	.startup	= jz_icdc_startup,
+	.shutdown	= jz_icdc_shutdown,
 	.hw_params	= jz_icdc_hw_params,
 	.trigger	= jz_icdc_pcm_trigger,
 	.digital_mute	= jz_icdc_digital_mute,
@@ -554,6 +577,13 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 	SND_SOC_DAPM_OUTPUT("LOUT"),
 	SND_SOC_DAPM_OUTPUT("ROUT"),
 
+	/*
+	 * SYSCLK output from the codec to the AIC is required to keep the
+	 * DMA transfer going during playback when all audible outputs have
+	 * been disabled.
+	 */
+	SND_SOC_DAPM_OUTPUT("SYSCLK"),
+
 	/* FIXME: determine MICDIFF here. */
 	SND_SOC_DAPM_INPUT("MIC1P"),
 	SND_SOC_DAPM_INPUT("MIC1N"),
@@ -601,6 +631,8 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 
 	{ "LOUT", NULL, "Line Out"},
 	{ "ROUT", NULL, "Line Out"},
+
+	{ "SYSCLK", NULL, "DAC" },
 };
 
 /* Routes for micless boards. */
