@@ -95,41 +95,6 @@ static void jz_icdc_update_reg(struct snd_soc_codec *codec, unsigned int reg,
 	regmap_update_bits(jz_icdc->regmap, reg, mask << lsb, val << lsb);
 }
 
-static void turn_on_dac(struct snd_soc_codec *codec)
-{
-	/* DAC_MUTE */
-	if (jz_icdc_read_reg(codec, JZ_ICDC_CR_DAC) & (1 << 7)) {
-		/* power on sb hp */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 7, 0x1, 0);
-
-
-		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 1)))
-			mdelay(10);
-
-		mdelay(1);
-
-		/* clear RUP flag */
-		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 1, 0x1, 1);
-	}
-}
-
-static void turn_off_dac(struct snd_soc_codec *codec)
-{
-	if (!(jz_icdc_read_reg(codec, JZ_ICDC_CR_DAC) & (1 << 7))) {
-		/* power on sb hp */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 7, 0x1, 1);
-
-
-		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 0)))
-			mdelay(10);
-
-		mdelay(1);
-
-		/* clear RUP flag */
-		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 0, 0x1, 1);
-	}
-}
-
 static int jz_icdc_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
 {
@@ -245,37 +210,6 @@ static int jz_icdc_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static void jz_icdc_shutdown(struct snd_pcm_substream *substream,
-			     struct snd_soc_dai *dai)
-{
-	struct snd_soc_codec *codec = dai->codec;
-
-	int playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
-
-	DEBUG_MSG("enter jz_icdc_shutdown, playback = %d\n", playback);
-
-	if (playback) {
-		turn_off_dac(codec);
-
-		/* anti-pop workaround */
-		__aic_write_tfifo(0x0);
-		__aic_write_tfifo(0x0);
-		__i2s_enable_replay();
-		__i2s_enable();
-		mdelay(1);
-		__i2s_disable_replay();
-		__i2s_disable();
-
-#if 0
-		/* mute headphone */
-		jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 1);
-		mdelay(1);
-#endif
-	}
-
-	mdelay(10);
-}
-
 static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 			      int cmd, struct snd_soc_dai *dai) {
 	struct snd_soc_codec *codec = dai->codec;
@@ -290,17 +224,7 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-#if 0
-			/* HP_MUTE */
-			jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 7, 0x1, 0);
-			mdelay(1);
-#endif
-
-			turn_on_dac(codec);
-
-			//dump_aic_regs(__func__, __LINE__);
-		} else {
+		if (substream->stream != SNDRV_PCM_STREAM_PLAYBACK) {
 			jz_icdc_set_bias_level(codec, SND_SOC_BIAS_ON);
 			mdelay(2);
 
@@ -320,10 +244,30 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-static int jz_icdc_mute(struct snd_soc_dai *dai, int mute)
+static int jz_icdc_digital_mute(struct snd_soc_dai *dai, int mute)
 {
-	jz_icdc_update_reg(dai->codec, JZ_ICDC_CR_DAC, 7, 0x1, mute);
-	return 0;
+	struct snd_soc_codec *codec = dai->codec;
+	unsigned int gain_bit = mute ? 0 /* GDO */ : 1 /* GUP */;
+	int change;
+
+	change = snd_soc_update_bits(codec, JZ_ICDC_CR_DAC, 1 << 7, mute << 7);
+
+	if (change == 1 &&
+	    !(jz_icdc_read_reg(codec, JZ_ICDC_CR_DAC) & (1 << 4))) {
+
+		/* wait for gain up/down complete (GUP/GDO) */
+		while (!(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << gain_bit)))
+			mdelay(10);
+
+		mdelay(1);
+
+		/* clear GUP/GDO flag */
+		jz_icdc_update_reg(codec, JZ_ICDC_IFR, gain_bit, 0x1, 1);
+
+		return 0;
+	} else {
+		return change;
+	}
 }
 
 #define JZ_ICDC_RATES (SNDRV_PCM_RATE_8000  | SNDRV_PCM_RATE_11025 | \
@@ -337,8 +281,7 @@ static int jz_icdc_mute(struct snd_soc_dai *dai, int mute)
 static const struct snd_soc_dai_ops jz_icdc_dai_ops = {
 	.hw_params	= jz_icdc_hw_params,
 	.trigger	= jz_icdc_pcm_trigger,
-	.shutdown       = jz_icdc_shutdown,
-	.digital_mute	= jz_icdc_mute,
+	.digital_mute	= jz_icdc_digital_mute,
 };
 
 static struct snd_soc_dai_driver jz_icdc_dai = {
@@ -533,17 +476,23 @@ static int adc_poweron_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static int dac_poweron_event(struct snd_soc_dapm_widget *w,
-			 struct snd_kcontrol *kcontrol, int event) {
+static int dac_power_event(struct snd_soc_dapm_widget *w,
+			   struct snd_kcontrol *kcontrol, int event) {
 
 	switch (event) {
-	case SND_SOC_DAPM_POST_PMU:
+	case SND_SOC_DAPM_PRE_PMD:
+		/* anti-pop workaround */
+		/* TODO: This module should not access AIC regs other than the
+		 *       ones we ioremapped.
+		 */
+		__aic_write_tfifo(0x0);
+		__aic_write_tfifo(0x0);
+		__i2s_enable_replay();
+		__i2s_enable();
 		mdelay(1);
-		break;
-	case SND_SOC_DAPM_POST_PMD:
-		mdelay(10);
-		break;
-	default:
+		__i2s_disable_replay();
+		__i2s_disable();
+
 		break;
 	}
 
@@ -635,8 +584,8 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			   adc_poweron_event,
 			   SND_SOC_DAPM_POST_PMU),
 	SND_SOC_DAPM_DAC_E("DAC", "HiFi Playback", JZ_ICDC_CR_DAC, 4, 1,
-			   dac_poweron_event,
-			   SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+			   dac_power_event,
+			   SND_SOC_DAPM_PRE_PMD),
 
 	SND_SOC_DAPM_SUPPLY("Mic Bias", JZ_ICDC_CR_MIC, 0, 1,
 			       micbias_event,
