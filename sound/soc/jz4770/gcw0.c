@@ -19,6 +19,7 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 
 #include <sound/core.h>
 #include <sound/jack.h>
@@ -65,6 +66,10 @@ static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 static int gcw0_avout_event(struct snd_soc_dapm_widget *widget,
 			    struct snd_kcontrol *ctrl, int event)
 {
+	/* Delay the amp power up to reduce pops. */
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		msleep(50);
+
 	gpio_set_value(GCW0_AVOUT_GPIO, !SND_SOC_DAPM_EVENT_ON(event));
 	return 0;
 }
