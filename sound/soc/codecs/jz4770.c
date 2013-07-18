@@ -45,6 +45,17 @@
  */
 #define SWAP_LR 1
 
+/*
+ * Enable power management on the PCM mixer?
+ * When this is disabled, the lowest volume setting is not silent, nor does
+ * it power down the headphone and line out outputs.
+ * When this is enabled, the PCM mixer is mono, since stereo is not yet
+ * supported by dapm widgets.
+ * Ideally we'd have power management and a stereo mixer, but today that is
+ * not yet an option.
+ */
+#define PCM_MIXER_DAPM 1
+
 
 /* codec private data */
 struct jz_icdc {
@@ -313,7 +324,7 @@ static struct snd_soc_dai_driver jz_icdc_dai = {
 };
 
 /* unit: 0.01dB */
-static const DECLARE_TLV_DB_SCALE(dac_tlv, -3100, 100, 0);
+static const DECLARE_TLV_DB_SCALE(dac_tlv, -3100, 100, PCM_MIXER_DAPM);
 static const DECLARE_TLV_DB_SCALE(adc_tlv, 0, 100, 0);
 static const DECLARE_TLV_DB_SCALE(out_tlv, -2500, 100, 0);
 static const DECLARE_TLV_DB_SCALE(mic_boost_tlv, 0, 400, 0);
@@ -322,6 +333,7 @@ static const DECLARE_TLV_DB_SCALE(linein_tlv, -2500, 100, 0);
 /* Unconditional controls. */
 static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 	/* playback gain control */
+#if !PCM_MIXER_DAPM
 	SOC_DOUBLE_R_TLV("PCM Playback Volume",
 #if SWAP_LR
 			 JZ_ICDC_GCR_DACR, JZ_ICDC_GCR_DACL,
@@ -329,6 +341,7 @@ static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 			 JZ_ICDC_GCR_DACL, JZ_ICDC_GCR_DACR,
 #endif
 			 0, 31, 1, dac_tlv),
+#endif
 	SOC_DOUBLE_R_TLV("Headphone Playback Volume",
 #if SWAP_LR
 			 JZ_ICDC_GCR_HPR, JZ_ICDC_GCR_HPL,
@@ -343,6 +356,13 @@ static const struct snd_kcontrol_new jz_icdc_snd_controls[] = {
 
 	SOC_DOUBLE_R_TLV("Line In Bypass Volume",
 			 JZ_ICDC_GCR_LIBYL, JZ_ICDC_GCR_LIBYR, 0, 31, 1, linein_tlv),
+};
+
+static const struct snd_kcontrol_new jz_icdc_pcm_playback_controls[] = {
+#if PCM_MIXER_DAPM
+	SOC_DAPM_SINGLE_TLV("Volume",
+			    JZ_ICDC_GCR_DACL, 0, 31, 1, dac_tlv),
+#endif
 };
 
 /* Controls for micless boards. */
@@ -567,6 +587,10 @@ static const struct snd_soc_dapm_widget jz_icdc_dapm_widgets[] = {
 			   SND_SOC_DAPM_POST_PMU),
 	SND_SOC_DAPM_DAC("DAC", "HiFi Playback", JZ_ICDC_CR_DAC, 4, 1),
 
+	SND_SOC_DAPM_MIXER("PCM Playback", SND_SOC_NOPM, 0, 0,
+			   jz_icdc_pcm_playback_controls,
+			   ARRAY_SIZE(jz_icdc_pcm_playback_controls)),
+
 	SND_SOC_DAPM_SUPPLY("Mic Bias", JZ_ICDC_CR_MIC, 0, 1,
 			       micbias_event,
 			       SND_SOC_DAPM_POST_REG),
@@ -616,7 +640,7 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 
 
 	{ "Headphone Source", "Line In", "Line In Bypass" },
-	{ "Headphone Source", "PCM", "DAC" },
+	{ "Headphone Source", "PCM", "PCM Playback" },
 
 	{ "HP Out", NULL, "Headphone Source" },
 
@@ -625,13 +649,18 @@ static const struct snd_soc_dapm_route jz_icdc_dapm_routes[] = {
 
 
 	{ "Line Out Source", "Line In", "Line In Bypass" },
-	{ "Line Out Source", "PCM", "DAC" },
+	{ "Line Out Source", "PCM", "PCM Playback" },
 
 	{ "Line Out", NULL, "Line Out Source" },
 
 	{ "LOUT", NULL, "Line Out"},
 	{ "ROUT", NULL, "Line Out"},
 
+#if PCM_MIXER_DAPM
+	{ "PCM Playback", "Volume", "DAC" },
+#else
+	{ "PCM Playback", NULL, "DAC" },
+#endif
 	{ "SYSCLK", NULL, "DAC" },
 };
 
@@ -757,6 +786,11 @@ static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 3, 0x1, 0);
 #else
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_DAC, 3, 0x1, 1);
+#endif
+
+	/* DAC gain control */
+#if PCM_MIXER_DAPM
+	jz_icdc_update_reg(codec, JZ_ICDC_GCR_DACL, 7, 0x1, 1);
 #endif
 
 	/* ADC lrswap */
