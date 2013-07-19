@@ -1,0 +1,21 @@
+#
+# Vivante GPU support.
+#
+config GPU_VIVANTE_V2
+	tristate "Open Vivante V2 support"
+	depends on JZSOC
+	help
+	  Enable support for Vivante GPU cores. Version 2 interface.
+          If built as module, this builds a module named "galcore_v2.ko".
+
+config GPU_VIVANTE_V2_DEBUG
+	boolean "Debugging support for V2 driver"
+	depends on GPU_VIVANTE_V2
+	help
+	  Extra debug logging support for Vivante driver.
+
+config GPU_VIVANTE_V2_PROFILER
+	boolean "Profiling support for V2 driver"
+	depends on GPU_VIVANTE_V2
+	help
+	  Profiling support for Vivante driver.
