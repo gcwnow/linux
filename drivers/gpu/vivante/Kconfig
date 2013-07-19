@@ -19,3 +19,17 @@ config GPU_VIVANTE_V2_PROFILER
 	depends on GPU_VIVANTE_V2
 	help
 	  Profiling support for Vivante driver.
+
+config GPU_VIVANTE_V4
+	tristate "Open Vivante V4 support"
+	depends on JZSOC
+	help
+	  Enable support for Vivante GPU cores. Version 4 interface.
+          If built as module, this builds a module named "galcore_v4.ko".
+
+config GPU_VIVANTE_GC860
+	boolean "Vivante GC860 support for V4 driver"
+	depends on GPU_VIVANTE_V4 && MACH_JZ4770
+	help
+	  Enable support for the GC860 graphics core found on the
+	  Ingenic JZ4770 SoC designs.
