@@ -1348,6 +1348,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
 		*populate = len;
 	return addr;
 }
+EXPORT_SYMBOL_GPL(do_mmap_pgoff);
 
 SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
 		unsigned long, prot, unsigned long, flags,
@@ -2569,6 +2570,7 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(do_munmap);
 
 int vm_munmap(unsigned long start, size_t len)
 {
