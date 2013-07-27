@@ -823,13 +823,8 @@ gckEVENT_Signal(
     /* Mark the event as a signal. */
     iface.command            = gcvHAL_SIGNAL;
     iface.u.Signal.signal    = Signal;
-#ifdef __QNXNTO__
-    iface.u.Signal.coid      = 0;
-    iface.u.Signal.rcvid     = 0;
-#else
     iface.u.Signal.auxSignal = gcvNULL;
     iface.u.Signal.process   = gcvNULL;
-#endif
 
     /* Append it to the queue. */
     gcmkONERROR(gckEVENT_AddList(Event, &iface, FromWhere, gcvFALSE));
@@ -995,9 +990,6 @@ gckEVENT_Notify(
     gcsEVENT_QUEUE * queue;
     gctUINT mask = 0;
     gctBOOL acquired = gcvFALSE;
-#ifdef __QNXNTO__
-    gcuVIDMEM_NODE_PTR node;
-#endif
     gctUINT pending;
     gctBOOL suspended = gcvFALSE;
     gctBOOL empty = gcvFALSE, idle = gcvFALSE;
@@ -1103,9 +1095,7 @@ gckEVENT_Notify(
         while (queue->head != gcvNULL)
         {
             gcsEVENT_PTR event;
-#ifndef __QNXNTO__
             gctPOINTER logical;
-#endif
 
             event       = queue->head;
 
@@ -1131,27 +1121,11 @@ gckEVENT_Notify(
                 break;
 
             case gcvHAL_FREE_VIDEO_MEMORY:
-#ifdef __QNXNTO__
-                node = event->event.u.FreeVideoMemory.node;
-                if ((node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
-                &&  (node->VidMem.logical != gcvNULL)
-                )
-                {
-                    gcmkERR_BREAK(
-                        gckKERNEL_UnmapVideoMemory(event->kernel,
-                                                   node->VidMem.logical,
-                                                   event->event.pid,
-                                                   node->VidMem.bytes));
-                    node->VidMem.logical = gcvNULL;
-                }
-#endif
-
                 /* Free video memory. */
                 status = gckVIDMEM_Free(event->event.u.FreeVideoMemory.node);
                 break;
 
             case gcvHAL_WRITE_DATA:
-#ifndef __QNXNTO__
                 /* Convert physical into logical address. */
                 gcmkERR_BREAK(
                     gckOS_MapPhysical(Event->os,
@@ -1170,14 +1144,6 @@ gckEVENT_Notify(
                     gckOS_UnmapPhysical(Event->os,
                                         logical,
                                         gcmSIZEOF(gctUINT32)));
-#else
-                /* Write data. */
-                gcmkERR_BREAK(
-                    gckOS_WriteMemory(Event->os,
-                                      (gctPOINTER)
-                                          event->event.u.WriteData.address,
-                                      event->event.u.WriteData.data));
-#endif
                 break;
 
             case gcvHAL_UNLOCK_VIDEO_MEMORY:
@@ -1188,27 +1154,6 @@ gckEVENT_Notify(
                 break;
 
             case gcvHAL_SIGNAL:
-#ifdef __QNXNTO__
-                if ((event->event.u.Signal.coid == 0)
-                &&  (event->event.u.Signal.rcvid == 0)
-                )
-                {
-                    /* Kernel signal. */
-                    gcmkERR_BREAK(
-                        gckOS_Signal(Event->os,
-                                     event->event.u.Signal.signal,
-                                     gcvTRUE));
-                }
-                else
-                {
-                    /* User signal. */
-                    gcmkERR_BREAK(
-                        gckOS_UserSignal(Event->os,
-                                         event->event.u.Signal.signal,
-                                         event->event.u.Signal.rcvid,
-                                         event->event.u.Signal.coid));
-                }
-#else
                 /* Set signal. */
                 if (event->event.u.Signal.process == gcvNULL)
                 {
@@ -1228,7 +1173,6 @@ gckEVENT_Notify(
                 }
 
                 gcmkASSERT(event->event.u.Signal.auxSignal == gcvNULL);
-#endif
                 break;
 
             case gcvHAL_UNMAP_USER_MEMORY:

@@ -296,15 +296,6 @@ typedef struct _gcsHAL_INTERFACE
         {
             /* Allocated video memory. */
             IN gcuVIDMEM_NODE_PTR       node;
-
-#ifdef __QNXNTO__
-/* TODO: This is part of the unlock - why is it here? */
-            /* Mapped logical address to unmap in user space. */
-            OUT gctPOINTER              memory;
-
-            /* Number of bytes to allocated. */
-            OUT gctSIZE_T               bytes;
-#endif
         }
         FreeVideoMemory;
 
@@ -455,13 +446,6 @@ typedef struct _gcsHAL_INTERFACE
             /* Process owning the signal. */
             IN gctHANDLE                process;
 
-#if defined(__QNXNTO__)
-            /* Client pulse side-channel connection ID. Set by client in gcoOS_CreateSignal. */
-            IN gctINT32                 coid;
-
-            /* Set by server. */
-            IN gctINT32                 rcvid;
-#endif
             /* Event generated from where of pipeline */
             IN gceKERNEL_WHERE          fromWhere;
         }

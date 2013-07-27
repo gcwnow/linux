@@ -263,9 +263,6 @@ _AllocateMemory(
     IN gctSIZE_T Bytes,
     IN gctSIZE_T Alignment,
     IN gceSURF_TYPE Type,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
@@ -302,13 +299,8 @@ _AllocateMemory(
         if (pool == gcvPOOL_VIRTUAL)
         {
             /* Create a gcuVIDMEM_NODE for virtual memory. */
-#ifdef __QNXNTO__
-            gcmkERR_BREAK(
-                gckVIDMEM_ConstructVirtual(Kernel, gcvFALSE, Bytes, Handle, Node));
-#else
             gcmkERR_BREAK(
                 gckVIDMEM_ConstructVirtual(Kernel, gcvFALSE, Bytes, Node));
-#endif
 
             /* Success. */
             break;
@@ -316,11 +308,7 @@ _AllocateMemory(
         else if (pool == gcvPOOL_CONTIGUOUS)
         {
             /* Create a gcuVIDMEM_NODE for contiguous memory. */
-#ifdef __QNXNTO__
-            status = gckVIDMEM_ConstructVirtual(Kernel, gcvTRUE, Bytes, Handle, Node);
-#else
             status = gckVIDMEM_ConstructVirtual(Kernel, gcvTRUE, Bytes, Node);
-#endif
             if (gcmIS_SUCCESS(status))
             {
                 /* Memory allocated. */
@@ -339,9 +327,6 @@ _AllocateMemory(
                                                   Bytes,
                                                   Alignment,
                                                   Type,
-#ifdef __QNXNTO__
-                                                  Handle,
-#endif
                                                   Node);
 
                 if (gcmIS_SUCCESS(status))
@@ -520,21 +505,6 @@ gckKERNEL_Dispatch(
 
     case gcvHAL_ALLOCATE_NON_PAGED_MEMORY:
         /* Allocate non-paged memory. */
-#ifdef __QNXNTO__
-        if (FromUser)
-        {
-            gcmkONERROR(
-                gckOS_AllocateNonPagedMemoryShmPool(
-                Kernel->os,
-                FromUser,
-                Interface->pid,
-                Interface->handle,
-                &Interface->u.AllocateNonPagedMemory.bytes,
-                &Interface->u.AllocateNonPagedMemory.physical,
-                &Interface->u.AllocateNonPagedMemory.logical));
-            break;
-        }
-#endif
         gcmkONERROR(
             gckOS_AllocateNonPagedMemory(
                 Kernel->os,
@@ -557,21 +527,6 @@ gckKERNEL_Dispatch(
 
     case gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY:
         /* Allocate contiguous memory. */
-#ifdef __QNXNTO__
-        if (FromUser)
-        {
-            gcmkONERROR(
-                gckOS_AllocateNonPagedMemoryShmPool(
-                Kernel->os,
-                FromUser,
-                Interface->pid,
-                Interface->handle,
-                &Interface->u.AllocateNonPagedMemory.bytes,
-                &Interface->u.AllocateNonPagedMemory.physical,
-                &Interface->u.AllocateNonPagedMemory.logical));
-            break;
-        }
-#endif
         gcmkONERROR(
             gckOS_AllocateContiguous(
                 Kernel->os,
@@ -615,16 +570,6 @@ gckKERNEL_Dispatch(
               * Interface->u.AllocateVideoMemory.depth / 8;
 
         /* Allocate memory. */
-#ifdef __QNXNTO__
-        gcmkONERROR(
-            _AllocateMemory(Kernel,
-                            &Interface->u.AllocateVideoMemory.pool,
-                            bytes,
-                            64,
-                            Interface->u.AllocateVideoMemory.type,
-                            Interface->handle,
-                            &Interface->u.AllocateVideoMemory.node));
-#else
         gcmkONERROR(
             _AllocateMemory(Kernel,
                             &Interface->u.AllocateVideoMemory.pool,
@@ -632,27 +577,10 @@ gckKERNEL_Dispatch(
                             64,
                             Interface->u.AllocateVideoMemory.type,
                             &Interface->u.AllocateVideoMemory.node));
-#endif
         break;
 
     case gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY:
         /* Allocate memory. */
-#ifdef __QNXNTO__
-        gcmkONERROR(
-            _AllocateMemory(Kernel,
-                            &Interface->u.AllocateLinearVideoMemory.pool,
-                            Interface->u.AllocateLinearVideoMemory.bytes,
-                            Interface->u.AllocateLinearVideoMemory.alignment,
-                            Interface->u.AllocateLinearVideoMemory.type,
-                            Interface->handle,
-                            &Interface->u.AllocateLinearVideoMemory.node));
-
-        /* Set the current user pid in the node,
-         * which is used while locking memory. */
-        gcmkVERIFY_OK(gckVIDMEM_SetPID(
-                Interface->u.AllocateLinearVideoMemory.node,
-                Interface->pid));
-#else
         gcmkONERROR(
             _AllocateMemory(Kernel,
                             &Interface->u.AllocateLinearVideoMemory.pool,
@@ -660,23 +588,9 @@ gckKERNEL_Dispatch(
                             Interface->u.AllocateLinearVideoMemory.alignment,
                             Interface->u.AllocateLinearVideoMemory.type,
                             &Interface->u.AllocateLinearVideoMemory.node));
-#endif
         break;
 
     case gcvHAL_FREE_VIDEO_MEMORY:
-#ifdef __QNXNTO__
-        node = Interface->u.FreeVideoMemory.node;
-        if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM
-         && node->VidMem.logical != gcvNULL)
-        {
-            gcmkONERROR(
-                    gckKERNEL_UnmapVideoMemory(Kernel,
-                                               node->VidMem.logical,
-                                               Interface->pid,
-                                               node->VidMem.bytes));
-            node->VidMem.logical = gcvNULL;
-        }
-#endif
         /* Free video memory. */
         gcmkONERROR(
             gckVIDMEM_Free(Interface->u.FreeVideoMemory.node));
@@ -694,34 +608,12 @@ gckKERNEL_Dispatch(
         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         {
             /* Map video memory address into user space. */
-#ifdef __QNXNTO__
-        if (node->VidMem.logical == gcvNULL)
-        {
-            gcmkONERROR(
-                gckKERNEL_MapVideoMemory(Kernel,
-                                         FromUser,
-                                         Interface->u.LockVideoMemory.address,
-                                         Interface->pid,
-                                         node->VidMem.bytes,
-                                         &node->VidMem.logical));
-        }
-        Interface->u.LockVideoMemory.memory = node->VidMem.logical;
-#else
             gcmkONERROR(
                 gckKERNEL_MapVideoMemory(Kernel,
                                          FromUser,
                                          Interface->u.LockVideoMemory.address,
                                          &Interface->u.LockVideoMemory.memory));
-#endif
-
-#ifdef __QNXNTO__
-            /* Add more information to node, which is used while unmapping. */
-            gcmkVERIFY_OK(gckVIDMEM_SetPID(
-                    Interface->u.LockVideoMemory.node,
-                    Interface->pid));
-#endif
         }
-
         else
         {
             /* Copy logical memory for virtual memory. */

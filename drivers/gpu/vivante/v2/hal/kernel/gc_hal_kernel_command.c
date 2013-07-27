@@ -24,10 +24,6 @@
 #include "gc_hal_kernel_precomp.h"
 #include "gc_hal_user_context.h"
 
-#if defined(__QNXNTO__)
-#include <sys/slog.h>
-#endif
-
 #define _GC_OBJ_ZONE    gcvZONE_COMMAND
 
 /******************************************************************************\
@@ -566,19 +562,10 @@ gckCOMMAND_Start(
     Command->newQueue = gcvFALSE;
 
     /* Enable command processor. */
-#ifdef __QNXNTO__
-    gcmkONERROR(
-        gckHARDWARE_Execute(hardware,
-                            Command->logical,
-                            Command->physical,
-                            gcvTRUE,
-                            bytes));
-#else
     gcmkONERROR(
         gckHARDWARE_Execute(hardware,
                             Command->logical,
                             bytes));
-#endif
     /* Command queue is running. */
     Command->running = gcvTRUE;
 
@@ -1887,41 +1874,6 @@ gckCOMMAND_Stall(
 
             gcmkVERIFY_OK(
                 gckOS_MemoryBarrier(os, gcvNULL));
-
-#ifdef __QNXNTO__
-            gctUINT32 reg_cmdbuf_fetch;
-            gctUINT32 reg_intr;
-
-            gcmkVERIFY_OK(
-                    gckOS_ReadRegister(Command->kernel->hardware->os, 0x0664, &reg_cmdbuf_fetch));
-
-            if (idle == 0x7FFFFFFE)
-            {
-                /*
-                 * GPU is idle so there should not be pending interrupts.
-                 * Just double check.
-                 *
-                 * Note that reading interrupt register clears it.
-                 * That's why we don't read it in all cases.
-                 */
-                gcmkVERIFY_OK(
-                        gckOS_ReadRegister(Command->kernel->hardware->os, 0x10, &reg_intr));
-
-                slogf(
-                    _SLOG_SETCODE(1, 0),
-                    _SLOG_CRITICAL,
-                    "GALcore: Stall timeout (idle = 0x%X, command buffer fetch = 0x%X, interrupt = 0x%X)",
-                    idle, reg_cmdbuf_fetch, reg_intr);
-            }
-            else
-            {
-                slogf(
-                    _SLOG_SETCODE(1, 0),
-                    _SLOG_CRITICAL,
-                    "GALcore: Stall timeout (idle = 0x%X, command buffer fetch = 0x%X)",
-                    idle, reg_cmdbuf_fetch);
-            }
-#endif
 #endif
             /* Advance timer. */
             timer += 250;

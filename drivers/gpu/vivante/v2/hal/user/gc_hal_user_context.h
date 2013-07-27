@@ -138,11 +138,6 @@ typedef struct _gcsQUEUE
     /* Pointer to next gcsQUEUE structure. */
     gcsQUEUE_PTR                next;
 
-#ifdef __QNXNTO__
-    /* Size of this object. */
-    gctSIZE_T                   bytes;
-#endif
-
     /* Event information. */
     gcsHAL_INTERFACE            iface;
 }

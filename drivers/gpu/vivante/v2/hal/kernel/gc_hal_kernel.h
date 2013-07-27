@@ -170,11 +170,6 @@ typedef struct _gcsEVENT
 
     /* Event information. */
     gcsHAL_INTERFACE            event;
-
-#ifdef __QNXNTO__
-    /* Kernel. */
-    gckKERNEL                   kernel;
-#endif
 }
 gcsEVENT;
 
@@ -254,14 +249,6 @@ typedef union _gcuVIDMEM_NODE
         gctSIZE_T               bytes;
         gctUINT32               alignment;
 
-#ifdef __QNXNTO__
-        /* Client/server vaddr (mapped using mmap_join). */
-        gctPOINTER              logical;
-
-        /* Unique handle of the caller process channel. */
-        gctHANDLE               handle;
-#endif
-
         /* Locked counter. */
         gctINT32                locked;
 
@@ -294,25 +281,8 @@ typedef union _gcuVIDMEM_NODE
         /* Locked counter. */
         gctINT32                locked;
 
-#ifdef __QNXNTO__
-        /* Single linked list of nodes. */
-        gcuVIDMEM_NODE_PTR      next;
-
-        /* PID of the caller process channel. */
-        gctUINT32               userPID;
-
-        /* Unique handle of the caller process channel. */
-        gctHANDLE               handle;
-
-        /* Unlock pending flag. */
-        gctBOOL                 unlockPending;
-
-        /* Free pending flag. */
-        gctBOOL                 freePending;
-#else
         /* Pending flag. */
         gctBOOL                 pending;
-#endif
     }
     Virtual;
 }
@@ -369,12 +339,6 @@ struct _gckMMU
     /* Free entries. */
     gctUINT32                   heapList;
     gctBOOL                     freeNodes;
-
-#ifdef __QNXNTO__
-    /* Single linked list of all allocated nodes. */
-    gctPOINTER                  nodeMutex;
-    gcuVIDMEM_NODE_PTR          nodeList;
-#endif
 };
 
 gceSTATUS

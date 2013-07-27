@@ -239,18 +239,9 @@ gckMMU_Construct(
     mmu->hardware         = hardware;
     mmu->pageTableMutex   = gcvNULL;
     mmu->pageTableLogical = gcvNULL;
-#ifdef __QNXNTO__
-    mmu->nodeList         = gcvNULL;
-    mmu->nodeMutex          = gcvNULL;
-#endif
 
     /* Create the page table mutex. */
     gcmkONERROR(gckOS_CreateMutex(os, &mmu->pageTableMutex));
-
-#ifdef __QNXNTO__
-    /* Create the node list mutex. */
-    gcmkONERROR(gckOS_CreateMutex(os, &mmu->nodeMutex));
-#endif
 
     /* Allocate the page table (not more than 256 kB). */
     mmu->pageTableSize = gcmMIN(MmuSize, 256 << 10);
@@ -303,15 +294,6 @@ OnError:
                 gckOS_DeleteMutex(os, mmu->pageTableMutex));
         }
 
-#ifdef __QNXNTO__
-        if (mmu->nodeMutex != gcvNULL)
-        {
-            /* Delete the mutex. */
-            gcmkVERIFY_OK(
-                gckOS_DeleteMutex(os, mmu->nodeMutex));
-        }
-#endif
-
         /* Mark the gckMMU object as unknown. */
         mmu->object.type = gcvOBJ_UNKNOWN;
 
@@ -344,23 +326,10 @@ gckMMU_Destroy(
     IN gckMMU Mmu
     )
 {
-#ifdef __QNXNTO__
-    gcuVIDMEM_NODE_PTR node, next;
-#endif
-
     gcmkHEADER_ARG("Mmu=0x%x", Mmu);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-#ifdef __QNXNTO__
-    /* Free all associated virtual memory. */
-    for (node = Mmu->nodeList; node != gcvNULL; node = next)
-    {
-        next = node->Virtual.next;
-        gcmkVERIFY_OK(gckVIDMEM_Free(node, gcvNULL));
-    }
-#endif
 
     /* Free the page table. */
     gcmkVERIFY_OK(
@@ -368,11 +337,6 @@ gckMMU_Destroy(
                              Mmu->pageTablePhysical,
                              (gctPOINTER) Mmu->pageTableLogical,
                              Mmu->pageTableSize));
-
-#ifdef __QNXNTO__
-    /* Delete the node list mutex. */
-    gcmkVERIFY_OK(gckOS_DeleteMutex(Mmu->os, Mmu->nodeMutex));
-#endif
 
     /* Delete the page table mutex. */
     gcmkVERIFY_OK(gckOS_DeleteMutex(Mmu->os, Mmu->pageTableMutex));
@@ -634,127 +598,7 @@ gckMMU_FreePages(
     return gcvSTATUS_OK;
 }
 
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_InsertNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node)
-{
-    gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
 
-    gcmkHEADER_ARG("Mmu=0x%x Node=0x%x", Mmu, Node);
-
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    mutex = gcvTRUE;
-
-    Node->Virtual.next = Mmu->nodeList;
-    Mmu->nodeList = Node;
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (mutex)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-
-gceSTATUS
-gckMMU_RemoveNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node)
-{
-    gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
-    gcuVIDMEM_NODE_PTR *iter;
-
-    gcmkHEADER_ARG("Mmu=0x%x Node=0x%x", Mmu, Node);
-
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    mutex = gcvTRUE;
-
-    for (iter = &Mmu->nodeList; *iter; iter = &(*iter)->Virtual.next)
-    {
-        if (*iter == Node)
-        {
-            *iter = Node->Virtual.next;
-            break;
-        }
-    }
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (mutex)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-
-gceSTATUS
-gckMMU_FreeHandleMemory(
-    IN gckMMU Mmu,
-    IN gctHANDLE Handle
-    )
-{
-    gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
-    gcuVIDMEM_NODE_PTR curr, next;
-
-    gcmkHEADER_ARG("Mmu=0x%x Handle=0x%x", Mmu, Handle);
-
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    acquired = gcvTRUE;
-
-    for (curr = Mmu->nodeList; curr != gcvNULL; curr = next)
-    {
-        next = curr->Virtual.next;
-
-        if (curr->Virtual.handle == Handle)
-        {
-            while (curr->Virtual.locked > 0 || curr->Virtual.unlockPending)
-            {
-                gcmkONERROR(gckVIDMEM_Unlock(curr, gcvSURF_TYPE_UNKNOWN, gcvNULL, gcvNULL));
-            }
-
-            gcmkVERIFY_OK(gckVIDMEM_Free(curr, gcvNULL));
-        }
-    }
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (acquired)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-#endif
 
 /******************************************************************************
 ****************************** T E S T   C O D E ******************************

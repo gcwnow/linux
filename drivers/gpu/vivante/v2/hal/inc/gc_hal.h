@@ -269,9 +269,6 @@ gckOS_LockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN gctSIZE_T Bytes,
-#ifdef __QNXNTO__
-    IN gctUINT32 Pid,
-#endif
     OUT gctPOINTER * Logical,
     OUT gctSIZE_T * PageCount
     );
@@ -281,9 +278,6 @@ gceSTATUS
 gckOS_MapPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Logical,
-#endif
     IN gctSIZE_T PageCount,
     IN gctPOINTER PageTable
     );
@@ -293,9 +287,6 @@ gceSTATUS
 gckOS_UnlockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-#ifdef __QNXNTO__
-    IN gctUINT32 Pid,
-#endif
     IN gctSIZE_T Bytes,
     IN gctPOINTER Logical
     );
@@ -623,28 +614,6 @@ gckOS_UnmapUserPointer(
     IN gctPOINTER KernelPointer
     );
 
-#ifdef __QNXNTO__
-/* Map user physical address. */
-gceSTATUS
-gckOS_MapUserPhysical(
-    IN gckOS Os,
-    IN gctPHYS_ADDR Phys,
-    OUT gctPOINTER * KernelPointer
-    );
-
-/* Allocate from user's shared pool. */
-gceSTATUS
-gckOS_AllocateNonPagedMemoryShmPool(
-    IN gckOS Os,
-    IN gctBOOL InUserSpace,
-    IN gctUINT32 Pid,
-    IN gctHANDLE Handle,
-    IN OUT gctSIZE_T * Bytes,
-    OUT gctPHYS_ADDR * Physical,
-    OUT gctPOINTER * Logical
-    );
-#endif
-
 gceSTATUS
 gckOS_SuspendInterrupt(
     IN gckOS Os
@@ -852,22 +821,12 @@ gckOS_SignalUserSignal(
 #endif /* USE_NEW_LINUX_SIGNAL */
 
 /* Set a signal owned by a process. */
-#if defined(__QNXNTO__)
-gceSTATUS
-gckOS_UserSignal(
-    IN gckOS Os,
-    IN gctSIGNAL Signal,
-    IN gctINT Recvid,
-    IN gctINT Coid
-    );
-#else
 gceSTATUS
 gckOS_UserSignal(
     IN gckOS Os,
     IN gctSIGNAL Signal,
     IN gctHANDLE Process
     );
-#endif
 
 /******************************************************************************\
 ** Cache Support
@@ -1104,9 +1063,6 @@ gckVIDMEM_Allocate(
     IN gctUINT BytesPerPixel,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     );
 
@@ -1117,9 +1073,6 @@ gckVIDMEM_AllocateLinear(
     IN gctSIZE_T Bytes,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     );
 
@@ -1150,9 +1103,6 @@ gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
     IN gctBOOL Contiguous,
     IN gctSIZE_T Bytes,
-#ifdef __QNXNTO__
-    IN gctHANDLE Handle,
-#endif
     OUT gcuVIDMEM_NODE_PTR * Node
     );
 
@@ -1161,14 +1111,6 @@ gceSTATUS
 gckVIDMEM_DestroyVirtual(
     IN gcuVIDMEM_NODE_PTR Node
     );
-
-#ifdef __QNXNTO__
-/* Set the allocating process' PID for this node. */
-gceSTATUS
-gckVIDMEM_SetPID(
-    IN gcuVIDMEM_NODE_PTR Node,
-    IN gctUINT32 Pid);
-#endif
 
 /******************************************************************************\
 ******************************** gckKERNEL Object ******************************
@@ -1252,23 +1194,8 @@ gckKERNEL_MapVideoMemory(
     IN gckKERNEL Kernel,
     IN gctBOOL InUserSpace,
     IN gctUINT32 Address,
-#ifdef __QNXNTO__
-    IN gctUINT32 Pid,
-    IN gctUINT32 Bytes,
-#endif
     OUT gctPOINTER * Logical
     );
-
-#ifdef __QNXNTO__
-/* Unmap video memory. */
-gceSTATUS
-gckKERNEL_UnmapVideoMemory(
-    IN gckKERNEL Kernel,
-    IN gctPOINTER Logical,
-    IN gctUINT32 Pid,
-    IN gctUINT32 Bytes
-    );
-#endif
 
 /* Map memory. */
 gceSTATUS
@@ -1381,10 +1308,6 @@ gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Physical,
-    IN gctBOOL PhysicalAddresses,
-#endif
     IN gctSIZE_T Bytes
     );
 
@@ -1523,16 +1446,6 @@ gckHARDWARE_ConvertLogical(
     IN gctPOINTER Logical,
     OUT gctUINT32 * Address
     );
-
-#ifdef __QNXNTO__
-/* Convert physical address to hardware specific address. */
-gceSTATUS
-gckHARDWARE_ConvertPhysical(
-    IN gckHARDWARE Hardware,
-    IN gctPHYS_ADDR Physical,
-    OUT gctUINT32 * Address
-    );
-#endif
 
 /* Interrupt manager. */
 gceSTATUS
@@ -1856,26 +1769,6 @@ gckMMU_FreePages(
     IN gctPOINTER PageTable,
     IN gctSIZE_T PageCount
     );
-
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_InsertNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node);
-
-gceSTATUS
-gckMMU_RemoveNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node);
-#endif
-
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_FreeHandleMemory(
-    IN gckMMU Mmu,
-    IN gctHANDLE Handle
-    );
-#endif
 
 #if defined gcdHAL_TEST
 gceSTATUS
