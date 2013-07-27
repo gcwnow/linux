@@ -614,13 +614,6 @@
 #endif
 
 /*
-    QNX_SINGLE_THREADED_DEBUGGING
-*/
-#ifndef QNX_SINGLE_THREADED_DEBUGGING
-#   define QNX_SINGLE_THREADED_DEBUGGING        0
-#endif
-
-/*
     gcdENABLE_RECOVERY
 
         This define enables the recovery code.

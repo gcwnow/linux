@@ -171,15 +171,8 @@ struct _gcoQUEUE
     gcsQUEUE_PTR                head;
     gcsQUEUE_PTR                tail;
 
-#ifdef __QNXNTO__
-    /* Buffer for records. */
-    gcsQUEUE_PTR                records;
-    gctUINT32                   freeBytes;
-    gctUINT32                   offset;
-#else
     /* List of free records. */
     gcsQUEUE_PTR                freeList;
-#endif
     #define gcdIN_QUEUE_RECORD_LIMIT 16
     /* Number of records currently in queue */
     gctUINT32                   recordCount;

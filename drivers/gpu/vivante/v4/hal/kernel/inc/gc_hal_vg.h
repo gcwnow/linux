@@ -47,10 +47,6 @@ extern "C" {
     typedef gctUINT             gctTHREADFUNCRESULT;
     typedef gctPOINTER          gctTHREADFUNCPARAMETER;
 #   define  gctTHREADFUNCTYPE   __stdcall
-#elif defined(__QNXNTO__)
-    typedef void *              gctTHREADFUNCRESULT;
-    typedef gctPOINTER          gctTHREADFUNCPARAMETER;
-#   define  gctTHREADFUNCTYPE
 #endif
 
 typedef gctTHREADFUNCRESULT (gctTHREADFUNCTYPE * gctTHREADFUNC) (
@@ -249,32 +245,6 @@ typedef gctTHREADFUNCRESULT (gctTHREADFUNCTYPE * gctTHREADFUNC) (
 )
 
 /* some platforms need to fix the physical address for HW to access*/
-#ifdef __QNXNTO__
-
-gcmINLINE static gctUINT32 _qnxFixAddress(gctUINT32 Address)
-{
-    gctUINT32 baseAddress = 0;
-
-    if (gcmIS_ERROR(gcoOS_GetBaseAddress(gcvNULL, &baseAddress)))
-    {
-        baseAddress = 0;
-    }
-
-    return Address + baseAddress;
-}
-
-#define gcmFIXADDRESS       _qnxFixAddress
-
-gcmINLINE static gctUINT32 _qnxkFixAddress(gctUINT32 Address)
-{
-    extern unsigned long baseAddress;
-    return Address + baseAddress;
-}
-
-#define gcmkFIXADDRESS      _qnxkFixAddress
-
-#else
-
 #define gcmFIXADDRESS(address) \
 (\
     (address)\
@@ -284,8 +254,6 @@ gcmINLINE static gctUINT32 _qnxkFixAddress(gctUINT32 Address)
 (\
     (address)\
 )
-
-#endif
 
 /******************************************************************************\
 ****************************** Kernel Debug Macro ******************************
@@ -692,9 +660,6 @@ typedef struct _gcsVGCONTEXT
     /* State map/mod buffer. */
     gctSIZE_T                   mapFirst;
     gctSIZE_T                   mapLast;
-#ifdef __QNXNTO__
-    gctSIZE_T                   mapContainerSize;
-#endif
     gcsVGCONTEXT_MAP_PTR            mapContainer;
     gcsVGCONTEXT_MAP_PTR            mapPrev;
     gcsVGCONTEXT_MAP_PTR            mapCurr;
@@ -708,11 +673,6 @@ typedef struct _gcsVGCONTEXT
     /* Completion signal. */
     gctHANDLE                   process;
     gctSIGNAL                   signal;
-
-#if defined(__QNXNTO__)
-    gctINT32                    coid;
-    gctINT32                    rcvid;
-#endif
 }
 gcsVGCONTEXT;
 
@@ -752,11 +712,6 @@ typedef struct _gcsTASK_MASTER_TABLE
 
     /* The total size of event data in bytes. */
     gctUINT                     size;
-
-#if defined(__QNXNTO__)
-    gctINT32                    coid;
-    gctINT32                    rcvid;
-#endif
 }
 gcsTASK_MASTER_TABLE;
 
@@ -794,23 +749,10 @@ gckVGINTERRUPT_Disable(
     IN gctINT32 Id
     );
 
-#ifndef __QNXNTO__
-
 gceSTATUS
 gckVGINTERRUPT_Enque(
     IN gckVGINTERRUPT Interrupt
     );
-
-#else
-
-gceSTATUS
-gckVGINTERRUPT_Enque(
-    IN gckVGINTERRUPT Interrupt,
-    OUT gckOS *Os,
-    OUT gctSEMAPHORE *Semaphore
-    );
-
-#endif
 
 gceSTATUS
 gckVGINTERRUPT_DumpState(

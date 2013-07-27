@@ -708,13 +708,6 @@ _ScheduleTasks(
                         userTask->size
                         );
 
-#ifdef __QNXNTO__
-                    if (taskHeader->id == gcvTASK_SIGNAL)
-                    {
-                        ((gcsTASK_SIGNAL_PTR)taskHeader)->coid  = TaskTable->coid;
-                        ((gcsTASK_SIGNAL_PTR)taskHeader)->rcvid = TaskTable->rcvid;
-                    }
-#endif /* __QNXNTO__ */
                     /* Copy the task data. */
                     gcmkVERIFY_OK(gckOS_MemCopy(
                         kernelTask, taskHeader, userTask->size
@@ -1433,15 +1426,9 @@ _TaskSignal(
 
 
         /* Map the signal into kernel space. */
-#ifdef __QNXNTO__
-        gcmkERR_BREAK(gckOS_UserSignal(
-            Command->os, task->signal, task->rcvid, task->coid
-            ));
-#else
         gcmkERR_BREAK(gckOS_UserSignal(
             Command->os, task->signal, task->process
             ));
-#endif /* __QNXNTO__ */
 
         /* Update the reference counter. */
         TaskHeader->container->referenceCount -= 1;
@@ -3345,11 +3332,6 @@ gckVGCOMMAND_Commit(
     gcmkVERIFY_ARGUMENT(Queue != gcvNULL);
     gcmkVERIFY_ARGUMENT(EntryCount > 1);
 
-#ifdef __QNXNTO__
-    TaskTable->coid     = Context->coid;
-    TaskTable->rcvid    = Context->rcvid;
-#endif /* __QNXNTO__ */
-
     do
     {
         gctBOOL haveFETasks;
@@ -3429,17 +3411,9 @@ gckVGCOMMAND_Commit(
                 Queue      += 1;
 
                 /* Set the signal to avoid user waiting. */
-#ifdef __QNXNTO__
-                gcmkERR_BREAK(gckOS_UserSignal(
-                    Command->os, Context->signal, Context->rcvid, Context->coid
-                    ));
-#else
                 gcmkERR_BREAK(gckOS_UserSignal(
                     Command->os, Context->signal, Context->process
                     ));
-
-#endif /* __QNXNTO__ */
-
             }
             else
             {

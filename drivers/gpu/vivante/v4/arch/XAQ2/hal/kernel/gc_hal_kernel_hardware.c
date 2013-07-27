@@ -1158,10 +1158,6 @@ gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Physical,
-    IN gctBOOL PhysicalAddresses,
-#endif
     IN gctSIZE_T Bytes
     )
 {
@@ -1175,22 +1171,9 @@ gckHARDWARE_Execute(
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
     gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
 
-#ifdef __QNXNTO__
-    if (PhysicalAddresses && (Hardware->mmuVersion == 0))
-    {
-        /* Convert physical into hardware specific address. */
-        gcmkONERROR(
-            gckHARDWARE_ConvertPhysical(Hardware, Physical, &address));
-    }
-    else
-    {
-#endif
     /* Convert logical into hardware specific address. */
     gcmkONERROR(
         gckHARDWARE_ConvertLogical(Hardware, Logical, &address));
-#ifdef __QNXNTO__
-    }
-#endif
 
     /* Enable all events. */
     gcmkONERROR(
