@@ -28,7 +28,6 @@
 #include "gc_hal_types.h"
 
 #include "gc_hal_dump.h"
-#include "gc_hal_md5.h"
 
 #ifdef __cplusplus
 extern "C" {
