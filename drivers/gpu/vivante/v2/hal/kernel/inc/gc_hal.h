@@ -42,6 +42,11 @@ extern "C" {
     ((n) + ((align) - 1)) & ~((align) - 1) \
 )
 
+#define gcmALIGN_BASE(n, align) \
+( \
+    (n) & ~((align) - 1) \
+)
+
 /******************************************************************************\
 ***************************** Element Count Macro *****************************
 \******************************************************************************/
@@ -84,6 +89,7 @@ typedef enum _gceOBJECT_TYPE
     gcvOBJ_INDEX                = gcmCC('I','N','D','X'),
     gcvOBJ_INTERRUPT            = gcmCC('I','N','T','R'),
     gcvOBJ_KERNEL               = gcmCC('K','E','R','N'),
+    gcvOBJ_KERNEL_FUNCTION      = gcmCC('K','F','C','N'),
     gcvOBJ_MEMORYBUFFER         = gcmCC('M','E','M','B'),
     gcvOBJ_MMU                  = gcmCC('M','M','U',' '),
     gcvOBJ_OS                   = gcmCC('O','S',' ',' '),
@@ -702,16 +708,6 @@ gckOS_GetThreadID(
 ********************************** Signal Object *********************************
 \******************************************************************************/
 
-/* User signal command codes. */
-typedef enum _gceUSER_SIGNAL_COMMAND_CODES
-{
-    gcvUSER_SIGNAL_CREATE,
-    gcvUSER_SIGNAL_DESTROY,
-    gcvUSER_SIGNAL_SIGNAL,
-    gcvUSER_SIGNAL_WAIT,
-}
-gceUSER_SIGNAL_COMMAND_CODES;
-
 /* Create a signal. */
 gceSTATUS
 gckOS_CreateSignal(
@@ -1125,17 +1121,6 @@ typedef enum _gceNOTIFY
     gcvNOTIFY_COMMAND_QUEUE,
 }
 gceNOTIFY;
-
-/* Event locations. */
-typedef enum _gceKERNEL_WHERE
-{
-    gcvKERNEL_COMMAND,
-    gcvKERNEL_VERTEX,
-    gcvKERNEL_TRIANGLE,
-    gcvKERNEL_TEXTURE,
-    gcvKERNEL_PIXEL,
-}
-gceKERNEL_WHERE;
 
 /* Flush flags. */
 typedef enum _gceKERNEL_FLUSH
