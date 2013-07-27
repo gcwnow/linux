@@ -30,13 +30,13 @@
 #include "gc_hal_user_context.h"
 
 #if USE_PLATFORM_DRIVER
-#include <linux/platform_device.h>
+#   include <linux/platform_device.h>
 #endif
 
 MODULE_DESCRIPTION("Vivante Graphics Driver");
 MODULE_LICENSE("GPL");
 
-struct class *gpuClass;
+static struct class* gpuClass;
 
 static gckGALDEVICE galDevice;
 
@@ -59,55 +59,55 @@ module_param(major, int, 0644);
 #define JZ_GPU_MEM_SIZE 0x400000    /* set default reserved memory 4M Bytes. */
 #endif
 
-int irqLine = IRQ_GPU;
+static int irqLine = IRQ_GPU;
 module_param(irqLine, int, 0644);
 
-long registerMemBase = GPU_BASE;
+static long registerMemBase = GPU_BASE;
 module_param(registerMemBase, long, 0644);
 
-ulong registerMemSize = 256 << 10;
+static ulong registerMemSize = 256 << 10;
 module_param(registerMemSize, ulong, 0644);
 
-long contiguousSize = JZ_GPU_MEM_SIZE;
+static long contiguousSize = JZ_GPU_MEM_SIZE;
 module_param(contiguousSize, long, 0644);
 
-ulong contiguousBase = JZ_GPU_MEM_BASE;
+static ulong contiguousBase = JZ_GPU_MEM_BASE;
 module_param(contiguousBase, ulong, 0644);
 
 #else /* CONFIG_MACH_JZ4770 */
 
-int irqLine = -1;
+static int irqLine = -1;
 module_param(irqLine, int, 0644);
 
-long registerMemBase = 0x80000000;
+static long registerMemBase = 0x80000000;
 module_param(registerMemBase, long, 0644);
 
-ulong registerMemSize = 256 << 10;
+static ulong registerMemSize = 256 << 10;
 module_param(registerMemSize, ulong, 0644);
 
-long contiguousSize = 4 << 20;
+static long contiguousSize = 4 << 20;
 module_param(contiguousSize, long, 0644);
 
-ulong contiguousBase = 0;
+static ulong contiguousBase = 0;
 module_param(contiguousBase, ulong, 0644);
 #endif  /* CONFIG_MACH_JZ4770 */
 
-long bankSize = 32 << 20;
+static long bankSize = 32 << 20;
 module_param(bankSize, long, 0644);
 
-int fastClear = -1;
+static int fastClear = -1;
 module_param(fastClear, int, 0644);
 
-int compression = -1;
+static int compression = -1;
 module_param(compression, int, 0644);
 
-int signal = 48;
+static int signal = 48;
 module_param(signal, int, 0644);
 
-ulong baseAddress = 0;
+static ulong baseAddress = 0;
 module_param(baseAddress, ulong, 0644);
 
-int showArgs = 1;
+static int showArgs = 1;
 module_param(showArgs, int, 0644);
 
 #if ENABLE_GPU_CLOCK_BY_DRIVER
@@ -548,9 +548,9 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 #endif
 
     /* Copy data back to the user. */
-    copyLen = copy_to_user(drvArgs.OutputBuffer,
-                           &iface,
-               sizeof(gcsHAL_INTERFACE));
+    copyLen = copy_to_user(
+        drvArgs.OutputBuffer, &iface, sizeof(gcsHAL_INTERFACE)
+        );
 
     if (copyLen != 0)
     {
@@ -615,7 +615,6 @@ static void enable_jzsoc_gpu_clock(void)
     {
         /* JZ4770 GPU CLK2x 100MHz -- 500MHz */
 #define GPU_CLK_MAX 500000000
-//      extern unsigned int cpm_get_pllout1(void);
         unsigned int GPUCDR_VAL=0;
         int div;
         int gpu_use_pll1 = 1;
@@ -626,11 +625,7 @@ static void enable_jzsoc_gpu_clock(void)
         if ( pll_clk == 0 ) {
             gpu_use_pll1 = 0;   /* use pll0 */
             pll_clk = cpm_get_pllout();
-#ifdef CONFIG_MACH_JZ4770
             if ((INREG32(CPM_CPCCR) & CPCCR_PCS) != 0 )
-#else
-            if ((INREG32(CPM_CPCCR) & CPCCR_PCS) == 0 ) /* JZ4760 */
-#endif
             pll_clk /= 2;
         }
 
@@ -651,8 +646,6 @@ static void enable_jzsoc_gpu_clock(void)
         printk("GPU CLOCK USE PLL%d\n", gpu_use_pll1);
         printk("GPU GPU_CLK2x= %d MHz\n", gpu_clk/1000000);
     }
-#else
-#error "Not defined SOC_JZ4770"
 #endif
 }
 #endif
@@ -737,6 +730,7 @@ static int drv_init(void)
 
     /* Register the character device. */
     ret = register_chrdev(major, DRV_NAME, &driver_fops);
+
     if (ret < 0)
     {
         gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -818,47 +812,55 @@ static void drv_exit(void)
 }
 
 #if !USE_PLATFORM_DRIVER
-module_init(drv_init);
-module_exit(drv_exit);
+    module_init(drv_init);
+    module_exit(drv_exit);
 #else
 
 #ifdef CONFIG_DOVE_GPU
-#define DEVICE_NAME "dove_gpu"
+#   define DEVICE_NAME "dove_gpu"
 #else
-#define DEVICE_NAME "galcore"
+#   define DEVICE_NAME "galcore"
 #endif
 
-
-static int gpu_probe(struct platform_device *pdev)
+static int  gpu_probe(struct platform_device *pdev)
 {
     int ret = -ENODEV;
-    struct resource *res;
+    struct resource* res;
 #ifndef CONFIG_JZSOC
     struct clk *clk;
 #endif
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_IRQ,"gpu_irq");
-    if (!res) {
+    res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "gpu_irq");
+
+    if (!res)
+    {
         printk(KERN_ERR "%s: No irq line supplied.\n",__FUNCTION__);
         goto gpu_probe_fail;
     }
+
     irqLine = res->start;
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_MEM,"gpu_base");
-    if (!res) {
+    res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpu_base");
+
+    if (!res)
+    {
         printk(KERN_ERR "%s: No register base supplied.\n",__FUNCTION__);
         goto gpu_probe_fail;
     }
+
     registerMemBase = res->start;
     registerMemSize = res->end - res->start + 1;
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_DMA,"gpu_mem");
-    if (!res) {
+    res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "gpu_mem");
+
+    if (!res)
+    {
         printk(KERN_ERR "%s: No memory base supplied.\n",__FUNCTION__);
         goto gpu_probe_fail;
     }
-    contiguousBase  = res->start;
-    contiguousSize  = res->end - res->start + 1;
+
+    contiguousBase = res->start;
+    contiguousSize = res->end - res->start + 1;
 
     dev_info(&pdev->dev, "driver v2.5.3.2.2.p3, initializing\n");
 
@@ -873,7 +875,9 @@ static int gpu_probe(struct platform_device *pdev)
 #endif
 
     ret = drv_init();
-    if(!ret) {
+
+    if (!ret)
+    {
         platform_set_drvdata(pdev,galDevice);
 #ifdef CONFIG_JZSOC
 
@@ -958,14 +962,14 @@ static int gpu_resume(struct platform_device *dev)
 }
 
 static struct platform_driver gpu_driver = {
-    .probe        = gpu_probe,
-    .remove        = gpu_remove,
+    .probe      = gpu_probe,
+    .remove     = gpu_remove,
 
     .suspend    = gpu_suspend,
-    .resume        = gpu_resume,
+    .resume     = gpu_resume,
 
-    .driver        = {
-        .name    = DEVICE_NAME,
+    .driver     = {
+        .name   = DEVICE_NAME,
     }
 };
 
