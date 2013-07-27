@@ -220,7 +220,7 @@ gcuFLOAT_UINT32;
     (gctFIXED_POINT) ((gctINT64) (x1) * (x2) / (x3))
 
 /* 2D Engine profile. */
-struct gcs2D_PROFILE
+typedef struct _gcs2D_PROFILE
 {
     /* Cycle count.
        32bit counter incremented every 2D clock cycle.
@@ -231,7 +231,8 @@ struct gcs2D_PROFILE
     /* Pixels rendered by the 2D engine.
        Resets to 0 every time it is read. */
     gctUINT32 pixelsRendered;
-};
+}
+gcs2D_PROFILE;
 
 /* Macro to combine four characters into a Charcater Code. */
 #define gcmCC(c1, c2, c3, c4) \
