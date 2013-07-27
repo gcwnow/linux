@@ -70,12 +70,24 @@ extern "C" {
 #   error "gcmINLINE: Platform could not be determined"
 #endif
 
+/* Possible debug flags. */
+#define gcdDEBUG_NONE           0
+#define gcdDEBUG_ALL            (1 << 0)
+#define gcdDEBUG_FATAL          (1 << 1)
+#define gcdDEBUG_TRACE          (1 << 2)
+#define gcdDEBUG_BREAK          (1 << 3)
+#define gcdDEBUG_ASSERT         (1 << 4)
+#define gcdDEBUG_CODE           (1 << 5)
+#define gcdDEBUG_STACK          (1 << 6)
+
+#define gcmIS_DEBUG(flag)       ( gcdDEBUG & (flag | gcdDEBUG_ALL) )
+
 #ifndef gcdDEBUG
-#    if (defined(DBG) && DBG) || defined(DEBUG) || defined(_DEBUG)
-#        define gcdDEBUG            1
-#    else
-#        define gcdDEBUG            0
-#    endif
+#if (defined(DBG) && DBG) || defined(DEBUG) || defined(_DEBUG)
+#       define gcdDEBUG         gcdDEBUG_ALL
+#   else
+#       define gcdDEBUG         gcdDEBUG_NONE
+#   endif
 #endif
 
 #ifdef _USRDLL
