@@ -44,7 +44,7 @@ ccflags-y += -Wframe-larger-than=1032
 #
 ccflags-y += \
 	-I$(obj)/arch/XAQ2/hal/kernel \
-	-I$(obj)/hal/inc \
+	-I$(obj)/hal/kernel/inc \
 	-I$(obj)/hal/kernel \
 	-I$(obj)/hal/user
 
