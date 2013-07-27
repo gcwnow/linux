@@ -344,9 +344,6 @@ gckKERNEL_Destroy(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-#if QNX_SINGLE_THREADED_DEBUGGING
-    gcmkVERIFY_OK(gckOS_DeleteMutex(Kernel->os, Kernel->debugMutex));
-#endif
 
     /* Destroy the database. */
     if (Kernel->dbCreated)
@@ -683,9 +680,6 @@ gckKERNEL_Dispatch(
                    "Dispatching command %d (%s)",
                    Interface->command, _DispatchText[Interface->command]);
 #endif
-#if QNX_SINGLE_THREADED_DEBUGGING
-    gckOS_AcquireMutex(Kernel->os, Kernel->debugMutex, gcvINFINITE);
-#endif
 
     /* Get the current process ID. */
     gcmkONERROR(gckOS_GetProcessID(&processID));
@@ -873,19 +867,6 @@ gckKERNEL_Dispatch(
         break;
 
     case gcvHAL_FREE_VIDEO_MEMORY:
-#ifdef __QNXNTO__
-        node = Interface->u.FreeVideoMemory.node;
-        if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM
-         && node->VidMem.logical != gcvNULL)
-        {
-            gcmkONERROR(
-                    gckKERNEL_UnmapVideoMemory(Kernel,
-                                               node->VidMem.logical,
-                                               processID,
-                                               node->VidMem.bytes));
-            node->VidMem.logical = gcvNULL;
-        }
-#endif
         /* Free video memory. */
         gcmkONERROR(
             gckVIDMEM_Free(Interface->u.FreeVideoMemory.node));
@@ -910,27 +891,11 @@ gckKERNEL_Dispatch(
         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         {
             /* Map video memory address into user space. */
-#ifdef __QNXNTO__
-        if (node->VidMem.logical == gcvNULL)
-        {
-            gcmkONERROR(
-                gckKERNEL_MapVideoMemory(Kernel,
-                                         FromUser,
-                                         Interface->u.LockVideoMemory.address,
-                                         processID,
-                                         node->VidMem.bytes,
-                                         &node->VidMem.logical));
-        }
-        gcmkASSERT(node->VidMem.logical != gcvNULL);
-
-        Interface->u.LockVideoMemory.memory = node->VidMem.logical;
-#else
             gcmkONERROR(
                 gckKERNEL_MapVideoMemory(Kernel,
                                          FromUser,
                                          Interface->u.LockVideoMemory.address,
                                          &Interface->u.LockVideoMemory.memory));
-#endif
         }
         else
         {
@@ -1799,10 +1764,6 @@ OnError:
             }
         }
     }
-
-#if QNX_SINGLE_THREADED_DEBUGGING
-    gckOS_ReleaseMutex(Kernel->os, Kernel->debugMutex);
-#endif
 
     /* Return the status. */
     gcmkFOOTER();

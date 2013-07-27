@@ -296,13 +296,6 @@ typedef Pixmap      HALNativePixmapType;
 #   define XCurrentTime 0
 #endif
 
-#elif defined(__QNXNTO__)
-
-/* VOID */
-typedef void *  HALNativeDisplayType;
-typedef void *  HALNativeWindowType;
-typedef void *  HALNativePixmapType;
-
 #else
 
 #error "Platform not recognized"
@@ -363,12 +356,6 @@ typedef struct _halDISPLAY_INFO
     /* The physical address of the display memory buffer. ~0 is returned
     ** if the address is not known for the specified display. */
     gctSIZE_T               physical;
-
-#ifndef __QNXNTO__
-    /* 355_FB_MULTI_BUFFER */
-    gctINT                      multiBuffer;
-    gctINT                      backBufferY;
-#endif
 
     /* The color info of the display. */
     gctUINT                alphaLength;
@@ -464,9 +451,6 @@ gcoOS_GetWindowInfo(
     OUT gctINT * Width,
     OUT gctINT * Height,
     OUT gctINT * BitsPerPixel,
-#ifdef __QNXNTO__
-    OUT gctINT * Format,
-#endif
     OUT gctUINT * Offset
     );
 

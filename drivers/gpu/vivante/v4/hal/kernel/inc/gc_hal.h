@@ -311,9 +311,6 @@ gceSTATUS
 gckOS_MapPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Logical,
-#endif
     IN gctSIZE_T PageCount,
     IN gctPOINTER PageTable
     );
@@ -324,9 +321,6 @@ gckOS_MapPagesEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPHYS_ADDR Physical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Logical,
-#endif
     IN gctSIZE_T PageCount,
     IN gctPOINTER PageTable
     );
@@ -860,16 +854,6 @@ gckOS_CopyToUserData(
     IN gctSIZE_T Size
     );
 
-#ifdef __QNXNTO__
-/* Map user physical address. */
-gceSTATUS
-gckOS_MapUserPhysical(
-    IN gckOS Os,
-    IN gctPHYS_ADDR Phys,
-    OUT gctPOINTER * KernelPointer
-    );
-#endif
-
 gceSTATUS
 gckOS_SuspendInterrupt(
     IN gckOS Os
@@ -1098,22 +1082,12 @@ gckOS_SignalUserSignal(
 #endif /* USE_NEW_LINUX_SIGNAL */
 
 /* Set a signal owned by a process. */
-#if defined(__QNXNTO__)
-gceSTATUS
-gckOS_UserSignal(
-    IN gckOS Os,
-    IN gctSIGNAL Signal,
-    IN gctINT Recvid,
-    IN gctINT Coid
-    );
-#else
 gceSTATUS
 gckOS_UserSignal(
     IN gckOS Os,
     IN gctSIGNAL Signal,
     IN gctHANDLE Process
     );
-#endif
 
 /******************************************************************************\
 ** Cache Support
@@ -1572,10 +1546,6 @@ gckKERNEL_MapVideoMemory(
     IN gckKERNEL Kernel,
     IN gctBOOL InUserSpace,
     IN gctUINT32 Address,
-#ifdef __QNXNTO__
-    IN gctUINT32 Pid,
-    IN gctUINT32 Bytes,
-#endif
     OUT gctPOINTER * Logical
     );
 
@@ -1586,23 +1556,8 @@ gckKERNEL_MapVideoMemoryEx(
     IN gceCORE Core,
     IN gctBOOL InUserSpace,
     IN gctUINT32 Address,
-#ifdef __QNXNTO__
-    IN gctUINT32 Pid,
-    IN gctUINT32 Bytes,
-#endif
     OUT gctPOINTER * Logical
     );
-
-#ifdef __QNXNTO__
-/* Unmap video memory. */
-gceSTATUS
-gckKERNEL_UnmapVideoMemory(
-    IN gckKERNEL Kernel,
-    IN gctPOINTER Logical,
-    IN gctUINT32 Pid,
-    IN gctUINT32 Bytes
-    );
-#endif
 
 /* Map memory. */
 gceSTATUS
@@ -1752,10 +1707,6 @@ gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-#ifdef __QNXNTO__
-    IN gctPOINTER Physical,
-    IN gctBOOL PhysicalAddresses,
-#endif
     IN gctSIZE_T Bytes
     );
 
@@ -1867,16 +1818,6 @@ gckHARDWARE_ConvertLogical(
     IN gctPOINTER Logical,
     OUT gctUINT32 * Address
     );
-
-#ifdef __QNXNTO__
-/* Convert physical address to hardware specific address. */
-gceSTATUS
-gckHARDWARE_ConvertPhysical(
-    IN gckHARDWARE Hardware,
-    IN gctPHYS_ADDR Physical,
-    OUT gctUINT32 * Address
-    );
-#endif
 
 /* Interrupt manager. */
 gceSTATUS
@@ -2323,27 +2264,6 @@ gckMMU_SetPage(
    IN gctUINT32 PageAddress,
    IN gctUINT32 *PageEntry
    );
-
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_InsertNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node);
-
-gceSTATUS
-gckMMU_RemoveNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node);
-#endif
-
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_FreeHandleMemory(
-    IN gckKERNEL Kernel,
-    IN gckMMU Mmu,
-    IN gctUINT32 Pid
-    );
-#endif
 
 gceSTATUS
 gckMMU_Flush(

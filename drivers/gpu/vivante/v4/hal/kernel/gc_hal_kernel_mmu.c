@@ -569,18 +569,9 @@ _Construct(
     mmu->mtlbLogical      = gcvNULL;
     mmu->staticSTLB       = gcvNULL;
     mmu->enabled          = gcvFALSE;
-#ifdef __QNXNTO__
-    mmu->nodeList         = gcvNULL;
-    mmu->nodeMutex        = gcvNULL;
-#endif
 
     /* Create the page table mutex. */
     gcmkONERROR(gckOS_CreateMutex(os, &mmu->pageTableMutex));
-
-#ifdef __QNXNTO__
-    /* Create the node list mutex. */
-    gcmkONERROR(gckOS_CreateMutex(os, &mmu->nodeMutex));
-#endif
 
     if (hardware->mmuVersion == 0)
     {
@@ -678,15 +669,6 @@ OnError:
                 gckOS_DeleteMutex(os, mmu->pageTableMutex));
         }
 
-#ifdef __QNXNTO__
-        if (mmu->nodeMutex != gcvNULL)
-        {
-            /* Delete the mutex. */
-            gcmkVERIFY_OK(
-                gckOS_DeleteMutex(os, mmu->nodeMutex));
-        }
-#endif
-
         /* Mark the gckMMU object as unknown. */
         mmu->object.type = gcvOBJ_UNKNOWN;
 
@@ -719,23 +701,10 @@ _Destroy(
     IN gckMMU Mmu
     )
 {
-#ifdef __QNXNTO__
-    gcuVIDMEM_NODE_PTR node, next;
-#endif
-
     gcmkHEADER_ARG("Mmu=0x%x", Mmu);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-#ifdef __QNXNTO__
-    /* Free all associated virtual memory. */
-    for (node = Mmu->nodeList; node != gcvNULL; node = next)
-    {
-        next = node->Virtual.next;
-        gcmkVERIFY_OK(gckVIDMEM_Free(node));
-    }
-#endif
 
     while (Mmu->staticSTLB != gcvNULL)
     {
@@ -780,11 +749,6 @@ _Destroy(
                 Mmu->pageTablePhysical,
                 (gctPOINTER) Mmu->pageTableLogical,
                 Mmu->pageTableSize));
-
-#ifdef __QNXNTO__
-    /* Delete the node list mutex. */
-    gcmkVERIFY_OK(gckOS_DeleteMutex(Mmu->os, Mmu->nodeMutex));
-#endif
 
     /* Delete the page table mutex. */
     gcmkVERIFY_OK(gckOS_DeleteMutex(Mmu->os, Mmu->pageTableMutex));
@@ -1240,130 +1204,6 @@ gckMMU_SetPage(
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
-
-#ifdef __QNXNTO__
-gceSTATUS
-gckMMU_InsertNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node)
-{
-    gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
-
-    gcmkHEADER_ARG("Mmu=0x%x Node=0x%x", Mmu, Node);
-
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    mutex = gcvTRUE;
-
-    Node->Virtual.next = Mmu->nodeList;
-    Mmu->nodeList = Node;
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (mutex)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-
-gceSTATUS
-gckMMU_RemoveNode(
-    IN gckMMU Mmu,
-    IN gcuVIDMEM_NODE_PTR Node)
-{
-    gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
-    gcuVIDMEM_NODE_PTR *iter;
-
-    gcmkHEADER_ARG("Mmu=0x%x Node=0x%x", Mmu, Node);
-
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    mutex = gcvTRUE;
-
-    for (iter = &Mmu->nodeList; *iter; iter = &(*iter)->Virtual.next)
-    {
-        if (*iter == Node)
-        {
-            *iter = Node->Virtual.next;
-            break;
-        }
-    }
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (mutex)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-
-gceSTATUS
-gckMMU_FreeHandleMemory(
-    IN gckKERNEL Kernel,
-    IN gckMMU Mmu,
-    IN gctUINT32 Pid
-    )
-{
-    gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
-    gcuVIDMEM_NODE_PTR curr, next;
-
-    gcmkHEADER_ARG("Kernel=0x%x, Mmu=0x%x Pid=%u", Kernel, Mmu, Pid);
-
-    gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-
-    gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->nodeMutex, gcvINFINITE));
-    acquired = gcvTRUE;
-
-    for (curr = Mmu->nodeList; curr != gcvNULL; curr = next)
-    {
-        next = curr->Virtual.next;
-
-        if (curr->Virtual.processID == Pid)
-        {
-            while (curr->Virtual.unlockPendings[Kernel->core] == 0 && curr->Virtual.lockeds[Kernel->core] > 0)
-            {
-                gcmkONERROR(gckVIDMEM_Unlock(Kernel, curr, gcvSURF_TYPE_UNKNOWN, gcvNULL));
-            }
-
-            gcmkVERIFY_OK(gckVIDMEM_Free(curr));
-        }
-    }
-
-    gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-
-    gcmkFOOTER();
-    return gcvSTATUS_OK;
-
-OnError:
-    if (acquired)
-    {
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Mmu->os, Mmu->nodeMutex));
-    }
-
-    gcmkFOOTER();
-    return status;
-}
-#endif
 
 gceSTATUS
 gckMMU_Flush(

@@ -24,11 +24,6 @@
 #include "gc_hal_kernel_precomp.h"
 #include "gc_hal_kernel_buffer.h"
 
-#ifdef __QNXNTO__
-#include <atomic.h>
-#include "gc_hal_kernel_qnx.h"
-#endif
-
 #define _GC_OBJ_ZONE                    gcvZONE_EVENT
 
 #define gcdEVENT_ALLOCATION_COUNT       (4096 / gcmSIZEOF(gcsHAL_INTERFACE))
@@ -140,8 +135,6 @@ OnError:
     return gcvSTATUS_OK;
 }
 
-#ifndef __QNXNTO__
-
 static gceSTATUS
 gckEVENT_IsEmpty(
     IN gckEVENT Event,
@@ -198,14 +191,11 @@ OnError:
     return status;
 }
 
-#endif
-
 static gceSTATUS
 _TryToIdleGPU(
     IN gckEVENT Event
 )
 {
-#ifndef __QNXNTO__
     gceSTATUS status;
     gctBOOL empty = gcvFALSE, idle = gcvFALSE;
 
@@ -237,9 +227,6 @@ _TryToIdleGPU(
 OnError:
     gcmkFOOTER();
     return status;
-#else
-    return gcvSTATUS_OK;
-#endif
 }
 
 static gceSTATUS
@@ -871,10 +858,6 @@ gckEVENT_AddList(
     /* Get process ID. */
     gcmkONERROR(gckOS_GetProcessID(&record->processID));
 
-#ifdef __QNXNTO__
-    record->kernel = Event->kernel;
-#endif
-
     /* Acquire the mutex. */
     gcmkONERROR(gckOS_AcquireMutex(Event->os, Event->eventListMutex, gcvINFINITE));
     acquired = gcvTRUE;
@@ -1229,10 +1212,6 @@ gckEVENT_Signal(
     /* Mark the event as a signal. */
     iface.command            = gcvHAL_SIGNAL;
     iface.u.Signal.signal    = Signal;
-#ifdef __QNXNTO__
-    iface.u.Signal.coid      = 0;
-    iface.u.Signal.rcvid     = 0;
-#endif
     iface.u.Signal.auxSignal = gcvNULL;
     iface.u.Signal.process   = gcvNULL;
 
@@ -1620,10 +1599,6 @@ gckEVENT_Compose(
     /* Initialize the record. */
     tempRecord->info.command            = gcvHAL_SIGNAL;
     tempRecord->info.u.Signal.process   = Info->process;
-#ifdef __QNXNTO__
-    tempRecord->info.u.Signal.coid      = Info->coid;
-    tempRecord->info.u.Signal.rcvid     = Info->rcvid;
-#endif
     tempRecord->info.u.Signal.signal    = Info->signal;
     tempRecord->info.u.Signal.auxSignal = gcvNULL;
     tempRecord->next = gcvNULL;
@@ -1640,10 +1615,6 @@ gckEVENT_Compose(
         /* Initialize the record. */
         tempRecord->info.command            = gcvHAL_SIGNAL;
         tempRecord->info.u.Signal.process   = Info->userProcess;
-#ifdef __QNXNTO__
-        tempRecord->info.u.Signal.coid      = Info->coid;
-        tempRecord->info.u.Signal.rcvid     = Info->rcvid;
-#endif
         tempRecord->info.u.Signal.signal    = Info->userSignal1;
         tempRecord->info.u.Signal.auxSignal = gcvNULL;
         tempRecord->next = gcvNULL;
@@ -1661,10 +1632,6 @@ gckEVENT_Compose(
         /* Initialize the record. */
         tempRecord->info.command            = gcvHAL_SIGNAL;
         tempRecord->info.u.Signal.process   = Info->userProcess;
-#ifdef __QNXNTO__
-        tempRecord->info.u.Signal.coid      = Info->coid;
-        tempRecord->info.u.Signal.rcvid     = Info->rcvid;
-#endif
         tempRecord->info.u.Signal.signal    = Info->userSignal2;
         tempRecord->info.u.Signal.auxSignal = gcvNULL;
         tempRecord->next = gcvNULL;
@@ -1723,8 +1690,6 @@ gckEVENT_Interrupt(
     /* Combine current interrupt status with pending flags. */
 #if gcdSMP
     gckOS_AtomSetMask(Event->pending, Data);
-#elif defined(__QNXNTO__)
-    atomic_set(&Event->pending, Data);
 #else
     Event->pending |= Data;
 #endif
@@ -1760,9 +1725,6 @@ gckEVENT_Notify(
     gcsEVENT_QUEUE * queue;
     gctUINT mask = 0;
     gctBOOL acquired = gcvFALSE;
-#ifdef __QNXNTO__
-    gcuVIDMEM_NODE_PTR node;
-#endif
     gctUINT pending;
     gctBOOL suspended = gcvFALSE;
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
@@ -1880,8 +1842,6 @@ gckEVENT_Notify(
             /* Mark pending interrupts as handled. */
 #if gcdSMP
             gckOS_AtomClearMask(Event->pending, pending);
-#elif defined(__QNXNTO__)
-            atomic_clr((gctUINT32_PTR)&Event->pending, pending);
 #else
             Event->pending &= ~pending;
 #endif
@@ -1931,9 +1891,7 @@ gckEVENT_Notify(
         {
             gcsEVENT_PTR record;
             gcsEVENT_PTR recordNext = gcvNULL;
-#ifndef __QNXNTO__
             gctPOINTER logical;
-#endif
 #if gcdSECURE_USER
             gctSIZE_T bytes;
 #endif
@@ -1960,13 +1918,6 @@ gckEVENT_Notify(
             /* Dispatch on event type. */
             if (record != gcvNULL)
             {
-#ifdef __QNXNTO__
-                /* Assign record->processID as the pid for this galcore thread.
-                 * Used in OS calls like gckOS_UnlockMemory() which do not take a pid.
-                 */
-                drv_thread_specific_key_assign(record->processID, 0);
-#endif
-
 #if gcdSECURE_USER
                 /* Get the cache that belongs to this process. */
                 gcmkONERROR(gckKERNEL_GetProcessDBCache(Event->kernel,
@@ -2037,34 +1988,6 @@ gckEVENT_Notify(
                                    "gcvHAL_FREE_VIDEO_MEMORY: 0x%x",
                                    record->info.u.FreeVideoMemory.node);
 
-#ifdef __QNXNTO__
-                    node = record->info.u.FreeVideoMemory.node;
-#if gcdUSE_VIDMEM_PER_PID
-                    /* Check if the VidMem object still exists. */
-                    if (gckKERNEL_GetVideoMemoryPoolPid(record->kernel,
-                                                        gcvPOOL_SYSTEM,
-                                                        record->processID,
-                                                        gcvNULL) == gcvSTATUS_NOT_FOUND)
-                    {
-                        /*printf("Vidmem not found for process:%d\n", queue->processID);*/
-                        status = gcvSTATUS_OK;
-                        break;
-                    }
-#else
-                    if ((node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
-                    &&  (node->VidMem.logical != gcvNULL)
-                    )
-                    {
-                        gcmkERR_BREAK(
-                            gckKERNEL_UnmapVideoMemory(record->kernel,
-                                                       node->VidMem.logical,
-                                                       record->processID,
-                                                       node->VidMem.bytes));
-                        node->VidMem.logical = gcvNULL;
-                    }
-#endif
-#endif
-
                     /* Free video memory. */
                     status =
                         gckVIDMEM_Free(record->info.u.FreeVideoMemory.node);
@@ -2072,7 +1995,6 @@ gckEVENT_Notify(
                     break;
 
                 case gcvHAL_WRITE_DATA:
-#ifndef __QNXNTO__
                     /* Convert physical into logical address. */
                     gcmkERR_BREAK(
                         gckOS_MapPhysical(Event->os,
@@ -2091,14 +2013,6 @@ gckEVENT_Notify(
                         gckOS_UnmapPhysical(Event->os,
                                             logical,
                                             gcmSIZEOF(gctUINT32)));
-#else
-                    /* Write data. */
-                    gcmkERR_BREAK(
-                        gckOS_WriteMemory(Event->os,
-                                          (gctPOINTER)
-                                              record->info.u.WriteData.address,
-                                          record->info.u.WriteData.data));
-#endif
                     break;
 
                 case gcvHAL_UNLOCK_VIDEO_MEMORY:
@@ -2145,27 +2059,6 @@ gckEVENT_Notify(
                                    "gcvHAL_SIGNAL: 0x%x",
                                    record->info.u.Signal.signal);
 
-#ifdef __QNXNTO__
-                    if ((record->info.u.Signal.coid == 0)
-                    &&  (record->info.u.Signal.rcvid == 0)
-                    )
-                    {
-                        /* Kernel signal. */
-                        gcmkERR_BREAK(
-                            gckOS_Signal(Event->os,
-                                         record->info.u.Signal.signal,
-                                         gcvTRUE));
-                    }
-                    else
-                    {
-                        /* User signal. */
-                        gcmkERR_BREAK(
-                            gckOS_UserSignal(Event->os,
-                                             record->info.u.Signal.signal,
-                                             record->info.u.Signal.rcvid,
-                                             record->info.u.Signal.coid));
-                    }
-#else
                     /* Set signal. */
                     if (record->info.u.Signal.process == gcvNULL)
                     {
@@ -2185,7 +2078,6 @@ gckEVENT_Notify(
                     }
 
                     gcmkASSERT(record->info.u.Signal.auxSignal == gcvNULL);
-#endif
                     break;
 
                 case gcvHAL_UNMAP_USER_MEMORY:
@@ -2301,8 +2193,6 @@ gckEVENT_Notify(
         /* Mark pending interrupt as handled. */
 #if gcdSMP
         gckOS_AtomClearMask(Event->pending, mask);
-#elif defined(__QNXNTO__)
-        atomic_clr(&Event->pending, mask);
 #else
         Event->pending &= ~mask;
 #endif
@@ -2520,10 +2410,6 @@ gckEVENT_Stop(
     record->processID               = ProcessID;
     record->info.command            = gcvHAL_SIGNAL;
     record->info.u.Signal.signal    = Signal;
-#ifdef __QNXNTO__
-    record->info.u.Signal.coid      = 0;
-    record->info.u.Signal.rcvid     = 0;
-#endif
     record->info.u.Signal.auxSignal = gcvNULL;
     record->info.u.Signal.process   = gcvNULL;
 

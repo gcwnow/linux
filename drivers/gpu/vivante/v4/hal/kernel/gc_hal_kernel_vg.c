@@ -525,21 +525,6 @@ gceSTATUS gckVGKERNEL_Dispatch(
         break;
 
     case gcvHAL_FREE_VIDEO_MEMORY:
-#ifdef __QNXNTO__
-        /* Unmap the video memory */
-        node = Interface->u.FreeVideoMemory.node;
-
-        if ((node->VidMem.memory->object.type == gcvOBJ_VIDMEM) &&
-            (node->VidMem.logical != gcvNULL))
-        {
-            gckKERNEL_UnmapVideoMemory(Kernel,
-                                       node->VidMem.logical,
-                                       processID,
-                                       node->VidMem.bytes);
-            node->VidMem.logical = gcvNULL;
-        }
-#endif /* __QNXNTO__ */
-
         /* Free video memory. */
         gcmkERR_BREAK(gckVIDMEM_Free(
             Interface->u.FreeVideoMemory.node
@@ -599,27 +584,12 @@ gceSTATUS gckVGKERNEL_Dispatch(
         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         {
             /* Map video memory address into user space. */
-#ifdef __QNXNTO__
-        if (node->VidMem.logical == gcvNULL)
-        {
-            gcmkONERROR(
-                gckKERNEL_MapVideoMemory(Kernel,
-                                         FromUser,
-                                         Interface->u.LockVideoMemory.address,
-                                         processID,
-                                         node->VidMem.bytes,
-                                         &node->VidMem.logical));
-        }
-
-        Interface->u.LockVideoMemory.memory = node->VidMem.logical;
-#else
             gcmkERR_BREAK(
                 gckKERNEL_MapVideoMemoryEx(Kernel,
                                          gcvCORE_VG,
                                          FromUser,
                                          Interface->u.LockVideoMemory.address,
                                          &Interface->u.LockVideoMemory.memory));
-#endif
         }
         else
         {
