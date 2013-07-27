@@ -26,6 +26,7 @@
 
 #include "gc_hal_enum.h"
 #include "gc_hal_types.h"
+
 #include "gc_hal_dump.h"
 
 #ifdef __cplusplus
@@ -59,7 +60,7 @@ typedef struct _gcoHARDWARE *           gcoHARDWARE;
 /* Video memory pool type. */
 typedef enum _gcePOOL
 {
-    gcvPOOL_UNKNOWN,
+    gcvPOOL_UNKNOWN = 0,
     gcvPOOL_DEFAULT,
     gcvPOOL_LOCAL,
     gcvPOOL_LOCAL_INTERNAL,
@@ -68,7 +69,9 @@ typedef enum _gcePOOL
     gcvPOOL_SYSTEM,
     gcvPOOL_VIRTUAL,
     gcvPOOL_USER,
-    gcvPOOL_CONTIGUOUS
+    gcvPOOL_CONTIGUOUS,
+
+    gcvPOOL_NUMBER_OF_POOLS
 }
 gcePOOL;
 
@@ -109,6 +112,8 @@ typedef enum _gceAPI
 {
     gcvAPI_D3D                  = 0x1,
     gcvAPI_OPENGL               = 0x2,
+    gcvAPI_OPENVG               = 0x3,
+    gcvAPI_OPENCL               = 0x4,
 }
 gceAPI;
 
@@ -441,21 +446,23 @@ gcoOS_DeviceControl(
     );
 
 /* Allocate non paged memory. */
-gceSTATUS gcoOS_AllocateNonPagedMemory(
-        IN gcoOS Os,
-        IN gctBOOL InUserSpace,
-        IN OUT gctSIZE_T * Bytes,
-        OUT gctPHYS_ADDR * Physical,
-        OUT gctPOINTER * Logical
-        );
+gceSTATUS
+gcoOS_AllocateNonPagedMemory(
+    IN gcoOS Os,
+    IN gctBOOL InUserSpace,
+    IN OUT gctSIZE_T * Bytes,
+    OUT gctPHYS_ADDR * Physical,
+    OUT gctPOINTER * Logical
+    );
 
 /* Free non paged memory. */
-gceSTATUS gcoOS_FreeNonPagedMemory(
-        IN gcoOS Os,
-        IN gctSIZE_T Bytes,
-        IN gctPHYS_ADDR Physical,
-        IN gctPOINTER Logical
-        );
+gceSTATUS
+gcoOS_FreeNonPagedMemory(
+    IN gcoOS Os,
+    IN gctSIZE_T Bytes,
+    IN gctPHYS_ADDR Physical,
+    IN gctPOINTER Logical
+    );
 
 typedef enum _gceFILE_MODE
 {
@@ -1711,8 +1718,8 @@ gckOS_DebugTrace(
     IN gctCONST_STRING Message,
     ...
     );
-void
 
+void
 gcoOS_DebugTrace(
     IN gctUINT32 Level,
     IN gctCONST_STRING Message,
@@ -1722,9 +1729,11 @@ gcoOS_DebugTrace(
 #if gcdDEBUG
 #   define gcmTRACE             gcoOS_DebugTrace
 #   define gcmkTRACE            gckOS_DebugTrace
+#   define gcmkTRACE_N          gckOS_DebugTraceN
 #elif gcdHAS_ELLIPSES
 #   define gcmTRACE(...)
 #   define gcmkTRACE(...)
+#   define gcmkTRACE_N(...)
 #else
     gcmINLINE static void
     __dummy_trace(
@@ -1736,12 +1745,14 @@ gcoOS_DebugTrace(
     }
 #   define gcmTRACE             __dummy_trace
 #   define gcmkTRACE            __dummy_trace
+#   define gcmkTRACE_N          __dummy_trace_n
 #endif
 
-/* Debug zones. */
+/* Zones common for kernel and user. */
 #define gcvZONE_OS              (1 << 0)
 #define gcvZONE_HARDWARE        (1 << 1)
 #define gcvZONE_HEAP            (1 << 2)
+#define gcvZONE_SIGNAL          (1 << 27)
 
 /* Kernel zones. */
 #define gcvZONE_KERNEL          (1 << 3)
@@ -1752,6 +1763,8 @@ gcoOS_DebugTrace(
 #define gcvZONE_MMU             (1 << 8)
 #define gcvZONE_EVENT           (1 << 9)
 #define gcvZONE_DEVICE          (1 << 10)
+#define gcvZONE_DATABASE        (1 << 11)
+#define gcvZONE_INTERRUPT       (1 << 12)
 
 /* User zones. */
 #define gcvZONE_HAL             (1 << 3)
@@ -1767,6 +1780,13 @@ gcoOS_DebugTrace(
 #define gcvZONE_MEMORY          (1 << 13)
 #define gcvZONE_STATE           (1 << 14)
 #define gcvZONE_AUX             (1 << 15)
+#define gcvZONE_VERTEX          (1 << 16)
+#define gcvZONE_CL              (1 << 17)
+#define gcvZONE_COMPOSITION     (1 << 17)
+#define gcvZONE_VG              (1 << 18)
+#define gcvZONE_IMAGE           (1 << 19)
+#define gcvZONE_UTILITY         (1 << 20)
+#define gcvZONE_PARAMETERS      (1 << 21)
 
 /* API definitions. */
 #define gcvZONE_API_HAL         (0 << 28)
@@ -1780,11 +1800,16 @@ gcoOS_DebugTrace(
 #define gcvZONE_API_D3D         (8 << 28)
 
 #define gcmZONE_GET_API(zone)   ((zone) >> 28)
+/*Set gcdZONE_MASK like 0x0 | gcvZONE_API_EGL
+will enable print EGL module debug info*/
 #define gcdZONE_MASK            0x0FFFFFFF
 
 /* Handy zones. */
 #define gcvZONE_NONE            0
 #define gcvZONE_ALL             gcdZONE_MASK
+
+/*Dump API depth set 1 for API, 2 for API and API behavior*/
+#define gcvDUMP_API_DEPTH       1
 
 /*******************************************************************************
 **
@@ -1820,9 +1845,11 @@ gcoOS_DebugTraceZone(
 #if gcdDEBUG
 #   define gcmTRACE_ZONE            gcoOS_DebugTraceZone
 #   define gcmkTRACE_ZONE           gckOS_DebugTraceZone
+#   define gcmkTRACE_ZONE_N         gckOS_DebugTraceZoneN
 #elif gcdHAS_ELLIPSES
 #   define gcmTRACE_ZONE(...)
 #   define gcmkTRACE_ZONE(...)
+#   define gcmkTRACE_ZONE_N(...)
 #else
     gcmINLINE static void
     __dummy_trace_zone(
@@ -2000,7 +2027,7 @@ gckOS_Print(
 **          Number of bytes.
 */
 
-#if gcdDUMP
+#if gcdDUMP || gcdDUMP_COMMAND
     gceSTATUS
     gcfDumpData(
         IN gcoOS Os,
@@ -2048,7 +2075,7 @@ gckOS_Print(
 **          Number of bytes.
 */
 
-#if gcdDUMP
+#if gcdDUMP || gcdDUMP_COMMAND
 gceSTATUS
 gcfDumpBuffer(
     IN gcoOS Os,
@@ -2222,7 +2249,7 @@ gckOS_DebugBreak(
     void
     );
 
-#if gcdDEBUG
+#if gcmIS_DEBUG(gcdDEBUG_BREAK)
 #   define gcmBREAK             gcoOS_DebugBreak
 #   define gcmkBREAK            gckOS_DebugBreak
 #else
@@ -2565,6 +2592,9 @@ gckOS_Verify(
 #   define gcmVERIFY_ARGUMENT_RETURN(arg, value)
 #   define gcmkVERIFY_ARGUMENT_RETURN(arg, value)
 #endif
+
+#define MAX_LOOP_COUNT 0x7FFFFFFF
+
 #ifdef __cplusplus
 }
 #endif
