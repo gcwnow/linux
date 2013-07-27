@@ -2567,7 +2567,7 @@ gckHARDWARE_GetIdle(
     pollCount = Wait ? 100 : 1;
 
     /* At most, try for 1 second. */
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
     for (retry = 0; retry < 145; ++retry)
 #else
     for (retry = 0; retry < 1000; ++retry)
@@ -2596,7 +2596,7 @@ gckHARDWARE_GetIdle(
                            "%s: Waiting for idle: 0x%08X",
                            __FUNCTION__, idle);
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
             if(retry < 50) {
                 if ((retry & 0x3) == 1)
                     schedule();
@@ -2919,7 +2919,7 @@ gckHARDWARE_SetPowerManagementState(
         ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))) | (((gctUINT32) ((gctUINT32) (1) & ((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))),
     };
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
     static const gctUINT halfClock =
         ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1))))))) << (0 ? 0:0))) | (((gctUINT32) ((gctUINT32) (0) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1))))))) << (0 ? 0:0))) |
         ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 1:1) - (0 ? 1:1) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 1:1) - (0 ? 1:1) + 1))))))) << (0 ? 1:1))) | (((gctUINT32) ((gctUINT32) (0) & ((gctUINT32) ((((1 ? 1:1) - (0 ? 1:1) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 1:1) - (0 ? 1:1) + 1))))))) << (0 ? 1:1))) |
@@ -3031,7 +3031,7 @@ gckHARDWARE_SetPowerManagementState(
 
     if ((flag == 0) || (Hardware->settingPowerState))
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         Hardware->powerProcess = Hardware->powerThread = 0x0;
 #endif
 
@@ -3047,7 +3047,7 @@ gckHARDWARE_SetPowerManagementState(
     &&  (Hardware->chipPowerState == gcvPOWER_OFF)
     )
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         Hardware->powerProcess = Hardware->powerThread = 0x0;
 #endif
 
@@ -3146,7 +3146,7 @@ gckHARDWARE_SetPowerManagementState(
         gcmkONERROR(Hardware->stopIsr(Hardware->isrContext));
     }
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
     if (State == gcvPOWER_ON)
     {
         volatile static int i;
@@ -3227,7 +3227,7 @@ gckHARDWARE_SetPowerManagementState(
     Hardware->chipPowerState    = State;
     Hardware->broadcast         = broadcast;
     Hardware->settingPowerState = gcvFALSE;
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
     Hardware->powerProcess      = Hardware->powerThread = 0x0;
 #endif
 
@@ -3255,7 +3255,7 @@ OnError:
     if (mutexAcquired)
     {
         Hardware->settingPowerState = gcvFALSE;
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         Hardware->powerProcess = Hardware->powerThread = 0x0;
 #endif
 

@@ -840,7 +840,7 @@ gckCOMMAND_Commit(
     /* Release the power mutex. */
     if (powerAcquired)
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         hardware->powerProcess = hardware->powerThread = 0x0;
 #endif
         /* Release the power mutex. */
@@ -1368,7 +1368,7 @@ OnError:
 
     if (powerAcquired)
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         hardware->powerProcess = hardware->powerThread = 0x0;
 #endif
         /* Release the power mutex. */
@@ -1473,7 +1473,7 @@ gckCOMMAND_Reserve(
 
     if (powerAcquired)
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         hardware->powerProcess = hardware->powerThread = 0x0;
 #endif
         /* Release the power mutex. */
@@ -1563,7 +1563,7 @@ OnError:
 
     if (powerAcquired)
     {
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_JZ4770
         hardware->powerProcess = hardware->powerThread = 0x0;
 #endif
         /* Release the power mutex. */
