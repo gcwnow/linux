@@ -33,7 +33,7 @@ ccflags-y += -DANDROID=0
 ccflags-y += -DENABLE_GPU_CLOCK_BY_DRIVER=0
 ccflags-y += -DUSE_NEW_LINUX_SIGNAL=0
 ccflags-y += -DgcdkREPORT_VIDMEM_USAGE=0
-ccflags-y += -DgcdNO_POWER_MANAGEMENT=0
+ccflags-y += -DgcdNO_POWER_MANAGEMENT=1
 ccflags-y += -DgcdNULL_DRIVER=0
 
 # Avoid warning.
