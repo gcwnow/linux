@@ -24,6 +24,7 @@
 #ifndef __gc_hal_types_h_
 #define __gc_hal_types_h_
 
+#include "gc_hal_version.h"
 #include "gc_hal_options.h"
 
 #ifdef _WIN32
