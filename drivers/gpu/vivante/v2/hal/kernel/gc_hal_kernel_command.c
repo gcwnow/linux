@@ -1800,6 +1800,10 @@ gckCOMMAND_Stall(
     IN gckCOMMAND Command
     )
 {
+#if gcdNULL_DRIVER
+    /* Do nothing with infinite hardware. */
+    return gcvSTATUS_OK;
+#else
     gckOS os;
     gckHARDWARE hardware;
     gckEVENT event;
@@ -1811,12 +1815,6 @@ gckCOMMAND_Stall(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Command, gcvOBJ_COMMAND);
-
-#if gcdNULL_DRIVER == 2
-    /* Do nothing with infinite hardware. */
-    gcmkFOOTER_NO();
-    return gcvSTATUS_OK;
-#endif
 
     /* Extract the gckOS object pointer. */
     os = Command->os;
@@ -1831,13 +1829,10 @@ gckCOMMAND_Stall(
     gcmkVERIFY_OBJECT(event, gcvOBJ_EVENT);
 
     /* Allocate the signal. */
-    gcmkONERROR(
-        gckOS_CreateSignal(os, gcvTRUE, &signal));
+    gcmkONERROR(gckOS_CreateSignal(os, gcvTRUE, &signal));
 
     /* Append the EVENT command to trigger the signal. */
-    gcmkONERROR(gckEVENT_Signal(event,
-                                signal,
-                                gcvKERNEL_PIXEL));
+    gcmkONERROR(gckEVENT_Signal(event, signal, gcvKERNEL_PIXEL));
 
     /* Submit the event queue. */
     gcmkONERROR(gckEVENT_Submit(event, gcvTRUE));
@@ -1863,17 +1858,17 @@ gckCOMMAND_Stall(
             gctUINT32 idle;
 
             /* Read idle register. */
-            gcmkVERIFY_OK(
-                gckHARDWARE_GetIdle(Command->kernel->hardware,
-                                    gcvFALSE,
-                                    &idle));
+            gcmkVERIFY_OK(gckHARDWARE_GetIdle(
+                hardware, gcvFALSE, &idle
+                ));
 
-            gcmkTRACE(gcvLEVEL_ERROR,
-                      "%s(%d): idle=%08x",
-                      __FUNCTION__, __LINE__, idle);
+            gcmkTRACE(
+                gcvLEVEL_ERROR,
+                "%s(%d): idle=%08x",
+                __FUNCTION__, __LINE__, idle
+                );
 
-            gcmkVERIFY_OK(
-                gckOS_MemoryBarrier(os, gcvNULL));
+            gcmkVERIFY_OK(gckOS_MemoryBarrier(os, gcvNULL));
 #endif
             /* Advance timer. */
             timer += 250;
@@ -1889,9 +1884,9 @@ gckCOMMAND_Stall(
     if (gcmIS_ERROR(status))
     {
         /* Broadcast the stuck GPU. */
-        gcmkONERROR(gckOS_Broadcast(os,
-                                    Command->kernel->hardware,
-                                    gcvBROADCAST_GPU_STUCK));
+        gcmkONERROR(gckOS_Broadcast(
+            os, hardware, gcvBROADCAST_GPU_STUCK
+            ));
 
         gcmkONERROR(gcvSTATUS_GPU_NOT_RESPONDING);
     }
@@ -1904,13 +1899,14 @@ gckCOMMAND_Stall(
     return gcvSTATUS_OK;
 
 OnError:
-    /* Free the signal. */
     if (signal != gcvNULL)
     {
+        /* Free the signal. */
         gcmkVERIFY_OK(gckOS_DestroySignal(os, signal));
     }
 
     /* Return the status. */
     gcmkFOOTER();
     return status;
+#endif
 }
