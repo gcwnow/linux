@@ -31,20 +31,20 @@
 
 /*******************************************************************************
 **
-**    gckKERNEL_QueryVideoMemory
+**  gckKERNEL_QueryVideoMemory
 **
-**    Query the amount of video memory.
+**  Query the amount of video memory.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gcsHAL_INTERFACE * Interface
-**            Pointer to an gcsHAL_INTERFACE structure that will be filled in with
-**            the memory information.
+**      gcsHAL_INTERFACE * Interface
+**          Pointer to an gcsHAL_INTERFACE structure that will be filled in with
+**          the memory information.
 */
 gceSTATUS
 gckKERNEL_QueryVideoMemory(
@@ -82,23 +82,23 @@ gckKERNEL_QueryVideoMemory(
 
 /*******************************************************************************
 **
-**    gckKERNEL_GetVideoMemoryPool
+**  gckKERNEL_GetVideoMemoryPool
 **
-**    Get the gckVIDMEM object belonging to the specified pool.
+**  Get the gckVIDMEM object belonging to the specified pool.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**        gcePOOL Pool
-**            Pool to query gckVIDMEM object for.
+**      gcePOOL Pool
+**          Pool to query gckVIDMEM object for.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gckVIDMEM * VideoMemory
-**            Pointer to a variable that will hold the pointer to the gckVIDMEM
-**            object belonging to the requested pool.
+**      gckVIDMEM * VideoMemory
+**          Pointer to a variable that will hold the pointer to the gckVIDMEM
+**          object belonging to the requested pool.
 */
 gceSTATUS
 gckKERNEL_GetVideoMemoryPool(
@@ -152,26 +152,26 @@ gckKERNEL_GetVideoMemoryPool(
 
 /*******************************************************************************
 **
-**    gckKERNEL_MapMemory
+**  gckKERNEL_MapMemory
 **
-**    Map video memory into the current process space.
+**  Map video memory into the current process space.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**        gctPHYS_ADDR Physical
-**            Physical address of video memory to map.
+**      gctPHYS_ADDR Physical
+**          Physical address of video memory to map.
 **
-**        gctSIZE_T Bytes
-**            Number of bytes to map.
+**      gctSIZE_T Bytes
+**          Number of bytes to map.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gctPOINTER * Logical
-**            Pointer to a variable that will hold the base address of the mapped
-**            memory region.
+**      gctPOINTER * Logical
+**          Pointer to a variable that will hold the base address of the mapped
+**          memory region.
 */
 gceSTATUS
 gckKERNEL_MapMemory(
@@ -186,27 +186,27 @@ gckKERNEL_MapMemory(
 
 /*******************************************************************************
 **
-**    gckKERNEL_UnmapMemory
+**  gckKERNEL_UnmapMemory
 **
-**    Unmap video memory from the current process space.
+**  Unmap video memory from the current process space.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**        gctPHYS_ADDR Physical
-**            Physical address of video memory to map.
+**      gctPHYS_ADDR Physical
+**          Physical address of video memory to map.
 **
-**        gctSIZE_T Bytes
-**            Number of bytes to map.
+**      gctSIZE_T Bytes
+**          Number of bytes to map.
 **
-**        gctPOINTER Logical
-**            Base address of the mapped memory region.
+**      gctPOINTER Logical
+**          Base address of the mapped memory region.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        Nothing.
+**      Nothing.
 */
 gceSTATUS
 gckKERNEL_UnmapMemory(
@@ -221,27 +221,27 @@ gckKERNEL_UnmapMemory(
 
 /*******************************************************************************
 **
-**    gckKERNEL_MapVideoMemory
+**  gckKERNEL_MapVideoMemory
 **
-**    Get the logical address for a hardware specific memory address for the
-**    current process.
+**  Get the logical address for a hardware specific memory address for the
+**  current process.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
 **      gctBOOL InUserSpace
 **          gcvTRUE to map the memory into the user space.
 **
-**        gctUINT32 Address
-**            Hardware specific memory address.
+**      gctUINT32 Address
+**          Hardware specific memory address.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gctPOINTER * Logical
-**            Pointer to a variable that will hold the logical address of the
-**            specified memory address.
+**      gctPOINTER * Logical
+**          Pointer to a variable that will hold the logical address of the
+**          specified memory address.
 */
 gceSTATUS
 gckKERNEL_MapVideoMemory(

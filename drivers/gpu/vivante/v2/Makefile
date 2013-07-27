@@ -44,22 +44,24 @@ ccflags-y += -Wframe-larger-than=1032
 #
 ccflags-y += \
 	-I$(obj)/arch/XAQ2/hal/kernel \
-	-I$(obj)/hal/kernel/inc \
 	-I$(obj)/hal/kernel \
+	-I$(obj)/hal/kernel/inc \
+	-I$(obj)/hal/os/linux/kernel \
 	-I$(obj)/hal/user
 
 obj-$(CONFIG_GPU_VIVANTE_V2) += galcore_v2.o
 
 galcore_v2-objs += \
-	arch/XAQ2/hal/kernel/gc_hal_kernel_hardware.o	\
-	hal/kernel/gc_hal_kernel.o			\
-	hal/kernel/gc_hal_kernel_command.o		\
-	hal/kernel/gc_hal_kernel_event.o		\
-	hal/kernel/gc_hal_kernel_heap.o			\
-	hal/kernel/gc_hal_kernel_mmu.o			\
-	hal/kernel/gc_hal_kernel_video_memory.o		\
-	hal/os/linux/kernel/gc_hal_kernel_debug.o	\
-	hal/os/linux/kernel/gc_hal_kernel_device.o	\
-	hal/os/linux/kernel/gc_hal_kernel_driver.o	\
-	hal/os/linux/kernel/gc_hal_kernel_linux.o	\
+	arch/XAQ2/hal/kernel/gc_hal_kernel_hardware.o \
+	hal/kernel/gc_hal_kernel.o \
+	hal/kernel/gc_hal_kernel_command.o \
+	hal/kernel/gc_hal_kernel_debug.o \
+	hal/kernel/gc_hal_kernel_event.o \
+	hal/kernel/gc_hal_kernel_heap.o \
+	hal/kernel/gc_hal_kernel_mmu.o \
+	hal/kernel/gc_hal_kernel_video_memory.o \
+	hal/os/linux/kernel/gc_hal_kernel_device.o \
+	hal/os/linux/kernel/gc_hal_kernel_driver.o \
+	hal/os/linux/kernel/gc_hal_kernel_linux.o \
+	hal/os/linux/kernel/gc_hal_kernel_math.o \
 	hal/os/linux/kernel/gc_hal_kernel_os.o

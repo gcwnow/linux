@@ -26,29 +26,31 @@
 
 typedef struct _LINUX_MDL_MAP
 {
-    gctINT                    pid;
-    gctPOINTER                vmaAddr;
-    struct vm_area_struct *    vma;
-    struct _LINUX_MDL_MAP *    next;
+    gctINT                  pid;
+    gctPOINTER              vmaAddr;
+    struct vm_area_struct * vma;
+    struct _LINUX_MDL_MAP * next;
 }
-LINUX_MDL_MAP, *PLINUX_MDL_MAP;
+LINUX_MDL_MAP;
+
+typedef struct _LINUX_MDL_MAP * PLINUX_MDL_MAP;
 
 typedef struct _LINUX_MDL
 {
-    gctINT                    pid;
-    char *                    addr;
+    gctINT                  pid;
+    char *                  addr;
 
 #ifdef NO_DMA_COHERENT
-    gctPOINTER                kaddr;
+    gctPOINTER              kaddr;
 #endif /* NO_DMA_COHERENT */
 
-    gctINT                    numPages;
-    gctINT                    pagedMem;
-    gctBOOL                    contiguous;
-    dma_addr_t                dmaHandle;
-    PLINUX_MDL_MAP            maps;
-    struct _LINUX_MDL *        prev;
-    struct _LINUX_MDL *        next;
+    gctINT                  numPages;
+    gctINT                  pagedMem;
+    gctBOOL                 contiguous;
+    dma_addr_t              dmaHandle;
+    PLINUX_MDL_MAP          maps;
+    struct _LINUX_MDL *     prev;
+    struct _LINUX_MDL *     next;
 }
 LINUX_MDL, *PLINUX_MDL;
 
@@ -60,10 +62,10 @@ FindMdlMap(
 
 typedef struct _DRIVER_ARGS
 {
-    gctPOINTER                 InputBuffer;
-    gctUINT32                  InputBufferSize;
-    gctPOINTER                 OutputBuffer;
-    gctUINT32                OutputBufferSize;
+    gctPOINTER              InputBuffer;
+    gctUINT32               InputBufferSize;
+    gctPOINTER              OutputBuffer;
+    gctUINT32               OutputBufferSize;
 }
 DRIVER_ARGS;
 

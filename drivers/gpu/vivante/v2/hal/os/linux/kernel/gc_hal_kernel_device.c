@@ -31,7 +31,7 @@
 #define _GC_OBJ_ZONE    gcvZONE_DEVICE
 
 #ifdef FLAREON
-static struct dove_gpio_irq_handler gc500_handle;
+    static struct dove_gpio_irq_handler gc500_handle;
 #endif
 
 /******************************************************************************\

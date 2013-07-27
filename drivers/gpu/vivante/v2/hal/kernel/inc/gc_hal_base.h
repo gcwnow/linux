@@ -966,6 +966,13 @@ gcoOS_CacheInvalidate(
 
 #define gcdPI                   3.14159265358979323846f
 
+/* Kernel. */
+gctINT
+gckMATH_ModuloInt(
+    IN gctINT X,
+    IN gctINT Y
+    );
+
 gctUINT32
 gcoMATH_Log2in5dot5(
     IN gctINT X

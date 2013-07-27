@@ -21,28 +21,36 @@
 
 
 
-#include "gc_hal_kernel_linux.h"
-#include "linux/spinlock.h"
-#include <stdarg.h>
-
-/*
-    gcdBUFFERED_OUTPUT
-
-    When set to non-zero, all output is collected into a buffer with the
-    specified size.  Once the buffer gets full, or the token "$$FLUSH$$" has
-    been received, the debug buffer will be printed to the console.
-*/
-#define gcdBUFFERED_OUTPUT  0
+#include "gc_hal_kernel_precomp.h"
+#include <gc_hal_kernel_debug.h>
 
 /******************************************************************************\
 ******************************** Debug Variables *******************************
 \******************************************************************************/
 
-static gceSTATUS  _lastError  = gcvSTATUS_OK;
-static gctUINT32  _debugLevel = gcvLEVEL_ERROR;
-static gctUINT32  _debugZones = gcvZONE_NONE;
+static gceSTATUS _lastError  = gcvSTATUS_OK;
+static gctUINT32 _debugLevel = gcvLEVEL_ERROR;
+/*
+_debugZones config value
+Please Reference define in gc_hal_base.h
+*/
+static gctUINT32 _debugZones = gcvZONE_NONE;
 static gctINT     _indent     = 0;
 static spinlock_t _lock       = __SPIN_LOCK_UNLOCKED();
+
+
+/******************************************************************************\
+********************************* Debug Switches *******************************
+\******************************************************************************/
+
+/*
+    gcdBUFFERED_OUTPUT
+
+    When set to non-zero, all output is collected into a buffer with the
+    specified size.  Once the buffer gets full, the debug buffer will be
+    printed to the console. gcdBUFFERED_SIZE determines the size of the buffer.
+*/
+#define gcdBUFFERED_OUTPUT  0
 
 static void
 OutputDebugString(

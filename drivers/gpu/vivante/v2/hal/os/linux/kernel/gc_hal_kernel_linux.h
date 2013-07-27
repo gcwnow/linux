@@ -64,25 +64,25 @@
 #define FIND_TASK_BY_PID(x) find_task_by_pid(x)
 #endif
 
-#define _WIDE(string)                L##string
-#define WIDE(string)                _WIDE(string)
+#define _WIDE(string)				L##string
+#define WIDE(string)				_WIDE(string)
 
-#define countof(a)                    (sizeof(a) / sizeof(a[0]))
+#define countof(a)					(sizeof(a) / sizeof(a[0]))
 
-#define DRV_NAME                      "galcore"
+#define DRV_NAME          			"galcore"
 
-#define GetPageCount(size, offset)     ((((size) + ((offset) & ~PAGE_CACHE_MASK)) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT)
+#define GetPageCount(size, offset) 	((((size) + ((offset) & ~PAGE_CACHE_MASK)) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT)
 
 static inline gctINT
 GetOrder(
-    IN gctINT numPages
-    )
+	IN gctINT numPages
+	)
 {
     gctINT order = 0;
 
-    while ((1 << order) <  numPages) order++;
+	while ((1 << order) <  numPages) order++;
 
-    return order;
+	return order;
 }
 
 #endif /* __gc_hal_kernel_linux_h_ */

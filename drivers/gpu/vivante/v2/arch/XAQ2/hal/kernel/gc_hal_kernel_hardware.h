@@ -24,6 +24,10 @@
 #ifndef __gc_hal_kernel_hardware_h_
 #define __gc_hal_kernel_hardware_h_
 
+#if gcdENABLE_VG
+#include "gc_hal_kernel_hardware_vg.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

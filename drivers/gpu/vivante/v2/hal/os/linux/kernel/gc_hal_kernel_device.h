@@ -31,9 +31,9 @@
 #endif
 
 #ifdef ANDROID
-#define gcdkREPORT_VIDMEM_LEAK        0
+#define gcdkREPORT_VIDMEM_LEAK      0
 #else
-#define gcdkREPORT_VIDMEM_LEAK        1
+#define gcdkREPORT_VIDMEM_LEAK      1
 #endif
 
 /******************************************************************************\
@@ -43,46 +43,46 @@
 typedef struct _gckGALDEVICE
 {
     /* Objects. */
-    gckOS                os;
-    gckKERNEL            kernel;
+    gckOS               os;
+    gckKERNEL           kernel;
 
     /* Attributes. */
-    gctSIZE_T            internalSize;
+    gctSIZE_T           internalSize;
     gctPHYS_ADDR        internalPhysical;
-    gctPOINTER            internalLogical;
-    gckVIDMEM            internalVidMem;
-    gctSIZE_T            externalSize;
+    gctPOINTER          internalLogical;
+    gckVIDMEM           internalVidMem;
+    gctSIZE_T           externalSize;
     gctPHYS_ADDR        externalPhysical;
-    gctPOINTER            externalLogical;
-    gckVIDMEM            externalVidMem;
-    gckVIDMEM            contiguousVidMem;
-    gctPOINTER            contiguousBase;
+    gctPOINTER          externalLogical;
+    gckVIDMEM           externalVidMem;
+    gckVIDMEM           contiguousVidMem;
+    gctPOINTER          contiguousBase;
     gctPHYS_ADDR        contiguousPhysical;
-    gctSIZE_T            contiguousSize;
-    gctBOOL                contiguousMapped;
-    gctPOINTER            contiguousMappedUser;
-    gctSIZE_T            systemMemorySize;
-    gctUINT32            systemMemoryBaseAddress;
-    gctPOINTER            registerBase;
-    gctSIZE_T            registerSize;
-    gctUINT32            baseAddress;
+    gctSIZE_T           contiguousSize;
+    gctBOOL             contiguousMapped;
+    gctPOINTER          contiguousMappedUser;
+    gctSIZE_T           systemMemorySize;
+    gctUINT32           systemMemoryBaseAddress;
+    gctPOINTER          registerBase;
+    gctSIZE_T           registerSize;
+    gctUINT32           baseAddress;
 
     /* IRQ management. */
-    gctINT                irqLine;
-    gctBOOL                isrInitialized;
-    gctBOOL                dataReady;
+    gctINT              irqLine;
+    gctBOOL             isrInitialized;
+    gctBOOL             dataReady;
 
     /* Thread management. */
-    struct task_struct    *threadCtxt;
+    struct task_struct  *threadCtxt;
     struct semaphore    sema;
-    gctBOOL                threadInitialized;
-    gctBOOL                killThread;
+    gctBOOL             threadInitialized;
+    gctBOOL             killThread;
 
     /* Signal management. */
-    gctINT                signal;
+    gctINT              signal;
 
     /* Clock management. */
-    struct clk            *clk;
+    struct clk          *clk;
 }
 * gckGALDEVICE;
 
@@ -128,8 +128,8 @@ MEMORY_RECORD, * MEMORY_RECORD_PTR;
 typedef struct _gcsHAL_PRIVATE_DATA
 {
     gckGALDEVICE        device;
-    gctPOINTER            mappedMemory;
-    gctPOINTER            contiguousLogical;
+    gctPOINTER          mappedMemory;
+    gctPOINTER          contiguousLogical;
 
 #if gcdkUSE_MEMORY_RECORD
     MEMORY_RECORD        memoryRecordList;

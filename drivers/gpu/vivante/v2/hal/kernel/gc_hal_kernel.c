@@ -25,9 +25,69 @@
 
 #define _GC_OBJ_ZONE    gcvZONE_KERNEL
 
+/*******************************************************************************
+***** Version Signature *******************************************************/
+
+#define _gcmTXT2STR(t) #t
+#define gcmTXT2STR(t) _gcmTXT2STR(t)
+const char * _VERSION = "\n\0$VERSION$"
+                        gcmTXT2STR(gcvVERSION_MAJOR) "."
+                        gcmTXT2STR(gcvVERSION_MINOR) "."
+                        gcmTXT2STR(gcvVERSION_PATCH) ":"
+                        gcmTXT2STR(gcvVERSION_BUILD) "$\n";
+
 /******************************************************************************\
 ******************************* gckKERNEL API Code ******************************
 \******************************************************************************/
+
+#if gcmIS_DEBUG(gcdDEBUG_TRACE)
+#define gcmDEFINE2TEXT(d) #d
+gctCONST_STRING _DispatchText[] =
+{
+    gcmDEFINE2TEXT(gcvHAL_QUERY_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_QUERY_CHIP_IDENTITY),
+    gcmDEFINE2TEXT(gcvHAL_ALLOCATE_NON_PAGED_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_FREE_NON_PAGED_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_FREE_CONTIGUOUS_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_ALLOCATE_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_FREE_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_MAP_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_UNMAP_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_MAP_USER_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_UNMAP_USER_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_LOCK_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_UNLOCK_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_EVENT_COMMIT),
+    gcmDEFINE2TEXT(gcvHAL_USER_SIGNAL),
+    gcmDEFINE2TEXT(gcvHAL_SIGNAL),
+    gcmDEFINE2TEXT(gcvHAL_WRITE_DATA),
+    gcmDEFINE2TEXT(gcvHAL_COMMIT),
+    gcmDEFINE2TEXT(gcvHAL_STALL),
+    gcmDEFINE2TEXT(gcvHAL_READ_REGISTER),
+    gcmDEFINE2TEXT(gcvHAL_WRITE_REGISTER),
+    gcmDEFINE2TEXT(gcvHAL_GET_PROFILE_SETTING),
+    gcmDEFINE2TEXT(gcvHAL_SET_PROFILE_SETTING),
+    gcmDEFINE2TEXT(gcvHAL_READ_ALL_PROFILE_REGISTERS),
+    gcmDEFINE2TEXT(gcvHAL_PROFILE_REGISTERS_2D),
+    gcmDEFINE2TEXT(gcvHAL_SET_POWER_MANAGEMENT_STATE),
+    gcmDEFINE2TEXT(gcvHAL_QUERY_POWER_MANAGEMENT_STATE),
+    gcmDEFINE2TEXT(gcvHAL_GET_BASE_ADDRESS),
+    gcmDEFINE2TEXT(gcvHAL_SET_IDLE),
+    gcmDEFINE2TEXT(gcvHAL_QUERY_KERNEL_SETTINGS),
+    gcmDEFINE2TEXT(gcvHAL_RESET),
+    gcmDEFINE2TEXT(gcvHAL_MAP_PHYSICAL),
+    gcmDEFINE2TEXT(gcvHAL_DEBUG),
+    gcmDEFINE2TEXT(gcvHAL_CACHE),
+    gcmDEFINE2TEXT(gcvHAL_TIMESTAMP),
+    gcmDEFINE2TEXT(gcvHAL_DATABASE),
+    gcmDEFINE2TEXT(gcvHAL_VERSION),
+    gcmDEFINE2TEXT(gcvHAL_CHIP_INFO),
+    gcmDEFINE2TEXT(gcvHAL_ATTACH),
+    gcmDEFINE2TEXT(gcvHAL_DETACH)
+};
+#endif
 
 /*******************************************************************************
 **
@@ -49,7 +109,6 @@
 **          Pointer to a variable that will hold the pointer to the gckKERNEL
 **          object.
 */
-
 #ifdef ANDROID
 #if gcdNEW_PROFILER_FILE
 #define DEFAULT_PROFILE_FILE_NAME   "/sdcard/vprofiler.vpd"
@@ -81,16 +140,15 @@ gckKERNEL_Construct(
     gcmkVERIFY_ARGUMENT(Kernel != gcvNULL);
 
     /* Allocate the gckKERNEL object. */
-    gcmkONERROR(
-        gckOS_Allocate(Os,
-                       gcmSIZEOF(struct _gckKERNEL),
-                       (gctPOINTER *) &kernel));
+    gcmkONERROR(gckOS_Allocate(Os,
+                               gcmSIZEOF(struct _gckKERNEL),
+                               (gctPOINTER *) &kernel));
 
     /* Zero the object pointers. */
-    kernel->hardware = gcvNULL;
-    kernel->command  = gcvNULL;
-    kernel->event    = gcvNULL;
-    kernel->mmu      = gcvNULL;
+    kernel->hardware     = gcvNULL;
+    kernel->command      = gcvNULL;
+    kernel->event        = gcvNULL;
+    kernel->mmu          = gcvNULL;
 
     /* Initialize the gckKERNEL object. */
     kernel->object.type = gcvOBJ_KERNEL;
@@ -175,7 +233,7 @@ OnError:
             gcmkVERIFY_OK(gckOS_AtomDestroy(Os, kernel->atomClients));
         }
 
-        gcmkVERIFY_OK(gckOS_Free(Os, kernel));
+        gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Os, kernel));
     }
 
     /* Return the error. */
@@ -211,11 +269,11 @@ gckKERNEL_Destroy(
     /* Destroy the gckMMU object. */
     gcmkVERIFY_OK(gckMMU_Destroy(Kernel->mmu));
 
-    /* Destroy the gckEVENT object. */
-    gcmkVERIFY_OK(gckEVENT_Destroy(Kernel->event));
-
     /* Destroy the gckCOMMNAND object. */
     gcmkVERIFY_OK(gckCOMMAND_Destroy(Kernel->command));
+
+    /* Destroy the gckEVENT object. */
+    gcmkVERIFY_OK(gckEVENT_Destroy(Kernel->event));
 
     /* Destroy the gckHARDWARE object. */
     gcmkVERIFY_OK(gckHARDWARE_Destroy(Kernel->hardware));
@@ -227,12 +285,13 @@ gckKERNEL_Destroy(
     Kernel->object.type = gcvOBJ_UNKNOWN;
 
     /* Free the gckKERNEL object. */
-    gcmkVERIFY_OK(gckOS_Free(Kernel->os, Kernel));
+    gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Kernel->os, Kernel));
 
     /* Success. */
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
+
 
 /*******************************************************************************
 **
@@ -271,17 +330,18 @@ _AllocateMemory(
     gckVIDMEM videoMemory;
 
     gcmkVERIFY_ARGUMENT(Pool != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Bytes != 0);
 
     /* Get initial pool. */
     switch (pool = *Pool)
     {
     case gcvPOOL_DEFAULT:
     case gcvPOOL_LOCAL:
-        pool = gcvPOOL_LOCAL_INTERNAL;
+        pool      = gcvPOOL_LOCAL_INTERNAL;
         break;
 
     case gcvPOOL_UNIFIED:
-        pool = gcvPOOL_SYSTEM;
+        pool      = gcvPOOL_SYSTEM;
         break;
 
     default:
@@ -290,12 +350,6 @@ _AllocateMemory(
 
     do
     {
-        /* Verify the number of bytes to allocate. */
-        if (Bytes == 0)
-        {
-            gcmkERR_BREAK(gcvSTATUS_INVALID_ARGUMENT);
-        }
-
         if (pool == gcvPOOL_VIRTUAL)
         {
             /* Create a gcuVIDMEM_NODE for virtual memory. */
@@ -417,6 +471,7 @@ _AllocateMemory(
 **          Pointer to a gcsHAL_INTERFACE structure that receives any data to be
 **          returned.
 */
+
 gceSTATUS
 gckKERNEL_Dispatch(
     IN gckKERNEL Kernel,
@@ -527,20 +582,19 @@ gckKERNEL_Dispatch(
 
     case gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY:
         /* Allocate contiguous memory. */
-        gcmkONERROR(
-            gckOS_AllocateContiguous(
-                Kernel->os,
-                FromUser,
-                &Interface->u.AllocateContiguousMemory.bytes,
-                &Interface->u.AllocateContiguousMemory.physical,
-                &Interface->u.AllocateContiguousMemory.logical));
+        gcmkONERROR(gckOS_AllocateContiguous(
+            Kernel->os,
+            FromUser,
+            &Interface->u.AllocateContiguousMemory.bytes,
+            &Interface->u.AllocateContiguousMemory.physical,
+            &Interface->u.AllocateContiguousMemory.logical));
 
         break;
 
     case gcvHAL_FREE_CONTIGUOUS_MEMORY:
         physical = Interface->u.FreeContiguousMemory.physical;
 
-       /* Free contiguous memory. */
+        /* Free contiguous memory. */
         gcmkONERROR(
             gckOS_FreeContiguous(Kernel->os,
                                  physical,
@@ -599,7 +653,8 @@ gckKERNEL_Dispatch(
     case gcvHAL_LOCK_VIDEO_MEMORY:
         /* Lock video memory. */
         gcmkONERROR(
-            gckVIDMEM_Lock(Interface->u.LockVideoMemory.node,
+            gckVIDMEM_Lock(
+                           Interface->u.LockVideoMemory.node,
                            &Interface->u.LockVideoMemory.address));
 
         locked = gcvTRUE;
@@ -768,8 +823,8 @@ gckKERNEL_Dispatch(
         /* Write a register. */
         gcmkONERROR(
             gckOS_WriteRegister(Kernel->os,
-                                Interface->u.WriteRegisterData.address,
-                                Interface->u.WriteRegisterData.data));
+                                  Interface->u.WriteRegisterData.address,
+                                  Interface->u.WriteRegisterData.data));
 #else
         /* No access from user land to write registers. */
         status = gcvSTATUS_NOT_SUPPORTED;
