@@ -464,6 +464,14 @@ gcoOS_FreeNonPagedMemory(
     IN gctPOINTER Logical
     );
 
+#define gcmOS_SAFE_FREE(os, mem) \
+	gcoOS_Free(os, mem); \
+	mem = gcvNULL
+
+#define gcmkOS_SAFE_FREE(os, mem) \
+    gckOS_Free(os, mem); \
+	mem = gcvNULL
+
 typedef enum _gceFILE_MODE
 {
     gcvFILE_CREATE          = 0,
@@ -1497,6 +1505,7 @@ gcoDUMP_Delete(
     IN gcoDUMP Dump,
     IN gctUINT32 Address
     );
+
 
 /******************************************************************************\
 ******************************* gcsRECT Structure ******************************

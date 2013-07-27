@@ -28,6 +28,10 @@
 #include "gc_hal_kernel_hardware.h"
 #include "gc_hal_driver.h"
 
+#if gcdENABLE_VG
+#include "gc_hal_kernel_vg.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

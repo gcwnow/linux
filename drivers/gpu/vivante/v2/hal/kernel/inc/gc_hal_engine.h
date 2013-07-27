@@ -27,6 +27,10 @@
 #include "gc_hal_types.h"
 #include "gc_hal_enum.h"
 
+#if gcdENABLE_VG
+#include "gc_hal_engine_vg.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,11 +39,14 @@ extern "C" {
 ****************************** Object Declarations *****************************
 \******************************************************************************/
 
-typedef struct _gcoSTREAM *                gcoSTREAM;
-typedef struct _gcoVERTEX *                gcoVERTEX;
-typedef struct _gcoTEXTURE *              gcoTEXTURE;
-typedef struct _gcoINDEX *                gcoINDEX;
-typedef struct _gcsVERTEX_ATTRIBUTES *    gcsVERTEX_ATTRIBUTES_PTR;
+typedef struct _gcoSTREAM *             gcoSTREAM;
+typedef struct _gcoVERTEX *             gcoVERTEX;
+typedef struct _gcoTEXTURE *            gcoTEXTURE;
+typedef struct _gcoINDEX *              gcoINDEX;
+typedef struct _gcsVERTEX_ATTRIBUTES *  gcsVERTEX_ATTRIBUTES_PTR;
+typedef struct _gcoVERTEXARRAY *        gcoVERTEXARRAY;
+
+#define gcdATTRIBUTE_COUNT              16
 
 /******************************************************************************\
 ********************************* Enumerations *********************************
@@ -83,6 +90,7 @@ typedef enum _gceCOMPARE
     gcvCOMPARE_GREATER,
     gcvCOMPARE_GREATER_OR_EQUAL,
     gcvCOMPARE_ALWAYS,
+    gcvCOMPARE_INVALID = -1
 }
 gceCOMPARE;
 
@@ -106,6 +114,7 @@ typedef enum _gceSTENCIL_OPERATION
     gcvSTENCIL_DECREMENT,
     gcvSTENCIL_INCREMENT_SATURATE,
     gcvSTENCIL_DECREMENT_SATURATE,
+    gcvSTENCIL_OPERATION_INVALID = -1
 }
 gceSTENCIL_OPERATION;
 
@@ -157,6 +166,7 @@ typedef enum _gcePRIMITIVE
     gcvPRIMITIVE_TRIANGLE_LIST,
     gcvPRIMITIVE_TRIANGLE_STRIP,
     gcvPRIMITIVE_TRIANGLE_FAN,
+    gcvPRIMITIVE_RECTANGLE,
 }
 gcePRIMITIVE;
 
@@ -265,7 +275,6 @@ gcoSURF_ClearRect(
     );
 
 /* TO BE REMOVED */
-#if 1
     gceSTATUS
     depr_gcoSURF_Resolve(
         IN gcoSURF SrcSurface,
@@ -294,7 +303,6 @@ gcoSURF_ClearRect(
         IN gcsPOINT_PTR DestOrigin,
         IN gcsPOINT_PTR RectSize
         );
-#endif
 
 /* Resample surface. */
 gceSTATUS
@@ -456,10 +464,10 @@ gcoINDEX_UploadDynamic(
 /* Clear flags. */
 typedef enum _gceCLEAR
 {
-    gcvCLEAR_COLOR                = 0x1,
-    gcvCLEAR_DEPTH                = 0x2,
+    gcvCLEAR_COLOR              = 0x1,
+    gcvCLEAR_DEPTH              = 0x2,
     gcvCLEAR_STENCIL            = 0x4,
-    gcvCLEAR_HZ                    = 0x8,
+    gcvCLEAR_HZ                 = 0x8,
     gcvCLEAR_HAS_VAA            = 0x10,
 }
 gceCLEAR;
@@ -1162,7 +1170,6 @@ typedef struct _gcsTEXTURE
 }
 gcsTEXTURE, * gcsTEXTURE_PTR;
 
-
 /* Construct a new gcoTEXTURE object. */
 gceSTATUS
 gcoTEXTURE_Construct(
@@ -1389,7 +1396,7 @@ gcoTEXTURE_Flush(
 
 gceSTATUS
 gcoTEXTURE_QueryCaps(
-    IN    gcoHAL      Hal,
+    IN  gcoHAL    Hal,
     OUT gctUINT * MaxWidth,
     OUT gctUINT * MaxHeight,
     OUT gctUINT * MaxDepth,
@@ -1484,7 +1491,8 @@ gcoSTREAM_Lock(
 
 gceSTATUS
 gcoSTREAM_Unlock(
-    IN gcoSTREAM Stream);
+    IN gcoSTREAM Stream
+    );
 
 gceSTATUS
 gcoSTREAM_Reserve(
@@ -1507,13 +1515,13 @@ gcoSTREAM_SetDynamic(
 
 typedef struct _gcsSTREAM_INFO
 {
-    gctUINT                index;
+    gctUINT             index;
     gceVERTEX_FORMAT    format;
-    gctBOOL                normalized;
-    gctUINT                components;
-    gctSIZE_T            size;
+    gctBOOL             normalized;
+    gctUINT             components;
+    gctSIZE_T           size;
     gctCONST_POINTER    data;
-    gctUINT                stride;
+    gctUINT             stride;
 }
 gcsSTREAM_INFO, * gcsSTREAM_INFO_PTR;
 
@@ -1533,12 +1541,12 @@ gcoSTREAM_UploadDynamic(
 typedef struct _gcsVERTEX_ATTRIBUTES
 {
     gceVERTEX_FORMAT            format;
-    gctBOOL                        normalized;
-    gctUINT32                    components;
-    gctSIZE_T                    size;
-    gctUINT32                    stream;
-    gctUINT32                    offset;
-    gctUINT32                    stride;
+    gctBOOL                     normalized;
+    gctUINT32                   components;
+    gctSIZE_T                   size;
+    gctUINT32                   stream;
+    gctUINT32                   offset;
+    gctUINT32                   stride;
 }
 gcsVERTEX_ATTRIBUTES;
 

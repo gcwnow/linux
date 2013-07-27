@@ -24,7 +24,12 @@
 #ifndef __gc_hal_driver_h_
 #define __gc_hal_driver_h_
 
+#include "gc_hal_enum.h"
 #include "gc_hal_types.h"
+
+#if gcdENABLE_VG
+#include "gc_hal_driver_vg.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

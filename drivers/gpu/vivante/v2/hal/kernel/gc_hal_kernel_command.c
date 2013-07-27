@@ -24,7 +24,10 @@
 #include "gc_hal_kernel_precomp.h"
 #include "gc_hal_user_context.h"
 
-#define _GC_OBJ_ZONE    gcvZONE_COMMAND
+#define _GC_OBJ_ZONE            gcvZONE_COMMAND
+
+/* When enabled, extra messages needed by the dump parser are left out. */
+#define gcdSIMPLE_COMMAND_DUMP  1
 
 /******************************************************************************\
 ********************************* Support Code *********************************
@@ -189,7 +192,7 @@ _NewQueue(
     newIndex     = (currentIndex + 1) % gcdCOMMAND_QUEUES;
 
     /* Wait for availability. */
-#if gcdDUMP_COMMAND
+#if gcdDUMP_COMMAND && !gcdSIMPLE_COMMAND_DUMP
     gcmkPRINT("@[kernel.waitsignal]");
 #endif
 
