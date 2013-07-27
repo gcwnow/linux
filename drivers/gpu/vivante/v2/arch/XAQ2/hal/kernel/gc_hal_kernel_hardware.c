@@ -138,16 +138,11 @@ _IdentifyHardware(
                                    0x00074,
                                    ChipMinorFeatures1));
 
-            /* Read chip minor featuress register #1. */
-#if defined GC_MINOR_FEATURES2_Address
+            /* Read chip minor featuress register #2. */
             gcmkONERROR(
                 gckOS_ReadRegister(Os,
-                                   GC_MINOR_FEATURES2_Address,
+                                   0x00084,
                                    ChipMinorFeatures2));
-#else
-            /* Chip doesn't has minor features register 2. */
-            *ChipMinorFeatures2 = 0;
-#endif
         }
         else
         {
