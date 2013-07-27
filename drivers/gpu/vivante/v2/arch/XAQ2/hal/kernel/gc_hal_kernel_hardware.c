@@ -2567,11 +2567,7 @@ gckHARDWARE_GetIdle(
     pollCount = Wait ? 100 : 1;
 
     /* At most, try for 1 second. */
-#ifdef CONFIG_MACH_JZ4770
-    for (retry = 0; retry < 145; ++retry)
-#else
     for (retry = 0; retry < 1000; ++retry)
-#endif
     {
         /* If we have to wait, try 100 polls per millisecond. */
         for (poll = pollCount; poll > 0; --poll)
@@ -2581,32 +2577,26 @@ gckHARDWARE_GetIdle(
                 gckOS_ReadRegister(Hardware->os, 0x00004, &idle));
 
             /* See if we have to wait for FE idle. */
-                if (( ((((gctUINT32) (idle)) >> (0 ? 0:0)) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1)))))) ))
+            if ((((((gctUINT32) (idle)) >> (0 ? 0:0)) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1)))))) ))
             {
-                    /* FE is idle. */
+                /* FE is idle. */
                 break;
             }
         }
 
         /* Check if we need to wait for FE and FE is busy. */
-        if (Wait && !( ((((gctUINT32) (idle)) >> (0 ? 0:0)) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1)))))) ))
+        if (Wait && !(((((gctUINT32) (idle)) >> (0 ? 0:0)) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1)))))) ))
         {
             /* Wait a little. */
             gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_HARDWARE,
                            "%s: Waiting for idle: 0x%08X",
                            __FUNCTION__, idle);
-
 #ifdef CONFIG_MACH_JZ4770
-            if(retry < 50) {
-                if ((retry & 0x3) == 1)
-                    schedule();
-                else
-                    gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
-            } else
-                gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 10));
-#else
-            gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
+            if (retry & 0x3)
+                schedule();
 #endif
+
+            gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
         }
         else
         {
