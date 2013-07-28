@@ -522,13 +522,18 @@ gckKERNEL_Dispatch(
     IN OUT gcsHAL_INTERFACE * Interface
     )
 {
-    gceSTATUS status;
+    gceSTATUS status = gcvSTATUS_OK;
     gctUINT32 bitsPerPixel;
     gctSIZE_T bytes;
     gcuVIDMEM_NODE_PTR node;
     gctBOOL locked = gcvFALSE;
-    gctPHYS_ADDR physical;
+    gctPHYS_ADDR physical = gcvNULL;
     gctUINT32 address;
+    gctUINT32 processID;
+    gctBOOL asynchronous;
+#if !USE_NEW_LINUX_SIGNAL
+    gctSIGNAL   signal;
+#endif
 
     gcmkHEADER_ARG("Kernel=0x%x FromUser=%d Interface=0x%x",
                    Kernel, FromUser, Interface);
@@ -537,8 +542,14 @@ gckKERNEL_Dispatch(
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
     gcmkVERIFY_ARGUMENT(Interface != gcvNULL);
 
+#if gcmIS_DEBUG(gcdDEBUG_TRACE)
     gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_KERNEL,
-                   "Dispatching command %d", Interface->command);
+                   "Dispatching command %d (%s)",
+                   Interface->command, _DispatchText[Interface->command]);
+#endif
+
+    /* Get the current process ID. */
+    gcmkONERROR(gckOS_GetProcessID(&processID));
 
     /* Dispatch on command. */
     switch (Interface->command)
@@ -734,7 +745,8 @@ gckKERNEL_Dispatch(
 
         /* Unlock video memory. */
         gcmkONERROR(
-            gckVIDMEM_Unlock(node,
+            gckVIDMEM_Unlock(
+                             node,
                              Interface->u.UnlockVideoMemory.type,
                              &Interface->u.UnlockVideoMemory.asynchroneous));
         break;
@@ -815,6 +827,21 @@ gckKERNEL_Dispatch(
             status = gckOS_WaitUserSignal(Kernel->os,
                                           Interface->u.UserSignal.id,
                                           Interface->u.UserSignal.wait);
+            break;
+
+        case gcvUSER_SIGNAL_MAP:
+            gcmkONERROR(
+                gckOS_MapSignal(Kernel->os,
+                               (gctSIGNAL)Interface->u.UserSignal.id,
+                               (gctHANDLE)processID,
+                               &signal));
+            break;
+
+        case gcvUSER_SIGNAL_UNMAP:
+            /* Destroy the signal. */
+            gcmkONERROR(
+                gckOS_DestroyUserSignal(Kernel->os,
+                                        Interface->u.UserSignal.id));
             break;
 
         default:
@@ -999,9 +1026,20 @@ OnError:
         {
             /* Roll back the lock. */
             gcmkVERIFY_OK(
-                gckVIDMEM_Unlock(Interface->u.LockVideoMemory.node,
+                gckVIDMEM_Unlock(
+                                 Interface->u.LockVideoMemory.node,
                                  gcvSURF_TYPE_UNKNOWN,
-                                 gcvNULL));
+                                 &asynchronous));
+
+            if (gcvTRUE == asynchronous)
+            {
+                /* Bottom Half */
+                gcmkVERIFY_OK(
+                    gckVIDMEM_Unlock(
+                                     Interface->u.LockVideoMemory.node,
+                                     gcvSURF_TYPE_UNKNOWN,
+                                     gcvNULL));
+            }
         }
     }
 
@@ -1010,6 +1048,24 @@ OnError:
     return status;
 }
 
+/*******************************************************************************
+**  gckKERNEL_AttachProcess
+**
+**  Attach or detach a process.
+**
+**  INPUT:
+**
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
+**
+**      gctBOOL Attach
+**          gcvTRUE if a new process gets attached or gcFALSE when a process
+**          gets detatched.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
 gceSTATUS
 gckKERNEL_AttachProcess(
     IN gckKERNEL Kernel,
@@ -1191,8 +1247,9 @@ gckKERNEL_Recovery(
     IN gckKERNEL Kernel
     )
 {
+#if gcdENABLE_RECOVERY
     gceSTATUS status;
-    gckEVENT event;
+    gckEVENT eventObj;
     gckHARDWARE hardware;
 #if gcdSECURE_USER
     gctUINT32 processID;
@@ -1204,20 +1261,28 @@ gckKERNEL_Recovery(
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
 
     /* Grab gckEVENT object. */
-    event = Kernel->event;
-    gcmkVERIFY_OBJECT(event, gcvOBJ_EVENT);
+    eventObj = Kernel->event;
+    gcmkVERIFY_OBJECT(eventObj, gcvOBJ_EVENT);
 
     /* Grab gckHARDWARE object. */
     hardware = Kernel->hardware;
     gcmkVERIFY_OBJECT(hardware, gcvOBJ_HARDWARE);
 
     /* Handle all outstanding events now. */
-    event->pending = ~0U;
-    gcmkONERROR(gckEVENT_Notify(event, 1));
+#if gcdSMP
+    gcmkONERROR(gckOS_AtomSet(Kernel->os, eventObj->pending, ~0U));
+#else
+    eventObj->pending = ~0U;
+#endif
+    gcmkONERROR(gckEVENT_Notify(eventObj, 1));
 
     /* Again in case more events got submitted. */
-    event->pending = ~0U;
-    gcmkONERROR(gckEVENT_Notify(event, 2));
+#if gcdSMP
+    gcmkONERROR(gckOS_AtomSet(Kernel->os, eventObj->pending, ~0U));
+#else
+    eventObj->pending = ~0U;
+#endif
+    gcmkONERROR(gckEVENT_Notify(eventObj, 2));
 
 #if gcdSECURE_USER
     /* Flush the secure mapping cache. */
@@ -1249,4 +1314,7 @@ OnError:
     /* Return the status. */
     gcmkFOOTER();
     return status;
+#else
+    return gcvSTATUS_OK;
+#endif
 }
