@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -269,9 +269,20 @@ gckKERNEL_MapVideoMemory(
     /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;
 
-    /* Split the memory address into a pool type and offset. */
-    gcmkONERROR(
-        gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
+#if gcdENABLE_VG
+    if (Core == gcvCORE_VG)
+    {
+        /* Split the memory address into a pool type and offset. */
+        gcmkONERROR(
+            gckVGHARDWARE_SplitMemory(Kernel->vg->hardware, Address, &pool, &offset));
+    }
+    else
+#endif
+    {
+        /* Split the memory address into a pool type and offset. */
+        gcmkONERROR(
+            gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
+    }
 
     /* Dispatch on pool. */
     switch (pool)
@@ -294,20 +305,34 @@ gckKERNEL_MapVideoMemory(
         }
         else
         {
+            gctINT processID;
+            gckOS_GetProcessID(&processID);
+
             mdl = (PLINUX_MDL) device->contiguousPhysical;
 
-            mdlMap = FindMdlMap(mdl, current->tgid);
+            mdlMap = FindMdlMap(mdl, processID);
             gcmkASSERT(mdlMap);
 
             logical = (gctPOINTER) mdlMap->vmaAddr;
         }
-
-        gcmkVERIFY_OK(
-            gckHARDWARE_SplitMemory(Kernel->hardware,
-                                    device->contiguousVidMem->baseAddress,
-                                    &pool,
-                                    &base));
-
+#if gcdENABLE_VG
+        if (Core == gcvCORE_VG)
+        {
+            gcmkVERIFY_OK(
+                gckVGHARDWARE_SplitMemory(Kernel->vg->hardware,
+                                        device->contiguousVidMem->baseAddress,
+                                        &pool,
+                                        &base));
+        }
+        else
+#endif
+        {
+            gcmkVERIFY_OK(
+                gckHARDWARE_SplitMemory(Kernel->hardware,
+                                        device->contiguousVidMem->baseAddress,
+                                        &pool,
+                                        &base));
+        }
         offset -= base;
         break;
 
@@ -331,21 +356,21 @@ OnError:
 
 /*******************************************************************************
 **
-**    gckKERNEL_Notify
+**  gckKERNEL_Notify
 **
-**    This function iscalled by clients to notify the gckKERNRL object of an event.
+**  This function iscalled by clients to notify the gckKERNRL object of an event.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckKERNEL Kernel
-**            Pointer to an gckKERNEL object.
+**      gckKERNEL Kernel
+**          Pointer to an gckKERNEL object.
 **
-**        gceNOTIFY Notification
-**            Notification event.
+**      gceNOTIFY Notification
+**          Notification event.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        Nothing.
+**      Nothing.
 */
 gceSTATUS
 gckKERNEL_Notify(

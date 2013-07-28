@@ -5518,6 +5518,13 @@ gckOS_SetGPUPower(
     return gcvSTATUS_OK;
 }
 
+/******************************************************************************\
+******************************* Signal Management ******************************
+\******************************************************************************/
+
+#undef _GC_OBJ_ZONE
+#define _GC_OBJ_ZONE    gcvZONE_SIGNAL
+
 /*******************************************************************************
 **
 **  gckOS_CreateSignal
@@ -5552,15 +5559,18 @@ gckOS_CreateSignal(
 #else
     gcsSIGNAL_PTR signal;
 
+    gcmkHEADER_ARG("Os=0x%X ManualReset=%d", Os, ManualReset);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Signal != NULL);
+    gcmkVERIFY_ARGUMENT(Signal != gcvNULL);
 
     /* Create an event structure. */
     signal = (gcsSIGNAL_PTR)kmalloc(sizeof(gcsSIGNAL), GFP_ATOMIC);
 
     if (signal == gcvNULL)
     {
+        gcmkFOOTER_ARG("status=%d", gcvSTATUS_OUT_OF_MEMORY);
         return gcvSTATUS_OUT_OF_MEMORY;
     }
 
@@ -5572,6 +5582,7 @@ gckOS_CreateSignal(
 
     *Signal = (gctSIGNAL) signal;
 
+    gcmkFOOTER_ARG("*Signal=0x%X", *Signal);
     return gcvSTATUS_OK;
 #endif
 }
@@ -5605,9 +5616,11 @@ gckOS_DestroySignal(
 #else
     gcsSIGNAL_PTR signal;
 
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X", Os, Signal);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Signal != NULL);
+    gcmkVERIFY_ARGUMENT(Signal != gcvNULL);
 
     signal = (gcsSIGNAL_PTR) Signal;
 
@@ -5618,6 +5631,7 @@ gckOS_DestroySignal(
     }
 
     /* Success. */
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 #endif
 }
@@ -5656,7 +5670,7 @@ gckOS_Signal(
 #else
     gcsSIGNAL_PTR signal;
 
-    gcmkHEADER_ARG("Os=0x%x Signal=0x%x State=%d", Os, Signal, State);
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X State=%d", Os, Signal, State);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
@@ -5888,8 +5902,8 @@ gckOS_UserSignal(
     gctSIGNAL signal = gcvNULL;
     gctBOOL   mapped = gcvFALSE;
 
-    gcmkHEADER_ARG("Os=0x%x Signal=%d Process=0x%x",
-                   Os, (gctINT) Signal, Process);
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X Process=%d",
+                   Os, Signal, (gctINT32) Process);
 
     /* Map the signal into kernel space. */
     gcmkONERROR(gckOS_MapSignal(Os, Signal, Process, &signal));
@@ -5945,12 +5959,12 @@ gckOS_WaitSignal(
     IN gctUINT32 Wait
     )
 {
-    gceSTATUS status;
+    gceSTATUS status = gcvSTATUS_OK;
     gcsSIGNAL_PTR signal;
     gctUINT timeout;
     gctUINT rc;
 
-    gcmkHEADER_ARG("Os=0x%x Signal=0x%x Wait=%u", Os, Signal, Wait);
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X Wait=0x%08X", Os, Signal, Wait);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
@@ -6092,7 +6106,7 @@ gckOS_MapSignal(
 
         if (signal == gcvNULL)
         {
-            gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+            gcmkONERROR(gcvSTATUS_NOT_FOUND);
         }
     }
     else
@@ -6152,6 +6166,8 @@ gckOS_UnmapSignal(
     gceSTATUS status = gcvSTATUS_OK;
     gctBOOL acquired = gcvFALSE;
 
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X ", Os, Signal);
+
     gcmkVERIFY_ARGUMENT(Signal != gcvNULL);
 
     gcmkONERROR(gckOS_AcquireMutex(Os, Os->signal.lock, gcvINFINITE));
@@ -6167,6 +6183,7 @@ gckOS_UnmapSignal(
     gcmkONERROR(gckOS_ReleaseMutex(Os, Os->signal.lock));
 
     /* Success. */
+    gcmkFOOTER();
     return gcvSTATUS_OK;
 
 OnError:
@@ -6341,7 +6358,7 @@ gckOS_DestroyUserSignal(
     gcsSIGNAL_PTR signal;
     gctBOOL acquired = gcvFALSE;
 
-    gcmkHEADER_ARG("Os=0x%x SignalID=%d", Os, SignalID);
+    gcmkHEADER_ARG("Os=0x%X SignalID=%d", Os, SignalID);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
@@ -6353,9 +6370,10 @@ gckOS_DestroyUserSignal(
 
     if (SignalID < 1 || SignalID > Os->signal.tableLen)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "gckOS_DestroyUserSignal: invalid signal->%d.",
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): invalid signal->%d.",
+            __FUNCTION__, __LINE__,
             (gctINT) SignalID
             );
 
@@ -6368,9 +6386,10 @@ gckOS_DestroyUserSignal(
 
     if (signal == gcvNULL)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "gckOS_DestroyUserSignal: signal is NULL."
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): signal is gcvNULL.",
+            __FUNCTION__, __LINE__
             );
 
         gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
@@ -6452,7 +6471,7 @@ gckOS_WaitUserSignal(
     gcsSIGNAL_PTR signal;
     gctBOOL acquired = gcvFALSE;
 
-    gcmkHEADER_ARG("Os=0x%x SignalID=%d Wait=%u", Os, SignalID, Wait);
+    gcmkHEADER_ARG("Os=0x%X SignalID=%d Wait=%u", Os, SignalID, Wait);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
@@ -6462,9 +6481,10 @@ gckOS_WaitUserSignal(
 
     if (SignalID < 1 || SignalID > Os->signal.tableLen)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "gckOS_WaitSignal: invalid signal.",
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): invalid signal %d",
+            __FUNCTION__, __LINE__,
             SignalID
             );
 
@@ -6480,9 +6500,10 @@ gckOS_WaitUserSignal(
 
     if (signal == gcvNULL)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "gckOS_WaitSignal: signal is NULL."
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): signal is gcvNULL.",
+            __FUNCTION__, __LINE__
             );
 
         gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
@@ -6568,8 +6589,12 @@ gckOS_SignalUserSignal(
     ||  (SignalID > Os->signal.tableLen)
     )
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,  gcvZONE_OS,
-                       "gckOS_WaitSignal: invalid signal->%d.", SignalID);
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): invalid signal->%d.",
+            __FUNCTION__, __LINE__,
+            SignalID
+            );
 
         gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
@@ -6583,9 +6608,10 @@ gckOS_SignalUserSignal(
 
     if (signal == gcvNULL)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "gckOS_WaitSignal: signal is NULL."
+        gcmkTRACE(
+            gcvLEVEL_ERROR,
+            "%s(%d): signal is gcvNULL.",
+            __FUNCTION__, __LINE__
             );
 
         gcmkONERROR(gcvSTATUS_INVALID_REQUEST);
@@ -6629,6 +6655,8 @@ gckOS_DestroyAllUserSignals(
 {
     gctINT signal;
 
+    gcmkHEADER_ARG("Os=0x%X Process=%d", Os, Process);
+
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
 
     gcmkVERIFY_OK(gckOS_AcquireMutex(Os,
@@ -6642,6 +6670,7 @@ gckOS_DestroyAllUserSignals(
             Os->signal.lock
             ));
 
+        gcmkFOOTER_NO();
         return gcvSTATUS_OK;
     }
 
@@ -6667,6 +6696,7 @@ gckOS_DestroyAllUserSignals(
         Os->signal.lock
         ));
 
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
