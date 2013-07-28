@@ -416,7 +416,6 @@ typedef struct _gcsHAL_INTERFACE
             IN gctUINT32                address;
         }
         UnmapUserMemory;
-
 #if !USE_NEW_LINUX_SIGNAL
         /* gcsHAL_USER_SIGNAL  */
         struct _gcsHAL_USER_SIGNAL
@@ -478,7 +477,6 @@ typedef struct _gcsHAL_INTERFACE
 
             /* Logical address of allocation. */
             OUT gctPOINTER              logical;
-
         }
         AllocateContiguousMemory;
 
@@ -621,6 +619,7 @@ typedef struct _gcsHAL_INTERFACE
     u;
 }
 gcsHAL_INTERFACE;
+
 
 #ifdef __cplusplus
 }

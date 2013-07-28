@@ -37,11 +37,13 @@ extern "C" {
 ****************************** Object Declarations *****************************
 \******************************************************************************/
 
+typedef struct _gckOS *                 gckOS;
 typedef struct _gcoHAL *                gcoHAL;
 typedef struct _gcoOS *                 gcoOS;
 typedef struct _gco2D *                 gco2D;
-typedef struct _gcoVG *                 gcoVG;
+
 typedef struct _gco3D *                 gco3D;
+
 typedef struct _gcoSURF *               gcoSURF;
 typedef struct _gcsSURF_INFO *          gcsSURF_INFO_PTR;
 typedef struct _gcsSURF_NODE *          gcsSURF_NODE_PTR;
@@ -52,10 +54,26 @@ typedef struct _gcsRECT *               gcsRECT_PTR;
 typedef struct _gcsBOUNDARY *           gcsBOUNDARY_PTR;
 typedef struct _gcoDUMP *               gcoDUMP;
 typedef struct _gcoHARDWARE *           gcoHARDWARE;
+typedef union  _gcuVIDMEM_NODE *        gcuVIDMEM_NODE_PTR;
+
+#if gcdENABLE_VG
+typedef struct _gcoVG *                 gcoVG;
+typedef struct _gcsCOMPLETION_SIGNAL *	gcsCOMPLETION_SIGNAL_PTR;
+typedef struct _gcsCONTEXT_MAP *		gcsCONTEXT_MAP_PTR;
+#else
+typedef void *                          gcoVG;
+#endif
 
 /******************************************************************************\
 ********************************* Enumerations *********************************
 \******************************************************************************/
+
+typedef enum _gcePLS_VALUE
+{
+  gcePLS_VALUE_EGL_DISPLAY_INFO,
+  gcePLS_VALUE_EGL_SURFACE_INFO
+}
+gcePLS_VALUE;
 
 /* Video memory pool type. */
 typedef enum _gcePOOL
@@ -1979,17 +1997,60 @@ gcoOS_DebugTraceZone(
 #define gcmOPT_STRING(ptr)          (((ptr) == gcvNULL) ? "(nil)" : (ptr))
 
 void
-gcoOS_Print(
-    IN gctCONST_STRING Message,
-    ...
-    );
-void
 gckOS_Print(
     IN gctCONST_STRING Message,
     ...
     );
+
+void
+gckOS_PrintN(
+    IN gctUINT ArgumentSize,
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
+gckOS_CopyPrint(
+    IN gctCONST_STRING Message,
+    ...
+    );
+
+void
+gcoOS_Print(
+    IN gctCONST_STRING Message,
+    ...
+    );
+
 #define gcmPRINT                gcoOS_Print
 #define gcmkPRINT               gckOS_Print
+#define gcmkPRINT_N             gckOS_PrintN
+
+#if gcdPRINT_VERSION
+#   define gcmPRINT_VERSION()       do { \
+                                        _gcmPRINT_VERSION(gcm); \
+                                        gcmSTACK_DUMP(); \
+                                    } while (0)
+#   define gcmkPRINT_VERSION()      _gcmPRINT_VERSION(gcmk)
+#   define _gcmPRINT_VERSION(prefix) \
+        prefix##TRACE(gcvLEVEL_ERROR, \
+                      "Vivante HAL version %d.%d.%d build %d  %s  %s", \
+                      gcvVERSION_MAJOR, gcvVERSION_MINOR, gcvVERSION_PATCH, \
+                      gcvVERSION_BUILD, gcvVERSION_DATE, gcvVERSION_TIME )
+#else
+#   define gcmPRINT_VERSION()       do { gcmSTACK_DUMP(); } while (gcvFALSE)
+#   define gcmkPRINT_VERSION()      do { } while (gcvFALSE)
+#endif
+
+typedef enum _gceDUMP_BUFFER
+{
+    gceDUMP_BUFFER_CONTEXT,
+    gceDUMP_BUFFER_USER,
+    gceDUMP_BUFFER_KERNEL,
+    gceDUMP_BUFFER_LINK,
+    gceDUMP_BUFFER_WAITLINK,
+    gceDUMP_BUFFER_FROM_USER,
+}
+gceDUMP_BUFFER;
 
 /*******************************************************************************
 **
@@ -2573,6 +2634,20 @@ gckOS_Verify(
 #   define gcmkVERIFY_ARGUMENT(arg)
 #endif
 
+/*******************************************************************************
+**
+**  gcmDEBUG_VERIFY_ARGUMENT
+**
+**      Works just like gcmVERIFY_ARGUMENT, but is only valid in debug mode.
+**      Use this to verify arguments inside non-public API functions.
+*/
+#if gcdDEBUG
+#   define gcmDEBUG_VERIFY_ARGUMENT(arg)    _gcmVERIFY_ARGUMENT(gcm, arg)
+#   define gcmkDEBUG_VERIFY_ARGUMENT(arg)   _gcmkVERIFY_ARGUMENT(gcm, arg)
+#else
+#   define gcmDEBUG_VERIFY_ARGUMENT(arg)
+#   define gcmkDEBUG_VERIFY_ARGUMENT(arg)
+#endif
 /*******************************************************************************
 **
 **  gcmVERIFY_ARGUMENT_RETURN

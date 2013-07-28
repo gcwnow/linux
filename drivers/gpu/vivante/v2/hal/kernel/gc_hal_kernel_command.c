@@ -408,7 +408,7 @@ OnError:
             }
         }
 
-        gcmkVERIFY_OK(gckOS_Free(os, command));
+        gcmkVERIFY_OK(gcmkOS_SAFE_FREE(os, command));
     }
 
     /* Return the status. */
@@ -476,7 +476,7 @@ gckCOMMAND_Destroy(
     Command->object.type = gcvOBJ_UNKNOWN;
 
     /* Free the gckCOMMAND object. */
-    gcmkVERIFY_OK(gckOS_Free(Command->os, Command));
+    gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Command->os, Command));
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -697,7 +697,7 @@ OnError:
     if (gcmIS_ERROR(status) && (map != gcvNULL))
     {
         /* Roll back on error. */
-        gcmkVERIFY_OK(gckOS_Free(Os, map));
+        gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Os, map));
     }
 
     /* Return the status. */
@@ -1366,7 +1366,7 @@ OnError:
                                    map->kernelPointer));
 
         gcmkVERIFY_OK(
-            gckOS_Free(Command->os, map));
+            gcmkOS_SAFE_FREE(Command->os, map));
     }
 
     if (powerAcquired)

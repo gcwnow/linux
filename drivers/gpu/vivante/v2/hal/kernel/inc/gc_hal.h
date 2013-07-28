@@ -968,6 +968,43 @@ gckOS_ReleaseSemaphore(
     IN gctPOINTER Semaphore
     );
 
+/*******************************************************************************
+** Timer API.
+*/
+
+typedef void (*gctTIMERFUNCTION)(gctPOINTER);
+
+/* Create a timer. */
+gceSTATUS
+gckOS_CreateTimer(
+    IN gckOS Os,
+    IN gctTIMERFUNCTION Function,
+    IN gctPOINTER Data,
+    OUT gctPOINTER * Timer
+    );
+
+/* Destory a timer. */
+gceSTATUS
+gckOS_DestoryTimer(
+    IN gckOS Os,
+    IN gctPOINTER Timer
+    );
+
+/* Start a timer. */
+gceSTATUS
+gckOS_StartTimer(
+    IN gckOS Os,
+    IN gctPOINTER Timer,
+    IN gctUINT32 Delay
+    );
+
+/* Stop a timer. */
+gceSTATUS
+gckOS_StopTimer(
+    IN gckOS Os,
+    IN gctPOINTER Timer
+    );
+
 /******************************************************************************\
 ********************************* gckHEAP Object ********************************
 \******************************************************************************/

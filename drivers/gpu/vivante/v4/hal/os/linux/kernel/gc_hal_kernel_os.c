@@ -3487,7 +3487,7 @@ gckOS_AtomDestroy(
 {
     gceSTATUS status;
 
-    gcmkHEADER_ARG("Os=0x%X Atom=0x%0x", Os, Atom);
+    gcmkHEADER_ARG("Os=0x%x Atom=0x%0x", Os, Atom);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
