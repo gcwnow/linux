@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#if defined(JZSOC) && defined(CONFIG_PREEMPT)
+#include <linux/kernel_lock.h>
+#endif
 
 #include "gc_hal_kernel_linux.h"
 #include "gc_hal_driver.h"
@@ -32,6 +35,15 @@
 #if USE_PLATFORM_DRIVER
 #   include <linux/platform_device.h>
 #endif
+
+#ifdef CONFIG_PXA_DVFM
+#   include <mach/dvfm.h>
+#   include <mach/pxa3xx_dvfm.h>
+#endif
+
+
+/* Zone used for header/footer. */
+#define _GC_OBJ_ZONE    gcvZONE_DRIVER
 
 MODULE_DESCRIPTION("Vivante Graphics Driver");
 MODULE_LICENSE("GPL");
@@ -115,17 +127,35 @@ unsigned long coreClock = 156000000;
 module_param(coreClock, ulong, 0644);
 #endif
 
-static int drv_open(struct inode *inode, struct file *filp);
-static int drv_release(struct inode *inode, struct file *filp);
-static long drv_ioctl(struct file *filp, unsigned int ioctlCode,
-                      unsigned long arg);
-static int drv_mmap(struct file * filp, struct vm_area_struct * vma);
+static int drv_open(
+    struct inode* inode,
+    struct file* filp
+    );
+
+static int drv_release(
+    struct inode* inode,
+    struct file* filp
+    );
+
+static long drv_ioctl(
+    struct file* filp,
+    unsigned int ioctlCode,
+    unsigned long arg
+    );
+
+static int drv_mmap(
+    struct file* filp,
+    struct vm_area_struct* vma
+    );
 
 #if defined(CONFIG_JZSOC) && defined(CONFIG_PREEMPT) && ANDROID
 /* Fix bug with WOWFish. */
 #include <linux/kernel_lock.h>
-static long fix_drv_ioctl(struct file *filp,
-                          unsigned int ioctlCode, unsigned long arg)
+static long fix_drv_ioctl(
+    struct file* filp,
+    unsigned int ioctlCode,
+    unsigned long arg
+    )
 {
     long ret;
 
@@ -136,163 +166,282 @@ static long fix_drv_ioctl(struct file *filp,
 }
 #endif
 
-struct file_operations driver_fops =
+static struct file_operations driver_fops =
 {
-    .open           = drv_open,
-    .release        = drv_release,
+    .open       = drv_open,
+    .release    = drv_release,
 #if defined(CONFIG_JZSOC) && defined(CONFIG_PREEMPT) && ANDROID
     /* Fix bug with WOWFish. */
     .unlocked_ioctl = fix_drv_ioctl,
 #else
     .unlocked_ioctl = drv_ioctl,
 #endif
-    .mmap           = drv_mmap,
+    .mmap       = drv_mmap,
 };
 
-int drv_open(struct inode *inode, struct file* filp)
+int drv_open(
+    struct inode* inode,
+    struct file* filp
+    )
 {
-    gcsHAL_PRIVATE_DATA_PTR    private;
+    gceSTATUS status;
+    gctBOOL attached = gcvFALSE;
+    gcsHAL_PRIVATE_DATA_PTR data = gcvNULL;
 
-    gcmkTRACE_ZONE(gcvLEVEL_VERBOSE, gcvZONE_DRIVER,
-                  "Entering drv_open\n");
+    gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
 
-    private = kmalloc(sizeof(gcsHAL_PRIVATE_DATA), GFP_KERNEL);
-
-    if (private == gcvNULL)
+    if (filp == gcvNULL)
     {
-        return -ENOTTY;
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): filp is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
+
+    data = kmalloc(sizeof(gcsHAL_PRIVATE_DATA), GFP_KERNEL | __GFP_NOWARN);
+
+    if (data == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): private_data is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
 
     /* Zero the memory. */
-    gckOS_ZeroMemory(private, gcmSIZEOF(gcsHAL_PRIVATE_DATA));
+    gckOS_ZeroMemory(data, gcmSIZEOF(gcsHAL_PRIVATE_DATA));
 
-    private->device                = galDevice;
-    private->mappedMemory        = gcvNULL;
-    private->contiguousLogical    = gcvNULL;
+    data->device             = galDevice;
+    data->mappedMemory       = gcvNULL;
+    data->contiguousLogical  = gcvNULL;
 
 #if gcdkUSE_MEMORY_RECORD
-    private->memoryRecordList.prev = &private->memoryRecordList;
-    private->memoryRecordList.next = &private->memoryRecordList;
+    data->memoryRecordList.prev = &data->memoryRecordList;
+    data->memoryRecordList.next = &data->memoryRecordList;
 #endif
 
-    /* A process gets attached. */
-    gcmkVERIFY_OK(
-        gckKERNEL_AttachProcess(galDevice->kernel, gcvTRUE));
+    /* Attached the process. */
+    gcmkONERROR(gckKERNEL_AttachProcess(galDevice->kernel, gcvTRUE));
+    attached = gcvTRUE;
 
     if (galDevice->contiguousSize != 0
         && !galDevice->contiguousMapped)
     {
-        gcmkVERIFY_OK(gckOS_MapMemory(galDevice->os,
-                                    galDevice->contiguousPhysical,
-                                    galDevice->contiguousSize,
-                                    &private->contiguousLogical));
+        gcmkONERROR(gckOS_MapMemory(
+            galDevice->os,
+            galDevice->contiguousPhysical,
+            galDevice->contiguousSize,
+            &data->contiguousLogical
+            ));
     }
 
-    filp->private_data = private;
+    filp->private_data = data;
 
+    /* Success. */
+    gcmkFOOTER_NO();
     return 0;
+
+OnError:
+    if (data != gcvNULL)
+    {
+        if (data->contiguousLogical != gcvNULL)
+        {
+            gcmkVERIFY_OK(gckOS_UnmapMemory(
+                galDevice->os,
+                galDevice->contiguousPhysical,
+                galDevice->contiguousSize,
+                data->contiguousLogical
+                ));
+        }
+
+        kfree(data);
+    }
+
+    if (attached)
+    {
+        if (galDevice->kernel != gcvNULL)
+        {
+            gcmkVERIFY_OK(gckKERNEL_AttachProcess(galDevice->kernel, gcvFALSE));
+        }
+    }
+
+    gcmkFOOTER();
+    return -ENOTTY;
 }
 
-extern void
-OnProcessExit(
-    IN gckOS Os,
-    IN gckKERNEL Kernel
-    );
-
-int drv_release(struct inode* inode, struct file* filp)
+int drv_release(
+    struct inode* inode,
+    struct file* filp
+    )
 {
-    gcsHAL_PRIVATE_DATA_PTR    private;
-    gckGALDEVICE            device;
+    gceSTATUS status;
+    gcsHAL_PRIVATE_DATA_PTR data;
+    gckGALDEVICE device;
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                  "Entering drv_close\n");
+    gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
 
-    private = filp->private_data;
-    gcmkASSERT(private != gcvNULL);
+    if (filp == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): filp is NULL\n",
+            __FUNCTION__, __LINE__
+            );
 
-    device = private->device;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
+
+    data = filp->private_data;
+
+    if (data == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): private_data is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
+
+    device = data->device;
+
+    if (device == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): device is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
 
 #ifndef ANDROID
-    gcmkVERIFY_OK(gckCOMMAND_Stall(device->kernel->command));
+    gcmkONERROR(gckCOMMAND_Stall(device->kernel->command));
 #endif
 
-    gcmkVERIFY_OK(
-        gckOS_DestroyAllUserSignals(galDevice->os));
+    gcmkONERROR(gckOS_DestroyAllUserSignals(galDevice->os));
 
 #if gcdkUSE_MEMORY_RECORD
-    FreeAllMemoryRecord(galDevice->os, private, &private->memoryRecordList);
+    FreeAllMemoryRecord(galDevice->os, data, &data->memoryRecordList);
 
 #ifndef ANDROID
-    gcmkVERIFY_OK(gckCOMMAND_Stall(device->kernel->command));
+    gcmkONERROR(gckCOMMAND_Stall(device->kernel->command));
 #endif
 #endif
 
     if (!device->contiguousMapped)
     {
-        if (private->contiguousLogical != gcvNULL)
+        if (data->contiguousLogical != gcvNULL)
         {
-            gcmkVERIFY_OK(gckOS_UnmapMemory(galDevice->os,
-                                            galDevice->contiguousPhysical,
-                                            galDevice->contiguousSize,
-                                            private->contiguousLogical));
+            gcmkONERROR(gckOS_UnmapMemory(
+                galDevice->os,
+                galDevice->contiguousPhysical,
+                galDevice->contiguousSize,
+                data->contiguousLogical
+                ));
         }
     }
 
     /* A process gets detached. */
-    gcmkVERIFY_OK(
-        gckKERNEL_AttachProcess(galDevice->kernel, gcvFALSE));
+    gcmkONERROR(gckKERNEL_AttachProcess(galDevice->kernel, gcvFALSE));
 
-    kfree(private);
+    kfree(data);
     filp->private_data = NULL;
 
+    /* Success. */
+    gcmkFOOTER_NO();
     return 0;
+
+OnError:
+    gcmkFOOTER();
+    return -ENOTTY;
 }
 
-static long
-drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
+long drv_ioctl(
+    struct file* filp,
+    unsigned int ioctlCode,
+    unsigned long arg
+    )
 {
+    gceSTATUS status;
     gcsHAL_INTERFACE iface;
     gctUINT32 copyLen;
     DRIVER_ARGS drvArgs;
     gckGALDEVICE device;
-    gceSTATUS status;
-    gcsHAL_PRIVATE_DATA_PTR private;
+    gcsHAL_PRIVATE_DATA_PTR data;
 
-    private = filp->private_data;
-
-    if (private == gcvNULL)
+    if (filp == gcvNULL)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "[galcore] drv_ioctl: private_data is NULL\n");
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): filp is NULL\n",
+            __FUNCTION__, __LINE__
+            );
 
         return -ENOTTY;
     }
 
-    device = private->device;
+    data = filp->private_data;
+
+    if (data == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): private_data is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        return -ENOTTY;
+    }
+
+    device = data->device;
 
     if (device == gcvNULL)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "[galcore] drv_ioctl: device is NULL\n");
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): device is NULL\n",
+            __FUNCTION__, __LINE__
+            );
 
         return -ENOTTY;
     }
 
-    if (ioctlCode != IOCTL_GCHAL_INTERFACE
-        && ioctlCode != IOCTL_GCHAL_KERNEL_INTERFACE)
+    if ((ioctlCode != IOCTL_GCHAL_INTERFACE)
+    &&  (ioctlCode != IOCTL_GCHAL_KERNEL_INTERFACE)
+    )
     {
-        /* Unknown command. Fail the I/O. */
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): unknown command %d\n",
+            __FUNCTION__, __LINE__,
+            ioctlCode
+            );
+
         return -ENOTTY;
     }
 
-    /* Get the drvArgs to begin with. */
-    copyLen = copy_from_user(&drvArgs,
-                             (void *) arg,
-                 sizeof(DRIVER_ARGS));
+    /* Get the drvArgs. */
+    copyLen = copy_from_user(
+        &drvArgs, (void *) arg, sizeof(DRIVER_ARGS)
+        );
 
     if (copyLen != 0)
     {
-        /* The input buffer is not big enough. So fail the I/O. */
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): error copying of the input arguments.\n",
+            __FUNCTION__, __LINE__
+            );
+
         return -ENOTTY;
     }
 
@@ -301,16 +450,27 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
     ||  (drvArgs.OutputBufferSize != sizeof(gcsHAL_INTERFACE))
     )
     {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): error copying of the input arguments.\n",
+            __FUNCTION__, __LINE__
+            );
+
         return -ENOTTY;
     }
 
-    copyLen = copy_from_user(&iface,
-                             drvArgs.InputBuffer,
-                 sizeof(gcsHAL_INTERFACE));
+    copyLen = copy_from_user(
+        &iface, drvArgs.InputBuffer, sizeof(gcsHAL_INTERFACE)
+        );
 
     if (copyLen != 0)
     {
-        /* The input buffer is not big enough. So fail the I/O. */
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): error copying of input HAL interface.\n",
+            __FUNCTION__, __LINE__
+            );
+
         return -ENOTTY;
     }
 
@@ -334,8 +494,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
             {
             case gcvHAL_FREE_NON_PAGED_MEMORY:
                 mr = FindMemoryRecord(device->os,
-                                      private,
-                                      &private->memoryRecordList,
+                                      data,
+                                      &data->memoryRecordList,
                                       gcvNON_PAGED_MEMORY,
                                       record->iface.u.FreeNonPagedMemory.bytes,
                                       record->iface.u.FreeNonPagedMemory.physical,
@@ -343,7 +503,7 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
                 if (mr != gcvNULL)
                 {
-                    DestroyMemoryRecord(device->os, private, mr);
+                    DestroyMemoryRecord(device->os, data, mr);
                 }
                 else
                 {
@@ -353,8 +513,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
             case gcvHAL_FREE_CONTIGUOUS_MEMORY:
                 mr = FindMemoryRecord(device->os,
-                                      private,
-                                      &private->memoryRecordList,
+                                      data,
+                                      &data->memoryRecordList,
                                       gcvCONTIGUOUS_MEMORY,
                                       record->iface.u.FreeContiguousMemory.bytes,
                                       record->iface.u.FreeContiguousMemory.physical,
@@ -362,7 +522,7 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
                 if (mr != gcvNULL)
                 {
-                    DestroyMemoryRecord(device->os, private, mr);
+                    DestroyMemoryRecord(device->os, data, mr);
                 }
                 else
                 {
@@ -372,13 +532,13 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
             case gcvHAL_FREE_VIDEO_MEMORY:
                 mr = FindVideoMemoryRecord(device->os,
-                                           private,
-                                           &private->memoryRecordList,
+                                           data,
+                                           &data->memoryRecordList,
                                            record->iface.u.FreeVideoMemory.node);
 
                 if (mr != gcvNULL)
                 {
-                    DestroyVideoMemoryRecord(device->os, private, mr);
+                    DestroyVideoMemoryRecord(device->os, data, mr);
                 }
                 else
                 {
@@ -404,7 +564,14 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 #endif
 
     status = gckKERNEL_Dispatch(device->kernel,
-        (ioctlCode == IOCTL_GCHAL_INTERFACE) , &iface);
+                              (ioctlCode == IOCTL_GCHAL_INTERFACE),
+                              &iface);
+
+    /* Redo system call after pending signal is handled. */
+    if (status == gcvSTATUS_INTERRUPTED)
+    {
+        return -ERESTARTSYS;
+    }
 
     if (gcmIS_ERROR(status))
     {
@@ -425,25 +592,26 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
     else if (iface.command == gcvHAL_LOCK_VIDEO_MEMORY)
     {
         /* Special case for mapped memory. */
-        if (private->mappedMemory != gcvNULL
-            && iface.u.LockVideoMemory.node->VidMem.memory->object.type
-                == gcvOBJ_VIDMEM)
+        if ((data->mappedMemory != gcvNULL)
+        &&  (iface.u.LockVideoMemory.node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
+        )
         {
-               /* Compute offset into mapped memory. */
-            gctUINT32 offset = (gctUINT8 *) iface.u.LockVideoMemory.memory
-                             - (gctUINT8 *) device->contiguousBase;
+            /* Compute offset into mapped memory. */
+            gctUINT32 offset
+                = (gctUINT8 *) iface.u.LockVideoMemory.memory
+                - (gctUINT8 *) device->contiguousBase;
 
             /* Compute offset into user-mapped region. */
             iface.u.LockVideoMemory.memory =
-            (gctUINT8 *)  private->mappedMemory + offset;
+                (gctUINT8 *) data->mappedMemory + offset;
         }
     }
 #if gcdkUSE_MEMORY_RECORD
     else if (iface.command == gcvHAL_ALLOCATE_NON_PAGED_MEMORY)
     {
         CreateMemoryRecord(device->os,
-                           private,
-                           &private->memoryRecordList,
+                           data,
+                           &data->memoryRecordList,
                            gcvNON_PAGED_MEMORY,
                            iface.u.AllocateNonPagedMemory.bytes,
                            iface.u.AllocateNonPagedMemory.physical,
@@ -454,8 +622,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
         MEMORY_RECORD_PTR mr;
 
         mr = FindMemoryRecord(device->os,
-                              private,
-                              &private->memoryRecordList,
+                              data,
+                              &data->memoryRecordList,
                               gcvNON_PAGED_MEMORY,
                               iface.u.FreeNonPagedMemory.bytes,
                               iface.u.FreeNonPagedMemory.physical,
@@ -463,7 +631,7 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
         if (mr != gcvNULL)
         {
-            DestroyMemoryRecord(device->os, private, mr);
+            DestroyMemoryRecord(device->os, data, mr);
         }
         else
         {
@@ -473,8 +641,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
     else if (iface.command == gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY)
     {
         CreateMemoryRecord(device->os,
-                           private,
-                           &private->memoryRecordList,
+                           data,
+                           &data->memoryRecordList,
                            gcvCONTIGUOUS_MEMORY,
                            iface.u.AllocateContiguousMemory.bytes,
                            iface.u.AllocateContiguousMemory.physical,
@@ -485,8 +653,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
         MEMORY_RECORD_PTR mr;
 
         mr = FindMemoryRecord(device->os,
-                              private,
-                              &private->memoryRecordList,
+                              data,
+                              &data->memoryRecordList,
                               gcvCONTIGUOUS_MEMORY,
                               iface.u.FreeContiguousMemory.bytes,
                               iface.u.FreeContiguousMemory.physical,
@@ -494,7 +662,7 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
         if (mr != gcvNULL)
         {
-            DestroyMemoryRecord(device->os, private, mr);
+            DestroyMemoryRecord(device->os, data, mr);
         }
         else
         {
@@ -508,8 +676,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
                         : iface.u.AllocateVideoMemory.node->Virtual.bytes;
 
         CreateVideoMemoryRecord(device->os,
-                                private,
-                                &private->memoryRecordList,
+                                data,
+                                &data->memoryRecordList,
                                 iface.u.AllocateVideoMemory.node,
                                 iface.u.AllocateVideoMemory.type & 0xFF,
                                 bytes);
@@ -521,8 +689,8 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
                         : iface.u.AllocateLinearVideoMemory.node->Virtual.bytes;
 
         CreateVideoMemoryRecord(device->os,
-                                private,
-                                &private->memoryRecordList,
+                                data,
+                                &data->memoryRecordList,
                                 iface.u.AllocateLinearVideoMemory.node,
                                 iface.u.AllocateLinearVideoMemory.type & 0xFF,
                                 bytes);
@@ -532,13 +700,13 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
         MEMORY_RECORD_PTR mr;
 
         mr = FindVideoMemoryRecord(device->os,
-                                   private,
-                                   &private->memoryRecordList,
+                                   data,
+                                   &data->memoryRecordList,
                                    iface.u.FreeVideoMemory.node);
 
         if (mr != gcvNULL)
         {
-            DestroyVideoMemoryRecord(device->os, private, mr);
+            DestroyVideoMemoryRecord(device->os, data, mr);
         }
         else
         {
@@ -554,30 +722,64 @@ drv_ioctl(struct file *filp, unsigned int ioctlCode, unsigned long arg)
 
     if (copyLen != 0)
     {
-        /* The output buffer is not big enough. So fail the I/O. */
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): error copying of output HAL interface.\n",
+            __FUNCTION__, __LINE__
+            );
+
         return -ENOTTY;
     }
 
     return 0;
 }
 
-static int drv_mmap(struct file * filp, struct vm_area_struct * vma)
+static int drv_mmap(
+    struct file* filp,
+    struct vm_area_struct* vma
+    )
 {
-    gcsHAL_PRIVATE_DATA_PTR private = filp->private_data;
+    gceSTATUS status;
+    gcsHAL_PRIVATE_DATA_PTR data;
     gckGALDEVICE device;
-    int ret;
-    unsigned long size = vma->vm_end - vma->vm_start;
 
-    if (private == gcvNULL)
+    gcmkHEADER_ARG("filp=0x%08X vma=0x%08X", filp, vma);
+
+    if (filp == gcvNULL)
     {
-        return -ENOTTY;
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): filp is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
-    device = private->device;
+    data = filp->private_data;
+
+    if (data == gcvNULL)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): private_data is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
+
+    device = data->device;
 
     if (device == gcvNULL)
     {
-        return -ENOTTY;
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): device is NULL\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
@@ -592,20 +794,40 @@ static int drv_mmap(struct file * filp, struct vm_area_struct * vma)
 
     if (device->contiguousMapped)
     {
-        ret = io_remap_pfn_range(vma,
-                             vma->vm_start,
-                                 (gctUINT32) device->contiguousPhysical >> PAGE_SHIFT,
-                 size,
-                 vma->vm_page_prot);
+        unsigned long size = vma->vm_end - vma->vm_start;
 
-        private->mappedMemory = (ret == 0) ? (gctPOINTER) vma->vm_start : gcvNULL;
+        int ret = io_remap_pfn_range(
+            vma,
+            vma->vm_start,
+            (gctUINT32) device->contiguousPhysical >> PAGE_SHIFT,
+            size,
+            vma->vm_page_prot
+            );
 
-        return ret;
+        if (ret != 0)
+        {
+            gcmkTRACE_ZONE(
+                gcvLEVEL_ERROR, gcvZONE_DRIVER,
+                "%s(%d): io_remap_pfn_range failed %d\n",
+                __FUNCTION__, __LINE__,
+                ret
+                );
+
+            data->mappedMemory = gcvNULL;
+
+            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+        }
+
+        data->mappedMemory = (gctPOINTER) vma->vm_start;
     }
-    else
-    {
-        return -ENOTTY;
-    }
+
+    /* Success. */
+    gcmkFOOTER_NO();
+    return 0;
+
+OnError:
+    gcmkFOOTER();
+    return -ENOTTY;
 }
 
 #ifdef CONFIG_JZSOC
@@ -657,10 +879,12 @@ static int drv_init(void)
 #endif
 {
     int ret;
-    gckGALDEVICE device;
+    int result = -EINVAL;
+    gceSTATUS status;
+    gckGALDEVICE device = gcvNULL;
+    struct class* device_class = gcvNULL;
 
-    gcmkTRACE_ZONE(gcvLEVEL_VERBOSE, gcvZONE_DRIVER,
-                  "Entering drv_init\n");
+    gcmkHEADER();
 
 #ifdef CONFIG_JZSOC
     enable_jzsoc_gpu_clock();
@@ -672,7 +896,14 @@ static int drv_init(void)
     {
         int retval = PTR_ERR(clk);
         printk("clk get error: %d\n", retval);
-        return -ENODEV;
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): Error getting core clock: %d",
+            __FUNCTION__, __LINE__, ret
+            );
+
+        result = -ENODEV;
+        gcmkONERROR(gcvSTATUS_DEVICE);
     }
 
     /*
@@ -681,9 +912,13 @@ static int drv_init(void)
      */
     if (clk_set_rate(clk, coreClock * 2))
     {
-	gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-		      "[galcore] Can't set core clock.");
-        return -EAGAIN;
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): Can't set core clock.",
+            __FUNCTION__, __LINE__
+            );
+        result = -EAGAIN;
+        gcmkONERROR(gcvSTATUS_DEVICE);
     }
     clk_enable(clk);
 #endif
@@ -691,90 +926,98 @@ static int drv_init(void)
     if (showArgs)
     {
         printk("galcore options:\n");
-        printk("  irqLine         = %d\n",      irqLine);
-        printk("  registerMemBase = 0x%08lX\n", registerMemBase);
-        printk("  contiguousSize  = %ld\n",     contiguousSize);
-        printk("  contiguousBase  = 0x%08lX\n", contiguousBase);
-        printk("  bankSize        = 0x%08lX\n", bankSize);
-        printk("  fastClear       = %d\n",      fastClear);
-        printk("  compression     = %d\n",      compression);
-        printk("  signal          = %d\n",      signal);
-        printk("  baseAddress     = 0x%08lX\n", baseAddress);
+        printk("  irqLine           = %d\n",      irqLine);
+        printk("  registerMemBase   = 0x%08lX\n", registerMemBase);
+        printk("  contiguousSize    = %ld\n",     contiguousSize);
+        printk("  contiguousBase    = 0x%08lX\n", contiguousBase);
+        printk("  bankSize          = 0x%08lX\n", bankSize);
+        printk("  fastClear         = %d\n",      fastClear);
+        printk("  compression       = %d\n",      compression);
+        printk("  signal            = %d\n",      signal);
+        printk("  baseAddress       = 0x%08lX\n", baseAddress);
     }
 
     /* Create the GAL device. */
-    gcmkVERIFY_OK(gckGALDEVICE_Construct(irqLine,
-                                        registerMemBase,
-                    registerMemSize,
-                    contiguousBase,
-                    contiguousSize,
-                    bankSize,
-                    fastClear,
-                    compression,
-                    baseAddress,
-                    signal,
-                    &device));
+    gcmkONERROR(gckGALDEVICE_Construct(
+        irqLine,
+        registerMemBase, registerMemSize,
+        contiguousBase, contiguousSize,
+        bankSize, fastClear, compression, baseAddress, signal,
+        &device
+        ));
 
     /* Start the GAL device. */
-    if (gcmIS_ERROR(gckGALDEVICE_Start(device)))
-    {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "[galcore] Can't start the gal device.\n");
-
-        /* Roll back. */
-        gckGALDEVICE_Stop(device);
-        gckGALDEVICE_Destroy(device);
-
-        return -1;
-    }
+    gcmkONERROR(gckGALDEVICE_Start(device));
 
     /* Register the character device. */
     ret = register_chrdev(major, DRV_NAME, &driver_fops);
 
     if (ret < 0)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "[galcore] Could not allocate major number for mmap.\n");
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): Could not allocate major number for mmap.\n",
+            __FUNCTION__, __LINE__
+            );
 
-        /* Roll back. */
-        gckGALDEVICE_Stop(device);
-        gckGALDEVICE_Destroy(device);
-
-        return -1;
+        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
-    else
+
+    if (major == 0)
     {
-        if (major == 0)
-        {
-            major = ret;
-        }
+        major = ret;
     }
 
-    galDevice = device;
+    /* Create the device class. */
+    device_class = class_create(THIS_MODULE, "graphics_class");
 
-    gpuClass = class_create(THIS_MODULE, "graphics_class");
-    if (IS_ERR(gpuClass)) {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "Failed to create the class.\n");
-        return -1;
+    if (IS_ERR(device_class))
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): Failed to create the class.\n",
+            __FUNCTION__, __LINE__
+            );
+
+        gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
     }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
-    device_create(gpuClass, NULL, MKDEV(major, 0), NULL, "galcore");
+    device_create(device_class, NULL, MKDEV(major, 0), NULL, "galcore");
 #else
-    device_create(gpuClass, NULL, MKDEV(major, 0), "galcore");
+    device_create(device_class, NULL, MKDEV(major, 0), "galcore");
 #endif
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                  "[galcore] irqLine->%ld, contiguousSize->%lu, memBase->0x%lX\n",
-          irqLine,
-          contiguousSize,
-          registerMemBase);
+    galDevice = device;
+    gpuClass  = device_class;
 
-    gcmkTRACE_ZONE(gcvLEVEL_VERBOSE, gcvZONE_DRIVER,
-                  "[galcore] driver registered successfully.\n");
+    gcmkTRACE_ZONE(
+        gcvLEVEL_INFO, gcvZONE_DRIVER,
+        "%s(%d): irqLine=%d, contiguousSize=%lu, memBase=0x%lX\n",
+        __FUNCTION__, __LINE__,
+        irqLine, contiguousSize, registerMemBase
+        );
 
+    /* Success. */
+    gcmkFOOTER_NO();
     return 0;
+
+OnError:
+    /* Roll back. */
+    if (device_class != gcvNULL)
+    {
+        device_destroy(device_class, MKDEV(major, 0));
+        class_destroy(device_class);
+    }
+
+    if (device != gcvNULL)
+    {
+        gcmkVERIFY_OK(gckGALDEVICE_Stop(device));
+        gcmkVERIFY_OK(gckGALDEVICE_Destroy(device));
+    }
+
+    gcmkFOOTER();
+    return result;
 }
 
 #if !USE_PLATFORM_DRIVER
@@ -790,16 +1033,16 @@ static void drv_exit(void)
     struct clk *clk = galDevice->clk;
 #endif
 
-    gcmkTRACE_ZONE(gcvLEVEL_VERBOSE, gcvZONE_DRIVER,
-                  "[galcore] Entering drv_exit\n");
+    gcmkHEADER();
 
+    gcmkASSERT(gpuClass != gcvNULL);
     device_destroy(gpuClass, MKDEV(major, 0));
     class_destroy(gpuClass);
 
     unregister_chrdev(major, DRV_NAME);
 
-    gckGALDEVICE_Stop(galDevice);
-    gckGALDEVICE_Destroy(galDevice);
+    gcmkVERIFY_OK(gckGALDEVICE_Stop(galDevice));
+    gcmkVERIFY_OK(gckGALDEVICE_Destroy(galDevice));
 
 #if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
     clk = clk_get(NULL, "GCCLK");
@@ -809,6 +1052,8 @@ static void drv_exit(void)
     clk_disable(clk);
     clk_put(clk);
 #endif
+
+    gcmkFOOTER_NO();
 }
 
 #if !USE_PLATFORM_DRIVER
@@ -829,6 +1074,8 @@ static int  gpu_probe(struct platform_device *pdev)
 #ifndef CONFIG_JZSOC
     struct clk *clk;
 #endif
+
+    gcmkHEADER();
 
     res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "gpu_irq");
 
@@ -878,9 +1125,9 @@ static int  gpu_probe(struct platform_device *pdev)
 
     if (!ret)
     {
-        platform_set_drvdata(pdev,galDevice);
+        platform_set_drvdata(pdev, galDevice);
 #ifdef CONFIG_JZSOC
-
+        gcmkFOOTER_NO();
         return ret;
     }
 #else
@@ -892,6 +1139,7 @@ static int  gpu_probe(struct platform_device *pdev)
         dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
                  clk_get_rate(clk) / 1000000);
 
+        gcmkFOOTER_NO();
         return ret;
     }
 
@@ -900,14 +1148,15 @@ static int  gpu_probe(struct platform_device *pdev)
 #endif
 
 gpu_probe_fail:
-    printk(KERN_INFO "Failed to register gpu driver.\n");
+    gcmkFOOTER_ARG(KERN_INFO "Failed to register gpu driver: %d\n", ret);
     return ret;
 }
 
 static int gpu_remove(struct platform_device *pdev)
 {
+    gcmkHEADER();
     drv_exit();
-
+    gcmkFOOTER_NO();
     return 0;
 }
 

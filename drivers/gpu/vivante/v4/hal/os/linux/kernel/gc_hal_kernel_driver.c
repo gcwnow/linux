@@ -501,7 +501,7 @@ long drv_ioctl(
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
-            "%s(%d): input or/and output structures are invalid.\n",
+            "%s(%d): error copying of the input arguments.\n",
             __FUNCTION__, __LINE__
             );
 
