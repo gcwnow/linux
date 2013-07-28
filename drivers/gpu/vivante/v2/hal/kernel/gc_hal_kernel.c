@@ -1102,10 +1102,15 @@ gckKERNEL_AttachProcess(
 
         if (old == 1)
         {
-            /* Last client detached, switch to SUSPEND power state. */
-            gcmkONERROR(gckOS_Broadcast(Kernel->os,
-                                        Kernel->hardware,
-                                        gcvBROADCAST_LAST_PROCESS));
+#if gcdENABLE_VG
+            if (Kernel->vg == gcvNULL)
+#endif
+            {
+                /* Last client detached, switch to SUSPEND power state. */
+                gcmkONERROR(gckOS_Broadcast(Kernel->os,
+                                            Kernel->hardware,
+                                            gcvBROADCAST_LAST_PROCESS));
+            }
 
             /* Flush the debug cache. */
             gcmkPRINT("$$FLUSH$$");

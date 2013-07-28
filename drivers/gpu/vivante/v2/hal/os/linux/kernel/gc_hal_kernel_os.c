@@ -2755,7 +2755,7 @@ gckOS_AcquireMutex(
                         );
 
                     /* Flush the debug cache. */
-                    gcmkDEBUGFLUSH(dmaAddress2);
+                    gcmkPRINT("$$FLUSH$$");
                 }
 
                 timeout = 0;
@@ -5961,8 +5961,6 @@ gckOS_WaitSignal(
 {
     gceSTATUS status = gcvSTATUS_OK;
     gcsSIGNAL_PTR signal;
-    gctUINT timeout;
-    gctUINT rc;
 
     gcmkHEADER_ARG("Os=0x%X Signal=0x%X Wait=0x%08X", Os, Signal, Wait);
 
@@ -5972,28 +5970,141 @@ gckOS_WaitSignal(
 
     signal = (gcsSIGNAL_PTR) Signal;
 
-    /* Convert wait to milliseconds. */
-    timeout = (Wait == gcvINFINITE) ? MAX_SCHEDULE_TIMEOUT : Wait*HZ/1000;
+    might_sleep();
 
-    /* Linux bug ? */
-    if (!signal->manualReset && timeout == 0) timeout = 1;
+    spin_lock_irq(&signal->event.wait.lock);
 
-    rc = wait_for_completion_interruptible_timeout(&signal->event, timeout);
-    status = ((rc == 0) && !signal->event.done) ? gcvSTATUS_TIMEOUT
-                                                : gcvSTATUS_OK;
-
-#if defined(CONFIG_JZSOC) && ANDROID
-    /*
-     * Fix WOWFish suspend resume render bugs. Code from Yun.Li @ Vivante.
-     */
-    if (status == gcvSTATUS_OK)
+    if (signal->event.done)
     {
-	    INIT_COMPLETION(signal->event);
+        if (!signal->manualReset)
+        {
+            signal->event.done = 0;
+        }
+
+        status = gcvSTATUS_OK;
     }
+    else if (Wait == 0)
+    {
+        status = gcvSTATUS_TIMEOUT;
+    }
+    else
+    {
+        /* Convert wait to milliseconds. */
+#if gcdDETECT_TIMEOUT
+        gctINT timeout = (Wait == gcvINFINITE)
+            ? gcdINFINITE_TIMEOUT * HZ / 1000
+            : Wait * HZ / 1000;
+
+        gctUINT complained = 0;
+#else
+        gctINT timeout = (Wait == gcvINFINITE)
+            ? MAX_SCHEDULE_TIMEOUT
+            : Wait * HZ / 1000;
 #endif
 
+        DECLARE_WAITQUEUE(wait, current);
+        wait.flags |= WQ_FLAG_EXCLUSIVE;
+        __add_wait_queue_tail(&signal->event.wait, &wait);
+
+        while (gcvTRUE)
+        {
+            if (signal_pending(current))
+            {
+                /* Interrupt received. */
+                status = gcvSTATUS_INTERRUPTED;
+                break;
+            }
+
+            __set_current_state(TASK_INTERRUPTIBLE);
+            spin_unlock_irq(&signal->event.wait.lock);
+            timeout = schedule_timeout(timeout);
+            spin_lock_irq(&signal->event.wait.lock);
+
+            if (signal->event.done)
+            {
+                if (!signal->manualReset)
+                {
+                    signal->event.done = 0;
+                }
+
+                status = gcvSTATUS_OK;
+#ifdef CONFIG_JZSOC
+                /* Fix WOW_Fish suspend resume render bugs. Code from
+                 * Vivante Yun.Li.
+                 */
+//                INIT_COMPLETION(signal->event);
+#endif
+                break;
+            }
+
+#if gcdDETECT_TIMEOUT
+            if ((Wait == gcvINFINITE) && (timeout == 0))
+            {
+                gctUINT32 dmaAddress1, dmaAddress2;
+                gctUINT32 dmaState1, dmaState2;
+
+                dmaState1   = dmaState2   =
+                dmaAddress1 = dmaAddress2 = 0;
+
+                /* Verify whether DMA is running. */
+                gcmkVERIFY_OK(_VerifyDMA(
+                    Os, &dmaAddress1, &dmaAddress2, &dmaState1, &dmaState2
+                    ));
+
+#if gcdDETECT_DMA_ADDRESS
+                /* Dump only if DMA appears stuck. */
+                if (
+                    (dmaAddress1 == dmaAddress2)
+#if gcdDETECT_DMA_STATE
+                 && (dmaState1   == dmaState2)
+#endif
+                )
+#endif
+                {
+                    /* Increment complain count. */
+                    complained += 1;
+
+                    gcmkVERIFY_OK(_DumpGPUState(Os));
+
+                    gcmkPRINT(
+                        "%s(%d): signal 0x%X; forced message flush (%d).",
+                        __FUNCTION__, __LINE__, Signal, complained
+                        );
+
+                    /* Flush the debug cache. */
+                    gcmkPRINT("$$FLUSH$$");
+                }
+
+                /* Reset timeout. */
+                timeout = gcdINFINITE_TIMEOUT * HZ / 1000;
+            }
+#endif
+
+            if (timeout == 0)
+            {
+
+                status = gcvSTATUS_TIMEOUT;
+                break;
+            }
+        }
+
+        __remove_wait_queue(&signal->event.wait, &wait);
+
+#if gcdDETECT_TIMEOUT
+        if (complained)
+        {
+            gcmkPRINT(
+                "%s(%d): signal=0x%X; waiting done; status=%d",
+                __FUNCTION__, __LINE__, Signal, status
+                );
+        }
+#endif
+    }
+
+    spin_unlock_irq(&signal->event.wait.lock);
+
     /* Return status. */
-    gcmkFOOTER();
+    gcmkFOOTER_ARG("Signal=0x%X status=%d", Signal, status);
     return status;
 }
 
@@ -6050,7 +6161,7 @@ gckOS_WaitSignalUninterruptible(
                                                 : gcvSTATUS_OK;
 
     /* Return status. */
-    gcmkFOOTER();
+    gcmkFOOTER_ARG("Signal=0x%X status=%d", Signal, status);
     return status;
 }
 
