@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -190,134 +190,168 @@ gckGALDEVICE_Construct(
     gctUINT32 internalBaseAddress = 0, internalAlignment = 0;
     gctUINT32 externalBaseAddress = 0, externalAlignment = 0;
     gctUINT32 horizontalTileSize, verticalTileSize;
+    struct resource* mem_region;
     gctUINT32 physAddr;
     gctUINT32 physical;
     gckGALDEVICE device;
     gceSTATUS status;
 
-    gcmkTRACE(gcvLEVEL_VERBOSE, "[galcore] Enter gckGALDEVICE_Construct");
+    gcmkHEADER_ARG("IrqLine=%d RegisterMemBase=0x%08x RegisterMemSize=%u "
+                   "IrqLine2D=%d RegisterMemBase2D=0x%08x RegisterMemSize2D=%u "
+                   "IrqLineVG=%d RegisterMemBaseVG=0x%08x RegisterMemSizeVG=%u "
+                   "ContiguousBase=0x%08x ContiguousSize=%lu BankSize=%lu "
+                   "FastClear=%d Compression=%d PhysBaseAddr=0x%x PhysSize=%d Signal=%d",
+                   IrqLine, RegisterMemBase, RegisterMemSize,
+                   IrqLine2D, RegisterMemBase2D, RegisterMemSize2D,
+                   IrqLineVG, RegisterMemBaseVG, RegisterMemSizeVG,
+                   ContiguousBase, ContiguousSize, BankSize, FastClear, Compression,
+                   PhysBaseAddr, PhysSize, Signal);
 
     /* Allocate device structure. */
-    device = kmalloc(sizeof(struct _gckGALDEVICE), GFP_KERNEL);
+    device = kmalloc(sizeof(struct _gckGALDEVICE), GFP_KERNEL | __GFP_NOWARN);
+
     if (!device)
     {
-        gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                      "[galcore] gckGALDEVICE_Construct: Can't allocate memory.");
-
-        return gcvSTATUS_OUT_OF_MEMORY;
+        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
+
     memset(device, 0, sizeof(struct _gckGALDEVICE));
 
-    physical = RegisterMemBase;
-
-    /* Set up register memory region */
-    if (physical != 0)
     {
-        /* Request a region. */
-        request_mem_region(RegisterMemBase, RegisterMemSize, "galcore register region");
-        device->registerBase = (gctPOINTER) ioremap_nocache(RegisterMemBase,
-                                                        RegisterMemSize);
-        if (!device->registerBase)
-    {
-            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                      "[galcore] gckGALDEVICE_Construct: Unable to map location->0x%lX for size->%ld",
-              RegisterMemBase,
-              RegisterMemSize);
+        physical = RegisterMemBase;
 
-            return gcvSTATUS_OUT_OF_RESOURCES;
-        }
+        /* Set up register memory region. */
+        if (physical != 0)
+        {
+            mem_region = request_mem_region(
+                physical, RegisterMemSize, "galcore register region"
+                );
 
-        physical += RegisterMemSize;
+#if 0
+            if (mem_region == gcvNULL)
+            {
+                gcmkTRACE_ZONE(
+                    gcvLEVEL_ERROR, gcvZONE_DRIVER,
+                    "%s(%d): Failed to claim %lu bytes @ 0x%08X\n",
+                    __FUNCTION__, __LINE__,
+                    physical, RegisterMemSize
+                    );
 
-        gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                    gcvZONE_DRIVER,
-                    "[galcore] gckGALDEVICE_Construct: "
-                    "RegisterBase after mapping Address->0x%x is 0x%x",
-                    (gctUINT32)RegisterMemBase,
-                    (gctUINT32)device->registerBase);
-    }
-
-    /* construct the gckOS object */
-    device->baseAddress = BaseAddress;
-    gcmkVERIFY_OK(gckOS_Construct(device, &device->os));
-
-    /* construct the gckKERNEL object. */
-    gcmkVERIFY_OK(gckKERNEL_Construct(device->os, device, &device->kernel));
-
-    /* Setup the Isr manager. */
-    gcmkVERIFY_OK(gckHARDWARE_SetIsrManager(device->kernel->hardware,
-                                            (gctISRMANAGERFUNC)gckGALDEVICE_Setup_ISR,
-                                            (gctISRMANAGERFUNC)gckGALDEVICE_Release_ISR,
-                                            device));
-
-    gcmkVERIFY_OK(gckHARDWARE_SetFastClear(device->kernel->hardware,
-                                          FastClear,
-                                          Compression));
-
-    /* query the ceiling of the system memory */
-    gcmkVERIFY_OK(gckHARDWARE_QuerySystemMemory(device->kernel->hardware,
-                    &device->systemMemorySize,
-                    &device->systemMemoryBaseAddress));
-
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                    gcvZONE_DRIVER,
-                    "[galcore] gckGALDEVICE_Construct: "
-                    "Will be trying to allocate contiguous memory of 0x%x bytes",
-                    (gctUINT32)device->systemMemoryBaseAddress);
-
-#if COMMAND_PROCESSOR_VERSION == 1
-    /* start the command queue */
-    gcmkVERIFY_OK(gckCOMMAND_Start(device->kernel->command));
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
 #endif
 
-    /* initialize the thread daemon */
-    sema_init(&device->sema, 0);
+            device->registerBase = (gctPOINTER) ioremap_nocache(
+                physical, RegisterMemSize);
+
+            if (device->registerBase == gcvNULL)
+            {
+                gcmkTRACE_ZONE(
+                    gcvLEVEL_ERROR, gcvZONE_DRIVER,
+                    "%s(%d): Unable to map %ld bytes @ 0x%08X\n",
+                    __FUNCTION__, __LINE__,
+                    physical, RegisterMemSize
+                    );
+
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
+
+            physical += RegisterMemSize;
+        }
+        else
+        {
+            device->registerBase = gcvNULL;
+        }
+    }
+
+    /* Set the base address */
+    device->baseAddress = BaseAddress;
+
+    /* Construct the gckOS object. */
+    gcmkONERROR(gckOS_Construct(device, &device->os));
+
+    {
+        /* Construct the gckKERNEL object. */
+        gcmkONERROR(gckKERNEL_Construct(
+            device->os, device,
+            &device->kernel));
+
+        /* Setup the ISR manager. */
+        gcmkONERROR(gckHARDWARE_SetIsrManager(
+            device->kernel->hardware,
+            (gctISRMANAGERFUNC) gckGALDEVICE_Setup_ISR,
+            (gctISRMANAGERFUNC) gckGALDEVICE_Release_ISR,
+            device
+            ));
+
+        gcmkONERROR(gckHARDWARE_SetFastClear(
+            device->kernel->hardware, FastClear, Compression
+            ));
+
+
+#if COMMAND_PROCESSOR_VERSION == 1
+        /* Start the command queue. */
+        gcmkONERROR(gckCOMMAND_Start(device->kernel->command));
+#endif
+    }
 
     device->threadInitialized = gcvFALSE;
     device->killThread = gcvFALSE;
 
-    /* initialize the isr */
+    /* Initialize the ISR */
     device->isrInitialized = gcvFALSE;
     device->dataReady = gcvFALSE;
     device->irqLine = IrqLine;
 
+    /* Initialize the kernel thread semaphore. */
+    sema_init(&device->sema, 0);
+
     device->signal = Signal;
 
-    /* query the amount of video memory */
-    gcmkVERIFY_OK(gckHARDWARE_QueryMemory(device->kernel->hardware,
-                    &device->internalSize,
-                    &internalBaseAddress,
-                    &internalAlignment,
-                    &device->externalSize,
-                    &externalBaseAddress,
-                    &externalAlignment,
-                    &horizontalTileSize,
-                    &verticalTileSize));
+    {
+        /* Query the ceiling of the system memory. */
+        gcmkONERROR(gckHARDWARE_QuerySystemMemory(
+                device->kernel->hardware,
+                &device->systemMemorySize,
+                &device->systemMemoryBaseAddress
+                ));
 
-    /* set up the internal memory region */
+            /* query the amount of video memory */
+        gcmkONERROR(gckHARDWARE_QueryMemory(
+            device->kernel->hardware,
+            &device->internalSize, &internalBaseAddress, &internalAlignment,
+            &device->externalSize, &externalBaseAddress, &externalAlignment,
+            &horizontalTileSize, &verticalTileSize
+            ));
+    }
+
+
+    /* Set up the internal memory region. */
     if (device->internalSize > 0)
     {
-        gceSTATUS status = gckVIDMEM_Construct(device->os,
-                    internalBaseAddress,
-                    device->internalSize,
-                    internalAlignment,
-                    0,
-                    &device->internalVidMem);
+        status = gckVIDMEM_Construct(
+            device->os,
+            internalBaseAddress, device->internalSize, internalAlignment,
+            0, &device->internalVidMem
+            );
 
         if (gcmIS_ERROR(status))
         {
-            /* error, remove internal heap */
+            /* Error, disable internal heap. */
             device->internalSize = 0;
         }
         else
         {
-            /* map internal memory */
-            device->internalPhysical  = (gctPHYS_ADDR)physical;
-            device->internalLogical   = (gctPOINTER)ioremap_nocache(
-                    physical, device->internalSize);
+            /* Map internal memory. */
+            device->internalLogical
+                = (gctPOINTER) ioremap_nocache(physical, device->internalSize);
 
-            gcmkASSERT(device->internalLogical != NULL);
+            if (device->internalLogical == gcvNULL)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
 
+            device->internalPhysical = (gctPHYS_ADDR) physical;
             physical += device->internalSize;
         }
     }
@@ -325,27 +359,29 @@ gckGALDEVICE_Construct(
     if (device->externalSize > 0)
     {
         /* create the external memory heap */
-        gceSTATUS status = gckVIDMEM_Construct(device->os,
-                    externalBaseAddress,
-                    device->externalSize,
-                    externalAlignment,
-                    0,
-                    &device->externalVidMem);
+        status = gckVIDMEM_Construct(
+            device->os,
+            externalBaseAddress, device->externalSize, externalAlignment,
+            0, &device->externalVidMem
+            );
 
         if (gcmIS_ERROR(status))
         {
-            /* error, remove internal heap */
+            /* Error, disable internal heap. */
             device->externalSize = 0;
         }
         else
         {
-            /* map internal memory */
-            device->externalPhysical = (gctPHYS_ADDR)physical;
-            device->externalLogical = (gctPOINTER)ioremap_nocache(
-                    physical, device->externalSize);
+            /* Map external memory. */
+            device->externalLogical
+                = (gctPOINTER) ioremap_nocache(physical, device->externalSize);
 
-            gcmkASSERT(device->externalLogical != NULL);
+            if (device->externalLogical == gcvNULL)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
 
+            device->externalPhysical = (gctPHYS_ADDR) physical;
             physical += device->externalSize;
         }
     }
@@ -353,137 +389,132 @@ gckGALDEVICE_Construct(
     /* set up the contiguous memory */
     device->contiguousSize = ContiguousSize;
 
-    if (ContiguousBase == 0)
+    if (ContiguousSize > 0)
     {
-        status = gcvSTATUS_OUT_OF_MEMORY;
-
-        while (device->contiguousSize > 0)
+        if (ContiguousBase == 0)
         {
-            gcmkTRACE_ZONE(
-                gcvLEVEL_INFO, gcvZONE_DRIVER,
-                "[galcore] gckGALDEVICE_Construct: Will be trying to allocate contiguous memory of %ld bytes",
-                device->contiguousSize
-                );
-
-            /* allocate contiguous memory */
-            status = _AllocateMemory(
-                device,
-                device->contiguousSize,
-                &device->contiguousBase,
-                &device->contiguousPhysical,
-                &physAddr
-                );
-
-            if (gcmIS_SUCCESS(status))
+            while (device->contiguousSize > 0)
             {
-                gcmkTRACE_ZONE(
-                    gcvLEVEL_INFO, gcvZONE_DRIVER,
-                    "[galcore] gckGALDEVICE_Construct: Contiguous allocated size->0x%08X Virt->0x%08lX physAddr->0x%08X",
+                /* Allocate contiguous memory. */
+                status = _AllocateMemory(
+                    device,
                     device->contiguousSize,
-                    device->contiguousBase,
-                    physAddr
-                    );
-
-                status = gckVIDMEM_Construct(
-                    device->os,
-                    physAddr | device->systemMemoryBaseAddress,
-                    device->contiguousSize,
-                    64,
-                    BankSize,
-                    &device->contiguousVidMem
+                    &device->contiguousBase,
+                    &device->contiguousPhysical,
+                    &physAddr
                     );
 
                 if (gcmIS_SUCCESS(status))
                 {
-                    device->contiguousMapped = gcvFALSE;
-
-                    /* success, abort loop */
-                    gcmkTRACE_ZONE(
-                        gcvLEVEL_INFO, gcvZONE_DRIVER,
-                        "Using %u bytes of contiguous memory.",
-                        device->contiguousSize
+                    status = gckVIDMEM_Construct(
+                        device->os,
+                        physAddr | device->systemMemoryBaseAddress,
+                        device->contiguousSize,
+                        64,
+                        BankSize,
+                        &device->contiguousVidMem
                         );
 
-                    break;
+                    if (gcmIS_SUCCESS(status))
+                    {
+                        break;
+                    }
+
+                    gcmkONERROR(_FreeMemory(
+                        device,
+                        device->contiguousBase,
+                        device->contiguousPhysical
+                        ));
+
+                    device->contiguousBase     = gcvNULL;
+                    device->contiguousPhysical = gcvNULL;
                 }
 
-                gcmkVERIFY_OK(_FreeMemory(
-                    device,
-                    device->contiguousBase,
-                    device->contiguousPhysical
-                    ));
-
-                device->contiguousBase = NULL;
+                if (device->contiguousSize <= (4 << 20))
+                {
+                    device->contiguousSize = 0;
+                }
+                else
+                {
+                    device->contiguousSize -= (4 << 20);
+                }
             }
-
-            if (device->contiguousSize <= (4 << 20))
-            {
-                device->contiguousSize = 0;
-            }
-            else
-            {
-                device->contiguousSize -= (4 << 20);
-            }
-        }
-    }
-    else
-    {
-        /* Create the contiguous memory heap. */
-        status = gckVIDMEM_Construct(
-            device->os,
-            (ContiguousBase - device->baseAddress) | device->systemMemoryBaseAddress,
-            ContiguousSize,
-            64,
-            BankSize,
-            &device->contiguousVidMem
-            );
-
-        if (gcmIS_ERROR(status))
-        {
-            /* Error, roll back. */
-            device->contiguousVidMem = gcvNULL;
-            device->contiguousSize   = 0;
         }
         else
         {
-            /* Map the contiguous memory. */
-            request_mem_region(
-                ContiguousBase,
-                ContiguousSize,
-                "galcore managed memory"
+            /* Create the contiguous memory heap. */
+            status = gckVIDMEM_Construct(
+                device->os,
+                (ContiguousBase - device->baseAddress) | device->systemMemoryBaseAddress,
+                 ContiguousSize,
+                64, BankSize,
+                &device->contiguousVidMem
                 );
 
-            device->contiguousPhysical = (gctPHYS_ADDR) ContiguousBase;
-            device->contiguousSize     = ContiguousSize;
-#if FIXED_MMAP_AS_CACHEABLE
-            device->contiguousBase     = (gctPOINTER) ioremap_cachable(ContiguousBase, ContiguousSize);
-#else
-            device->contiguousBase     = (gctPOINTER) ioremap_nocache(ContiguousBase, ContiguousSize);
-#endif
-            device->contiguousMapped   = gcvTRUE;
-
-            if (device->contiguousBase == gcvNULL)
+            if (gcmIS_ERROR(status))
             {
-                /* Error, roll back. */
-                gcmkVERIFY_OK(gckVIDMEM_Destroy(device->contiguousVidMem));
+                /* Error, disable contiguous memory pool. */
                 device->contiguousVidMem = gcvNULL;
                 device->contiguousSize   = 0;
+            }
+            else
+            {
+                mem_region = request_mem_region(
+                    ContiguousBase, ContiguousSize, "galcore managed memory"
+                    );
 
-                status = gcvSTATUS_OUT_OF_RESOURCES;
+#if 0
+                if (mem_region == gcvNULL)
+                {
+                    gcmkTRACE_ZONE(
+                        gcvLEVEL_ERROR, gcvZONE_DRIVER,
+                        "%s(%d): Failed to claim %ld bytes @ 0x%08X\n",
+                        __FUNCTION__, __LINE__,
+                        ContiguousSize, ContiguousBase
+                        );
+
+                    gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                }
+#endif
+
+                device->contiguousPhysical = (gctPHYS_ADDR) ContiguousBase;
+                device->contiguousSize     = ContiguousSize;
+
+                {
+                    device->contiguousBase
+#if FIXED_MMAP_AS_CACHEABLE
+                        = (gctPOINTER) ioremap_cachable(ContiguousBase, ContiguousSize);
+#else
+                        = (gctPOINTER) ioremap_nocache(ContiguousBase, ContiguousSize);
+#endif
+                    if (device->contiguousBase == gcvNULL)
+                    {
+                        device->contiguousVidMem = gcvNULL;
+                        device->contiguousSize = 0;
+
+                        gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                    }
+                }
+
+                device->contiguousPhysical = (gctPHYS_ADDR) ContiguousBase;
+                device->contiguousSize     = ContiguousSize;
+                device->contiguousMapped   = gcvTRUE;
             }
         }
     }
 
-    *Device = device;
+    /* Return pointer to the device. */
+    * Device = device;
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                  "[galcore] gckGALDEVICE_Construct: Initialized device->%p contiguous->%lu @ %p (0x%08X)",
-          device,
-          device->contiguousSize,
-          device->contiguousBase,
-          device->contiguousPhysical);
-
+    gcmkFOOTER_ARG("*Device=0x%x", * Device);
     return gcvSTATUS_OK;
+
+OnError:
+    /* Roll back. */
+    gcmkVERIFY_OK(gckGALDEVICE_Destroy(device));
+
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -508,71 +539,112 @@ gceSTATUS
 gckGALDEVICE_Destroy(
     gckGALDEVICE Device)
 {
-    gcmkVERIFY_ARGUMENT(Device != NULL);
+    gceSTATUS status = gcvSTATUS_OK;
 
-    gcmkTRACE(gcvLEVEL_VERBOSE, "[ENTER] gckGALDEVICE_Destroy");
+    gcmkHEADER_ARG("Device=0x%x", Device);
 
-    /* Destroy the gckKERNEL object. */
-    gcmkVERIFY_OK(gckKERNEL_Destroy(Device->kernel));
-
-    if (Device->internalVidMem != gcvNULL)
+    if (Device != gcvNULL)
     {
-        /* destroy the internal heap */
-        gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->internalVidMem));
-
-        /* unmap the internal memory */
-        iounmap(Device->internalLogical);
-    }
-
-    if (Device->externalVidMem != gcvNULL)
-    {
-        /* destroy the internal heap */
-        gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->externalVidMem));
-
-        /* unmap the external memory */
-        iounmap(Device->externalLogical);
-    }
-
-    if (Device->contiguousVidMem != gcvNULL)
-    {
-        /* Destroy the contiguous heap */
-        gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->contiguousVidMem));
-
-    if (Device->contiguousMapped)
-    {
-            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                  "[galcore] gckGALDEVICE_Destroy: "
-              "Unmapping contiguous memory->0x%08lX",
-              Device->contiguousBase);
-
-        iounmap(Device->contiguousBase);
-    }
-    else
-    {
-            gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                  "[galcore] gckGALDEVICE_Destroy: "
-              "Freeing contiguous memory->0x%08lX",
-              Device->contiguousBase);
-
-            gcmkVERIFY_OK(_FreeMemory(Device,
-                         Device->contiguousBase,
-                         Device->contiguousPhysical));
+        {
+            if (Device->kernel != gcvNULL)
+            {
+                /* Destroy the gckKERNEL object. */
+                gcmkVERIFY_OK(gckKERNEL_Destroy(Device->kernel));
+                Device->kernel = gcvNULL;
+            }
         }
+
+        {
+            if (Device->internalLogical != gcvNULL)
+            {
+                /* Unmap the internal memory. */
+                iounmap(Device->internalLogical);
+                Device->internalLogical = gcvNULL;
+            }
+
+            if (Device->internalVidMem != gcvNULL)
+            {
+                /* Destroy the internal heap. */
+                gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->internalVidMem));
+                Device->internalVidMem = gcvNULL;
+            }
+        }
+
+        {
+            if (Device->externalLogical != gcvNULL)
+            {
+                /* Unmap the external memory. */
+                iounmap(Device->externalLogical);
+                Device->externalLogical = gcvNULL;
+            }
+
+            if (Device->externalVidMem != gcvNULL)
+            {
+                /* destroy the external heap */
+                gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->externalVidMem));
+                Device->externalVidMem = gcvNULL;
+            }
+        }
+
+        {
+            if (Device->contiguousBase != gcvNULL)
+            {
+                if (Device->contiguousMapped)
+                {
+                    if (Device->contiguousBase)
+                    {
+                        /* Unmap the contiguous memory. */
+                        iounmap(Device->contiguousBase);
+                    }
+                }
+                else
+                {
+                    gcmkONERROR(_FreeMemory(
+                        Device,
+                        Device->contiguousBase,
+                        Device->contiguousPhysical
+                        ));
+                }
+
+                Device->contiguousBase     = gcvNULL;
+                Device->contiguousPhysical = gcvNULL;
+            }
+
+            if (Device->contiguousVidMem != gcvNULL)
+            {
+                /* Destroy the contiguous heap. */
+                gcmkVERIFY_OK(gckVIDMEM_Destroy(Device->contiguousVidMem));
+                Device->contiguousVidMem = gcvNULL;
+            }
+        }
+
+        {
+            if (Device->registerBase != gcvNULL)
+            {
+                /* Unmap register memory. */
+                iounmap(Device->registerBase);
+
+                Device->registerBase = gcvNULL;
+            }
+        }
+
+        /* Destroy the gckOS object. */
+        if (Device->os != gcvNULL)
+        {
+            gcmkVERIFY_OK(gckOS_Destroy(Device->os));
+            Device->os = gcvNULL;
+        }
+
+        /* Free the device. */
+        kfree(Device);
     }
 
-    if (Device->registerBase)
-    {
-        iounmap(Device->registerBase);
-    }
-
-    /* Destroy the gckOS object. */
-    gcmkVERIFY_OK(gckOS_Destroy(Device->os));
-
-    kfree(Device);
-
-    gcmkTRACE(gcvLEVEL_VERBOSE, "[galcore] Leave gckGALDEVICE_Destroy");
-
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -602,53 +674,57 @@ gckGALDEVICE_Setup_ISR(
     IN gckGALDEVICE Device
     )
 {
+    gceSTATUS status;
     gctINT ret;
+
+    gcmkHEADER_ARG("Device=0x%x", Device);
 
     gcmkVERIFY_ARGUMENT(Device != NULL);
 
     if (Device->irqLine < 0)
     {
-        return gcvSTATUS_GENERIC_IO;
+        gcmkONERROR(gcvSTATUS_GENERIC_IO);
     }
 
     /* Hook up the isr based on the irq line. */
 #ifdef FLAREON
-    gc500_handle.dev_name = "galcore interrupt service";
-    gc500_handle.dev_id = Device;
-    gc500_handle.handler = isrRoutine;
-    gc500_handle.intr_gen = GPIO_INTR_LEVEL_TRIGGER;
+    gc500_handle.dev_name  = "galcore interrupt service";
+    gc500_handle.dev_id    = Device;
+    gc500_handle.handler   = isrRoutine;
+    gc500_handle.intr_gen  = GPIO_INTR_LEVEL_TRIGGER;
     gc500_handle.intr_trig = GPIO_TRIG_HIGH_LEVEL;
-    ret = dove_gpio_request (DOVE_GPIO0_7, &gc500_handle);
+
+    ret = dove_gpio_request(
+        DOVE_GPIO0_7, &gc500_handle
+        );
 #else
-    ret = request_irq(Device->irqLine,
-                isrRoutine,
-                IRQF_DISABLED,
-                "galcore interrupt service",
-                Device);
+    ret = request_irq(
+        Device->irqLine, isrRoutine, IRQF_DISABLED,
+        "galcore interrupt service", Device
+        );
 #endif
 
+    if (ret != 0)
+    {
+        gcmkTRACE_ZONE(
+            gcvLEVEL_ERROR, gcvZONE_DRIVER,
+            "%s(%d): Could not register irq line %d (error=%d)\n",
+            __FUNCTION__, __LINE__,
+            Device->irqLine, ret
+            );
 
-    if (ret != 0) {
-        gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_DRIVER,
-                "[galcore] gckGALDEVICE_Setup_ISR: "
-                "Could not register irq line->%d",
-                Device->irqLine);
-
-        Device->isrInitialized = gcvFALSE;
-
-        return gcvSTATUS_GENERIC_IO;
+        gcmkONERROR(gcvSTATUS_GENERIC_IO);
     }
 
+    /* Mark ISR as initialized. */
     Device->isrInitialized = gcvTRUE;
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_DRIVER,
-                "[galcore] gckGALDEVICE_Setup_ISR: "
-                "Setup the irq line->%d",
-                Device->irqLine);
-
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -675,18 +751,23 @@ gckGALDEVICE_Release_ISR(
     IN gckGALDEVICE Device
     )
 {
+    gcmkHEADER_ARG("Device=0x%x", Device);
+
     gcmkVERIFY_ARGUMENT(Device != NULL);
 
     /* release the irq */
     if (Device->isrInitialized)
     {
 #ifdef FLAREON
-        dove_gpio_free (DOVE_GPIO0_7, "galcore interrupt service");
+        dove_gpio_free(DOVE_GPIO0_7, "galcore interrupt service");
 #else
         free_irq(Device->irqLine, Device);
 #endif
+
+	    Device->isrInitialized = gcvFALSE;
     }
 
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
@@ -717,20 +798,39 @@ gckGALDEVICE_Start_Thread(
     IN gckGALDEVICE Device
     )
 {
+    gceSTATUS status;
+    struct task_struct * task;
+
+    gcmkHEADER_ARG("Device=0x%x", Device);
+
     gcmkVERIFY_ARGUMENT(Device != NULL);
 
-    /* start the kernel thread */
-    Device->threadCtxt = kthread_run(threadRoutine,
-                    Device,
-                    "galcore daemon thread");
+    if (Device->kernel != gcvNULL)
+    {
+        /* Start the kernel thread. */
+        task = kthread_run(threadRoutine, Device, "galcore daemon thread");
 
-    Device->threadInitialized = gcvTRUE;
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                    gcvZONE_DRIVER,
-                    "[galcore] gckGALDEVICE_Start_Thread: "
-                    "Start the daemon thread.");
+        if (IS_ERR(task))
+        {
+            gcmkTRACE_ZONE(
+                gcvLEVEL_ERROR, gcvZONE_DRIVER,
+                "%s(%d): Could not start the kernel thread.\n",
+                __FUNCTION__, __LINE__
+                );
 
+            gcmkONERROR(gcvSTATUS_GENERIC_IO);
+        }
+    
+        Device->threadCtxt        = task;
+        Device->threadInitialized = gcvTRUE;
+    }
+
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -758,17 +858,22 @@ gckGALDEVICE_Stop_Thread(
     gckGALDEVICE Device
     )
 {
+    gcmkHEADER_ARG("Device=0x%x", Device);
+
     gcmkVERIFY_ARGUMENT(Device != NULL);
 
-    /* stop the thread */
+    /* Stop the kernel thread. */
     if (Device->threadInitialized)
     {
         Device->killThread = gcvTRUE;
         up(&Device->sema);
 
         kthread_stop(Device->threadCtxt);
+        Device->threadCtxt        = gcvNULL;
+        Device->threadInitialized = gcvFALSE;
     }
 
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
@@ -798,18 +903,30 @@ gckGALDEVICE_Start(
     IN gckGALDEVICE Device
     )
 {
-    /* start the daemon thread */
-    gcmkVERIFY_OK(gckGALDEVICE_Start_Thread(Device));
+    gceSTATUS status;
 
-    /* setup the isr routine */
-    gcmkVERIFY_OK(gckGALDEVICE_Setup_ISR(Device));
+    gcmkHEADER_ARG("Device=0x%x", Device);
 
-    /* Switch to SUSPEND power state. */
-    gcmkVERIFY_OK(
-        gckHARDWARE_SetPowerManagementState(Device->kernel->hardware,
-                                            gcvPOWER_SUSPEND_ATPOWERON));
+    /* Start the kernel thread. */
+    gcmkONERROR(gckGALDEVICE_Start_Thread(Device));
 
+    if (Device->kernel != gcvNULL)
+    {
+        /* Setup the ISR routine. */
+        gcmkONERROR(gckGALDEVICE_Setup_ISR(Device));
+
+        /* Switch to SUSPEND power state. */
+        gcmkVERIFY_OK(
+            gckHARDWARE_SetPowerManagementState(Device->kernel->hardware,
+                                                gcvPOWER_SUSPEND_ATPOWERON));
+    }
+
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -837,22 +954,30 @@ gckGALDEVICE_Stop(
     gckGALDEVICE Device
     )
 {
+    gceSTATUS status;
+
+    gcmkHEADER_ARG("Device=0x%x", Device);
+
     gcmkVERIFY_ARGUMENT(Device != NULL);
 
-    /* Switch to ON power state. */
-    gcmkVERIFY_OK(
-        gckHARDWARE_SetPowerManagementState(Device->kernel->hardware,
-                                            gcvPOWER_ON));
-
-    if (Device->isrInitialized)
+    if (Device->kernel != gcvNULL)
     {
-        gckGALDEVICE_Release_ISR(Device);
+        /* Switch to ON power state. */
+        gcmkONERROR(gckHARDWARE_SetPowerManagementState(
+            Device->kernel->hardware, gcvPOWER_ON
+            ));
+
+        /* Remove the ISR routine. */
+        gcmkONERROR(gckGALDEVICE_Release_ISR(Device));
     }
 
-    if (Device->threadInitialized)
-    {
-        gckGALDEVICE_Stop_Thread(Device);
-    }
+    /* Stop the kernel thread. */
+    gcmkONERROR(gckGALDEVICE_Stop_Thread(Device));
 
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
+
+OnError:
+    gcmkFOOTER();
+    return status;
 }
