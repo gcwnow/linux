@@ -443,14 +443,7 @@ _AllocateMemory(
         if (pool == gcvPOOL_SYSTEM)
         {
             /* Advance to contiguous memory. */
-#ifdef CONFIG_MACH_JZ4770
-            pool = gcvPOOL_VIRTUAL;
-            // Wolfgang@ingenic.cn, modify, 2011-0
-            // do not use __get_free_page when system running,
-            // it may cause kernel  hanging.
-#else
             pool = gcvPOOL_CONTIGUOUS;
-#endif
         }
 
         else
