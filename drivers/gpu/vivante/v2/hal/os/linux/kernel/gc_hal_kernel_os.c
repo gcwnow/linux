@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -28,12 +28,15 @@
 #include <linux/mm.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
-#include <linux/slab.h>
 #include <asm/atomic.h>
 #ifdef NO_DMA_COHERENT
 #include <linux/dma-mapping.h>
 #endif /* NO_DMA_COHERENT */
+#include <linux/slab.h>
 #include <linux/workqueue.h>
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,23)
+#include <linux/math64.h>
+#endif
 
 #define _GC_OBJ_ZONE    gcvZONE_OS
 
@@ -2933,6 +2936,84 @@ gckOS_AtomicExchangePtr(
     return gcvSTATUS_OK;
 }
 
+#if gcdSMP
+/*******************************************************************************
+**
+**  gckOS_AtomicSetMask
+**
+**  Atomically set mask to Atom
+**
+**  INPUT:
+**      IN OUT gctPOINTER Atom
+**          Pointer to the atom to set.
+**
+**      IN gctUINT32 Mask
+**          Mask to set.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_AtomSetMask(
+    IN gctPOINTER Atom,
+    IN gctUINT32 Mask
+    )
+{
+    gctUINT32 oval, nval;
+
+    gcmkHEADER_ARG("Atom=0x%0x", Atom);
+    gcmkVERIFY_ARGUMENT(Atom != gcvNULL);
+
+    do
+    {
+        oval = atomic_read((atomic_t *) Atom);
+        nval = oval | Mask;
+    } while (atomic_cmpxchg((atomic_t *) Atom, oval, nval) != oval);
+
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckOS_AtomClearMask
+**
+**  Atomically clear mask from Atom
+**
+**  INPUT:
+**      IN OUT gctPOINTER Atom
+**          Pointer to the atom to clear.
+**
+**      IN gctUINT32 Mask
+**          Mask to clear.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_AtomClearMask(
+    IN gctPOINTER Atom,
+    IN gctUINT32 Mask
+    )
+{
+    gctUINT32 oval, nval;
+
+    gcmkHEADER_ARG("Atom=0x%0x", Atom);
+    gcmkVERIFY_ARGUMENT(Atom != gcvNULL);
+
+    do
+    {
+        oval = atomic_read((atomic_t *) Atom);
+        nval = oval & ~Mask;
+    } while (atomic_cmpxchg((atomic_t *) Atom, oval, nval) != oval);
+
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+#endif
+
 /*******************************************************************************
 **
 **  gckOS_AtomConstruct
@@ -3066,6 +3147,48 @@ gckOS_AtomGet(
 
 /*******************************************************************************
 **
+**  gckOS_AtomSet
+**
+**  Set the 32-bit value protected by an atom.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to a gckOS object.
+**
+**      gctPOINTER Atom
+**          Pointer to the atom.
+**
+**      gctINT32 Value
+**          The value of the atom.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_AtomSet(
+    IN gckOS Os,
+    IN gctPOINTER Atom,
+    IN gctINT32 Value
+    )
+{
+    gcmkHEADER_ARG("Os=0x%X Atom=0x%0x Value=%d", Os, Atom);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
+    gcmkVERIFY_ARGUMENT(Atom != gcvNULL);
+
+    /* Set the current value of atom. */
+    atomic_set((atomic_t *) Atom, Value);
+
+    /* Success. */
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
 **  gckOS_AtomIncrement
 **
 **  Atomically increment the 32-bit integer value inside an atom.
@@ -3171,6 +3294,8 @@ gckOS_Delay(
     struct timeval now;
     unsigned long jiffies;
 
+    gcmkHEADER_ARG("Os=0x%X Delay=%u", Os, Delay);
+
     if (Delay > 0)
     {
 #ifdef CONFIG_MACH_JZ4770
@@ -3204,6 +3329,95 @@ gckOS_Delay(
     }
 
     /* Success. */
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckOS_GetTicks
+**
+**  Get the number of milliseconds since the system started.
+**
+**  INPUT:
+**
+**  OUTPUT:
+**
+**      gctUINT32_PTR Time
+**          Pointer to a variable to get time.
+**
+*/
+gceSTATUS
+gckOS_GetTicks(
+    OUT gctUINT32_PTR Time
+    )
+{
+     gcmkHEADER();
+
+    *Time = jiffies * 1000 / HZ;
+
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckOS_TicksAfter
+**
+**  Compare time values got from gckOS_GetTicks.
+**
+**  INPUT:
+**      gctUINT32 Time1
+**          First time value to be compared.
+**
+**      gctUINT32 Time2
+**          Second time value to be compared.
+**
+**  OUTPUT:
+**
+**      gctBOOL_PTR IsAfter
+**          Pointer to a variable to result.
+**
+*/
+gceSTATUS
+gckOS_TicksAfter(
+    IN gctUINT32 Time1,
+    IN gctUINT32 Time2,
+    OUT gctBOOL_PTR IsAfter
+    )
+{
+    gcmkHEADER();
+
+    *IsAfter = time_after((unsigned long)Time1, (unsigned long)Time2);
+
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckOS_GetTime
+**
+**  Get the number of microseconds since the system started.
+**
+**  INPUT:
+**
+**  OUTPUT:
+**
+**      gctUINT64_PTR Time
+**          Pointer to a variable to get time.
+**
+*/
+gceSTATUS
+gckOS_GetTime(
+    OUT gctUINT64_PTR Time
+    )
+{
+    gcmkHEADER();
+
+    *Time = 0;
+
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
@@ -6934,6 +7148,37 @@ gckOS_SetGPUPower(
 
     /* TODO: Put your code here. */
     gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
+**  gckOS_DumpGPUState
+**
+**  Dump GPU state.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to the gckOS object.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_DumpGPUState(
+    IN gckOS Os
+    )
+{
+    gcmkHEADER_ARG("Os=0x%X", Os);
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
+
+    _DumpGPUState(Os);
+
+    gcmkFOOTER_NO();
+    /* Success. */
     return gcvSTATUS_OK;
 }
 

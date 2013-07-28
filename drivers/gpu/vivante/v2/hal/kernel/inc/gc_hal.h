@@ -464,6 +464,25 @@ gckOS_AtomicExchangePtr(
     OUT gctPOINTER * OldValue
     );
 
+#if gcdSMP
+gceSTATUS
+gckOS_AtomSetMask(
+    IN gctPOINTER Atom,
+    IN gctUINT32 Mask
+    );
+
+gceSTATUS
+gckOS_AtomClearMask(
+    IN gctPOINTER Atom,
+    IN gctUINT32 Mask
+    );
+#endif
+
+gceSTATUS
+gckOS_DumpGPUState(
+    IN gckOS Os
+    );
+
 /*******************************************************************************
 **
 **  gckOS_AtomConstruct
@@ -538,6 +557,34 @@ gckOS_AtomGet(
 
 /*******************************************************************************
 **
+**  gckOS_AtomSet
+**
+**  Set the 32-bit value protected by an atom.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to a gckOS object.
+**
+**      gctPOINTER Atom
+**          Pointer to the atom.
+**
+**      gctINT32 Value
+**          The value of the atom.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_AtomSet(
+    IN gckOS Os,
+    IN gctPOINTER Atom,
+    IN gctINT32 Value
+    );
+
+/*******************************************************************************
+**
 **  gckOS_AtomIncrement
 **
 **  Atomically increment the 32-bit integer value inside an atom.
@@ -593,6 +640,26 @@ gceSTATUS
 gckOS_Delay(
     IN gckOS Os,
     IN gctUINT32 Delay
+    );
+
+/* Get time in milliseconds. */
+gceSTATUS
+gckOS_GetTicks(
+    OUT gctUINT32_PTR Time
+    );
+
+/* Compare time value. */
+gceSTATUS
+gckOS_TicksAfter(
+    IN gctUINT32 Time1,
+    IN gctUINT32 Time2,
+    OUT gctBOOL_PTR IsAfter
+    );
+
+/* Get time in microseconds. */
+gceSTATUS
+gckOS_GetTime(
+    OUT gctUINT64_PTR Time
     );
 
 /* Memory barrier. */
