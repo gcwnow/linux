@@ -3682,14 +3682,12 @@ gckOS_FreePagedMemory(
     gctSTRING   addr;
     gctINT i;
 
+    gcmkHEADER_ARG("Os=0x%X Physical=0x%X Bytes=%lu", Os, Physical, Bytes);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
     gcmkVERIFY_ARGUMENT(Bytes > 0);
-
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_OS,
-                "in gckOS_FreePagedMemory");
 
     addr = mdl->addr;
 
@@ -3743,13 +3741,8 @@ gckOS_FreePagedMemory(
     /* Free the structure... */
     gcmkVERIFY_OK(_DestroyMdl(mdl));
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_OS,
-                "gckOS_FreePagedMemory: Bytes->0x%x, Mdl->0x%x",
-                (gctUINT32)Bytes,
-                (gctUINT32)mdl);
-
     /* Success. */
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
@@ -3797,30 +3790,29 @@ gckOS_LockPages(
     gctINT          i;
     long            populate;
 
+    gcmkHEADER_ARG("Os=0x%X Physical=0x%X Bytes=%lu", Os, Physical, Logical);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
     gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
     gcmkVERIFY_ARGUMENT(PageCount != gcvNULL);
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_OS,
-                "in gckOS_LockPages");
-
     mdl = (PLINUX_MDL) Physical;
 
     MEMORY_LOCK(Os);
 
-    mdlMap = FindMdlMap(mdl, current->tgid);
+    mdlMap = FindMdlMap(mdl, _GetProcessID());
 
     if (mdlMap == gcvNULL)
     {
-        mdlMap = _CreateMdlMap(mdl, current->tgid);
+        mdlMap = _CreateMdlMap(mdl, _GetProcessID());
 
         if (mdlMap == gcvNULL)
         {
             MEMORY_UNLOCK(Os);
 
+            gcmkFOOTER_ARG("*status=%d", gcvSTATUS_OUT_OF_MEMORY);
             return gcvSTATUS_OUT_OF_MEMORY;
         }
     }
@@ -3838,18 +3830,21 @@ gckOS_LockPages(
 
         up_write(&current->mm->mmap_sem);
 
-        gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                        gcvZONE_OS,
-                        "gckOS_LockPages: "
-                        "vmaAddr->0x%x for phys_addr->0x%x",
-                        (gctUINT32)mdlMap->vmaAddr,
-                        (gctUINT32)mdl);
+        gcmkTRACE_ZONE(
+            gcvLEVEL_INFO, gcvZONE_OS,
+            "%s(%d): vmaAddr->0x%X for phys_addr->0x%X",
+            __FUNCTION__, __LINE__,
+            (gctUINT32) mdlMap->vmaAddr,
+            (gctUINT32) mdl
+            );
 
-        if (mdlMap->vmaAddr == gcvNULL)
+        if (IS_ERR(mdlMap->vmaAddr))
         {
-            gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                        gcvZONE_OS,
-                        "gckOS_LockPages: do_mmap_pgoff error");
+            gcmkTRACE_ZONE(
+                gcvLEVEL_INFO, gcvZONE_OS,
+                "%s(%d): do_mmap_pgoff error",
+                __FUNCTION__, __LINE__
+                );
 
             MEMORY_UNLOCK(Os);
 
@@ -3860,14 +3855,17 @@ gckOS_LockPages(
 
         if (mdlMap->vma == gcvNULL)
         {
-            gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                        gcvZONE_OS,
-                        "find_vma error");
+            gcmkTRACE_ZONE(
+                gcvLEVEL_INFO, gcvZONE_OS,
+                "%s(%d): find_vma error",
+                __FUNCTION__, __LINE__
+                );
 
             mdlMap->vmaAddr = gcvNULL;
 
             MEMORY_UNLOCK(Os);
 
+            gcmkFOOTER_ARG("*status=%d", gcvSTATUS_OUT_OF_RESOURCES);
             return gcvSTATUS_OUT_OF_RESOURCES;
         }
 
@@ -3900,14 +3898,17 @@ gckOS_LockPages(
             {
                 up_write(&current->mm->mmap_sem);
 
-                gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                            gcvZONE_OS,
-                            "gckOS_LockPages: unable to mmap ret");
+                gcmkTRACE_ZONE(
+                    gcvLEVEL_INFO, gcvZONE_OS,
+                    "%s(%d): unable to mmap ret",
+                    __FUNCTION__, __LINE__
+                    );
 
                 mdlMap->vmaAddr = gcvNULL;
 
                 MEMORY_UNLOCK(Os);
 
+                gcmkFOOTER_ARG("*status=%d", gcvSTATUS_OUT_OF_MEMORY);
                 return gcvSTATUS_OUT_OF_MEMORY;
             }
         }
@@ -3927,19 +3928,21 @@ gckOS_LockPages(
                 {
                     up_write(&current->mm->mmap_sem);
 
-                    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                                gcvZONE_OS,
-                                "gckOS_LockPages: "
-                                "gctPHYS_ADDR->0x%x Logical->0x%x Unable to map addr->0x%x to start->0x%x",
-                                (gctUINT32)Physical,
-                                (gctUINT32)*Logical,
-                                (gctUINT32)addr,
-                                (gctUINT32)start);
+                    gcmkTRACE_ZONE(
+                        gcvLEVEL_INFO, gcvZONE_OS,
+                        "%s(%d): gctPHYS_ADDR->0x%X Logical->0x%X Unable to map addr->0x%X to start->0x%X",
+                        __FUNCTION__, __LINE__,
+                        (gctUINT32) Physical,
+                        (gctUINT32) *Logical,
+                        (gctUINT32) addr,
+                        (gctUINT32) start
+                        );
 
                     mdlMap->vmaAddr = gcvNULL;
 
                     MEMORY_UNLOCK(Os);
 
+                    gcmkFOOTER_ARG("*status=%d", gcvSTATUS_OUT_OF_MEMORY);
                     return gcvSTATUS_OUT_OF_MEMORY;
                 }
 
@@ -3949,6 +3952,14 @@ gckOS_LockPages(
         }
 
         up_write(&current->mm->mmap_sem);
+    }
+    else
+    {
+        /* mdlMap->vmaAddr != gcvNULL means current process has already locked this node. */
+        MEMORY_UNLOCK(Os);
+
+        gcmkFOOTER_ARG("*status=%d, mdlMap->vmaAddr=%x", gcvSTATUS_MEMORY_LOCKED, mdlMap->vmaAddr);
+        return gcvSTATUS_MEMORY_LOCKED;
     }
 
     /* Convert pointer to MDL. */
@@ -3962,16 +3973,8 @@ gckOS_LockPages(
 
     MEMORY_UNLOCK(Os);
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_OS,
-                "gckOS_LockPages: "
-                "gctPHYS_ADDR->0x%x Bytes->0x%x Logical->0x%x pid->%d",
-                (gctUINT32)Physical,
-                (gctUINT32)Bytes,
-                (gctUINT32)*Logical,
-                mdlMap->pid);
-
     /* Success. */
+    gcmkFOOTER_ARG("*Logical=0x%X *PageCount=%lu", *Logical, *PageCount);
     return gcvSTATUS_OK;
 }
 
@@ -4114,6 +4117,9 @@ gckOS_UnlockPages(
     PLINUX_MDL              mdl = (PLINUX_MDL)Physical;
     struct task_struct *    task;
 
+    gcmkHEADER_ARG("Os=0x%X Physical=0x%X Bytes=%u Logical=0x%X",
+                   Os, Physical, Bytes, Logical);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
@@ -4153,6 +4159,7 @@ gckOS_UnlockPages(
     MEMORY_UNLOCK(Os);
 
     /* Success. */
+    gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
 
@@ -4196,13 +4203,34 @@ gckOS_AllocateContiguous(
     OUT gctPOINTER * Logical
     )
 {
+    gceSTATUS status;
+
+    gcmkHEADER_ARG("Os=0x%X InUserSpace=%d *Bytes=%lu",
+                   Os, InUserSpace, gcmOPT_VALUE(Bytes));
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
+    gcmkVERIFY_ARGUMENT(Bytes != gcvNULL);
+    gcmkVERIFY_ARGUMENT(*Bytes > 0);
+    gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
+
     /* Same as non-paged memory for now. */
-    return gckOS_AllocateNonPagedMemory(Os,
-                InUserSpace,
-                Bytes,
-                Physical,
-                Logical
-                );
+    gcmkONERROR(gckOS_AllocateNonPagedMemory(Os,
+                                             InUserSpace,
+                                             Bytes,
+                                             Physical,
+                                             Logical));
+
+    /* Success. */
+    gcmkFOOTER_ARG("*Bytes=%lu *Physical=0x%X *Logical=0x%X",
+                   *Bytes, *Physical, *Logical);
+    return gcvSTATUS_OK;
+
+OnError:
+    /* Return the status. */
+    gcmkFOOTER();
+    return status;
 }
 
 /*******************************************************************************
@@ -4315,7 +4343,7 @@ gckOS_GetKernelLogical(
        else
 #endif
        {
-            /* Split the memory address into a pool type and offset. */
+        /* Split the memory address into a pool type and offset. */
             gcmkERR_BREAK(gckHARDWARE_SplitMemory(
                 kernel->hardware, Address, &pool, &offset
                 ));
@@ -4403,14 +4431,13 @@ gckOS_MapUserPointer(
     gcmkVERIFY_ARGUMENT(Size > 0);
     gcmkVERIFY_ARGUMENT(KernelPointer != gcvNULL);
 
-    buf = kmalloc(Size, GFP_KERNEL);
+    buf = kmalloc(Size, GFP_KERNEL | __GFP_NOWARN);
     if (buf == gcvNULL)
     {
-        gcmkTRACE_ZONE(
+        gcmkTRACE(
             gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "%s(%d): Failed to allocate memory in %s.",
-            __FUNCTION__, __LINE__, __FILE__
+            "%s(%d): Failed to allocate memory.",
+            __FUNCTION__, __LINE__
             );
 
         gcmkFOOTER_ARG("*status=%d", gcvSTATUS_OUT_OF_MEMORY);
@@ -4420,11 +4447,10 @@ gckOS_MapUserPointer(
     len = copy_from_user(buf, Pointer, Size);
     if (len != 0)
     {
-        gcmkTRACE_ZONE(
+        gcmkTRACE(
             gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "%s(%d): Failed to copy data from user in %s.",
-            __FUNCTION__, __LINE__, __FILE__
+            "%s(%d): Failed to copy data from user.",
+            __FUNCTION__, __LINE__
             );
 
         if (buf != gcvNULL)
@@ -4497,11 +4523,10 @@ gckOS_UnmapUserPointer(
 
     if (len != 0)
     {
-        gcmkTRACE_ZONE(
+        gcmkTRACE(
             gcvLEVEL_ERROR,
-            gcvZONE_OS,
-            "%s(%d): Failed to copy data to user in %s.",
-            __FUNCTION__, __LINE__, __FILE__
+            "%s(%d): Failed to copy data to user.",
+            __FUNCTION__, __LINE__
             );
 
         gcmkFOOTER_ARG("status=%d", gcvSTATUS_GENERIC_IO);
@@ -4618,7 +4643,7 @@ gckOS_MapUserMemory(
 {
     gctSIZE_T pageCount, i, j;
     gctUINT32_PTR pageTable;
-    gctUINT32 address;
+    gctUINT32 address = 0;
     gctUINT32 start, end, memory;
     gctINT result = 0;
 
@@ -4631,11 +4656,6 @@ gckOS_MapUserMemory(
     gcmkVERIFY_ARGUMENT(Size > 0);
     gcmkVERIFY_ARGUMENT(Info != gcvNULL);
     gcmkVERIFY_ARGUMENT(Address != gcvNULL);
-
-    gcmkTRACE_ZONE(gcvLEVEL_VERBOSE,
-        gcvZONE_OS,
-        "[gckOS_MapUserMemory] enter."
-        );
 
     do
     {
@@ -4670,7 +4690,7 @@ gckOS_MapUserMemory(
         MEMORY_MAP_LOCK(Os);
 
         /* Allocate the Info struct. */
-        info = (gcsPageInfo_PTR)kmalloc(sizeof(gcsPageInfo), GFP_KERNEL);
+        info = (gcsPageInfo_PTR)kmalloc(sizeof(gcsPageInfo), GFP_KERNEL | __GFP_NOWARN);
 
         if (info == gcvNULL)
         {
@@ -4679,7 +4699,7 @@ gckOS_MapUserMemory(
         }
 
         /* Allocate the array of page addresses. */
-        pages = (struct page **)kmalloc(pageCount * sizeof(struct page *), GFP_KERNEL);
+        pages = (struct page **)kmalloc(pageCount * sizeof(struct page *), GFP_KERNEL | __GFP_NOWARN);
 
         if (pages == gcvNULL)
         {

@@ -378,6 +378,11 @@ long drv_ioctl(
     gckGALDEVICE device;
     gcsHAL_PRIVATE_DATA_PTR data;
 
+    gcmkHEADER_ARG(
+        "filp=0x%08X ioctlCode=0x%08X arg=0x%08X",
+        filp, ioctlCode, arg
+        );
+
     if (filp == gcvNULL)
     {
         gcmkTRACE_ZONE(
@@ -386,7 +391,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     data = filp->private_data;
@@ -399,7 +404,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     device = data->device;
@@ -412,7 +417,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     if ((ioctlCode != IOCTL_GCHAL_INTERFACE)
@@ -426,7 +431,7 @@ long drv_ioctl(
             ioctlCode
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     /* Get the drvArgs. */
@@ -442,7 +447,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     /* Now bring in the gcsHAL_INTERFACE structure. */
@@ -456,7 +461,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
     copyLen = copy_from_user(
@@ -471,7 +476,7 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
 #if gcdkUSE_MEMORY_RECORD
@@ -570,6 +575,7 @@ long drv_ioctl(
     /* Redo system call after pending signal is handled. */
     if (status == gcvSTATUS_INTERRUPTED)
     {
+        gcmkFOOTER();
         return -ERESTARTSYS;
     }
 
@@ -728,10 +734,16 @@ long drv_ioctl(
             __FUNCTION__, __LINE__
             );
 
-        return -ENOTTY;
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
     }
 
+    /* Success. */
+    gcmkFOOTER_NO();
     return 0;
+
+OnError:
+    gcmkFOOTER();
+    return -ENOTTY;
 }
 
 static int drv_mmap(
