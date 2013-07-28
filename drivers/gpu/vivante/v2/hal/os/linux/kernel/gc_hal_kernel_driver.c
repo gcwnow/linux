@@ -378,6 +378,10 @@ long drv_ioctl(
     gckGALDEVICE device;
     gcsHAL_PRIVATE_DATA_PTR data;
 
+#if defined(JZSOC) && defined(CONFIG_PREEMPT)
+    /* 1: lock_kernel, fix bug WOWFish. */
+    lock_kernel();
+#endif
     gcmkHEADER_ARG(
         "filp=0x%08X ioctlCode=0x%08X arg=0x%08X",
         filp, ioctlCode, arg
@@ -739,10 +743,18 @@ long drv_ioctl(
 
     /* Success. */
     gcmkFOOTER_NO();
+#if defined(JZSOC) && defined(CONFIG_PREEMPT)
+    /* 1: lock_kernel, fix bug WOWFish. */
+    unlock_kernel();
+#endif
     return 0;
 
 OnError:
     gcmkFOOTER();
+#if defined(JZSOC) && defined(CONFIG_PREEMPT)
+    /* 1: lock_kernel, fix bug WOWFish. */
+    unlock_kernel();
+#endif
     return -ENOTTY;
 }
 
