@@ -78,6 +78,12 @@ struct _gckHARDWARE
     gctISRMANAGERFUNC           startIsr;
     gctISRMANAGERFUNC           stopIsr;
     gctPOINTER                  isrContext;
+
+#if gcdPOWEROFF_TIMEOUT
+    gctUINT32                   powerOffTime;
+    gctUINT32                   powerOffTimeout;
+    gctPOINTER                  powerOffTimer;
+#endif
 };
 
 gceSTATUS

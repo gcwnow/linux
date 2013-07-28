@@ -1109,7 +1109,7 @@ static int  gpu_probe(struct platform_device *pdev)
     contiguousBase = res->start;
     contiguousSize = res->end - res->start + 1;
 
-    dev_info(&pdev->dev, "driver v2.5.3.2.2.p3, initializing\n");
+    dev_info(&pdev->dev, "driver v2.5.3.2.2.p3+, initializing\n");
 
 #ifndef CONFIG_JZSOC
     clk = clk_get(&pdev->dev, NULL);

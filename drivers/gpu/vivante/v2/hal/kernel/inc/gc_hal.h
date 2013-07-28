@@ -1430,7 +1430,7 @@ gceSTATUS
 gckHARDWARE_PipeSelect(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN gctUINT32 Pipe,
+    IN gcePIPE_SELECT Pipe,
     IN OUT gctSIZE_T * Bytes
     );
 

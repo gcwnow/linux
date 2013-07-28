@@ -2268,8 +2268,8 @@ gckOS_GetPhysicalAddress(
     /*
      * Try to search the address in our list.
      * This could be an mmaped memory.
-      * Search in our list.
-      */
+     * Search in our list.
+     */
 
     MEMORY_LOCK(Os);
 

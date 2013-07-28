@@ -96,62 +96,65 @@ _DumpCommand(
 #endif
 
 gceSTATUS
-_WaitSignalFromGPU(
+gckOS_WaitSignalFromGPU(
     IN gckOS Os,
     IN gckHARDWARE Hardware,
-    IN gctSIGNAL Signal
+    IN gctSIGNAL Signal,
+    IN gctUINT32 Wait
     )
 {
     gceSTATUS status;
 
-#if gcdGPU_TIMEOUT
-    gctUINT timer = 0;
-
-    do
+    if (Wait)
     {
-        /* Wait for the signal. */
-        status = gckOS_WaitSignal(Os, Signal, 250);
+        gctUINT timer = 0;
 
-        if (status == gcvSTATUS_TIMEOUT)
+        do
         {
+            /* Wait for the signal. */
+            status = gckOS_WaitSignal(Os, Signal, Wait);
+
+            if (status == gcvSTATUS_TIMEOUT)
+            {
 #if gcdDEBUG
-            gctUINT32 idle;
+                gctUINT32 idle;
 
-            /* Read idle register. */
-            gcmkVERIFY_OK(
-                gckHARDWARE_GetIdle(Hardware,
-                                    gcvFALSE,
-                                    &idle));
+                /* Read idle register. */
+                gcmkVERIFY_OK(
+                    gckHARDWARE_GetIdle(Hardware,
+                                        gcvFALSE,
+                                        &idle));
 
-            gcmkTRACE(gcvLEVEL_ERROR,
-                      "%s(%d): idle=%08x",
-                      __FUNCTION__, __LINE__, idle);
+                gcmkTRACE(gcvLEVEL_ERROR,
+                          "%s(%d): idle=%08x",
+                          __FUNCTION__, __LINE__, idle);
 #endif
 
-            /* Advance timer. */
-            timer += 250;
+                /* Advance timer. */
+                timer += Wait;
+            }
+            else
+            {
+                gcmkONERROR(status);
+            }
         }
-        else
+        while (gcmIS_ERROR(status) && (timer < Wait));
+
+        /* Bail out on timeout. */
+        if (gcmIS_ERROR(status))
         {
-            gcmkONERROR(status);
+            /* Broadcast the stuck GPU. */
+            gcmkONERROR(gckOS_Broadcast(Os,
+                                        Hardware,
+                                        gcvBROADCAST_GPU_STUCK));
+
+            gcmkONERROR(gcvSTATUS_GPU_NOT_RESPONDING);
         }
     }
-    while (gcmIS_ERROR(status) && (timer < gcdGPU_TIMEOUT));
-
-    /* Bail out on timeout. */
-    if (gcmIS_ERROR(status))
+    else
     {
-        /* Broadcast the stuck GPU. */
-        gcmkONERROR(gckOS_Broadcast(Os,
-                                    Hardware,
-                                    gcvBROADCAST_GPU_STUCK));
-
-        gcmkONERROR(gcvSTATUS_GPU_NOT_RESPONDING);
+        gcmkONERROR(gckOS_WaitSignal(Os, Signal, gcvINFINITE));
     }
-
-#else
-    gcmkONERROR(gckOS_WaitSignal(Os, Signal, gcvINFINITE));
-#endif
 
     /* Success. */
     return gcvSTATUS_OK;
@@ -196,28 +199,30 @@ _NewQueue(
     gcmkPRINT("@[kernel.waitsignal]");
 #endif
 
-    gcmkONERROR(
-        _WaitSignalFromGPU(Command->os,
-                           Command->kernel->hardware,
-                           Command->queues[newIndex].signal));
-
-    if (currentIndex >= 0)
-    {
-        /* Mark the command queue as available. */
-        gcmkONERROR(gckEVENT_Signal(Command->kernel->event,
-                                    Command->queues[currentIndex].signal,
-                                    gcvKERNEL_COMMAND));
-    }
+    gcmkONERROR(gckOS_WaitSignalFromGPU(
+        Command->os,
+        Command->kernel->hardware,
+        Command->queues[newIndex].signal,
+        gcdGPU_TIMEOUT
+        ));
 
     /* Update gckCOMMAND object with new command queue. */
     Command->index    = newIndex;
     Command->newQueue = gcvTRUE;
-    Command->physical = Command->queues[newIndex].physical;
     Command->logical  = Command->queues[newIndex].logical;
     Command->offset   = 0;
 
-    if (currentIndex >= 0)
+    Command->physical = Command->queues[newIndex].physical;
+
+    if (currentIndex != -1)
     {
+        /* Mark the command queue as available. */
+        gcmkONERROR(gckEVENT_Signal(
+            Command->kernel->event,
+            Command->queues[currentIndex].signal,
+            gcvKERNEL_COMMAND
+            ));
+
         /* Submit the event queue. */
         Command->submit = gcvTRUE;
     }
@@ -285,18 +290,6 @@ gckCOMMAND_Construct(
     command->object.type    = gcvOBJ_COMMAND;
     command->kernel         = Kernel;
     command->os             = os;
-    command->mutexQueue     = gcvNULL;
-    command->mutexContext   = gcvNULL;
-    command->powerSemaphore = gcvNULL;
-    command->atomCommit     = gcvNULL;
-
-    /* No command queues created yet. */
-    command->index = 0;
-    for (i = 0; i < gcdCOMMAND_QUEUES; ++i)
-    {
-        command->queues[i].signal  = gcvNULL;
-        command->queues[i].logical = gcvNULL;
-    }
 
     /* Get the command buffer requirements. */
     gcmkONERROR(gckHARDWARE_QueryCommandBuffer(
@@ -305,9 +298,6 @@ gckCOMMAND_Construct(
         &command->reservedHead,
         &command->reservedTail
         ));
-
-    /* No contexts available yet. */
-    command->contextCounter = command->currentContext = 0;
 
     /* Create the command queue mutex. */
     gcmkONERROR(gckOS_CreateMutex(os, &command->mutexQueue));
@@ -519,7 +509,8 @@ gckCOMMAND_Start(
 {
     gceSTATUS status;
     gckHARDWARE hardware;
-    gctSIZE_T bytes;
+    gctPOINTER waitOffset;
+    gctSIZE_T waitLinkBytes;
 
     gcmkHEADER_ARG("Command=0x%x", Command);
 
@@ -551,34 +542,38 @@ gckCOMMAND_Start(
     /* Start at beginning of page. */
     Command->offset = 0;
 
+    /* Set abvailable number of bytes for WAIT/LINK command sequence. */
+    waitLinkBytes = Command->pageSize;
+
     /* Append WAIT/LINK. */
-    bytes = Command->pageSize;
     gcmkONERROR(gckHARDWARE_WaitLink(
         hardware,
         Command->logical,
         0,
-        &bytes,
-        &Command->wait,
+        &waitLinkBytes,
+        &waitOffset,
         &Command->waitSize
         ));
+
+    Command->wait = waitOffset;
 
     /* Flush the cache for the wait/link. */
     gcmkONERROR(gckOS_CacheFlush(
         Command->os,
         gcvNULL,
         Command->logical,
-        bytes
+        waitLinkBytes
         ));
 
     /* Adjust offset. */
-    Command->offset   = bytes;
+    Command->offset   = waitLinkBytes;
     Command->newQueue = gcvFALSE;
 
     /* Enable command processor. */
     gcmkONERROR(gckHARDWARE_Execute(
         hardware,
         Command->logical,
-        bytes
+        waitLinkBytes
         ));
 
     /* Command queue is running. */
@@ -1439,6 +1434,7 @@ gckCOMMAND_Reserve(
     gctBOOL powerAcquired = gcvFALSE;
     gckHARDWARE hardware = gcvNULL;
     gctUINT32 process, thread;
+    gctUINT32 requestedAligned;
 
     gcmkHEADER_ARG("Command=0x%x RequestedBytes=%lu", Command, RequestedBytes);
 
@@ -1516,18 +1512,23 @@ gckCOMMAND_Reserve(
                            gcvINFINITE));
     acquired = gcvTRUE;
 
-    /* Compute number of bytes required for WAIT/LINK. */
-    gcmkONERROR(
-        gckHARDWARE_WaitLink(Command->kernel->hardware,
-                             gcvNULL,
-                             Command->offset + gcmALIGN(RequestedBytes,
-                                                        Command->alignment),
-                             &requiredBytes,
-                             gcvNULL,
-                             gcvNULL));
+    /* Compute aligned number of reuested bytes. */
+    requestedAligned = gcmALIGN(RequestedBytes, Command->alignment);
+
+    /* Another WAIT/LINK command sequence will have to be appended after
+       the requested area being reserved. Compute the number of bytes
+       required for WAIT/LINK at the location after the reserved area. */
+    gcmkONERROR(gckHARDWARE_WaitLink(
+        Command->kernel->hardware,
+        gcvNULL,
+        Command->offset + requestedAligned,
+        &requiredBytes,
+        gcvNULL,
+        gcvNULL
+        ));
 
     /* Compute total number of bytes required. */
-    requiredBytes += gcmALIGN(RequestedBytes, Command->alignment);
+    requiredBytes += requestedAligned;
 
     /* Compute number of bytes available in command queue. */
     bytes = Command->pageSize - Command->offset;
@@ -1538,7 +1539,7 @@ gckCOMMAND_Reserve(
         /* Create a new command queue. */
         gcmkONERROR(_NewQueue(Command));
 
-        /* Recompute the number of bytes available in command queue. */
+        /* Recompute the number of bytes in the new kernel command queue. */
         bytes = Command->pageSize - Command->offset;
 
         /* Still not enough space? */
