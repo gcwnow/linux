@@ -148,34 +148,11 @@ static int drv_mmap(
     struct vm_area_struct* vma
     );
 
-#if defined(CONFIG_JZSOC) && defined(CONFIG_PREEMPT) && ANDROID
-/* Fix bug with WOWFish. */
-#include <linux/kernel_lock.h>
-static long fix_drv_ioctl(
-    struct file* filp,
-    unsigned int ioctlCode,
-    unsigned long arg
-    )
-{
-    long ret;
-
-    lock_kernel();
-    ret = drv_ioctl(filp, ioctlCode, arg);
-    unlock_kernel();
-    return ret;
-}
-#endif
-
 static struct file_operations driver_fops =
 {
     .open       = drv_open,
     .release    = drv_release,
-#if defined(CONFIG_JZSOC) && defined(CONFIG_PREEMPT) && ANDROID
-    /* Fix bug with WOWFish. */
-    .unlocked_ioctl = fix_drv_ioctl,
-#else
     .unlocked_ioctl = drv_ioctl,
-#endif
     .mmap       = drv_mmap,
 };
 
