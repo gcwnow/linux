@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -22,10 +22,10 @@
 
 
 /**
-**    @file
-**    gckHEAP object for kernel HAL layer.  The heap implemented here is an arena-
-**    based memory allocation.  An arena-based memory heap allocates data quickly
-**    from specified arenas and reduces memory fragmentation.
+**  @file
+**  gckHEAP object for kernel HAL layer.  The heap implemented here is an arena-
+**  based memory allocation.  An arena-based memory heap allocates data quickly
+**  from specified arenas and reduces memory fragmentation.
 **
 */
 #include "gc_hal_kernel_precomp.h"
@@ -36,13 +36,13 @@
 ***** Structures ***************************************************************
 *******************************************************************************/
 
-#define gcdIN_USE                ((gcskNODE_PTR) ~0)
+#define gcdIN_USE               ((gcskNODE_PTR) ~0)
 
-typedef struct _gcskNODE *        gcskNODE_PTR;
+typedef struct _gcskNODE *      gcskNODE_PTR;
 typedef struct _gcskNODE
 {
     /* Number of byets in node. */
-    gctSIZE_T                    bytes;
+    gctSIZE_T                   bytes;
 
     /* Pointer to next free node, or gcvNULL to mark the node as freed, or
     ** gcdIN_USE to mark the node as used. */
@@ -50,12 +50,12 @@ typedef struct _gcskNODE
 
 #if gcdDEBUG
     /* Time stamp of allocation. */
-    gctUINT64                    timeStamp;
+    gctUINT64                   timeStamp;
 #endif
 }
 gcskNODE;
 
-typedef struct _gcskHEAP    *    gcskHEAP_PTR;
+typedef struct _gcskHEAP    *   gcskHEAP_PTR;
 typedef struct _gcskHEAP
 {
     /* Linked list. */
@@ -63,7 +63,7 @@ typedef struct _gcskHEAP
     gcskHEAP_PTR                prev;
 
     /* Heap size. */
-    gctSIZE_T                    size;
+    gctSIZE_T                   size;
 
     /* Free list. */
     gcskNODE_PTR                freeList;
@@ -73,33 +73,33 @@ gcskHEAP;
 struct _gckHEAP
 {
     /* Object. */
-    gcsOBJECT                    object;
+    gcsOBJECT                   object;
 
     /* Pointer to a gckOS object. */
-    gckOS                        os;
+    gckOS                       os;
 
     /* Locking mutex. */
-    gctPOINTER                    mutex;
+    gctPOINTER                  mutex;
 
     /* Allocation parameters. */
-    gctSIZE_T                    allocationSize;
+    gctSIZE_T                   allocationSize;
 
     /* Heap list. */
     gcskHEAP_PTR                heap;
 #if gcdDEBUG
-    gctUINT64                    timeStamp;
+    gctUINT64                   timeStamp;
 #endif
 
 #if VIVANTE_PROFILER || gcdDEBUG
     /* Profile information. */
-    gctUINT32                    allocCount;
-    gctUINT64                    allocBytes;
-    gctUINT64                    allocBytesMax;
-    gctUINT64                    allocBytesTotal;
-    gctUINT32                    heapCount;
-    gctUINT32                    heapCountMax;
-    gctUINT64                    heapMemory;
-    gctUINT64                    heapMemoryMax;
+    gctUINT32                   allocCount;
+    gctUINT64                   allocBytes;
+    gctUINT64                   allocBytesMax;
+    gctUINT64                   allocBytesTotal;
+    gctUINT32                   heapCount;
+    gctUINT32                   heapCountMax;
+    gctUINT64                   heapMemory;
+    gctUINT64                   heapMemoryMax;
 #endif
 };
 
@@ -300,23 +300,23 @@ _CompactKernelHeap(
 
 /*******************************************************************************
 **
-**    gckHEAP_Construct
+**  gckHEAP_Construct
 **
-**    Construct a new gckHEAP object.
+**  Construct a new gckHEAP object.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckOS Os
-**            Pointer to a gckOS object.
+**      gckOS Os
+**          Pointer to a gckOS object.
 **
-**        gctSIZE_T AllocationSize
-**            Minimum size per arena.
+**      gctSIZE_T AllocationSize
+**          Minimum size per arena.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gckHEAP * Heap
-**            Pointer to a variable that will hold the pointer to the gckHEAP
-**            object.
+**      gckHEAP * Heap
+**          Pointer to a variable that will hold the pointer to the gckHEAP
+**          object.
 */
 gceSTATUS
 gckHEAP_Construct(
@@ -327,6 +327,7 @@ gckHEAP_Construct(
 {
     gceSTATUS status;
     gckHEAP heap = gcvNULL;
+    gctPOINTER pointer = gcvNULL;
 
     gcmkHEADER_ARG("Os=0x%x AllocationSize=%lu", Os, AllocationSize);
 
@@ -335,10 +336,11 @@ gckHEAP_Construct(
     gcmkVERIFY_ARGUMENT(Heap != gcvNULL);
 
     /* Allocate the gckHEAP object. */
-    gcmkONERROR(
-        gckOS_AllocateMemory(Os,
-                             gcmSIZEOF(struct _gckHEAP),
-                             (gctPOINTER *) &heap));
+    gcmkONERROR(gckOS_AllocateMemory(Os,
+                                     gcmSIZEOF(struct _gckHEAP),
+                                     &pointer));
+
+    heap = pointer;
 
     /* Initialize the gckHEAP object. */
     heap->object.type    = gcvOBJ_HEAP;
@@ -368,7 +370,7 @@ gckHEAP_Construct(
     *Heap = heap;
 
     /* Success. */
-    gcmkFOOTER_ARG("*Heap=0x%x", Heap);
+    gcmkFOOTER_ARG("*Heap=0x%x", *Heap);
     return gcvSTATUS_OK;
 
 OnError:
@@ -386,18 +388,18 @@ OnError:
 
 /*******************************************************************************
 **
-**    gckHEAP_Destroy
+**  gckHEAP_Destroy
 **
-**    Destroy a gckHEAP object.
+**  Destroy a gckHEAP object.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckHEAP Heap
-**            Pointer to a gckHEAP object to destroy.
+**      gckHEAP Heap
+**          Pointer to a gckHEAP object to destroy.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        Nothing.
+**      Nothing.
 */
 gceSTATUS
 gckHEAP_Destroy(
@@ -442,23 +444,23 @@ gckHEAP_Destroy(
 
 /*******************************************************************************
 **
-**    gckHEAP_Allocate
+**  gckHEAP_Allocate
 **
-**    Allocate data from the heap.
+**  Allocate data from the heap.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckHEAP Heap
-**            Pointer to a gckHEAP object.
+**      gckHEAP Heap
+**          Pointer to a gckHEAP object.
 **
-**        IN gctSIZE_T Bytes
-**            Number of byte to allocate.
+**      IN gctSIZE_T Bytes
+**          Number of byte to allocate.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        gctPOINTER * Memory
-**            Pointer to a variable that will hold the address of the allocated
-**            memory.
+**      gctPOINTER * Memory
+**          Pointer to a variable that will hold the address of the allocated
+**          memory.
 */
 gceSTATUS
 gckHEAP_Allocate(
@@ -579,8 +581,8 @@ gckHEAP_Allocate(
     /* Allocate a new heap. */
     gcmkONERROR(
         gckOS_AllocateVirtualMemory(Heap->os,
-                                    Heap->allocationSize,
-                                    &memory));
+                             Heap->allocationSize,
+                             &memory));
 
     gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_HEAP,
                    "Allocated heap 0x%x (%lu bytes)",
@@ -656,9 +658,9 @@ UseNode:
         }
 
         /* Move the heap to the front of the list. */
-        heap->next          = Heap->heap;
-        heap->prev          = gcvNULL;
-        Heap->heap          = heap;
+        heap->next       = Heap->heap;
+        heap->prev       = gcvNULL;
+        Heap->heap       = heap;
         heap->next->prev = heap;
     }
 
@@ -737,21 +739,21 @@ OnError:
 
 /*******************************************************************************
 **
-**    gckHEAP_Free
+**  gckHEAP_Free
 **
-**    Free allocated memory from the heap.
+**  Free allocated memory from the heap.
 **
-**    INPUT:
+**  INPUT:
 **
-**        gckHEAP Heap
-**            Pointer to a gckHEAP object.
+**      gckHEAP Heap
+**          Pointer to a gckHEAP object.
 **
-**        IN gctPOINTER Memory
-**            Pointer to memory to free.
+**      IN gctPOINTER Memory
+**          Pointer to memory to free.
 **
-**    OUTPUT:
+**  OUTPUT:
 **
-**        NOTHING.
+**      NOTHING.
 */
 gceSTATUS
 gckHEAP_Free(

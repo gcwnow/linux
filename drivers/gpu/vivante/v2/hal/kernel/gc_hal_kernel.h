@@ -36,6 +36,103 @@
 extern "C" {
 #endif
 
+
+/*******************************************************************************
+***** New MMU Defination *******************************************************/
+#define gcdMMU_MTLB_SHIFT           22
+#define gcdMMU_STLB_4K_SHIFT        12
+#define gcdMMU_STLB_64K_SHIFT       16
+
+#define gcdMMU_MTLB_BITS            (32 - gcdMMU_MTLB_SHIFT)
+#define gcdMMU_PAGE_4K_BITS         gcdMMU_STLB_4K_SHIFT
+#define gcdMMU_STLB_4K_BITS         (32 - gcdMMU_MTLB_BITS - gcdMMU_PAGE_4K_BITS)
+#define gcdMMU_PAGE_64K_BITS        gcdMMU_STLB_64K_SHIFT
+#define gcdMMU_STLB_64K_BITS        (32 - gcdMMU_MTLB_BITS - gcdMMU_PAGE_64K_BITS)
+
+#define gcdMMU_MTLB_ENTRY_NUM       (1 << gcdMMU_MTLB_BITS)
+#define gcdMMU_MTLB_SIZE            (gcdMMU_MTLB_ENTRY_NUM << 2)
+#define gcdMMU_STLB_4K_ENTRY_NUM    (1 << gcdMMU_STLB_4K_BITS)
+#define gcdMMU_STLB_4K_SIZE         (gcdMMU_STLB_4K_ENTRY_NUM << 2)
+#define gcdMMU_PAGE_4K_SIZE         (1 << gcdMMU_STLB_4K_SHIFT)
+#define gcdMMU_STLB_64K_ENTRY_NUM   (1 << gcdMMU_STLB_64K_BITS)
+#define gcdMMU_STLB_64K_SIZE        (gcdMMU_STLB_64K_ENTRY_NUM << 2)
+#define gcdMMU_PAGE_64K_SIZE        (1 << gcdMMU_STLB_64K_SHIFT)
+
+#define gcdMMU_MTLB_MASK            (~((1U << gcdMMU_MTLB_SHIFT)-1))
+#define gcdMMU_STLB_4K_MASK         ((~0U << gcdMMU_STLB_4K_SHIFT) ^ gcdMMU_MTLB_MASK)
+#define gcdMMU_PAGE_4K_MASK         (gcdMMU_PAGE_4K_SIZE - 1)
+#define gcdMMU_STLB_64K_MASK        ((~((1U << gcdMMU_STLB_64K_SHIFT)-1)) ^ gcdMMU_MTLB_MASK)
+#define gcdMMU_PAGE_64K_MASK        (gcdMMU_PAGE_64K_SIZE - 1)
+
+/*******************************************************************************
+***** Process Secure Cache ****************************************************/
+
+#define gcdSECURE_CACHE_LRU         1
+#define gcdSECURE_CACHE_LINEAR      2
+#define gcdSECURE_CACHE_HASH        3
+#define gcdSECURE_CACHE_TABLE       4
+
+typedef struct _gcskLOGICAL_CACHE * gcskLOGICAL_CACHE_PTR;
+typedef struct _gcskLOGICAL_CACHE   gcskLOGICAL_CACHE;
+struct _gcskLOGICAL_CACHE
+{
+    /* Logical address. */
+    gctPOINTER                      logical;
+
+    /* DMAable address. */
+    gctUINT32                       dma;
+
+#if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
+    /* Pointer to the previous and next hash tables. */
+    gcskLOGICAL_CACHE_PTR           nextHash;
+    gcskLOGICAL_CACHE_PTR           prevHash;
+#endif
+
+#if gcdSECURE_CACHE_METHOD != gcdSECURE_CACHE_TABLE
+    /* Pointer to the previous and next slot. */
+    gcskLOGICAL_CACHE_PTR           next;
+    gcskLOGICAL_CACHE_PTR           prev;
+#endif
+
+#if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LINEAR
+    /* Time stamp. */
+    gctUINT64                       stamp;
+#endif
+};
+
+typedef struct _gcskSECURE_CACHE * gcskSECURE_CACHE_PTR;
+typedef struct _gcskSECURE_CACHE
+{
+    /* Cache memory. */
+    gcskLOGICAL_CACHE               cache[1 + gcdSECURE_CACHE_SLOTS];
+
+    /* Last known index for LINEAR mode. */
+    gcskLOGICAL_CACHE_PTR           cacheIndex;
+
+    /* Current free slot for LINEAR mode. */
+    gctUINT32                       cacheFree;
+
+    /* Time stamp for LINEAR mode. */
+    gctUINT64                       cacheStamp;
+
+#if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
+    /* Hash table for HASH mode. */
+    gcskLOGICAL_CACHE              hash[256];
+#endif
+}
+gcskSECURE_CACHE;
+
+/*******************************************************************************
+********* Timer Management ****************************************************/
+typedef struct _gcsTIMER *           gcsTIMER_PTR;
+typedef struct _gcsTIMER
+{
+    /* Start and Stop time holders. */
+    gctUINT64                           startTime;
+    gctUINT64                           stopTime;
+}
+gcsTIMER;
+
 /******************************************************************************\
 ********************************** Structures **********************************
 \******************************************************************************/

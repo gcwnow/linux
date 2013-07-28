@@ -132,6 +132,7 @@ gckKERNEL_Construct(
 {
     gckKERNEL kernel = gcvNULL;
     gceSTATUS status;
+    gctPOINTER pointer = gcvNULL;
 
     gcmkHEADER_ARG("Os=0x%x Context=0x%x", Os, Context);
 
@@ -142,7 +143,9 @@ gckKERNEL_Construct(
     /* Allocate the gckKERNEL object. */
     gcmkONERROR(gckOS_Allocate(Os,
                                gcmSIZEOF(struct _gckKERNEL),
-                               (gctPOINTER *) &kernel));
+                               &pointer));
+
+    kernel = pointer;
 
     /* Zero the object pointers. */
     kernel->hardware     = gcvNULL;
@@ -165,29 +168,30 @@ gckKERNEL_Construct(
     kernel->cacheSlots     = 0;
     kernel->cacheTimeStamp = 0;
 #endif
+    {
+        /* Construct the gckHARDWARE object. */
+        gcmkONERROR(
+            gckHARDWARE_Construct(Os, &kernel->hardware));
 
-    /* Construct the gckHARDWARE object. */
-    gcmkONERROR(
-        gckHARDWARE_Construct(Os, &kernel->hardware));
+        /* Set pointer to gckKERNEL object in gckHARDWARE object. */
+        kernel->hardware->kernel = kernel;
 
-    /* Set pointer to gckKERNEL object in gckHARDWARE object. */
-    kernel->hardware->kernel = kernel;
+        /* Initialize the hardware. */
+        gcmkONERROR(
+            gckHARDWARE_InitializeHardware(kernel->hardware));
 
-    /* Initialize the hardware. */
-    gcmkONERROR(
-        gckHARDWARE_InitializeHardware(kernel->hardware));
+        /* Construct the gckCOMMAND object. */
+        gcmkONERROR(
+            gckCOMMAND_Construct(kernel, &kernel->command));
 
-    /* Construct the gckCOMMAND object. */
-    gcmkONERROR(
-        gckCOMMAND_Construct(kernel, &kernel->command));
+        /* Construct the gckEVENT object. */
+        gcmkONERROR(
+            gckEVENT_Construct(kernel, &kernel->event));
 
-    /* Construct the gckEVENT object. */
-    gcmkONERROR(
-        gckEVENT_Construct(kernel, &kernel->event));
-
-    /* Construct the gckMMU object. */
-    gcmkONERROR(
-        gckMMU_Construct(kernel, gcdMMU_SIZE, &kernel->mmu));
+        /* Construct the gckMMU object. */
+        gcmkONERROR(
+            gckMMU_Construct(kernel, gcdMMU_SIZE, &kernel->mmu));
+    }
 
 #if VIVANTE_PROFILER
     /* Initialize profile setting */
@@ -213,19 +217,21 @@ gckKERNEL_Construct(
 OnError:
     if (kernel != gcvNULL)
     {
-        if (kernel->event != gcvNULL)
         {
-            gcmkVERIFY_OK(gckEVENT_Destroy(kernel->event));
-        }
+            if (kernel->event != gcvNULL)
+            {
+                gcmkVERIFY_OK(gckEVENT_Destroy(kernel->event));
+            }
 
-        if (kernel->command != gcvNULL)
-        {
-        gcmkVERIFY_OK(gckCOMMAND_Destroy(kernel->command));
-        }
+            if (kernel->command != gcvNULL)
+            {
+            gcmkVERIFY_OK(gckCOMMAND_Destroy(kernel->command));
+            }
 
-        if (kernel->hardware != gcvNULL)
-        {
-            gcmkVERIFY_OK(gckHARDWARE_Destroy(kernel->hardware));
+            if (kernel->hardware != gcvNULL)
+            {
+                gcmkVERIFY_OK(gckHARDWARE_Destroy(kernel->hardware));
+            }
         }
 
         if (kernel->atomClients != gcvNULL)
@@ -328,6 +334,10 @@ _AllocateMemory(
     gcePOOL pool;
     gceSTATUS status;
     gckVIDMEM videoMemory;
+    gcuVIDMEM_NODE_PTR node = gcvNULL;
+
+    gcmkHEADER_ARG("Kernel=0x%x *Pool=%d Bytes=%lu Alignment=%lu Type=%d",
+                   Kernel, *Pool, Bytes, Alignment, Type);
 
     gcmkVERIFY_ARGUMENT(Pool != gcvNULL);
     gcmkVERIFY_ARGUMENT(Bytes != 0);
@@ -344,6 +354,9 @@ _AllocateMemory(
         pool      = gcvPOOL_SYSTEM;
         break;
 
+    case gcvPOOL_CONTIGUOUS:
+        break;
+
     default:
         break;
     }
@@ -353,22 +366,25 @@ _AllocateMemory(
         if (pool == gcvPOOL_VIRTUAL)
         {
             /* Create a gcuVIDMEM_NODE for virtual memory. */
-            gcmkERR_BREAK(
-                gckVIDMEM_ConstructVirtual(Kernel, gcvFALSE, Bytes, Node));
+            gcmkONERROR(
+                gckVIDMEM_ConstructVirtual(Kernel, gcvFALSE, Bytes, &node));
 
             /* Success. */
             break;
         }
-        else if (pool == gcvPOOL_CONTIGUOUS)
+
+        else
+        if (pool == gcvPOOL_CONTIGUOUS)
         {
             /* Create a gcuVIDMEM_NODE for contiguous memory. */
-            status = gckVIDMEM_ConstructVirtual(Kernel, gcvTRUE, Bytes, Node);
+            status = gckVIDMEM_ConstructVirtual(Kernel, gcvTRUE, Bytes, &node);
             if (gcmIS_SUCCESS(status))
             {
                 /* Memory allocated. */
                 break;
             }
         }
+
         else
         {
             /* Get pointer to gckVIDMEM object for pool. */
@@ -381,12 +397,12 @@ _AllocateMemory(
                                                   Bytes,
                                                   Alignment,
                                                   Type,
-                                                  Node);
+                                                  &node);
 
                 if (gcmIS_SUCCESS(status))
                 {
                     /* Memory allocated. */
-                    (*Node)->VidMem.pool = pool;
+                    node->VidMem.pool = pool;
                     break;
                 }
             }
@@ -397,26 +413,28 @@ _AllocateMemory(
             /* Advance to external memory. */
             pool = gcvPOOL_LOCAL_EXTERNAL;
         }
+
         else
         if (pool == gcvPOOL_LOCAL_EXTERNAL)
         {
             /* Advance to contiguous system memory. */
             pool = gcvPOOL_SYSTEM;
         }
+
         else
         if (pool == gcvPOOL_SYSTEM)
         {
             /* Advance to contiguous memory. */
 #ifdef CONFIG_MACH_JZ4770
-            /*
-             * Do not use '__get_free_page' or kernel will hang.
-             * - Modified by <Wolfgang@ingenic.cn> on 20110218.
-             */
             pool = gcvPOOL_VIRTUAL;
+            // Wolfgang@ingenic.cn, modify, 2011-0
+            // do not use __get_free_page when system running,
+            // it may cause kernel  hanging.
 #else
             pool = gcvPOOL_CONTIGUOUS;
 #endif
         }
+
         else
         if ((pool == gcvPOOL_CONTIGUOUS)
         &&  (Type != gcvSURF_TILE_STATUS)
@@ -425,10 +443,11 @@ _AllocateMemory(
             /* Advance to virtual memory. */
             pool = gcvPOOL_VIRTUAL;
         }
+
         else
         {
             /* Out of pools. */
-            break;
+            gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
         }
     }
     /* Loop only for multiple selection pools. */
@@ -437,13 +456,24 @@ _AllocateMemory(
     ||     (*Pool == gcvPOOL_UNIFIED)
     );
 
-    if (gcmIS_SUCCESS(status))
+    if (node == gcvNULL)
     {
-        /* Return pool used for allocation. */
-        *Pool = pool;
+        /* Nothing allocated. */
+        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
 
+
+    /* Return node and pool used for allocation. */
+    *Node = node;
+    *Pool = pool;
+
     /* Return status. */
+    gcmkFOOTER_ARG("*Pool=%d *Node=0x%x", *Pool, *Node);
+    return gcvSTATUS_OK;
+
+OnError:
+    /* Return the status. */
+    gcmkFOOTER();
     return status;
 }
 
