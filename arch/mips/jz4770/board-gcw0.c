@@ -231,7 +231,7 @@ static struct platform_device gcw0_gpio_keys_device = {
 
 /* SD cards */
 
-struct jz_mmc_platform_data gcw_internal_sd_data = {
+static struct jz_mmc_platform_data gcw_internal_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
 	.bus_width		= 4,
@@ -241,7 +241,7 @@ struct jz_mmc_platform_data gcw_internal_sd_data = {
 	.nonremovable		= 1,
 };
 
-struct jz_mmc_platform_data gcw_external_sd_data = {
+static struct jz_mmc_platform_data gcw_external_sd_data = {
 	.support_sdio		= 0,
 	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
 	.bus_width		= 4,
@@ -551,7 +551,7 @@ static struct gpio_led_platform_data gcw0_led_pdata = {
 	.num_leds = ARRAY_SIZE(gcw0_leds),
 };
 
-struct platform_device gcw0_led_device = {
+static struct platform_device gcw0_led_device = {
 	.name = "leds-gpio",
 	.id = -1,
 	.dev = {
