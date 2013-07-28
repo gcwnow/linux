@@ -3298,12 +3298,6 @@ gckOS_Delay(
 
     if (Delay > 0)
     {
-#ifdef CONFIG_MACH_JZ4770
-        unsigned long long clock;
-        unsigned int diffclock;
-        int flag;
-#endif
-
         /* Convert milliseconds into seconds and microseconds. */
         now.tv_sec  = Delay / 1000;
         now.tv_usec = (Delay % 1000) * 1000;
@@ -3311,21 +3305,8 @@ gckOS_Delay(
         /* Convert timeval to jiffies. */
         jiffies = timeval_to_jiffies(&now);
 
-#ifdef CONFIG_MACH_JZ4770
-        flag = 1;
-        clock = sched_clock();
-        while(flag) {
-            schedule_timeout_interruptible(jiffies);
-            diffclock = (unsigned int)(sched_clock() - clock);
-            if (diffclock < Delay * 1000000)
-                jiffies = 1;
-            else
-                flag = 0;
-        }
-#else
         /* Schedule timeout. */
         schedule_timeout_interruptible(jiffies);
-#endif
     }
 
     /* Success. */
