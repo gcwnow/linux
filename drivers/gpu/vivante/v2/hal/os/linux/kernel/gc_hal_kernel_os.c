@@ -1221,7 +1221,14 @@ gckOS_AllocateMemory(
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Memory != gcvNULL);
 
-    memory = (gctPOINTER) kmalloc(Bytes, GFP_ATOMIC);
+    if (Bytes > PAGE_SIZE)
+    {
+        memory = (gctPOINTER) vmalloc(Bytes);
+    }
+    else
+    {
+        memory = (gctPOINTER) kmalloc(Bytes, GFP_KERNEL | __GFP_NOWARN);
+    }
 
     if (memory == gcvNULL)
     {
@@ -1269,7 +1276,14 @@ gckOS_FreeMemory(
     gcmkVERIFY_ARGUMENT(Memory != gcvNULL);
 
     /* Free the memory from the OS pool. */
-    kfree(Memory);
+    if (is_vmalloc_addr(Memory))
+    {
+        vfree(Memory);
+    }
+    else
+    {
+        kfree(Memory);
+    }
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -1356,7 +1370,14 @@ gckOS_FreeVirtualMemory(
     gcmkVERIFY_ARGUMENT(Memory != NULL);
 
     /* Free the memory from the OS pool. */
-    vfree(Memory);
+    if (is_vmalloc_addr(Memory))
+    {
+        vfree(Memory);
+    }
+    else
+    {
+        kfree(Memory);
+    }
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -1427,26 +1448,30 @@ gckOS_MapMemory(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (char *)do_mmap_pgoff(NULL,
+        mdlMap->vmaAddr = (char *)do_mmap_pgoff(gcvNULL,
                     0L,
                     mdl->numPages * PAGE_SIZE,
                     PROT_READ | PROT_WRITE,
                     MAP_SHARED,
                     0, &populate);
 
-        if (mdlMap->vmaAddr == gcvNULL)
+        if (IS_ERR(mdlMap->vmaAddr))
         {
-            gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-                gcvZONE_OS,
-                "gckOS_MapMemory: do_mmap_pgoff error");
+            gcmkTRACE(
+                gcvLEVEL_ERROR,
+                "%s(%d): do_mmap_pgoff error",
+                __FUNCTION__, __LINE__
+                );
 
-            gcmkTRACE_ZONE(gcvLEVEL_ERROR,
-                gcvZONE_OS,
-                "[gckOS_MapMemory] mdl->numPages: %d",
-                "[gckOS_MapMemory] mdl->vmaAddr: 0x%x",
+            gcmkTRACE(
+                gcvLEVEL_ERROR,
+                "%s(%d): mdl->numPages: %d mdl->vmaAddr: 0x%X",
+                __FUNCTION__, __LINE__,
                 mdl->numPages,
                 mdlMap->vmaAddr
                 );
+
+            mdlMap->vmaAddr = gcvNULL;
 
             up_write(&current->mm->mmap_sem);
 
@@ -1542,12 +1567,6 @@ gckOS_MapMemory(
 
     *Logical = mdlMap->vmaAddr;
 
-    gcmkTRACE_ZONE(gcvLEVEL_ERROR, gcvZONE_OS,
-                "gckOS_MapMemory: User Mapped address for 0x%x is 0x%x pid->%d",
-                (gctUINT32)mdl->addr,
-                (gctUINT32)*Logical,
-                mdlMap->pid);
-
     gcmkFOOTER_ARG("*Logical=0x%X", *Logical);
     return gcvSTATUS_OK;
 }
@@ -1596,10 +1615,6 @@ gckOS_UnmapMemory(
     gcmkVERIFY_ARGUMENT(Physical != 0);
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
-
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                gcvZONE_OS,
-                "in gckOS_UnmapMemory");
 
     gcmkTRACE_ZONE(gcvLEVEL_INFO,
                 gcvZONE_OS,
@@ -2040,10 +2055,12 @@ gceSTATUS gckOS_FreeNonPagedMemory(
     MEMORY_LOCK(Os);
 
 #ifndef NO_DMA_COHERENT
+    {
     dma_free_coherent(gcvNULL,
-                    mdl->numPages * PAGE_SIZE,
-                    mdl->addr,
-                    mdl->dmaHandle);
+                mdl->numPages * PAGE_SIZE,
+                mdl->addr,
+                mdl->dmaHandle);
+    }
 #else
     size    = mdl->numPages * PAGE_SIZE;
     vaddr   = mdl->kaddr;
@@ -2221,6 +2238,8 @@ gceSTATUS gckOS_GetPageSize(
     OUT gctSIZE_T * PageSize
     )
 {
+    gcmkHEADER_ARG("Os=0x%X", Os);
+
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(PageSize != gcvNULL);
@@ -2229,6 +2248,7 @@ gceSTATUS gckOS_GetPageSize(
     *PageSize = (gctSIZE_T) PAGE_SIZE;
 
     /* Success. */
+    gcmkFOOTER_ARG("*PageSize", *PageSize);
     return gcvSTATUS_OK;
 }
 
@@ -2374,13 +2394,13 @@ gckOS_GetPhysicalAddress(
 **  INPUT:
 **
 **      gckOS Os
-**          Pointer to an gckOS object.
+**          Pointer to gckOS object.
 **
 **      gctPOINTER Logical
 **          Logical address.
 **
-**      gctUINT ProcessID
-**          Procedd ID.
+**      gctUINT32 ProcessID
+**          Process ID.
 **
 **  OUTPUT:
 **
@@ -2391,7 +2411,7 @@ gceSTATUS
 gckOS_GetPhysicalAddressProcess(
     IN gckOS Os,
     IN gctPOINTER Logical,
-    IN gctUINT ProcessID,
+    IN gctUINT32 ProcessID,
     OUT gctUINT32 * Address
     )
 {
@@ -2495,14 +2515,6 @@ gckOS_MapPhysical(
 
     MEMORY_UNLOCK(Os);
 
-    gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_OS,
-                  "gckOS_MapPhysical: "
-                  "Physical->0x%X Bytes->0x%X Logical->0x%X MappingFound->%d",
-                  (gctUINT32) Physical,
-                  (gctUINT32) Bytes,
-                  (gctUINT32) *Logical,
-                   mdl ? 1 : 0);
-
     /* Success. */
     gcmkFOOTER_ARG("*Logical=0x%X", *Logical);
     return gcvSTATUS_OK;
@@ -2570,14 +2582,6 @@ gckOS_UnmapPhysical(
     }
 
     MEMORY_UNLOCK(Os);
-
-    gcmkTRACE_ZONE(gcvLEVEL_INFO,
-                    gcvZONE_OS,
-                    "gckOS_UnmapPhysical: "
-                    "Logical->0x%x Bytes->0x%x MappingFound(?)->%d",
-                    (gctUINT32)Logical,
-                    (gctUINT32)Bytes,
-                    mdl ? 1 : 0);
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -5232,8 +5236,11 @@ gckOS_CreateSemaphore(
     gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
 
     /* Allocate the semaphore structure. */
-    gcmkONERROR(
-        gckOS_Allocate(Os, gcmSIZEOF(struct semaphore), (gctPOINTER *) &sem));
+    sem = (struct semaphore *)kmalloc(gcmSIZEOF(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
+    if (sem == gcvNULL)
+    {
+        gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
+    }
 
     /* Initialize the semaphore. */
     sema_init(sem, 1);
@@ -5301,6 +5308,52 @@ OnError:
 
 /*******************************************************************************
 **
+**  gckOS_TryAcquireSemaphore
+**
+**  Try to acquire a semaphore.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to the gckOS object.
+**
+**      gctPOINTER Semaphore
+**          Pointer to the semaphore thet needs to be acquired.
+**
+**  OUTPUT:
+**
+**      Nothing.
+*/
+gceSTATUS
+gckOS_TryAcquireSemaphore(
+    IN gckOS Os,
+    IN gctPOINTER Semaphore
+    )
+{
+    gceSTATUS status;
+
+    gcmkHEADER_ARG("Os=0x%x", Os);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
+    gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
+
+    /* Acquire the semaphore. */
+    if (down_trylock((struct semaphore *) Semaphore))
+    {
+        /* Timeout. */
+        status = gcvSTATUS_TIMEOUT;
+        gcmkFOOTER();
+        return status;
+    }
+
+    /* Success. */
+    gcmkFOOTER_NO();
+    return gcvSTATUS_OK;
+}
+
+/*******************************************************************************
+**
 **  gckOS_ReleaseSemaphore
 **
 **  Release a previously acquired semaphore.
@@ -5361,8 +5414,6 @@ gckOS_DestroySemaphore(
     IN gctPOINTER Semaphore
     )
 {
-    gceSTATUS status;
-
     gcmkHEADER_ARG("Os=0x%X Semaphore=0x%X", Os, Semaphore);
 
      /* Verify the arguments. */
@@ -5370,16 +5421,11 @@ gckOS_DestroySemaphore(
     gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
 
     /* Free the sempahore structure. */
-    gcmkONERROR(gckOS_Free(Os, Semaphore));
+    kfree(Semaphore);
 
     /* Success. */
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
-
-OnError:
-    /* Return the status. */
-    gcmkFOOTER();
-    return status;
 }
 
 /*******************************************************************************
@@ -6361,7 +6407,7 @@ gckOS_CreateUserSignal(
         /* Enlarge the table. */
         table = (gctPOINTER *) kmalloc(
                     sizeof(gctPOINTER) * (Os->signal.tableLen + USER_SIGNAL_TABLE_LEN_INIT),
-                    GFP_KERNEL);
+                    GFP_KERNEL | __GFP_NOWARN);
 
         if (table == gcvNULL)
         {
@@ -6540,7 +6586,7 @@ OnError:
     if (acquired)
     {
         /* Release the mutex. */
-        gcmkONERROR(
+        gcmkVERIFY_OK(
             gckOS_ReleaseMutex(Os, Os->signal.lock));
     }
 
@@ -6633,10 +6679,7 @@ gckOS_WaitUserSignal(
     }
 
 
-do{
-    status = gckOS_WaitSignal(Os, signal, Wait==gcvINFINITE?5000:Wait);
-if(Wait==gcvINFINITE&&status==gcvSTATUS_TIMEOUT){gcmkPRINT("$$FLUSH$$");}
-}while(status==gcvSTATUS_TIMEOUT&&Wait==gcvINFINITE);
+    status = gckOS_WaitSignal(Os, signal, Wait);
 
     /* Return the status. */
     gcmkFOOTER();
@@ -6646,8 +6689,7 @@ OnError:
     if (acquired)
     {
         /* Release the mutex. */
-        gcmkONERROR(
-            gckOS_ReleaseMutex(Os, Os->signal.lock));
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(Os, Os->signal.lock));
     }
 
     /* Return the staus. */
@@ -6750,7 +6792,7 @@ OnError:
     if (acquired)
     {
         /* Release the mutex. */
-        gcmkONERROR(
+        gcmkVERIFY_OK(
             gckOS_ReleaseMutex(Os, Os->signal.lock));
     }
 
