@@ -109,7 +109,7 @@ struct _gckCOMMAND
     gctSIZE_T                   pageSize;
 
     /* Current pipe select. */
-    gctUINT32                   pipeSelect;
+    gcePIPE_SELECT              pipeSelect;
 
     /* Command queue running flag. */
     gctBOOL                     running;
@@ -178,6 +178,7 @@ typedef struct _gcsEVENT
 gcsEVENT;
 
 /* Structure holding a list of events to be processed by an interrupt. */
+typedef struct _gcsEVENT_QUEUE * gcsEVENT_QUEUE_PTR;
 typedef struct _gcsEVENT_QUEUE
 {
     /* Time stamp. */
@@ -196,6 +197,20 @@ typedef struct _gcsEVENT_QUEUE
     gctUINT32                   processID;
 }
 gcsEVENT_QUEUE;
+
+/*
+    gcdREPO_LIST_COUNT defines the maximum number of event queues with different
+    hardware module sources that may coexist at the same time. Only two sources
+    are supported - gcvKERNEL_COMMAND and gcvKERNEL_PIXEL. gcvKERNEL_COMMAND
+    source is used only for managing the kernel command queue and is only issued
+    when the current command queue gets full. Since we commit event queues every
+    time we commit command buffers, in the worst case we can have up to three
+    pending event queues:
+        - gcvKERNEL_PIXEL
+        - gcvKERNEL_COMMAND (queue overflow)
+        - gcvKERNEL_PIXEL
+*/
+#define gcdREPO_LIST_COUNT      3
 
 /* gckEVENT object. */
 struct _gckEVENT
@@ -219,7 +234,11 @@ struct _gckEVENT
     gctUINT8                    lastID;
 
     /* Pending events. */
+#if gcdSMP
+    gctPOINTER                  pending;
+#else
     volatile gctUINT            pending;
+#endif
 
     /* List of free event structures and its mutex. */
     gcsEVENT_PTR                freeList;
@@ -269,14 +288,22 @@ typedef union _gcuVIDMEM_NODE
         gckKERNEL               kernel;
 
         /* Information for this node. */
+        /* Contiguously allocated? */
         gctBOOL                 contiguous;
+        /* mdl record pointer... a kmalloc address. Process agnostic. */
         gctPHYS_ADDR            physical;
         gctSIZE_T               bytes;
+        /* do_mmap_pgoff address... mapped per-process. */
         gctPOINTER              logical;
 
         /* Page table information. */
+        /* Used only when node is not contiguous */
         gctSIZE_T               pageCount;
+
+        /* Used only when node is not contiguous */
         gctPOINTER              pageTable;
+
+        /* Actual physical address */
         gctUINT32               address;
 
         /* Mutex. */

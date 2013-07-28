@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (C) 2005 - 2011 by Vivante Corp.
+*    Copyright (C) 2005 - 2012 by Vivante Corp.
 *
 *    This program is free software; you can redistribute it and/or modify
 *    it under the terms of the GNU General Public License as published by
@@ -210,14 +210,9 @@ gcuFLOAT_UINT32;
 ******************************* Fixed Point Math *******************************
 \******************************************************************************/
 
-#define gcmXMultiply(x1, x2) \
-    (gctFIXED_POINT) (((gctINT64) (x1) * (x2)) >> 16)
-
-#define gcmXDivide(x1, x2) \
-    (gctFIXED_POINT) ((((gctINT64) (x1)) << 16) / (x2))
-
-#define gcmXMultiplyDivide(x1, x2, x3) \
-    (gctFIXED_POINT) ((gctINT64) (x1) * (x2) / (x3))
+#define gcmXMultiply(x1, x2)            gcoMATH_MultiplyFixed(x1, x2)
+#define gcmXDivide(x1, x2)              gcoMATH_DivideFixed(x1, x2)
+#define gcmXMultiplyDivide(x1, x2, x3)  gcoMATH_MultiplyDivideFixed(x1, x2, x3)
 
 /* 2D Engine profile. */
 typedef struct _gcs2D_PROFILE
@@ -498,12 +493,12 @@ gceSTATUS;
 **      Verify if the value of a field within specified data equals a
 **      predefined value.
 **
-**    ARGUMENTS:
+**  ARGUMENTS:
 **
-**        data    Data value.
-**        reg        Name of register.
-**        field    Name of field within register.
-**        value    Name of the value within the field.
+**      data    Data value.
+**      reg     Name of register.
+**      field   Name of field within register.
+**      value   Name of the value within the field.
 */
 #define gcmVERIFYFIELDVALUE(data, reg, field, value) \
 ( \
@@ -886,6 +881,87 @@ gceSTATUS;
 ( \
     gcmPTR2INT(& (((struct s *) 0)->field)) \
 )
+
+/*******************************************************************************
+***** Database ****************************************************************/
+
+typedef struct _gcsDATABASE_COUNTERS
+{
+    /* Number of currently allocated bytes. */
+    gctSIZE_T                   bytes;
+
+    /* Maximum number of bytes allocated (memory footprint). */
+    gctSIZE_T                   maxBytes;
+
+    /* Total number of bytes allocated. */
+    gctSIZE_T                   totalBytes;
+}
+gcsDATABASE_COUNTERS;
+
+typedef struct _gcuDATABASE_INFO
+{
+    /* Counters. */
+    gcsDATABASE_COUNTERS        counters;
+
+    /* Time value. */
+    gctUINT64                   time;
+}
+gcuDATABASE_INFO;
+
+/*******************************************************************************
+***** Frame database **********************************************************/
+
+/* gcsHAL_FRAME_INFO */
+typedef struct _gcsHAL_FRAME_INFO
+{
+    /* Current timer tick. */
+    OUT gctUINT64               ticks;
+
+    /* Bandwidth counters. */
+    OUT gctUINT                 readBytes8[8];
+    OUT gctUINT                 writeBytes8[8];
+
+    /* Counters. */
+    OUT gctUINT                 cycles[8];
+    OUT gctUINT                 idleCycles[8];
+    OUT gctUINT                 mcCycles[8];
+    OUT gctUINT                 readRequests[8];
+    OUT gctUINT                 writeRequests[8];
+
+    /* 3D counters. */
+    OUT gctUINT                 vertexCount;
+    OUT gctUINT                 primitiveCount;
+    OUT gctUINT                 rejectedPrimitives;
+    OUT gctUINT                 culledPrimitives;
+    OUT gctUINT                 clippedPrimitives;
+    OUT gctUINT                 outPrimitives;
+    OUT gctUINT                 inPrimitives;
+    OUT gctUINT                 culledQuadCount;
+    OUT gctUINT                 totalQuadCount;
+    OUT gctUINT                 quadCount;
+    OUT gctUINT                 totalPixelCount;
+
+    /* PE counters. */
+    OUT gctUINT                 colorKilled[8];
+    OUT gctUINT                 colorDrawn[8];
+    OUT gctUINT                 depthKilled[8];
+    OUT gctUINT                 depthDrawn[8];
+
+    /* Shader counters. */
+    OUT gctUINT                 shaderCycles;
+    OUT gctUINT                 vsInstructionCount;
+    OUT gctUINT                 vsTextureCount;
+    OUT gctUINT                 psInstructionCount;
+    OUT gctUINT                 psTextureCount;
+
+    /* Texture counters. */
+    OUT gctUINT                 bilinearRequests;
+    OUT gctUINT                 trilinearRequests;
+    OUT gctUINT                 txBytes8;
+    OUT gctUINT                 txHitCount;
+    OUT gctUINT                 txMissCount;
+}
+gcsHAL_FRAME_INFO;
 
 #ifdef __cplusplus
 }

@@ -263,6 +263,7 @@ gckCOMMAND_Construct(
     gckCOMMAND command = gcvNULL;
     gceSTATUS status;
     gctINT i;
+    gctPOINTER pointer = gcvNULL;
 
     gcmkHEADER_ARG("Kernel=0x%x", Kernel);
 
@@ -274,7 +275,11 @@ gckCOMMAND_Construct(
     os = Kernel->os;
 
     /* Allocate the gckCOMMAND structure. */
-    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(struct _gckCOMMAND), (gctPOINTER *) &command));
+    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(struct _gckCOMMAND), &pointer));
+    command = pointer;
+
+    /* Reset the entire object. */
+    gcmkONERROR(gckOS_ZeroMemory(command, gcmSIZEOF(struct _gckCOMMAND)));
 
     /* Initialize the gckCOMMAND object.*/
     command->object.type    = gcvOBJ_COMMAND;
@@ -320,7 +325,7 @@ gckCOMMAND_Construct(
     gcmkONERROR(gckOS_GetPageSize(os, &command->pageSize));
 
     /* Set hardware to pipe 0. */
-    command->pipeSelect = 0;
+    command->pipeSelect = gcvPIPE_3D;
 
     /* Pre-allocate the command queues. */
     for (i = 0; i < gcdCOMMAND_QUEUES; ++i)
