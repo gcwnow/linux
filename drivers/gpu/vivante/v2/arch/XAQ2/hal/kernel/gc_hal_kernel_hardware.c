@@ -3930,3 +3930,53 @@ gckHARDWARE_SetIsrManager(
 
     return status;
 }
+
+/*******************************************************************************
+**
+**  gckHARDWARE_IsFeatureAvailable
+**
+**  Verifies whether the specified feature is available in hardware.
+**
+**  INPUT:
+**
+**      gckHARDWARE Hardware
+**          Pointer to an gckHARDWARE object.
+**
+**      gceFEATURE Feature
+**          Feature to be verified.
+*/
+gceSTATUS
+gckHARDWARE_IsFeatureAvailable(
+    IN gckHARDWARE Hardware,
+    IN gceFEATURE Feature
+    )
+{
+    gctBOOL available;
+
+    gcmkHEADER_ARG("Hardware=0x%x Feature=%d", Hardware, Feature);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
+
+    /* Only features needed by common kernel logic added here. */
+    switch (Feature)
+    {
+    case gcvFEATURE_END_EVENT:
+        /*available = gcmVERIFYFIELDVALUE(Hardware->chipMinorFeatures2,
+            GC_MINOR_FEATURES2, END_EVENT, AVAILABLE
+            );*/
+        available = gcvFALSE;
+        break;
+    case gcvFEATURE_MC20:
+        available = ((((gctUINT32) (Hardware->chipMinorFeatures0)) >> (0 ? 22:22) & ((gctUINT32) ((((1 ? 22:22) - (0 ? 22:22) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 22:22) - (0 ? 22:22) + 1)))))) == (0x1  & ((gctUINT32) ((((1 ? 22:22) - (0 ? 22:22) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 22:22) - (0 ? 22:22) + 1)))))));
+        break;
+
+    default:
+        gcmkFATAL("Invalid feature has been requested.");
+        available = gcvFALSE;
+    }
+
+    /* Return result. */
+    gcmkFOOTER_ARG("%d", available ? gcvSTATUS_TRUE : gcvSTATUS_OK);
+    return available ? gcvSTATUS_TRUE : gcvSTATUS_OK;
+}

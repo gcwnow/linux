@@ -1560,6 +1560,13 @@ gckHARDWARE_SetIsrManager(
     IN gctPOINTER Context
     );
 
+/* Check for Hardware features. */
+gceSTATUS
+gckHARDWARE_IsFeatureAvailable(
+    IN gckHARDWARE Hardware,
+    IN gceFEATURE Feature
+    );
+
 /******************************************************************************\
 ***************************** gckINTERRUPT Object ******************************
 \******************************************************************************/

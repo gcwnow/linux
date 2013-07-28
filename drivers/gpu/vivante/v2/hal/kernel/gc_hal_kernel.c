@@ -334,7 +334,9 @@ _AllocateMemory(
     gcePOOL pool;
     gceSTATUS status;
     gckVIDMEM videoMemory;
+    gctINT loopCount;
     gcuVIDMEM_NODE_PTR node = gcvNULL;
+    gctBOOL tileStatusInVirtual;
 
     gcmkHEADER_ARG("Kernel=0x%x *Pool=%d Bytes=%lu Alignment=%lu Type=%d",
                    Kernel, *Pool, Bytes, Alignment, Type);
@@ -348,20 +350,24 @@ _AllocateMemory(
     case gcvPOOL_DEFAULT:
     case gcvPOOL_LOCAL:
         pool      = gcvPOOL_LOCAL_INTERNAL;
+        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     case gcvPOOL_UNIFIED:
         pool      = gcvPOOL_SYSTEM;
+        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     case gcvPOOL_CONTIGUOUS:
+        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     default:
+        loopCount = 1;
         break;
     }
 
-    do
+    while (loopCount-- > 0)
     {
         if (pool == gcvPOOL_VIRTUAL)
         {
@@ -388,7 +394,19 @@ _AllocateMemory(
         else
         {
             /* Get pointer to gckVIDMEM object for pool. */
+#if gcdUSE_VIDMEM_PER_PID
+            gctUINT32 pid;
+            gckOS_GetProcessID(&pid);
+
+            status = gckKERNEL_GetVideoMemoryPoolPid(Kernel, pool, pid, &videoMemory);
+            if (status == gcvSTATUS_NOT_FOUND)
+            {
+                /* Create VidMem pool for this process. */
+                status = gckKERNEL_CreateVideoMemoryPoolPid(Kernel, pool, pid, &videoMemory);
+            }
+#else
             status = gckKERNEL_GetVideoMemoryPool(Kernel, pool, &videoMemory);
+#endif
 
             if (gcmIS_SUCCESS(status))
             {
@@ -436,10 +454,17 @@ _AllocateMemory(
         }
 
         else
-        if ((pool == gcvPOOL_CONTIGUOUS)
-        &&  (Type != gcvSURF_TILE_STATUS)
-        )
+        if (pool == gcvPOOL_CONTIGUOUS)
         {
+            tileStatusInVirtual =
+                gckHARDWARE_IsFeatureAvailable(Kernel->hardware,
+                                               gcvFEATURE_MC20);
+
+            if (Type == gcvSURF_TILE_STATUS && tileStatusInVirtual != gcvTRUE)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
+            }
+
             /* Advance to virtual memory. */
             pool = gcvPOOL_VIRTUAL;
         }
@@ -450,11 +475,6 @@ _AllocateMemory(
             gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
         }
     }
-    /* Loop only for multiple selection pools. */
-    while ((*Pool == gcvPOOL_DEFAULT)
-    ||     (*Pool == gcvPOOL_LOCAL)
-    ||     (*Pool == gcvPOOL_UNIFIED)
-    );
 
     if (node == gcvNULL)
     {
