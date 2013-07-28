@@ -885,6 +885,9 @@ static int  gpu_probe(struct platform_device *pdev)
     }
 #else
         galDevice->clk = clk;
+#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+        galDevice->clk_enabled = 1;
+#endif
 
         dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
                  clk_get_rate(clk) / 1000000);

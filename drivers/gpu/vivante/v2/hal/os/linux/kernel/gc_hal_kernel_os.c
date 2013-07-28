@@ -5442,6 +5442,36 @@ gckOS_GetThreadID(
     return gcvSTATUS_OK;
 }
 
+#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+static void galdevice_clk_enable(gckGALDEVICE device)
+{
+    struct clk *clk = device->clk;
+
+    if (!clk)
+        return;
+
+    if (device->clk_enabled)
+        return;
+
+    clk_enable(clk);
+    device->clk_enabled = 1;
+}
+
+static void galdevice_clk_disable(gckGALDEVICE device)
+{
+    struct clk *clk = device->clk;
+
+    if (!clk)
+        return;
+
+    if (!device->clk_enabled)
+        return;
+
+    clk_disable(clk);
+    device->clk_enabled = 0;
+}
+#endif
+
 /*******************************************************************************
 **
 **  gckOS_SetGPUPower
@@ -5470,9 +5500,20 @@ gckOS_SetGPUPower(
     IN gctBOOL Power
     )
 {
+#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+    gckGALDEVICE device = (gckGALDEVICE) Os->device;
+#endif
+
     gcmkHEADER_ARG("Os=0x%X Clock=%d Power=%d", Os, Clock, Power);
 
     /* TODO: Put your code here. */
+#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+    if (Clock == gcvFALSE)
+        galdevice_clk_disable(device);
+    else
+        galdevice_clk_enable(device);
+#endif
+
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }

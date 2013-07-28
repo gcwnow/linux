@@ -83,6 +83,9 @@ typedef struct _gckGALDEVICE
 
     /* Clock management. */
     struct clk          *clk;
+#if ENABLE_GPU_CLOCK_BY_DRIVER && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+    int                 clk_enabled;
+#endif
 }
 * gckGALDEVICE;
 
