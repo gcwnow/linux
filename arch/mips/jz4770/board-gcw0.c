@@ -634,9 +634,6 @@ static void __init board_gpio_setup(void)
 
 	/* USB power source present (high active) */
 	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
-
-	/* USB OTG ID pin (high->B, low->A) */
-	jz_gpio_disable_pullup(GPIO_USB_OTG_ID_PIN);
 }
 
 static int __init gcw0_board_setup(void)
