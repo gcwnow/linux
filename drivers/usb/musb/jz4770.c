@@ -19,6 +19,7 @@
 #include <linux/usb/otg.h>
 #include <linux/usb/nop-usb-xceiv.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
+#include <linux/act8600_power.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
@@ -124,8 +125,12 @@ static void jz_musb_set_vbus(struct musb *musb, int is_on)
 		devctl |= MUSB_DEVCTL_SESSION;
 
 		MUSB_HST_MODE(musb);
+
+		act8600_q_set(1, true);
 	} else {
 		musb->is_active = 0;
+
+		act8600_q_set(1, false);
 
 		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
 		 * jumping right to B_IDLE...
