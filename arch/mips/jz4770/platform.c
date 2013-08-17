@@ -95,9 +95,6 @@ struct platform_device jz4770_usb_otg_xceiv_device = {
 
 static struct musb_hdrc_config jz_usb_otg_config = {
 	.multipoint	= 1,
-	.dyn_fifo	= 0,
-	.soft_con	= 1,
-	.dma		= 1,
 /* Max EPs scanned. Driver will decide which EP can be used automatically. */
 	.num_eps	= 6,
 };
