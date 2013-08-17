@@ -201,6 +201,7 @@ static int otg_id_pin_setup(struct musb *musb)
 	}
 
 	gpio_direction_input(id_pin);
+	jz_gpio_disable_pullup(id_pin);
 
 	glue->gpio_id_debounce_jiffies =
 			msecs_to_jiffies(board_data->gpio_id_debounce_ms);
