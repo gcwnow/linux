@@ -65,7 +65,7 @@ static inline void jz_musb_set_device_only_mode(void)
 	printk(KERN_INFO "jz4760: Device only mode.\n");
 
 	/* Device Mode. */
-	REG_CPM_USBPCR &= ~(1 << 31);
+	REG_CPM_USBPCR &= ~USBPCR_USB_MODE;
 
 	REG_CPM_USBPCR |= USBPCR_VBUSVLDEXT;
 }
@@ -77,11 +77,14 @@ static inline void jz_musb_set_normal_mode(void)
 	__gpio_as_otg_drvvbus();
 
 	/* OTG Mode. */
-	REG_CPM_USBPCR |= (1 << 31);
+	REG_CPM_USBPCR |= USBPCR_USB_MODE;
 
-	REG_CPM_USBPCR &= ~((1 << 24) | (1 << 23) | (1 << 20));
+	REG_CPM_USBPCR &= ~(USBPCR_VBUSVLDEXT |
+			    USBPCR_VBUSVLDEXTSEL |
+			    USBPCR_OTG_DISABLE);
 
-	REG_CPM_USBPCR |= ((1 << 28) | (1 << 29));
+	REG_CPM_USBPCR = (REG_CPM_USBPCR & ~USBPCR_IDPULLUP_MASK)
+		       | USBPCR_IDPULLUP_ALWAYS;
 }
 
 static inline void jz_musb_init_regs(struct musb *musb)
@@ -96,8 +99,9 @@ static inline void jz_musb_init_regs(struct musb *musb)
 	REG_CPM_USBRDT |= (1 << 25);
 
 	/* TXRISETUNE & TXVREFTUNE. */
-	REG_CPM_USBPCR &= ~0x3f;
-	REG_CPM_USBPCR |= 0x35;
+	REG_CPM_USBPCR &= ~(USBPCR_TXRISETUNE_MASK | USBPCR_TXVREFTUNE_MASK);
+	REG_CPM_USBPCR |= (3 << USBPCR_TXRISETUNE_LSB)
+			| (5 << USBPCR_TXVREFTUNE_LSB);
 
 	jz_musb_set_normal_mode();
 
