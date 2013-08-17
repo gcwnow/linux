@@ -43,13 +43,14 @@ int act8600_output_enable(int outnum, bool enable);
  * The Q[123] switches are used to control the USB VBUS line.
  * Q1 connects the line to the 5V input line, powering the line.
  * Q2 connects it to the VSYS output, powering the line.
- * Q3 connects it to CHGIN, and is used to power the sysrem from USB.
+ * Q3 connects it to CHGIN, and is used to power the system from USB.
  *
  * Q1 and Q2 switch off automatically when the current is over 700 ma.
  * Q2 switches off when the CHGIN voltage is over 6v.
- * @q - q switch index, 1, 2, or 3.
- * @enable - enable or disable it, 1 or 0.
- * @returns 0 in success, -error core on failure.
+ *
+ * @q: Q switch index: 1-3
+ * @enable: true to enable, false to disable
+ * @returns zero on success, or negative error code on failure
  */
 int act8600_q_set(int q, bool enable);
 
