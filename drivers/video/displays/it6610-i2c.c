@@ -10,44 +10,30 @@
 
 
 #include <linux/delay.h>
+#include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/regmap.h>
 #include <video/panel-it6610.h>
 
 
-static int it6610_read_ids(struct i2c_client *client)
+static int it6610_read_ids(struct device *dev, struct regmap *regmap)
 {
 	__u16 vendorID, deviceID;
 	__u8 revisionID;
 
-	__u8 reg_buf = 0;
 	__u8 val_buf[4];
-	struct i2c_msg msgs[] = {
-		{ /* write register number */
-			.addr = client->addr,
-			.flags = 0,
-			.len = sizeof(reg_buf),
-			.buf = &reg_buf,
-		},
-		{ /* read register contents */
-			.addr = client->addr,
-			.flags = I2C_M_RD,
-			.len = sizeof(val_buf),
-			.buf = val_buf,
-		},
-	};
 	int ret;
 
-	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	ret = regmap_raw_read(regmap, 0x000, val_buf, sizeof(val_buf));
 	if (ret < 0) return ret;
-	if (ret < ARRAY_SIZE(msgs)) return -EIO;
 
 	vendorID = val_buf[0] | (val_buf[1] << 8);
 	deviceID = val_buf[2] | ((val_buf[3] & 0x0F) << 8);
 	revisionID = val_buf[3] >> 4;
 
-	dev_info(&client->dev, "Vendor 0x%04X, device 0x%03X, revision 0x%1X\n",
+	dev_info(dev, "Vendor 0x%04X, device 0x%03X, revision 0x%1X\n",
 		 vendorID, deviceID, revisionID);
 
 	if (vendorID != 0xCA00)
@@ -59,31 +45,17 @@ static int it6610_read_ids(struct i2c_client *client)
 }
 
 // TODO: Support writing to regs >= 0x100.
-static int it6610_i2c_write(struct i2c_client *client, u8 reg, u8 val)
-{
-	__u8 buf[] = { reg, val };
-	struct i2c_msg msgs[] = {
-		{ /* write register number and contents */
-			.addr = client->addr,
-			.flags = 0,
-			.len = sizeof(buf),
-			.buf = buf,
-		},
-	};
-	int ret;
-
-	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (ret < 0) return ret;
-	if (ret < ARRAY_SIZE(msgs)) return -EIO;
-
-	return 0;
-}
+static const struct regmap_config it6610_i2c_regmap_config = {
+	.reg_bits	= 8,
+	.val_bits	= 8,
+};
 
 static int it6610_i2c_probe(struct i2c_client *client,
 			    const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
 	struct it6610_i2c_platform_data *pdata = dev->platform_data;
+	struct regmap *regmap;
 	int gpio_reset;
 	int ret;
 
@@ -92,6 +64,13 @@ static int it6610_i2c_probe(struct i2c_client *client,
 	} else {
 		dev_info(dev, "No platform data\n");
 		gpio_reset = -1;
+	}
+
+	regmap = devm_regmap_init_i2c(client, &it6610_i2c_regmap_config);
+	if (IS_ERR(regmap)) {
+		ret = PTR_ERR(regmap);
+		dev_err(dev, "Failed to init regmap: %d\n", ret);
+		return ret;
 	}
 
 	if (gpio_is_valid(gpio_reset)) {
@@ -112,7 +91,7 @@ static int it6610_i2c_probe(struct i2c_client *client,
 		msleep(10);
 	}
 
-	ret = it6610_read_ids(client);
+	ret = it6610_read_ids(dev, regmap);
 	if (ret < 0) {
 		dev_err(dev, "Error fetching IDs: %d\n", ret);
 		return ret;
@@ -122,7 +101,7 @@ static int it6610_i2c_probe(struct i2c_client *client,
 	}
 
 	/* Perform a software reset. */
-	ret = it6610_i2c_write(client, 0x04, 0x3C);
+	ret = regmap_write(regmap, 0x004, 0x3C);
 	if (ret < 0) {
 		dev_err(dev, "Error performing soft reset: %d\n", ret);
 		return ret;
