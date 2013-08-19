@@ -4,8 +4,16 @@
 
 menu "Display Device Drivers"
 
+# TODO: Switch to tristate once the panel drivers are modules.
+
+config PANEL_IT6610
+	bool "ITE Tech IT6610 HDMI connected panel"
+	depends on I2C
+	help
+	  Select this if you are using a panel connected through the ITE Tech
+	  IT6610 HDMI transmitter.
+
 config PANEL_NT39016
-	# TODO: Switch to tristate once the driver is a module.
 	bool "Novatek NT39016 based panel"
 	help
 	  Select this if you are using a Novatek NT39016 LCD driver IC.
