@@ -44,6 +44,7 @@
 #include <media/radio-rda5807.h>
 #include <sound/jz4770.h>
 #include <video/jzpanel.h>
+#include <video/panel-it6610.h>
 #include <video/panel-nt39016.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
@@ -118,6 +119,15 @@ static struct panel_ops gcw0_panel_ops = {
 static struct jzfb_platform_data gcw0_fb_pdata = {
 	.panel_ops		= &gcw0_panel_ops,
 	.panel_pdata		= &gcw0_panel_pdata,
+};
+
+
+/* HDMI */
+
+#define GPIO_IT6610_INT		JZ_GPIO_PORTF(12)
+
+static struct it6610_i2c_platform_data gcw0_it6610_pdata = {
+	.gpio_reset		= JZ_GPIO_PORTE(6),
 };
 
 
@@ -401,8 +411,16 @@ static struct i2c_board_info gcw0_i2c3_devs[] __initdata = {
 	},
 };
 
+enum {
+	GCW0_I2C4_IT6610,
+};
+
 static struct i2c_board_info gcw0_i2c4_devs[] __initdata = {
-	/* the IT6610 is on this bus, but we don't have a driver for it */
+	[GCW0_I2C4_IT6610] = {
+		.type		= "it6610-i2c",
+		.addr		= IT6610_I2C_ADDR_LO,
+		.platform_data	= &gcw0_it6610_pdata,
+	},
 };
 
 /* I2C busses */
@@ -634,6 +652,12 @@ static void __init board_gpio_setup(void)
 
 	/* USB power source present (high active) */
 	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
+
+	/* IT6610 INT pin (open drain) */
+	gpio_request(GPIO_IT6610_INT, "IT6610 INT");
+	gpio_direction_input(GPIO_IT6610_INT);
+	jz_gpio_enable_pullup(GPIO_IT6610_INT);
+	gcw0_i2c4_devs[GCW0_I2C4_IT6610].irq = gpio_to_irq(GPIO_IT6610_INT);
 }
 
 static int __init gcw0_board_setup(void)
