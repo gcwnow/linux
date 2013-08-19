@@ -9,8 +9,11 @@
  */
 
 
+#include <linux/delay.h>
+#include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <video/panel-it6610.h>
 
 
 static int it6610_read_ids(struct i2c_client *client)
@@ -34,11 +37,11 @@ static int it6610_read_ids(struct i2c_client *client)
 			.buf = val_buf,
 		},
 	};
-	int err;
+	int ret;
 
-	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (err < 0) return err;
-	if (err < ARRAY_SIZE(msgs)) return -EIO;
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < 0) return ret;
+	if (ret < ARRAY_SIZE(msgs)) return -EIO;
 
 	vendorID = val_buf[0] | (val_buf[1] << 8);
 	deviceID = val_buf[2] | ((val_buf[3] & 0x0F) << 8);
@@ -55,18 +58,74 @@ static int it6610_read_ids(struct i2c_client *client)
 	return 0;
 }
 
+// TODO: Support writing to regs >= 0x100.
+static int it6610_i2c_write(struct i2c_client *client, u8 reg, u8 val)
+{
+	__u8 buf[] = { reg, val };
+	struct i2c_msg msgs[] = {
+		{ /* write register number and contents */
+			.addr = client->addr,
+			.flags = 0,
+			.len = sizeof(buf),
+			.buf = buf,
+		},
+	};
+	int ret;
+
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < 0) return ret;
+	if (ret < ARRAY_SIZE(msgs)) return -EIO;
+
+	return 0;
+}
+
 static int it6610_i2c_probe(struct i2c_client *client,
 			    const struct i2c_device_id *id)
 {
-	int err;
+	struct device *dev = &client->dev;
+	struct it6610_i2c_platform_data *pdata = dev->platform_data;
+	int gpio_reset;
+	int ret;
 
-	err = it6610_read_ids(client);
-	if (err < 0) {
-		dev_err(&client->dev, "Error fetching IDs: %d\n", err);
-		return err;
-	} else if (err > 0) {
-		dev_err(&client->dev, "Device is not IT6610\n");
+	if (pdata) {
+		gpio_reset = pdata->gpio_reset;
+	} else {
+		dev_info(dev, "No platform data\n");
+		gpio_reset = -1;
+	}
+
+	if (gpio_is_valid(gpio_reset)) {
+		ret = devm_gpio_request(dev, gpio_reset, "IT6610 reset");
+		if (ret) {
+			dev_err(dev,
+				"Failed to request IT6610 reset pin %d: %d\n",
+				gpio_reset, ret);
+			gpio_reset = -1;
+		}
+	}
+
+	if (gpio_is_valid(gpio_reset)) {
+		/* Perform a hardware reset. */
+		gpio_direction_output(gpio_reset, 0);
+		msleep(30);
+		gpio_set_value(gpio_reset, 1);
+		msleep(10);
+	}
+
+	ret = it6610_read_ids(client);
+	if (ret < 0) {
+		dev_err(dev, "Error fetching IDs: %d\n", ret);
+		return ret;
+	} else if (ret > 0) {
+		dev_err(dev, "Device is not IT6610\n");
 		return -ENODEV;
+	}
+
+	/* Perform a software reset. */
+	ret = it6610_i2c_write(client, 0x04, 0x3C);
+	if (ret < 0) {
+		dev_err(dev, "Error performing soft reset: %d\n", ret);
+		return ret;
 	}
 
 	return 0;
