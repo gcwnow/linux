@@ -64,7 +64,6 @@ struct jz4760_lcd_dma_desc {
 
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
-	unsigned int ctrl;	/* lcd controll register */
 	unsigned int w;		/* Panel Width(in pixel) */
 	unsigned int h;		/* Panel Height(in line) */
 	unsigned int fclk;	/* frame clk */
@@ -83,7 +82,6 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_PCP |	/* Pixel clock polarity: falling edge */
 	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
-	.ctrl = LCD_CTRL_OFUM | LCD_CTRL_BST_16,	/* 16words burst, enable out FIFO underrun irq */
 	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
 	320, 240, 60, 50, 1, 10, 70, 5, 5,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
@@ -471,26 +469,24 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 			const struct jz4760lcd_panel_t *panel)
 {
 	unsigned int bpp = jzfb->bpp;
-	unsigned int ctrl = panel->ctrl;
 	unsigned int osdctrl = 0;
 	unsigned int cfg = panel->cfg;
 
 	if (bpp == 16) {
-		ctrl |= LCD_CTRL_BPP_16 | LCD_CTRL_RGB565;
 		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16;
 	} else {
 		if (WARN_ON(bpp != 32))
 			bpp = 32;
 
-		ctrl |= LCD_CTRL_BPP_18_24;
 		osdctrl |= LCD_OSDCTRL_OSDBPP_18_24;
 	}
 
 	cfg |= LCD_CFG_NEWDES; /* use 8words descriptor always */
 
-	REG_LCD_CTRL = ctrl; /* LCDC Control Register */
 	REG_LCD_CFG = cfg; /* LCDC Configure Register */
-	REG_SLCD_CFG = 0; /* Smart LCD Configure Register */
+
+	/* 16 words burst, enable output FIFO underrun IRQ, 18/24 bpp on fg0. */
+	REG_LCD_CTRL = LCD_CTRL_OFUM | LCD_CTRL_BST_16 | LCD_CTRL_BPP_18_24;
 
 	__lcd_vat_set_ht(panel->blw + panel->w + panel->elw);
 	__lcd_vat_set_vt(panel->bfw + panel->h + panel->efw);
