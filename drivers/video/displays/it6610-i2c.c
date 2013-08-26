@@ -99,6 +99,56 @@ static const struct regmap_config it6610_i2c_regmap_config = {
 	.val_bits	= 8,
 };
 
+static int it6610_i2c_set_timing(struct regmap *regmap)
+{
+	/* Hardcoded timings for 640x480p. */
+	static const unsigned int hds = 144;
+	static const unsigned int hde = hds + 640;
+	static const unsigned int vds = 35;
+	static const unsigned int vde = vds + 480;
+
+	/* Configure TMDS for clock rates below 80 MHz. */
+	static const __u8 tmds_val[4] = { 0x19, 0x03, 0x1E, 0x00 };
+
+	/*
+	 * Regenerate DE from hsync and vsync.
+	 * Although the DE signal we pass is usable, we have one extra display
+	 * line in our setup as a trick to get interrupts at the right moment.
+	 * That line should be omitted from the HDMI output to avoid problems
+	 * with timings.
+	 */
+	static const __u8 timing_val[0xA0 - 0x90] = {
+		0x01,
+		0,
+		(hds - 2) & 0x0FF,
+		(hde - 2) & 0x0FF,
+		((hde - 2) & 0xF00) >> 4 | ((hds - 2) & 0xF00) >> 8,
+		0,
+		0,
+		0,
+		0,
+		0,
+		(vds - 1) & 0x0FF,
+		(vde - 1) & 0x0FF,
+		((vde - 1) & 0xF00) >> 4 | ((vds - 1) & 0xF00) >> 8,
+		0xFF,
+		0xFF,
+		0xFF,
+	};
+
+	int ret;
+
+	ret = regmap_raw_write(regmap, 0x62, tmds_val, sizeof(tmds_val));
+	if (ret < 0)
+		return ret;
+
+	ret = regmap_raw_write(regmap, 0x90, timing_val, sizeof(timing_val));
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
 static int it6610_i2c_probe(struct i2c_client *client,
 			    const struct i2c_device_id *id)
 {
@@ -161,6 +211,8 @@ static int it6610_i2c_probe(struct i2c_client *client,
 		dev_err(dev, "Error performing soft reset: %d\n", ret);
 		return ret;
 	}
+
+	if ((ret = it6610_i2c_set_timing(regmap)) < 0) goto err_init;
 
 	/* Unmask interrupt: hot plug detection. */
 	if ((ret = regmap_write(regmap, 0x009, 0xFE)) < 0) goto err_init;
