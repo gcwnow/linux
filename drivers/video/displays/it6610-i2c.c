@@ -13,10 +13,15 @@
 #include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
+#include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/regmap.h>
 #include <video/panel-it6610.h>
 
+struct it6610_i2c {
+	struct i2c_client *client;
+	struct regmap *regmap;
+};
 
 static int it6610_read_ids(struct device *dev, struct regmap *regmap)
 {
@@ -44,6 +49,50 @@ static int it6610_read_ids(struct device *dev, struct regmap *regmap)
 	return 0;
 }
 
+static irqreturn_t it6610_i2c_irq(int irq, void *data)
+{
+	struct it6610_i2c *it6610 = data;
+	struct regmap *regmap = it6610->regmap;
+	__u8 status[3];
+	__u8 clear[3] = { 0, 0, 0x0D };
+	int err;
+
+	/* Read status of all interrupts. */
+	err = regmap_raw_read(regmap, 0x006, status, sizeof(status));
+	if (err < 0) {
+		dev_err(&it6610->client->dev,
+			"Error reading interrupt status: %d\n", err);
+		goto err_disable_irqs;
+	}
+
+	/* Handle active interrupts. */
+	if (status[0] & 0x01) {
+		dev_info(&it6610->client->dev, "HPD interrupt\n");
+		clear[0] |= 0x01;
+	}
+
+	/* Clear interrupts. */
+	if (clear[0] || clear[1]) {
+		err = regmap_raw_write(regmap, 0x00C, clear, sizeof(clear));
+		if (err < 0) {
+			dev_err(&it6610->client->dev,
+				"Error clearing interrupt: %d\n", err);
+			goto err_disable_irqs;
+		}
+
+		return IRQ_HANDLED;
+	}
+
+err_disable_irqs:
+	/*
+	 * If we cannot acknowledge the interrupt, do damage control by
+	 * disabling the IRQ.
+	 */
+	dev_err(&it6610->client->dev, "Disabling IRQ\n");
+	disable_irq(it6610->client->irq);
+	return IRQ_NONE;
+}
+
 // TODO: Support writing to regs >= 0x100.
 static const struct regmap_config it6610_i2c_regmap_config = {
 	.reg_bits	= 8,
@@ -55,6 +104,7 @@ static int it6610_i2c_probe(struct i2c_client *client,
 {
 	struct device *dev = &client->dev;
 	struct it6610_i2c_platform_data *pdata = dev->platform_data;
+	struct it6610_i2c *it6610;
 	struct regmap *regmap;
 	int gpio_reset;
 	int ret;
@@ -66,12 +116,18 @@ static int it6610_i2c_probe(struct i2c_client *client,
 		gpio_reset = -1;
 	}
 
+	it6610 = devm_kzalloc(dev, sizeof(*it6610), GFP_KERNEL);
+	if (!it6610)
+		return -ENOMEM;
+	it6610->client = client;
+
 	regmap = devm_regmap_init_i2c(client, &it6610_i2c_regmap_config);
 	if (IS_ERR(regmap)) {
 		ret = PTR_ERR(regmap);
 		dev_err(dev, "Failed to init regmap: %d\n", ret);
 		return ret;
 	}
+	it6610->regmap = regmap;
 
 	if (gpio_is_valid(gpio_reset)) {
 		ret = devm_gpio_request(dev, gpio_reset, "IT6610 reset");
@@ -101,13 +157,32 @@ static int it6610_i2c_probe(struct i2c_client *client,
 	}
 
 	/* Perform a software reset. */
-	ret = regmap_write(regmap, 0x004, 0x3C);
-	if (ret < 0) {
+	if ((ret = regmap_write(regmap, 0x004, 0x3C)) < 0) {
 		dev_err(dev, "Error performing soft reset: %d\n", ret);
 		return ret;
 	}
 
+	/* Unmask interrupt: hot plug detection. */
+	if ((ret = regmap_write(regmap, 0x009, 0xFE)) < 0) goto err_init;
+
+	/*
+	 * Request a threaded IRQ, since our register access is slow and
+	 * the events we respond to are not urgent.
+	 */
+	ret = devm_request_threaded_irq(dev, client->irq, NULL, it6610_i2c_irq,
+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+					"it6610-irq", it6610);
+	if (ret) {
+		dev_err(dev, "Failed to request IRQ %d: %d\n",
+			client->irq, ret);
+		return ret;
+	}
+
 	return 0;
+
+err_init:
+	dev_err(dev, "Error writing registers during init: %d\n", ret);
+	return ret;
 }
 
 static int it6610_i2c_remove(struct i2c_client *client)
