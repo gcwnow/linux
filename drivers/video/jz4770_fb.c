@@ -507,10 +507,12 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 }
 
 
-static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, unsigned int bpp)
+static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel,
+				       const struct fb_var_screeninfo *var)
 {
-	int fg1_words_per_line = words_per_line(panel->w, bpp);
-	int fg1_words_per_frame = fg1_words_per_line * panel->h;
+	int fg1_words_per_line = words_per_line(var->xres, var->bits_per_pixel);
+	int fg1_words_per_frame = fg1_words_per_line * var->yres;
+	int xpos, ypos;
 
 	/*
 	 * NOTE:
@@ -524,7 +526,12 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 	 *	4. F1 position
 	 */
 
-	REG_LCD_XYP1 = 0;
+	xpos = (panel->w - var->xres) / 2;
+	if (xpos < 0) xpos = 0;
+	ypos = (panel->h - var->yres) / 2;
+	if (ypos < 0) ypos = 0;
+
+	REG_LCD_XYP1 = ypos << 16 | xpos;
 
 	/* wait change ready??? */
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
@@ -532,7 +539,7 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel, un
 	dma1_desc0.cmd = (dma1_desc0.cmd & 0xff000000) | fg1_words_per_frame;
 	dma1_desc1.cmd = (dma1_desc1.cmd & 0xff000000) | fg1_words_per_line;
 	dma1_desc0.desc_size = dma1_desc1.desc_size =
-				(panel->h + 1) << 16 | panel->w;
+				(var->yres + 1) << 16 | var->xres;
 
 	dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
 	dma_cache_wback((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
@@ -569,7 +576,7 @@ static int jz4760fb_set_par(struct fb_info *info)
 
 	jzfb->bpp = var->bits_per_pixel;
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
-	jz4760fb_foreground_resize(jz_panel, jzfb->bpp);
+	jz4760fb_foreground_resize(jz_panel, var);
 
 	clk_disable(jzfb->lpclk);
 
