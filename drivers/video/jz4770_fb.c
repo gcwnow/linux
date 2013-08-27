@@ -33,6 +33,7 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 
+#include <asm/addrspace.h>
 #include <asm/irq.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
@@ -378,23 +379,39 @@ static inline unsigned int words_per_line(unsigned int width, unsigned int bpp)
 	return (bpp * width + 31) / 32;
 }
 
+static unsigned int max_bytes_per_frame(struct list_head *modelist,
+					unsigned int bpp)
+{
+	unsigned int max_words = 0;
+	struct fb_modelist *pos;
+
+	list_for_each_entry(pos, modelist, list) {
+		struct fb_videomode *m = &pos->mode;
+		unsigned int words = words_per_line(m->xres, bpp) * m->yres;
+		if (words > max_words)
+			max_words = words;
+	}
+
+	return max_words * 4;
+}
+
 /*
  * Map screen memory
  */
 static int jz4760fb_map_smem(struct fb_info *fb)
 {
-	struct jzfb *jzfb = fb->par;
-	unsigned int w = fb->var.xres_virtual,
-				 h = fb->var.yres_virtual,
-				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
+	/* Compute space for max res at 32bpp, double buffered. */
+	const unsigned int size = PAGE_ALIGN(
+				max_bytes_per_frame(&fb->modelist, 32) * 2);
+
 	void *page_virt;
 
-	dev_dbg(&jzfb->pdev->dev, "FG1 BPP: %d\n", jzfb->bpp);
+	dev_dbg(fb->device, "FG1: %u bytes\n", size);
 
-	lcd_frame1 = alloc_pages_exact(bytes_per_frame, GFP_KERNEL);
+	lcd_frame1 = alloc_pages_exact(size, GFP_KERNEL);
 	if (!lcd_frame1) {
-		dev_err(&jzfb->pdev->dev,
-					"%s: unable to map screen memory\n", fb->fix.id);
+		dev_err(fb->device,
+			"Unable to map %u bytes of screen memory\n", size);
 		return -ENOMEM;
 	}
 
@@ -403,40 +420,29 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	 * since we'll be remapping normal memory.
 	 */
 	for (page_virt = lcd_frame1;
-	     page_virt < lcd_frame1 + bytes_per_frame; page_virt += PAGE_SIZE) {
+	     page_virt < lcd_frame1 + size; page_virt += PAGE_SIZE) {
 		SetPageReserved(virt_to_page(page_virt));
 		clear_page(page_virt);
 	}
 
 	fb->fix.smem_start = virt_to_phys(lcd_frame1);
-	fb->fix.smem_len = bytes_per_frame;
-	fb->screen_base =
-		(unsigned char *)(((unsigned int)lcd_frame1&0x1fffffff) | 0xa0000000);
+	fb->fix.smem_len = size;
+	fb->screen_base = (void *)KSEG1ADDR(lcd_frame1);
 
 	return 0;
 }
 
 static void jz4760fb_unmap_smem(struct fb_info *fb)
 {
-	struct jzfb *jzfb = fb->par;
-	unsigned int w = fb->var.xres_virtual,
-				 h = fb->var.yres_virtual,
-				 bytes_per_frame = words_per_line(w, jzfb->bpp) * h * 4;
-
-	if (fb && fb->screen_base) {
-		iounmap(fb->screen_base);
-		fb->screen_base = NULL;
-		release_mem_region(fb->fix.smem_start, fb->fix.smem_len);
-	}
-
 	if (lcd_frame1) {
+		void *end = lcd_frame1 + fb->fix.smem_len;
 		void *page_virt;
 
-		for (page_virt = lcd_frame1;
-			 page_virt < lcd_frame1 + bytes_per_frame; page_virt += PAGE_SIZE)
+		for (page_virt = lcd_frame1; page_virt < end;
+							page_virt += PAGE_SIZE)
 			ClearPageReserved(virt_to_page(page_virt));
 
-		free_pages_exact(lcd_frame1, bytes_per_frame);
+		free_pages_exact(lcd_frame1, fb->fix.smem_len);
 	}
 }
 
