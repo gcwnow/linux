@@ -730,6 +730,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->var.accel_flags	= FB_ACCELF_TEXT;
 	fb->var.bits_per_pixel = jzfb->bpp;
 
+	fb_videomode_to_modelist(video_modes, ARRAY_SIZE(video_modes),
+				 &fb->modelist);
 	jz4760fb_check_var(&fb->var, fb);
 
 	fb->fbops		= &jz4760fb_ops;
