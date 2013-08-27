@@ -16,11 +16,22 @@
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/regmap.h>
+#include <linux/workqueue.h>
 #include <video/panel-it6610.h>
+
+
+enum it6610_state {
+	UNKNOWN = 0,
+	NO_RECEIVER,
+	RECEIVER_READY,
+	ACTIVE,
+};
 
 struct it6610_i2c {
 	struct i2c_client *client;
 	struct regmap *regmap;
+	enum it6610_state state;
+	struct delayed_work check_state_work;
 };
 
 static int it6610_read_ids(struct device *dev, struct regmap *regmap)
@@ -49,6 +60,77 @@ static int it6610_read_ids(struct device *dev, struct regmap *regmap)
 	return 0;
 }
 
+static void it6610_i2c_check_state_work(struct work_struct *work)
+{
+	struct it6610_i2c *it6610 = container_of(work, struct it6610_i2c,
+						 check_state_work.work);
+	struct regmap *regmap = it6610->regmap;
+	unsigned int status;
+	enum it6610_state newstate;
+	int err;
+
+	if ((err = regmap_read(regmap, 0x00E, &status)))
+		goto exit_err;
+
+	switch (status & 0x70) {
+	case 0x70: /* video input is stable */
+		newstate = ACTIVE;
+		break;
+	case 0x60: /* receiver is plugged and sensed */
+		newstate = RECEIVER_READY;
+		break;
+	default:
+		newstate = NO_RECEIVER;
+		break;
+	}
+	dev_info(&it6610->client->dev,
+		"System status %02X; old state %d; new state %d\n",
+		status, it6610->state, newstate);
+
+	if (newstate == it6610->state)
+		return;
+
+	if (newstate == NO_RECEIVER) {
+		/* Disable video clock. */
+		if ((err = regmap_write(regmap, 0x004, 0x1D)))
+			goto exit_err;
+	} else if (it6610->state < RECEIVER_READY) {
+		/* Enable video clock. */
+		if ((err = regmap_write(regmap, 0x004, 0x15)))
+			goto exit_err;
+	}
+
+	if (newstate == ACTIVE) {
+		/* Enable analog front end. */
+		if ((err = regmap_write(regmap, 0x061, 0x00)))
+			goto exit_err;
+		/* Disable AV mute. */
+		if ((err = regmap_write(regmap, 0x0C1, 0x00)))
+			goto exit_err;
+	} else if (it6610->state == ACTIVE || it6610->state == UNKNOWN) {
+		/* Enable AV mute. */
+		if ((err = regmap_write(regmap, 0x0C1, 0x01)))
+			goto exit_err;
+		/* Disable analog front end. */
+		if ((err = regmap_write(regmap, 0x061, 0x10)))
+			goto exit_err;
+	}
+
+	it6610->state = newstate;
+
+	return;
+
+exit_err:
+	dev_warn(&it6610->client->dev,
+		 "Error %d accessing registers in state %d\n",
+		 err, it6610->state);
+
+	it6610->state = UNKNOWN;
+
+	/* Try again later. */
+	schedule_delayed_work(&it6610->check_state_work, HZ);
+}
+
 static irqreturn_t it6610_i2c_irq(int irq, void *data)
 {
 	struct it6610_i2c *it6610 = data;
@@ -70,6 +152,22 @@ static irqreturn_t it6610_i2c_irq(int irq, void *data)
 		dev_info(&it6610->client->dev, "HPD interrupt\n");
 		clear[0] |= 0x01;
 	}
+	if (status[0] & 0x02) {
+		dev_info(&it6610->client->dev, "RxSEN interrupt\n");
+		clear[0] |= 0x02;
+	}
+	if (status[2] & 0x10) {
+		dev_info(&it6610->client->dev, "VidStable interrupt\n");
+		clear[1] |= 0x40;
+	}
+
+	/*
+	 * Wake up worker.
+	 * Include a delay, since VidStable tends to flip back to 0 for a
+	 * moment after first becoming 1.
+	 */
+	cancel_delayed_work(&it6610->check_state_work);
+	schedule_delayed_work(&it6610->check_state_work, msecs_to_jiffies(100));
 
 	/* Clear interrupts. */
 	if (clear[0] || clear[1]) {
@@ -170,6 +268,8 @@ static int it6610_i2c_probe(struct i2c_client *client,
 	if (!it6610)
 		return -ENOMEM;
 	it6610->client = client;
+	INIT_DELAYED_WORK(&it6610->check_state_work,
+			  it6610_i2c_check_state_work);
 
 	regmap = devm_regmap_init_i2c(client, &it6610_i2c_regmap_config);
 	if (IS_ERR(regmap)) {
@@ -214,8 +314,9 @@ static int it6610_i2c_probe(struct i2c_client *client,
 
 	if ((ret = it6610_i2c_set_timing(regmap)) < 0) goto err_init;
 
-	/* Unmask interrupt: hot plug detection. */
-	if ((ret = regmap_write(regmap, 0x009, 0xFE)) < 0) goto err_init;
+	/* Unmask interrupts: hot plug, receiver sense, video stable. */
+	if ((ret = regmap_write(regmap, 0x009, 0xFC)) < 0) goto err_init;
+	if ((ret = regmap_write(regmap, 0x00B, 0xF7)) < 0) goto err_init;
 
 	/*
 	 * Request a threaded IRQ, since our register access is slow and
@@ -229,6 +330,9 @@ static int it6610_i2c_probe(struct i2c_client *client,
 			client->irq, ret);
 		return ret;
 	}
+
+	/* Determine initial state. */
+	schedule_delayed_work(&it6610->check_state_work, 0);
 
 	return 0;
 
