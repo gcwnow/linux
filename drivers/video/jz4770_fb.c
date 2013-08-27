@@ -84,7 +84,13 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
 	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
-	320, 240, 60, 50, 1, 10, 70, 5, 5,
+	//320, 240, 60, 50, 1, 10, 70, 5, 5,
+	//360, 240, 61, 31, 3, 9, 60, 4, 18,
+	640, 480, 61, 96, 2, 16, 144, 10, 35, // 61 to force rounding up
+	//720, 480, 60, 62, 6, 18, 122, 9, 36,
+	//720, 479, 60, 62, 6, 18, 122, 10, 36, // compensate for sync line
+	//720, 240, 60, 62, 3, 9, 122, 4, 18,
+	//720, 239, 60, 62, 3, 9, 122, 4, 19, // compensate for sync line
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
@@ -505,7 +511,8 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	REG_LCD_OSDCTRL = osdctrl;
 
 	/* yellow background helps debugging */
-	REG_LCD_BGC = 0x00FFFF00;
+	//REG_LCD_BGC = 0x00FFFF00;
+	REG_LCD_BGC = 0x00000000;
 }
 
 
@@ -560,7 +567,7 @@ static void jzfb_change_clock(struct jzfb *jzfb,
 
 	clk_set_rate(jzfb->lpclk, rate);
 
-	dev_dbg(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
+	dev_info(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
 		rate, clk_get_rate(jzfb->lpclk));
 }
 
