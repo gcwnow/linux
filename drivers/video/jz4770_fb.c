@@ -210,24 +210,20 @@ static struct fb_videomode video_modes[] = {
  * DO NOT MODIFY PAR */
 static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 {
-	struct fb_videomode *mode = &video_modes[0];
 	struct jzfb *jzfb = info->par;
+	const struct fb_videomode *mode;
 
-	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
-		var->bits_per_pixel = 32;
-
-	if (var->xres != mode->xres)
-		var->xres = mode->xres;
-	if (var->yres != mode->yres)
-		var->yres = mode->yres;
-
-
+	mode = fb_find_best_mode(var, &info->modelist);
+	if (!mode)
+		return -EINVAL;
 	dev_dbg(&jzfb->pdev->dev, "Found working mode: %s\n", mode->name);
 
 	fb_videomode_to_var(var, mode);
-
 	/* Reserve space for double buffering. */
 	var->yres_virtual = var->yres * 2;
+
+	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
+		var->bits_per_pixel = 32;
 
 	if (var->bits_per_pixel == 16) {
 		var->transp.length = 0;
