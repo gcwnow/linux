@@ -96,15 +96,12 @@ int act8600_output_enable(int outnum, bool enable)
 }
 EXPORT_SYMBOL_GPL(act8600_output_enable);
 
-int act8600_q_set(int q, bool enable)
+int act8600_set_power_mode(enum act8600_power_mode mode)
 {
 	u8 tmp;
 	int ret;
 
-	if (q < 1 || q > 3)
-		return -EINVAL;
-
-	if (!enable) {
+	if (mode == VBUS_UNPOWERED) {
 		ret = act8600_write_reg(ACT8600_Q_REG, 0);
 		WARN_ON(ret < 0);
 		return ret;
@@ -114,7 +111,7 @@ int act8600_q_set(int q, bool enable)
 	 * When enabling a switch, the other two must me disabled.
 	 * q1,2,3 are bits 7, 6, 5.
 	 */
-	ret = act8600_write_reg(ACT8600_Q_REG, (1 << (8 - q)));
+	ret = act8600_write_reg(ACT8600_Q_REG, (1 << (8 - mode)));
 	if (ret < 0) {
 		__WARN();
 		return ret;
@@ -127,14 +124,14 @@ int act8600_q_set(int q, bool enable)
 		return ret;
 	}
 
-	if (!(tmp & (1 << (5 - q)))) {
+	if (!(tmp & (1 << (5 - mode)))) {
 		__WARN();
 		return ret;
 	}
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(act8600_q_set);
+EXPORT_SYMBOL_GPL(act8600_set_power_mode);
 
 static int act8600_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {

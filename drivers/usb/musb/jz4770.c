@@ -126,11 +126,11 @@ static void jz_musb_set_vbus(struct musb *musb, int is_on)
 
 		MUSB_HST_MODE(musb);
 
-		act8600_q_set(1, true);
+		act8600_set_power_mode(VBUS_POWERED_BY_5VIN);
 	} else {
 		musb->is_active = 0;
 
-		act8600_q_set(1, false);
+		act8600_set_power_mode(VBUS_POWERED_EXTERNALLY);
 
 		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
 		 * jumping right to B_IDLE...
