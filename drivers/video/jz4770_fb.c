@@ -210,6 +210,12 @@ static struct fb_videomode video_modes[] = {
 		// TODO(MtH): Set refresh or pixclock.
 		.vmode = FB_VMODE_NONINTERLACED,
 	},
+	{
+		.name = "640x480",
+		.xres = 640,
+		.yres = 480,
+		.vmode = FB_VMODE_NONINTERLACED,
+	},
 };
 
 /* checks var and eventually tweaks it to something supported,
