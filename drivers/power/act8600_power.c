@@ -117,16 +117,19 @@ int act8600_set_power_mode(enum act8600_power_mode mode)
 		return ret;
 	}
 
-	/* bits 4 and 3 are "status bits" for q1 and a2. 0 -> success. */
-	ret = act8600_read_reg(ACT8600_Q_REG, &tmp);
-	if (ret < 0) {
-		__WARN();
-		return ret;
-	}
+	/* q3 does not have a "status bit" */
+	if (mode != VBUS_POWERED_EXTERNALLY) {
+		/* bits 4 and 3 are "status bits" for q1 and a2. 0 -> success. */
+		ret = act8600_read_reg(ACT8600_Q_REG, &tmp);
+		if (ret < 0) {
+			__WARN();
+			return ret;
+		}
 
-	if (!(tmp & (1 << (5 - mode)))) {
-		__WARN();
-		return ret;
+		if (!(tmp & (1 << (5 - mode)))) {
+			__WARN();
+			return ret;
+		}
 	}
 
 	return 0;
