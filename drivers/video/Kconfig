@@ -26,6 +26,8 @@ endmenu
 
 source "drivers/video/backlight/Kconfig"
 
+source "drivers/gpu/vivante/Kconfig"
+
 config VGASTATE
        tristate
        default n
