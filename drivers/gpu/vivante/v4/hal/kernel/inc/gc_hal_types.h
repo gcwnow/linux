@@ -32,35 +32,11 @@
 **  Platform macros.
 */
 
-#if defined(__GNUC__)
-#   define gcdHAS_ELLIPSES      1       /* GCC always has it. */
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-#   define gcdHAS_ELLIPSES      1       /* C99 has it. */
-#elif defined(_MSC_VER) && (_MSC_VER >= 1500)
-#   define gcdHAS_ELLIPSES      1       /* MSVC 2007+ has it. */
-#elif defined(UNDER_CE)
-#if UNDER_CE >= 600
-#       define gcdHAS_ELLIPSES  1
-#   else
-#       define gcdHAS_ELLIPSES  0
-#   endif
-#else
-#   error "gcdHAS_ELLIPSES: Platform could not be determined"
-#endif
-
 /******************************************************************************\
 ************************************ Keyword ***********************************
 \******************************************************************************/
 
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
-#   define gcmINLINE            inline      /* C99 keyword. */
-#elif defined(__GNUC__)
-#   define gcmINLINE            __inline__  /* GNU keyword. */
-#elif defined(_MSC_VER) || defined(UNDER_CE)
-#   define gcmINLINE            __inline    /* Internal keyword. */
-#else
-#   error "gcmINLINE: Platform could not be determined"
-#endif
+#define gcmINLINE               __inline__  /* GNU keyword. */
 
 /* Possible debug flags. */
 #define gcdDEBUG_NONE           0
@@ -80,26 +56,6 @@
 #   else
 #       define gcdDEBUG         gcdDEBUG_NONE
 #   endif
-#endif
-
-#ifdef _USRDLL
-#ifdef _MSC_VER
-#ifdef HAL_EXPORTS
-#           define HALAPI       __declspec(dllexport)
-#       else
-#           define HALAPI       __declspec(dllimport)
-#       endif
-#       define HALDECL          __cdecl
-#   else
-#ifdef HAL_EXPORTS
-#           define HALAPI
-#       else
-#           define HALAPI       extern
-#       endif
-#   endif
-#else
-#   define HALAPI
-#   define HALDECL
 #endif
 
 /******************************************************************************\

@@ -2176,19 +2176,9 @@ gcoOS_DebugFatal(
 #if gcmIS_DEBUG(gcdDEBUG_FATAL)
 #   define gcmFATAL             gcoOS_DebugFatal
 #   define gcmkFATAL            gckOS_DebugFatal
-#elif gcdHAS_ELLIPSES
+#else
 #   define gcmFATAL(...)
 #   define gcmkFATAL(...)
-#else
-    gcmINLINE static void
-    __dummy_fatal(
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-#   define gcmFATAL             __dummy_fatal
-#   define gcmkFATAL            __dummy_fatal
 #endif
 
 #define gcmENUM2TEXT(e)         case e: return #e
@@ -2238,33 +2228,10 @@ gcoOS_DebugTrace(
 #   define gcmTRACE             gcoOS_DebugTrace
 #   define gcmkTRACE            gckOS_DebugTrace
 #   define gcmkTRACE_N          gckOS_DebugTraceN
-#elif gcdHAS_ELLIPSES
+#else
 #   define gcmTRACE(...)
 #   define gcmkTRACE(...)
 #   define gcmkTRACE_N(...)
-#else
-    gcmINLINE static void
-    __dummy_trace(
-        IN gctUINT32 Level,
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-
-    gcmINLINE static void
-    __dummy_trace_n(
-        IN gctUINT32 Level,
-        IN gctUINT ArgumentSize,
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-
-#   define gcmTRACE             __dummy_trace
-#   define gcmkTRACE            __dummy_trace
-#   define gcmkTRACE_N          __dummy_trace_n
 #endif
 
 /* Zones common for kernel and user. */
@@ -2375,35 +2342,10 @@ gcoOS_DebugTraceZone(
 #   define gcmTRACE_ZONE            gcoOS_DebugTraceZone
 #   define gcmkTRACE_ZONE           gckOS_DebugTraceZone
 #   define gcmkTRACE_ZONE_N         gckOS_DebugTraceZoneN
-#elif gcdHAS_ELLIPSES
+#else
 #   define gcmTRACE_ZONE(...)
 #   define gcmkTRACE_ZONE(...)
 #   define gcmkTRACE_ZONE_N(...)
-#else
-    gcmINLINE static void
-    __dummy_trace_zone(
-        IN gctUINT32 Level,
-        IN gctUINT32 Zone,
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-
-    gcmINLINE static void
-    __dummy_trace_zone_n(
-        IN gctUINT32 Level,
-        IN gctUINT32 Zone,
-        IN gctUINT ArgumentSize,
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-
-#   define gcmTRACE_ZONE            __dummy_trace_zone
-#   define gcmkTRACE_ZONE           __dummy_trace_zone
-#   define gcmkTRACE_ZONE_N         __dummy_trace_zone_n
 #endif
 
 /*******************************************************************************
@@ -2456,20 +2398,8 @@ gcoOS_DebugTraceZone(
 #   define gcmSTACK_PUSH            gcoOS_StackPush
 #   define gcmSTACK_POP             gcoOS_StackPop
 #   define gcmSTACK_DUMP            gcoOS_StackDump
-#elif gcdHAS_ELLIPSES
-#   define gcmSTACK_PUSH(...)       do { } while (0)
-#   define gcmSTACK_POP(Function)   do { } while (0)
-#   define gcmSTACK_DUMP()          do { } while (0)
 #else
-    gcmINLINE static void
-    __dummy_stack_push(
-        IN gctCONST_STRING Function,
-        IN gctINT Line,
-        IN gctCONST_STRING Text, ...
-        )
-    {
-    }
-#   define gcmSTACK_PUSH            __dummy_stack_push
+#   define gcmSTACK_PUSH(...)       do { } while (0)
 #   define gcmSTACK_POP(Function)   do { } while (0)
 #   define gcmSTACK_DUMP()          do { } while (0)
 #endif
@@ -2511,41 +2441,21 @@ gcoOS_ProfileDB(
 
 #else /* gcdENABLE_PROFILING */
 
-#if gcdHAS_ELLIPSES
 #define gcmHEADER() \
     gctINT8 __user__ = 1; \
     gctINT8_PTR __user_ptr__ = &__user__; \
     gcmSTACK_PUSH(__FUNCTION__, __LINE__, gcvNULL, gcvNULL); \
     gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                   "++%s(%d)", __FUNCTION__, __LINE__)
-#else
-    gcmINLINE static void
-    __dummy_header(void)
-    {
-    }
-#   define gcmHEADER                   __dummy_header
-#endif
 
-#if gcdHAS_ELLIPSES
-#   define gcmHEADER_ARG(Text, ...) \
-        gctINT8 __user__ = 1; \
-        gctINT8_PTR __user_ptr__ = &__user__; \
-        gcmSTACK_PUSH(__FUNCTION__, __LINE__, Text, __VA_ARGS__); \
-        gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                      "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
-#else
-    gcmINLINE static void
-    __dummy_header_arg(
-        IN gctCONST_STRING Text,
-        ...
-        )
-    {
-    }
-#   define gcmHEADER_ARG                __dummy_header_arg
-#endif
+#define gcmHEADER_ARG(Text, ...) \
+    gctINT8 __user__ = 1; \
+    gctINT8_PTR __user_ptr__ = &__user__; \
+    gcmSTACK_PUSH(__FUNCTION__, __LINE__, Text, __VA_ARGS__); \
+    gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                  "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
 
-#if gcdHAS_ELLIPSES
-#   define gcmFOOTER() \
+#define gcmFOOTER() \
     gcmSTACK_POP(__FUNCTION__); \
     gcmPROFILE_ONLY(gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                                   "--%s(%d) [%llu,%llu]: status=%d(%s)", \
@@ -2557,135 +2467,55 @@ gcoOS_ProfileDB(
                                   __FUNCTION__, __LINE__, \
                                   status, gcoOS_DebugStatus2Name(status))); \
     *__user_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_footer(void)
-    {
-    }
-#   define gcmFOOTER                    __dummy_footer
-#endif
 
-#if gcdHAS_ELLIPSES
 #define gcmFOOTER_NO() \
     gcmSTACK_POP(__FUNCTION__); \
     gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                   "--%s(%d)", __FUNCTION__, __LINE__); \
     *__user_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_footer_no(void)
-    {
-    }
-#   define gcmFOOTER_NO                 __dummy_footer_no
-#endif
 
-#if gcdHAS_ELLIPSES
 #define gcmFOOTER_KILL() \
     gcmSTACK_POP(__FUNCTION__); \
     gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                   "--%s(%d)", __FUNCTION__, __LINE__); \
     *__user_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_footer_kill(void)
-    {
-    }
-#   define gcmFOOTER_KILL               __dummy_footer_kill
-#endif
 
-#if gcdHAS_ELLIPSES
-#   define gcmFOOTER_ARG(Text, ...) \
-        gcmSTACK_POP(__FUNCTION__); \
-        gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                      "--%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__); \
-        *__user_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_footer_arg(
-        IN gctCONST_STRING Text,
-        ...
-        )
-    {
-    }
-#   define gcmFOOTER_ARG                __dummy_footer_arg
-#endif
+#define gcmFOOTER_ARG(Text, ...) \
+    gcmSTACK_POP(__FUNCTION__); \
+    gcmTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                  "--%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__); \
+    *__user_ptr__ -= 1
 
 #endif /* gcdENABLE_PROFILING */
 
-#if gcdHAS_ELLIPSES
 #define gcmkHEADER() \
     gctINT8 __kernel__ = 1; \
     gctINT8_PTR __kernel_ptr__ = &__kernel__; \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "++%s(%d)", __FUNCTION__, __LINE__)
-#else
-    gcmINLINE static void
-    __dummy_kheader(void)
-    {
-    }
-#   define gcmkHEADER                  __dummy_kheader
-#endif
 
-#if gcdHAS_ELLIPSES
-#   define gcmkHEADER_ARG(Text, ...) \
-        gctINT8 __kernel__ = 1; \
-        gctINT8_PTR __kernel_ptr__ = &__kernel__; \
-        gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                       "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
-#else
-    gcmINLINE static void
-    __dummy_kheader_arg(
-        IN gctCONST_STRING Text,
-        ...
-        )
-    {
-    }
-#   define gcmkHEADER_ARG               __dummy_kheader_arg
-#endif
+#define gcmkHEADER_ARG(Text, ...) \
+    gctINT8 __kernel__ = 1; \
+    gctINT8_PTR __kernel_ptr__ = &__kernel__; \
+    gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                   "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
 
-#if gcdHAS_ELLIPSES
 #define gcmkFOOTER() \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "--%s(%d): status=%d(%s)", \
                    __FUNCTION__, __LINE__, status, gckOS_DebugStatus2Name(status)); \
     *__kernel_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_kfooter(void)
-    {
-    }
-#   define gcmkFOOTER                   __dummy_kfooter
-#endif
 
-#if gcdHAS_ELLIPSES
 #define gcmkFOOTER_NO() \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "--%s(%d)", __FUNCTION__, __LINE__); \
     *__kernel_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_kfooter_no(void)
-    {
-    }
-#   define gcmkFOOTER_NO                __dummy_kfooter_no
-#endif
 
-#if gcdHAS_ELLIPSES
-#   define gcmkFOOTER_ARG(Text, ...) \
-        gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
-                       "--%s(%d): " Text, \
-                       __FUNCTION__, __LINE__, __VA_ARGS__); \
-        *__kernel_ptr__ -= 1
-#else
-    gcmINLINE static void
-    __dummy_kfooter_arg(
-        IN gctCONST_STRING Text,
-        ...
-        )
-    {
-    }
-#   define gcmkFOOTER_ARG               __dummy_kfooter_arg
-#endif
+#define gcmkFOOTER_ARG(Text, ...) \
+    gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
+                   "--%s(%d): " Text, \
+                   __FUNCTION__, __LINE__, __VA_ARGS__); \
+    *__kernel_ptr__ -= 1
 
 #define gcmOPT_VALUE(ptr)           (((ptr) == gcvNULL) ? 0 : *(ptr))
 #define gcmOPT_POINTER(ptr)         (((ptr) == gcvNULL) ? gcvNULL : *(ptr))
@@ -2793,16 +2623,8 @@ gckOS_DebugFlush(
         void
     );
 #   define gcmDUMP_FRAMERATE        gcfDumpFrameRate
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_FRAMERATE(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_frame_rate(
-        void
-        )
-    {
-    }
-#   define gcmDUMP_FRAMERATE        __dummy_dump_frame_rate
+#   define gcmDUMP_FRAMERATE(...)
 #endif
 
 
@@ -2826,18 +2648,8 @@ gckOS_DebugFlush(
         ...
         );
 #  define gcmDUMP               gcfDump
-#elif gcdHAS_ELLIPSES
-#  define gcmDUMP(...)
 #else
-    gcmINLINE static void
-    __dummy_dump(
-        IN gcoOS Os,
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-#  define gcmDUMP               __dummy_dump
+#  define gcmDUMP(...)
 #endif
 
 /*******************************************************************************
@@ -2867,19 +2679,8 @@ gckOS_DebugFlush(
         IN gctSIZE_T Bytes
         );
 #  define gcmDUMP_DATA          gcfDumpData
-#elif gcdHAS_ELLIPSES
-#  define gcmDUMP_DATA(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_data(
-        IN gcoOS Os,
-        IN gctSTRING Tag,
-        IN gctPOINTER Logical,
-        IN gctSIZE_T Bytes
-        )
-    {
-    }
-#  define gcmDUMP_DATA          __dummy_dump_data
+#  define gcmDUMP_DATA(...)
 #endif
 
 /*******************************************************************************
@@ -2917,21 +2718,8 @@ gcfDumpBuffer(
     IN gctSIZE_T Bytes
     );
 #   define gcmDUMP_BUFFER       gcfDumpBuffer
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_BUFFER(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_buffer(
-        IN gcoOS Os,
-        IN gctSTRING Tag,
-        IN gctUINT32 Physical,
-        IN gctPOINTER Logical,
-        IN gctUINT32 Offset,
-        IN gctSIZE_T Bytes
-        )
-    {
-    }
-#   define gcmDUMP_BUFFER       __dummy_dump_buffer
+#   define gcmDUMP_BUFFER(...)
 #endif
 
 /*******************************************************************************
@@ -2953,17 +2741,8 @@ gcfDumpBuffer(
         ...
         );
 #   define gcmDUMP_API           gcfDumpApi
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_API(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_api(
-        IN gctCONST_STRING Message,
-        ...
-        )
-    {
-    }
-#  define gcmDUMP_API           __dummy_dump_api
+#   define gcmDUMP_API(...)
 #endif
 
 /*******************************************************************************
@@ -2984,17 +2763,8 @@ gcfDumpBuffer(
         IN gctUINT32 Size
     );
 #   define gcmDUMP_API_ARRAY        gcfDumpArray
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_API_ARRAY(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_api_array(
-        IN gctCONST_POINTER Data,
-        IN gctUINT32 Size
-        )
-    {
-    }
-#   define gcmDUMP_API_ARRAY        __dummy_dump_api_array
+#   define gcmDUMP_API_ARRAY(...)
 #endif
 
 /*******************************************************************************
@@ -3015,17 +2785,8 @@ gcfDumpBuffer(
         IN gctUINT32 Termination
     );
 #   define gcmDUMP_API_ARRAY_TOKEN  gcfDumpArrayToken
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_API_ARRAY_TOKEN(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_api_array_token(
-        IN gctCONST_POINTER Data,
-        IN gctUINT32 Termination
-        )
-    {
-    }
-#   define gcmDUMP_API_ARRAY_TOKEN  __dummy_dump_api_array_token
+#   define gcmDUMP_API_ARRAY_TOKEN(...)
 #endif
 
 /*******************************************************************************
@@ -3046,17 +2807,8 @@ gcfDumpBuffer(
         IN gctSIZE_T Size
     );
 #   define gcmDUMP_API_DATA         gcfDumpApiData
-#elif gcdHAS_ELLIPSES
-#   define gcmDUMP_API_DATA(...)
 #else
-    gcmINLINE static void
-    __dummy_dump_api_data(
-        IN gctCONST_POINTER Data,
-        IN gctSIZE_T Size
-        )
-    {
-    }
-#   define gcmDUMP_API_DATA         __dummy_dump_api_data
+#   define gcmDUMP_API_DATA(...)
 #endif
 
 /*******************************************************************************
