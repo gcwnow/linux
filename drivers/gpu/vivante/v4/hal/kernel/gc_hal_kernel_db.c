@@ -21,7 +21,9 @@
 
 
 
-#include "gc_hal_kernel_precomp.h"
+#include "gc_hal.h"
+#include "gc_hal_driver.h"
+#include "gc_hal_kernel.h"
 
 #define _GC_OBJ_ZONE    gcvZONE_DATABASE
 
