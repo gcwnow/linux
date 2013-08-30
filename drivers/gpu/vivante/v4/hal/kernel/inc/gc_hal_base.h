@@ -1166,20 +1166,8 @@ gcoOS_Delay(
 /*----------------------------------------------------------------------------*/
 /*----- Threads --------------------------------------------------------------*/
 
-#ifdef _WIN32
-/* Cannot include windows.h here becuase "near" and "far"
- * which are used in gcsDEPTH_INFO, are defined to nothing in WinDef.h.
- * So, use the real value of DWORD and WINAPI, instead.
- * DWORD is unsigned long, and WINAPI is __stdcall.
- * If these two are change in WinDef.h, the following two typdefs
- * need to be changed, too.
- */
-typedef unsigned long gctTHREAD_RETURN;
-typedef unsigned long (__stdcall * gcTHREAD_ROUTINE)(void * Argument);
-#else
 typedef void * gctTHREAD_RETURN;
 typedef void * (* gcTHREAD_ROUTINE)(void *);
-#endif
 
 /* Create a new thread. */
 gceSTATUS
