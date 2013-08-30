@@ -24,7 +24,6 @@
 #ifndef __gc_hal_h_
 #define __gc_hal_h_
 
-#include "gc_hal_rename.h"
 #include "gc_hal_types.h"
 #include "gc_hal_enum.h"
 #include "gc_hal_base.h"
