@@ -52,21 +52,11 @@ typedef va_list gctARGUMENTS;
 #define gcmkUNLOCKSECTION(__spinLock__) \
     spin_unlock(&__spinLock__)
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
-#   define gcmkGETPROCESSID() \
-        task_tgid_vnr(current)
-#else
-#   define gcmkGETPROCESSID() \
-        current->tgid
-#endif
+#define gcmkGETPROCESSID() \
+    task_tgid_vnr(current)
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
-#   define gcmkGETTHREADID() \
-        task_pid_vnr(current)
-#else
-#   define gcmkGETTHREADID() \
-        current->pid
-#endif
+#define gcmkGETTHREADID() \
+    task_pid_vnr(current)
 
 #define gcmkOUTPUT_STRING(String) \
     printk(String); \

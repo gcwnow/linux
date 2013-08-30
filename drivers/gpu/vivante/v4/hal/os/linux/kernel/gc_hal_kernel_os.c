@@ -34,9 +34,7 @@
 #endif /* NO_DMA_COHERENT */
 #include <linux/slab.h>
 #include <linux/workqueue.h>
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,23)
 #include <linux/math64.h>
-#endif
 
 #define _GC_OBJ_ZONE    gcvZONE_OS
 
@@ -544,11 +542,7 @@ _GetProcessID(
     void
     )
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
     return task_tgid_vnr(current);
-#else
-    return current->tgid;
-#endif
 }
 
 static gctINT
@@ -556,11 +550,7 @@ _GetThreadID(
     void
     )
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
     return task_pid_vnr(current);
-#else
-    return current->pid;
-#endif
 }
 
 static PLINUX_MDL
@@ -728,18 +718,6 @@ OnProcessExit(
 {
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
-static inline int
-is_vmalloc_addr(
-    void *Addr
-    )
-{
-    unsigned long addr = (unsigned long)Addr;
-
-    return addr >= VMALLOC_START && addr < VMALLOC_END;
-}
-#endif
-
 static void
 _NonContiguousFree(
     IN struct page ** Pages,
@@ -780,11 +758,7 @@ _NonContiguousAlloc(
 
     gcmkHEADER_ARG("NumPages=%lu", NumPages);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 32)
     if (NumPages > totalram_pages)
-#else
-    if (NumPages > num_physpages)
-#endif
     {
         gcmkFOOTER_NO();
         return gcvNULL;
@@ -1317,7 +1291,7 @@ _CreateKernelVirtualMapping(
 
 #if gcdNONPAGED_MEMORY_CACHEABLE
     addr = page_address(Page);
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 38)
+#else
     struct page ** pages;
     gctINT i;
 
@@ -1337,8 +1311,6 @@ _CreateKernelVirtualMapping(
     addr = vmap(pages, NumPages, 0, gcmkNONPAGED_MEMROY_PROT(PAGE_KERNEL));
 
     kfree(pages);
-#else
-    addr = gcmkIOREMAP(page_to_phys(Page), NumPages * PAGE_SIZE);
 #endif
 
     return addr;
@@ -1350,11 +1322,7 @@ _DestoryKernelVirtualMapping(
     )
 {
 #if !gcdNONPAGED_MEMORY_CACHEABLE
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 38)
     vunmap(Addr);
-#   else
-    iounmap(Addr);
-#   endif
 #endif
 }
 #endif
@@ -1863,7 +1831,7 @@ gckOS_UnmapMemoryEx(
         }
 
         /* Get the current pointer for the task with stored pid. */
-        task = FIND_TASK_BY_PID(mdlMap->pid);
+        task = pid_task(find_vpid(mdlMap->pid), PIDTYPE_PID);
 
         if (task != gcvNULL && task->mm != gcvNULL)
         {
@@ -2290,7 +2258,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
         if (mdlMap->vmaAddr != gcvNULL)
         {
             /* Get the current pointer for the task with stored pid. */
-            task = FIND_TASK_BY_PID(mdlMap->pid);
+            task = pid_task(find_vpid(mdlMap->pid), PIDTYPE_PID);
 
             if (task != gcvNULL && task->mm != gcvNULL)
             {
@@ -3829,14 +3797,7 @@ gckOS_MemoryBarrier(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
 
-#if gcdNONPAGED_MEMORY_BUFFERABLE \
-    && defined (CONFIG_ARM) \
-    && (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34))
-    /* drain write buffer */
-    dsb();
-
-    /* drain outer cache's write buffer? */
-#elif defined(CONFIG_MIPS)
+#if defined(CONFIG_MIPS)
     iob();
 #else
     mb();
@@ -4601,7 +4562,7 @@ gckOS_UnlockPages(
         if ((mdlMap->vmaAddr != gcvNULL) && (_GetProcessID() == mdlMap->pid))
         {
             /* Get the current pointer for the task with stored pid. */
-            task = FIND_TASK_BY_PID(mdlMap->pid);
+            task = pid_task(find_vpid(mdlMap->pid), PIDTYPE_PID);
 
             if (task != gcvNULL && task->mm != gcvNULL)
             {
@@ -6005,11 +5966,7 @@ gckOS_CacheClean(
 #ifdef CONFIG_ARM
 
     /* Inner cache. */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
     dmac_map_area(Logical, Bytes, DMA_TO_DEVICE);
-#      else
-    dmac_clean_range(Logical, Logical + Bytes);
-#      endif
 
 #if defined(CONFIG_OUTER_CACHE)
     /* Outer cache. */
@@ -6084,11 +6041,7 @@ gckOS_CacheInvalidate(
 #ifdef CONFIG_ARM
 
     /* Inner cache. */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
     dmac_map_area(Logical, Bytes, DMA_FROM_DEVICE);
-#      else
-    dmac_inv_range(Logical, Logical + Bytes);
-#      endif
 
 #if defined(CONFIG_OUTER_CACHE)
     /* Outer cache. */
@@ -6784,44 +6737,7 @@ gckOS_ProfileToMS(
     IN gctUINT64 Ticks
     )
 {
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,23)
     return div_u64(Ticks, 1000000);
-#else
-    gctUINT64 rem = Ticks;
-    gctUINT64 b = 1000000;
-    gctUINT64 res, d = 1;
-    gctUINT32 high = rem >> 32;
-
-    /* Reduce the thing a bit first */
-    res = 0;
-    if (high >= 1000000)
-    {
-        high /= 1000000;
-        res   = (gctUINT64) high << 32;
-        rem  -= (gctUINT64) (high * 1000000) << 32;
-    }
-
-    while (((gctINT64) b > 0) && (b < rem))
-    {
-        b <<= 1;
-        d <<= 1;
-    }
-
-    do
-    {
-        if (rem >= b)
-        {
-            rem -= b;
-            res += d;
-        }
-
-        b >>= 1;
-        d >>= 1;
-    }
-    while (d);
-
-    return (gctUINT32) res;
-#endif
 }
 
 /******************************************************************************\
@@ -7994,12 +7910,7 @@ gckOS_DestoryTimer(
 
     timer = (gcsOSTIMER_PTR)Timer;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
     cancel_delayed_work_sync(&timer->work);
-#else
-    cancel_delayed_work(&timer->work);
-    flush_workqueue(Os->workqueue);
-#endif
 
     gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Os, Timer));
 

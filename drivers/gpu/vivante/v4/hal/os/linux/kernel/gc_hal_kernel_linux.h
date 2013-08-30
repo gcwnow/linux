@@ -54,14 +54,6 @@
 #include "gc_hal_kernel_device.h"
 #include "gc_hal_kernel_os.h"
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
-#define FIND_TASK_BY_PID(x) pid_task(find_vpid(x), PIDTYPE_PID)
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
-#define FIND_TASK_BY_PID(x) find_task_by_vpid(x)
-#else
-#define FIND_TASK_BY_PID(x) find_task_by_pid(x)
-#endif
-
 #define _WIDE(string)				L##string
 #define WIDE(string)				_WIDE(string)
 

@@ -869,11 +869,7 @@ static int drv_init(void)
         gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
     }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
     device_create(device_class, NULL, MKDEV(major, 0), NULL, "galcore");
-#else
-    device_create(device_class, NULL, MKDEV(major, 0), "galcore");
-#endif
 
     galDevice = device;
     gpuClass  = device_class;
