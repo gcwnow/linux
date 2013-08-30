@@ -203,9 +203,6 @@ typedef enum _gceSURF_TYPE
     gcvSURF_NO_VIDMEM      = 0x200, /* Used to allocate surfaces with no underlying vidmem node.
                                        In Android, vidmem node is allocated by another process. */
     gcvSURF_CACHEABLE      = 0x400, /* Used to allocate a cacheable surface */
-#if gcdANDROID_UNALIGNED_LINEAR_COMPOSITION_ADJUST
-    gcvSURF_FLIP           = 0x800, /* The Resolve Target the will been flip resolve from RT */
-#endif
 
     gcvSURF_RENDER_TARGET_NO_TILE_STATUS = gcvSURF_RENDER_TARGET
                                          | gcvSURF_NO_TILE_STATUS,
@@ -226,11 +223,6 @@ typedef enum _gceSURF_TYPE
 
     gcvSURF_CACHEABLE_BITMAP             = gcvSURF_BITMAP
                                          | gcvSURF_CACHEABLE,
-
-#if gcdANDROID_UNALIGNED_LINEAR_COMPOSITION_ADJUST
-    gcvSURF_FLIP_BITMAP                  = gcvSURF_BITMAP
-                                         | gcvSURF_FLIP,
-#endif
 }
 gceSURF_TYPE;
 

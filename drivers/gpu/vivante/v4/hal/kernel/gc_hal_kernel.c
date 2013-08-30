@@ -115,18 +115,10 @@ gctCONST_STRING _DispatchText[] =
 **          Pointer to a variable that will hold the pointer to the gckKERNEL
 **          object.
 */
-#ifdef ANDROID
-#if gcdNEW_PROFILER_FILE
-#define DEFAULT_PROFILE_FILE_NAME   "/sdcard/vprofiler.vpd"
-#else
-#define DEFAULT_PROFILE_FILE_NAME   "/sdcard/vprofiler.xml"
-#endif
-#else
 #if gcdNEW_PROFILER_FILE
 #define DEFAULT_PROFILE_FILE_NAME   "vprofiler.vpd"
 #else
 #define DEFAULT_PROFILE_FILE_NAME   "vprofiler.xml"
-#endif
 #endif
 
 gceSTATUS
@@ -237,11 +229,7 @@ gckKERNEL_Construct(
 
 #if VIVANTE_PROFILER
     /* Initialize profile setting */
-#if defined ANDROID
-    kernel->profileEnable = gcvFALSE;
-#else
     kernel->profileEnable = gcvTRUE;
-#endif
 
     gcmkVERIFY_OK(
         gckOS_MemCopy(kernel->profileFileName,

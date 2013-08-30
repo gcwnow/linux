@@ -43,11 +43,7 @@
 /*******************************************************************************
 ***** Version Signature *******************************************************/
 
-#ifdef ANDROID
-const char * _PLATFORM = "\n\0$PLATFORM$Android$\n";
-#else
 const char * _PLATFORM = "\n\0$PLATFORM$Linux$\n";
-#endif
 
 #define USER_SIGNAL_TABLE_LEN_INIT  64
 

@@ -181,43 +181,38 @@ gceCORE;
 /******************************************************************************/
 /*VERIFY_OBJECT if special return expected*/
 /******************************************************************************/
-#ifndef EGL_API_ANDROID
-#   define _gcmVERIFY_OBJECT_RETURN(prefix, obj, t, retVal) \
-        do \
-        { \
-            if ((obj) == gcvNULL) \
-            { \
-                prefix##PRINT_VERSION(); \
-                prefix##TRACE(gcvLEVEL_ERROR, \
-                              #prefix "VERIFY_OBJECT_RETURN failed: NULL"); \
-                prefix##TRACE(gcvLEVEL_ERROR, "  expected: %c%c%c%c", \
-                              gcmCC_PRINT(t)); \
-                prefix##ASSERT((obj) != gcvNULL); \
-                prefix##FOOTER_ARG("retVal=%d", retVal); \
-                return retVal; \
-            } \
-            else if (((gcsOBJECT*) (obj))->type != t) \
-            { \
-                prefix##PRINT_VERSION(); \
-                prefix##TRACE(gcvLEVEL_ERROR, \
-                              #prefix "VERIFY_OBJECT_RETURN failed: %c%c%c%c", \
-                              gcmCC_PRINT(((gcsOBJECT*) (obj))->type)); \
-                prefix##TRACE(gcvLEVEL_ERROR, "  expected: %c%c%c%c", \
-                              gcmCC_PRINT(t)); \
-                prefix##ASSERT(((gcsOBJECT*)(obj))->type == t); \
-                prefix##FOOTER_ARG("retVal=%d", retVal); \
-                return retVal; \
-            } \
-        } \
-        while (gcvFALSE)
-#   define gcmVERIFY_OBJECT_RETURN(obj, t, retVal) \
-                            _gcmVERIFY_OBJECT_RETURN(gcm, obj, t, retVal)
-#   define gcmkVERIFY_OBJECT_RETURN(obj, t, retVal) \
-                            _gcmVERIFY_OBJECT_RETURN(gcmk, obj, t, retVal)
-#else
-#   define gcmVERIFY_OBJECT_RETURN(obj, t)     do {} while (gcvFALSE)
-#   define gcmVERIFY_OBJECT_RETURN(obj, t)    do {} while (gcvFALSE)
-#endif
+#define _gcmVERIFY_OBJECT_RETURN(prefix, obj, t, retVal) \
+     do \
+     { \
+         if ((obj) == gcvNULL) \
+         { \
+             prefix##PRINT_VERSION(); \
+             prefix##TRACE(gcvLEVEL_ERROR, \
+                           #prefix "VERIFY_OBJECT_RETURN failed: NULL"); \
+             prefix##TRACE(gcvLEVEL_ERROR, "  expected: %c%c%c%c", \
+                           gcmCC_PRINT(t)); \
+             prefix##ASSERT((obj) != gcvNULL); \
+             prefix##FOOTER_ARG("retVal=%d", retVal); \
+             return retVal; \
+         } \
+         else if (((gcsOBJECT*) (obj))->type != t) \
+         { \
+             prefix##PRINT_VERSION(); \
+             prefix##TRACE(gcvLEVEL_ERROR, \
+                           #prefix "VERIFY_OBJECT_RETURN failed: %c%c%c%c", \
+                           gcmCC_PRINT(((gcsOBJECT*) (obj))->type)); \
+             prefix##TRACE(gcvLEVEL_ERROR, "  expected: %c%c%c%c", \
+                           gcmCC_PRINT(t)); \
+             prefix##ASSERT(((gcsOBJECT*)(obj))->type == t); \
+             prefix##FOOTER_ARG("retVal=%d", retVal); \
+             return retVal; \
+         } \
+     } \
+     while (gcvFALSE)
+#define gcmVERIFY_OBJECT_RETURN(obj, t, retVal) \
+                         _gcmVERIFY_OBJECT_RETURN(gcm, obj, t, retVal)
+#define gcmkVERIFY_OBJECT_RETURN(obj, t, retVal) \
+                         _gcmVERIFY_OBJECT_RETURN(gcmk, obj, t, retVal)
 
 /******************************************************************************\
 ********************************** gckOS Object *********************************

@@ -619,7 +619,6 @@
 
         This define enables SMP support.
 
-        Currently, it only works on Linux/Android,
         Kbuild will config it according to whether
         CONFIG_SMP is set.
 
@@ -629,32 +628,12 @@
 #endif
 
 /*
-    gcdSUPPORT_SWAP_RECTANGLE
-
-        Support swap with a specific rectangle.
-
-        Set the rectangle with eglSetSwapRectangleANDROID api.
-*/
-#ifndef gcdSUPPORT_SWAP_RECTANGLE
-#   define gcdSUPPORT_SWAP_RECTANGLE            0
-#endif
-
-/*
     gcdDEFER_RESOLVES
 
         Support deferred resolves for 3D apps.
 */
 #ifndef gcdDEFER_RESOLVES
 #   define gcdDEFER_RESOLVES                    0
-#endif
-
-/*
-    gcdCOPYBLT_OPTIMIZATION
-
-        Combine dirty areas resulting from Android's copyBlt.
-*/
-#ifndef gcdCOPYBLT_OPTIMIZATION
-#   define gcdCOPYBLT_OPTIMIZATION              0
 #endif
 
 /*
@@ -691,26 +670,12 @@
 #   define gcdENABLE_OUTER_CACHE_PATCH          0
 #endif
 
-#ifndef gcdANDROID_UNALIGNED_LINEAR_COMPOSITION_ADJUST
-#   define  gcdANDROID_UNALIGNED_LINEAR_COMPOSITION_ADJUST    0
-#endif
-
 #ifndef gcdSHARED_PAGETABLE
 #   define gcdSHARED_PAGETABLE                  1
 #endif
 
 #ifndef gcdUSE_OPENCL
 #   define gcdUSE_OPENCL                        0
-#endif
-
-/*
-    gcdBLOB_CACHE_ENABLED
-        When non-zero, Android blob cache extension will be enabled.
-        Otherwise, caching will be by-passed.
- */
-
-#ifndef gcdBLOB_CACHE_ENABLED
-#   define gcdBLOB_CACHE_ENABLED                0
 #endif
 
 /*

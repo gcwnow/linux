@@ -24,12 +24,6 @@
 #ifndef __gc_hal_kernel_device_h_
 #define __gc_hal_kernel_device_h_
 
-#ifdef ANDROID
-#define gcdkREPORT_VIDMEM_LEAK      0
-#else
-#define gcdkREPORT_VIDMEM_LEAK      1
-#endif
-
 /******************************************************************************\
 ******************************* gckGALDEVICE Structure *******************************
 \******************************************************************************/
