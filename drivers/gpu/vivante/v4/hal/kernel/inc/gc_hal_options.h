@@ -61,15 +61,6 @@
 #endif
 
 /*
-    gcdUSE_VG
-
-        Enable VG HAL layer (only for GC350).
-*/
-#ifndef gcdUSE_VG
-#   define gcdUSE_VG                            0
-#endif
-
-/*
     USE_SW_FB
 
         Set to 1 if the frame buffer memory cannot be accessed by the GPU.
@@ -498,15 +489,6 @@
 #   define gcdFRAME_DB                          0
 #   define gcdFRAME_DB_RESET                    0
 #   define gcdFRAME_DB_NAME                     "/var/log/frameDB.log"
-#endif
-
-/*
-    gcdENABLE_VG
-            enable the 2D openVG
-*/
-
-#ifndef gcdENABLE_VG
-#   define gcdENABLE_VG                         0
 #endif
 
 /*

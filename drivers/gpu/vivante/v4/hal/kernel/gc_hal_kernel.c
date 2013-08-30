@@ -212,41 +212,28 @@ gckKERNEL_Construct(
     kernel->atomClients = gcvNULL;
     gcmkONERROR(gckOS_AtomConstruct(Os, &kernel->atomClients));
 
-#if gcdENABLE_VG
-    kernel->vg = gcvNULL;
+    /* Construct the gckHARDWARE object. */
+    gcmkONERROR(
+        gckHARDWARE_Construct(Os, kernel->core, &kernel->hardware));
 
-    if (Core == gcvCORE_VG)
-    {
-        /* Construct the gckMMU object. */
-        gcmkONERROR(
-            gckVGKERNEL_Construct(Os, Context, kernel, &kernel->vg));
-    }
-    else
-#endif
-    {
-        /* Construct the gckHARDWARE object. */
-        gcmkONERROR(
-            gckHARDWARE_Construct(Os, kernel->core, &kernel->hardware));
+    /* Set pointer to gckKERNEL object in gckHARDWARE object. */
+    kernel->hardware->kernel = kernel;
 
-        /* Set pointer to gckKERNEL object in gckHARDWARE object. */
-        kernel->hardware->kernel = kernel;
+    /* Initialize the hardware. */
+    gcmkONERROR(
+        gckHARDWARE_InitializeHardware(kernel->hardware));
 
-        /* Initialize the hardware. */
-        gcmkONERROR(
-            gckHARDWARE_InitializeHardware(kernel->hardware));
+    /* Construct the gckCOMMAND object. */
+    gcmkONERROR(
+        gckCOMMAND_Construct(kernel, &kernel->command));
 
-        /* Construct the gckCOMMAND object. */
-        gcmkONERROR(
-            gckCOMMAND_Construct(kernel, &kernel->command));
+    /* Construct the gckEVENT object. */
+    gcmkONERROR(
+        gckEVENT_Construct(kernel, &kernel->eventObj));
 
-        /* Construct the gckEVENT object. */
-        gcmkONERROR(
-            gckEVENT_Construct(kernel, &kernel->eventObj));
-
-        /* Construct the gckMMU object. */
-        gcmkONERROR(
-            gckMMU_Construct(kernel, gcdMMU_SIZE, &kernel->mmu));
-    }
+    /* Construct the gckMMU object. */
+    gcmkONERROR(
+        gckMMU_Construct(kernel, gcdMMU_SIZE, &kernel->mmu));
 
 #if VIVANTE_PROFILER
     /* Initialize profile setting */
@@ -272,24 +259,19 @@ gckKERNEL_Construct(
 OnError:
     if (kernel != gcvNULL)
     {
-#if gcdENABLE_VG
-        if (Core != gcvCORE_VG)
-#endif
+        if (kernel->eventObj != gcvNULL)
         {
-            if (kernel->eventObj != gcvNULL)
-            {
-                gcmkVERIFY_OK(gckEVENT_Destroy(kernel->eventObj));
-            }
+            gcmkVERIFY_OK(gckEVENT_Destroy(kernel->eventObj));
+        }
 
-            if (kernel->command != gcvNULL)
-            {
-            gcmkVERIFY_OK(gckCOMMAND_Destroy(kernel->command));
-            }
+        if (kernel->command != gcvNULL)
+        {
+        gcmkVERIFY_OK(gckCOMMAND_Destroy(kernel->command));
+        }
 
-            if (kernel->hardware != gcvNULL)
-            {
-                gcmkVERIFY_OK(gckHARDWARE_Destroy(kernel->hardware));
-            }
+        if (kernel->hardware != gcvNULL)
+        {
+            gcmkVERIFY_OK(gckHARDWARE_Destroy(kernel->hardware));
         }
 
         if (kernel->atomClients != gcvNULL)
@@ -382,26 +364,17 @@ gckKERNEL_Destroy(
         gcmkVERIFY_OK(gckOS_DeleteMutex(Kernel->os, Kernel->db->dbMutex));
     }
 
-#if gcdENABLE_VG
-    if (Kernel->vg)
-    {
-        gcmkVERIFY_OK(gckVGKERNEL_Destroy(Kernel->vg));
-    }
-    else
-#endif
-    {
-        /* Destroy the gckMMU object. */
-        gcmkVERIFY_OK(gckMMU_Destroy(Kernel->mmu));
+    /* Destroy the gckMMU object. */
+    gcmkVERIFY_OK(gckMMU_Destroy(Kernel->mmu));
 
-        /* Destroy the gckCOMMNAND object. */
-        gcmkVERIFY_OK(gckCOMMAND_Destroy(Kernel->command));
+    /* Destroy the gckCOMMNAND object. */
+    gcmkVERIFY_OK(gckCOMMAND_Destroy(Kernel->command));
 
-        /* Destroy the gckEVENT object. */
-        gcmkVERIFY_OK(gckEVENT_Destroy(Kernel->eventObj));
+    /* Destroy the gckEVENT object. */
+    gcmkVERIFY_OK(gckEVENT_Destroy(Kernel->eventObj));
 
-        /* Destroy the gckHARDWARE object. */
-        gcmkVERIFY_OK(gckHARDWARE_Destroy(Kernel->hardware));
-    }
+    /* Destroy the gckHARDWARE object. */
+    gcmkVERIFY_OK(gckHARDWARE_Destroy(Kernel->hardware));
 
     /* Detsroy the client atom. */
     gcmkVERIFY_OK(gckOS_AtomDestroy(Kernel->os, Kernel->atomClients));
@@ -1862,14 +1835,9 @@ gckKERNEL_AttachProcessEx(
 
         if (old == 0)
         {
-#if gcdENABLE_VG
-            if (Kernel->vg == gcvNULL)
-#endif
-            {
-                gcmkONERROR(gckOS_Broadcast(Kernel->os,
-                                            Kernel->hardware,
-                                            gcvBROADCAST_FIRST_PROCESS));
-            }
+            gcmkONERROR(gckOS_Broadcast(Kernel->os,
+                                        Kernel->hardware,
+                                        gcvBROADCAST_FIRST_PROCESS));
         }
 
         if (Kernel->dbCreated)
@@ -1895,15 +1863,10 @@ gckKERNEL_AttachProcessEx(
 
         if (old == 1)
         {
-#if gcdENABLE_VG
-            if (Kernel->vg == gcvNULL)
-#endif
-            {
-                /* Last client detached, switch to SUSPEND power state. */
-                gcmkONERROR(gckOS_Broadcast(Kernel->os,
-                                            Kernel->hardware,
-                                            gcvBROADCAST_LAST_PROCESS));
-            }
+            /* Last client detached, switch to SUSPEND power state. */
+            gcmkONERROR(gckOS_Broadcast(Kernel->os,
+                                        Kernel->hardware,
+                                        gcvBROADCAST_LAST_PROCESS));
 
             /* Flush the debug cache. */
             gcmkDEBUGFLUSH(~0U);

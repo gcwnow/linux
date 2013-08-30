@@ -1241,14 +1241,6 @@ gckOS_CreateSemaphore(
     OUT gctPOINTER * Semaphore
     );
 
-#if gcdENABLE_VG
-gceSTATUS
-gckOS_CreateSemaphoreVG(
-    IN gckOS Os,
-    OUT gctPOINTER * Semaphore
-    );
-#endif
-
 /* Delete a semahore. */
 gceSTATUS
 gckOS_DestroySemaphore(
@@ -1954,7 +1946,6 @@ gckHARDWARE_IsFeatureAvailable(
     IN gceFEATURE Feature
     );
 
-#if !gcdENABLE_VG
 /******************************************************************************\
 ***************************** gckINTERRUPT Object ******************************
 \******************************************************************************/
@@ -1988,7 +1979,7 @@ gckINTERRUPT_Notify(
     IN gckINTERRUPT Interrupt,
     IN gctBOOL Valid
     );
-#endif
+
 /******************************************************************************\
 ******************************** gckEVENT Object *******************************
 \******************************************************************************/
@@ -2283,10 +2274,6 @@ gckHARDWARE_QueryProfileRegisters(
 
 #ifdef __cplusplus
 }
-#endif
-
-#if gcdENABLE_VG
-#include "gc_hal_vg.h"
 #endif
 
 #endif /* __gc_hal_h_ */

@@ -270,20 +270,9 @@ gckKERNEL_MapVideoMemoryEx(
     /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;
 
-#if gcdENABLE_VG
-    if (Core == gcvCORE_VG)
-    {
-        /* Split the memory address into a pool type and offset. */
-        gcmkONERROR(
-            gckVGHARDWARE_SplitMemory(Kernel->vg->hardware, Address, &pool, &offset));
-    }
-    else
-#endif
-    {
-        /* Split the memory address into a pool type and offset. */
-        gcmkONERROR(
-            gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
-    }
+    /* Split the memory address into a pool type and offset. */
+    gcmkONERROR(
+        gckHARDWARE_SplitMemory(Kernel->hardware, Address, &pool, &offset));
 
     /* Dispatch on pool. */
     switch (pool)
@@ -316,24 +305,13 @@ gckKERNEL_MapVideoMemoryEx(
 
             logical = (gctPOINTER) mdlMap->vmaAddr;
         }
-#if gcdENABLE_VG
-        if (Core == gcvCORE_VG)
-        {
-            gcmkVERIFY_OK(
-                gckVGHARDWARE_SplitMemory(Kernel->vg->hardware,
-                                        device->contiguousVidMem->baseAddress,
-                                        &pool,
-                                        &base));
-        }
-        else
-#endif
-        {
-            gcmkVERIFY_OK(
-                gckHARDWARE_SplitMemory(Kernel->hardware,
-                                        device->contiguousVidMem->baseAddress,
-                                        &pool,
-                                        &base));
-        }
+
+        gcmkVERIFY_OK(
+            gckHARDWARE_SplitMemory(Kernel->hardware,
+                                    device->contiguousVidMem->baseAddress,
+                                    &pool,
+                                    &base));
+
         offset -= base;
         break;
 

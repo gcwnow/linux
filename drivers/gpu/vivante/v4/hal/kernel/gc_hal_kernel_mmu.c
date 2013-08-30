@@ -1215,12 +1215,6 @@ gckMMU_Flush(
     gctINT i;
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
-#if gcdENABLE_VG
-        if (i == gcvCORE_VG)
-        {
-            continue;
-        }
-#endif
         hardware = sharedPageTable->hardwares[i];
         if (hardware)
         {

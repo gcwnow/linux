@@ -58,13 +58,7 @@ typedef struct _gcoDUMP *               gcoDUMP;
 typedef struct _gcoHARDWARE *           gcoHARDWARE;
 typedef union  _gcuVIDMEM_NODE *        gcuVIDMEM_NODE_PTR;
 
-#if gcdENABLE_VG
-typedef struct _gcoVG *                 gcoVG;
-typedef struct _gcsCOMPLETION_SIGNAL *	gcsCOMPLETION_SIGNAL_PTR;
-typedef struct _gcsCONTEXT_MAP *		gcsCONTEXT_MAP_PTR;
-#else
 typedef void *                          gcoVG;
-#endif
 
 /******************************************************************************\
 ******************************* Process local storage *************************
@@ -116,10 +110,6 @@ typedef struct _gcsTLS
     gcoHARDWARE                 hardware;
     /* Only for separated 3D and 2D */
     gcoHARDWARE                 hardware2D;
-#if gcdENABLE_VG
-    gcoVGHARDWARE               vg;
-    gcoVG                       engineVG;
-#endif /* gcdENABLE_VG */
     gctPOINTER                  context;
     gctTLS_DESTRUCTOR           destructor;
     gctBOOL                     ProcessExiting;
@@ -235,25 +225,6 @@ typedef enum _gceSignalHandlerType
 }
 gceSignalHandlerType;
 
-
-#if gcdENABLE_VG
-/* gcsHAL_Limits*/
-typedef struct _gcsHAL_LIMITS
-{
-    /* chip info */
-    gceCHIPMODEL    chipModel;
-    gctUINT32       chipRevision;
-    gctUINT32       featureCount;
-    gctUINT32       *chipFeatures;
-
-    /* target caps */
-	gctUINT32         maxWidth;
-	gctUINT32         maxHeight;
-	gctUINT32         multiTargetCount;
-	gctUINT32         maxSamples;
-
-}gcsHAL_LIMITS;
-#endif
 
 /******************************************************************************\
 *********** Generic Memory Allocation Optimization Using Containers ************
@@ -585,20 +556,6 @@ gcoHAL_GetVGEngine(
     OUT gcoVG * Engine
     );
 
-#if gcdENABLE_VG
-gceSTATUS
-gcoHAL_QueryChipLimits(
-    IN gcoHAL           Hal,
-    IN gctINT32         Chip,
-    OUT gcsHAL_LIMITS   *Limits);
-
-gceSTATUS
-gcoHAL_QueryChipFeature(
-    IN gcoHAL       Hal,
-    IN gctINT32     Chip,
-    IN gceFEATURE   Feature);
-
-#endif
 /******************************************************************************\
 ********************************** gcoOS Object *********************************
 \******************************************************************************/

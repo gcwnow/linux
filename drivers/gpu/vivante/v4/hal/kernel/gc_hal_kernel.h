@@ -28,10 +28,6 @@
 #include "gc_hal_kernel_hardware.h"
 #include "gc_hal_driver.h"
 
-#if gcdENABLE_VG
-#include "gc_hal_kernel_vg.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -331,10 +327,6 @@ struct _gckKERNEL
     /* Pointer to gckEVENT object. */
     gcsTIMER                    timers[8];
     gctUINT32                   timeOut;
-
-#if gcdENABLE_VG
-    gckVGKERNEL                 vg;
-#endif
 };
 
 /* gckCOMMAND object. */
@@ -566,10 +558,6 @@ typedef union _gcuVIDMEM_NODE
 
         /* */
         gcsVIDMEM_NODE_SHARED_INFO sharedInfo;
-
-#if gcdDYNAMIC_MAP_RESERVED_MEMORY && gcdENABLE_VG
-        gctPOINTER              kernelVirtual;
-#endif
     }
     VidMem;
 

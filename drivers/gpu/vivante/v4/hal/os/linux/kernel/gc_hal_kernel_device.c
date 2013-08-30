@@ -212,22 +212,7 @@ static int threadRoutine2D(void *ctxt)
 
 static irqreturn_t isrRoutineVG(int irq, void *ctxt)
 {
-#if gcdENABLE_VG
-    gceSTATUS status;
-    gckGALDEVICE device;
-
-    device = (gckGALDEVICE) ctxt;
-
-	/* Serve the interrupt. */
-	status = gckVGINTERRUPT_Enque(device->kernels[gcvCORE_VG]->vg->interrupt);
-
-	/* Determine the return value. */
-	return (status == gcvSTATUS_NOT_OUR_INTERRUPT)
-		? IRQ_RETVAL(0)
-		: IRQ_RETVAL(1);
-#else
     return IRQ_NONE;
-#endif
 }
 
 static int threadRoutineVG(void *ctxt)
@@ -502,30 +487,7 @@ gckGALDEVICE_Construct(
         device->kernels[gcvCORE_2D] = gcvNULL;
     }
 
-    if (IrqLineVG != -1)
-    {
-#if gcdENABLE_VG
-        gcmkONERROR(gckKERNEL_Construct(
-            device->os, gcvCORE_VG, device,
-            sharedDB, &device->kernels[gcvCORE_VG]));
-        /* Initialize core mapping */
-        if (device->kernels[gcvCORE_MAJOR] == gcvNULL
-            && device->kernels[gcvCORE_2D] == gcvNULL
-            )
-        {
-            for (i = 0; i < 8; i++)
-            {
-                device->coreMapping[i] = gcvCORE_VG;
-            }
-        }
-        else
-        {
-            device->coreMapping[gcvHARDWARE_VG] = gcvCORE_VG;
-        }
-
-#endif
-    }
-    else
+    if (IrqLineVG == -1)
     {
         device->kernels[gcvCORE_VG] = gcvNULL;
     }
@@ -550,42 +512,20 @@ gckGALDEVICE_Construct(
 
     if (i == gcdCORE_COUNT) gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
 
-#if gcdENABLE_VG
-    if (i == gcvCORE_VG)
-    {
-        /* Query the ceiling of the system memory. */
-        gcmkONERROR(gckVGHARDWARE_QuerySystemMemory(
-                device->kernels[i]->vg->hardware,
-                &device->systemMemorySize,
-                &device->systemMemoryBaseAddress
-                ));
-            /* query the amount of video memory */
-        gcmkONERROR(gckVGHARDWARE_QueryMemory(
-            device->kernels[i]->vg->hardware,
-            &device->internalSize, &internalBaseAddress, &internalAlignment,
-            &device->externalSize, &externalBaseAddress, &externalAlignment,
-            &horizontalTileSize, &verticalTileSize
-            ));
-    }
-    else
-#endif
-    {
-        /* Query the ceiling of the system memory. */
-        gcmkONERROR(gckHARDWARE_QuerySystemMemory(
-                device->kernels[i]->hardware,
-                &device->systemMemorySize,
-                &device->systemMemoryBaseAddress
-                ));
-
-            /* query the amount of video memory */
-        gcmkONERROR(gckHARDWARE_QueryMemory(
+    /* Query the ceiling of the system memory. */
+    gcmkONERROR(gckHARDWARE_QuerySystemMemory(
             device->kernels[i]->hardware,
-            &device->internalSize, &internalBaseAddress, &internalAlignment,
-            &device->externalSize, &externalBaseAddress, &externalAlignment,
-            &horizontalTileSize, &verticalTileSize
+            &device->systemMemorySize,
+            &device->systemMemoryBaseAddress
             ));
-    }
 
+    /* Query the amount of video memory. */
+    gcmkONERROR(gckHARDWARE_QueryMemory(
+        device->kernels[i]->hardware,
+        &device->internalSize, &internalBaseAddress, &internalAlignment,
+        &device->externalSize, &externalBaseAddress, &externalAlignment,
+        &horizontalTileSize, &verticalTileSize
+        ));
 
     /* Set up the internal memory region. */
     if (device->internalSize > 0)
@@ -741,25 +681,6 @@ gckGALDEVICE_Construct(
                 device->requestedContiguousBase  = ContiguousBase;
                 device->requestedContiguousSize  = ContiguousSize;
 
-#if !gcdDYNAMIC_MAP_RESERVED_MEMORY && gcdENABLE_VG
-                if (gcmIS_CORE_PRESENT(device, gcvCORE_VG))
-                {
-                    device->contiguousBase
-#if gcdPAGED_MEMORY_CACHEABLE
-                        = (gctPOINTER) ioremap_cached(ContiguousBase, ContiguousSize);
-#else
-                        = (gctPOINTER) ioremap_nocache(ContiguousBase, ContiguousSize);
-#endif
-                    if (device->contiguousBase == gcvNULL)
-                    {
-                        device->contiguousVidMem = gcvNULL;
-                        device->contiguousSize = 0;
-
-                        gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
-                    }
-                }
-#endif
-
                 device->contiguousPhysical = (gctPHYS_ADDR) ContiguousBase;
                 device->contiguousSize     = ContiguousSize;
                 device->contiguousMapped   = gcvTRUE;
@@ -855,17 +776,7 @@ gckGALDEVICE_Destroy(
         {
             if (Device->contiguousBase != gcvNULL)
             {
-                if (Device->contiguousMapped)
-                {
-#if !gcdDYNAMIC_MAP_RESERVED_MEMORY && gcdENABLE_VG
-                    if (Device->contiguousBase)
-                    {
-                        /* Unmap the contiguous memory. */
-                        iounmap(Device->contiguousBase);
-                    }
-#endif
-                }
-                else
+                if (!Device->contiguousMapped)
                 {
                     gcmkONERROR(_FreeMemory(
                         Device,
@@ -1504,13 +1415,6 @@ gckGALDEVICE_Stop(
     {
         /* Setup the ISR routine. */
         gcmkONERROR(gckGALDEVICE_Release_ISR_VG(Device));
-
-#if gcdENABLE_VG
-        /* Switch to OFF power state. */
-        gcmkONERROR(gckVGHARDWARE_SetPowerManagementState(
-            Device->kernels[gcvCORE_VG]->vg->hardware, gcvPOWER_OFF
-            ));
-#endif
     }
 
     /* Stop the kernel thread. */

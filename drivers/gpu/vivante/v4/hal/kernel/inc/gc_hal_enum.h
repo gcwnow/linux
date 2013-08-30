@@ -764,26 +764,6 @@ typedef enum _gceKERNEL_WHERE
 }
 gceKERNEL_WHERE;
 
-#if gcdENABLE_VG
-/* Hardware blocks. */
-typedef enum _gceBLOCK
-{
-	gcvBLOCK_COMMAND,
-	gcvBLOCK_TESSELLATOR,
-	gcvBLOCK_TESSELLATOR2,
-	gcvBLOCK_TESSELLATOR3,
-	gcvBLOCK_RASTER,
-	gcvBLOCK_VG,
-	gcvBLOCK_VG2,
-	gcvBLOCK_VG3,
-	gcvBLOCK_PIXEL,
-
-	/* Number of defined blocks. */
-	gcvBLOCK_COUNT
-}
-gceBLOCK;
-#endif
-
 /* gcdDUMP message type. */
 typedef enum _gceDEBUG_MESSAGE_TYPE
 {
@@ -803,18 +783,6 @@ typedef struct _gcsQUEUE            * gcsQUEUE_PTR;
 typedef struct _gcoQUEUE            * gcoQUEUE;
 typedef struct _gcsHAL_INTERFACE    * gcsHAL_INTERFACE_PTR;
 typedef struct _gcs2D_PROFILE       * gcs2D_PROFILE_PTR;
-
-#if gcdENABLE_VG
-typedef struct _gcoVGHARDWARE *			gcoVGHARDWARE;
-typedef struct _gcoVGBUFFER *           gcoVGBUFFER;
-typedef struct _gckVGHARDWARE *         gckVGHARDWARE;
-typedef struct _gcsVGCONTEXT *			gcsVGCONTEXT_PTR;
-typedef struct _gcsVGCONTEXT_MAP *		gcsVGCONTEXT_MAP_PTR;
-typedef struct _gcsVGCMDQUEUE *			gcsVGCMDQUEUE_PTR;
-typedef struct _gcsTASK_MASTER_TABLE *	gcsTASK_MASTER_TABLE_PTR;
-typedef struct _gckVGKERNEL *			gckVGKERNEL;
-typedef void *					        gctTHREAD;
-#endif
 
 #ifdef __cplusplus
 }

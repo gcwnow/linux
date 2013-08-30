@@ -530,17 +530,9 @@ long drv_ioctl(
         {
             if (device->kernels[i] != gcvNULL)
             {
-#if gcdENABLE_VG
-                if (i == gcvCORE_VG)
-                {
-                    iface.u.ChipInfo.types[count] = gcvHARDWARE_VG;
-                }
-                else
-#endif
-                {
-                    gcmkVERIFY_OK(gckHARDWARE_GetType(device->kernels[i]->hardware,
-                                                      &iface.u.ChipInfo.types[count]));
-                }
+                gcmkVERIFY_OK(gckHARDWARE_GetType(device->kernels[i]->hardware,
+                                                  &iface.u.ChipInfo.types[count]));
+
                 count++;
             }
         }
@@ -562,20 +554,9 @@ long drv_ioctl(
             gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
         }
 
-#if gcdENABLE_VG
-        if (device->coreMapping[iface.hardwareType] == gcvCORE_VG)
-        {
-            status = gckVGKERNEL_Dispatch(device->kernels[gcvCORE_VG],
-                                        (ioctlCode == IOCTL_GCHAL_INTERFACE),
-                                        &iface);
-        }
-        else
-#endif
-        {
-            status = gckKERNEL_Dispatch(device->kernels[device->coreMapping[iface.hardwareType]],
-                                        (ioctlCode == IOCTL_GCHAL_INTERFACE),
-                                        &iface);
-        }
+        status = gckKERNEL_Dispatch(device->kernels[device->coreMapping[iface.hardwareType]],
+                                    (ioctlCode == IOCTL_GCHAL_INTERFACE),
+                                    &iface);
     }
 
     /* Redo system call after pending signal is handled. */
@@ -1066,38 +1047,17 @@ static int gpu_suspend(struct platform_device *dev, pm_message_t state)
         if (device->kernels[i] != gcvNULL)
         {
             /* Store states. */
-#if gcdENABLE_VG
-            if (i == gcvCORE_VG)
-            {
-                status = gckVGHARDWARE_QueryPowerManagementState(device->kernels[i]->vg->hardware, &device->statesStored[i]);
-            }
-            else
-#endif
-            {
-                status = gckHARDWARE_QueryPowerManagementState(device->kernels[i]->hardware, &device->statesStored[i]);
-            }
-
+            status = gckHARDWARE_QueryPowerManagementState(device->kernels[i]->hardware, &device->statesStored[i]);
             if (gcmIS_ERROR(status))
             {
                 return -1;
             }
 
-#if gcdENABLE_VG
-            if (i == gcvCORE_VG)
-            {
-                status = gckVGHARDWARE_SetPowerManagementState(device->kernels[i]->vg->hardware, gcvPOWER_OFF);
-            }
-            else
-#endif
-            {
-                status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, gcvPOWER_OFF);
-            }
-
+            status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, gcvPOWER_OFF);
             if (gcmIS_ERROR(status))
             {
                 return -1;
             }
-
         }
     }
 
@@ -1120,17 +1080,7 @@ static int gpu_resume(struct platform_device *dev)
     {
         if (device->kernels[i] != gcvNULL)
         {
-#if gcdENABLE_VG
-            if (i == gcvCORE_VG)
-            {
-                status = gckVGHARDWARE_SetPowerManagementState(device->kernels[i]->vg->hardware, gcvPOWER_ON);
-            }
-            else
-#endif
-            {
-                status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, gcvPOWER_ON);
-            }
-
+            status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, gcvPOWER_ON);
             if (gcmIS_ERROR(status))
             {
                 return -1;
@@ -1157,17 +1107,7 @@ static int gpu_resume(struct platform_device *dev)
             }
 
             /* Restore states. */
-#if gcdENABLE_VG
-            if (i == gcvCORE_VG)
-            {
-                status = gckVGHARDWARE_SetPowerManagementState(device->kernels[i]->vg->hardware, statesStored);
-            }
-            else
-#endif
-            {
-                status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, statesStored);
-            }
-
+            status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, statesStored);
             if (gcmIS_ERROR(status))
             {
                 return -1;

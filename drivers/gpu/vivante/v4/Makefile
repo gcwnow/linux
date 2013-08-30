@@ -15,7 +15,6 @@ ccflags-y += -DgcdPAGED_MEMORY_CACHEABLE=0
 ccflags-y += -DgcdNONPAGED_MEMORY_CACHEABLE=0
 ccflags-y += -DgcdNONPAGED_MEMORY_BUFFERABLE=1
 ccflags-y += -DgcdCACHE_FUNCTION_UNIMPLEMENTED=0
-ccflags-y += -DgcdENABLE_VG=0
 ccflags-y += -DgcdSUPPORT_SWAP_RECTANGLE=0
 ccflags-y += -DgcdENABLE_OUTER_CACHE_PATCH=0
 ccflags-y += -DgcdUSE_OPENCL=0

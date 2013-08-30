@@ -4484,41 +4484,19 @@ gckOS_MapPagesEx(
         /* Try to get the user pages so DMA can happen. */
         while (PageCount-- > 0)
         {
-#if gcdENABLE_VG
-            if (Core == gcvCORE_VG)
+            if (mdl->contiguous)
             {
-                if (mdl->contiguous)
-                {
-                    gcmkONERROR(
-                        gckVGMMU_SetPage(Os->device->kernels[Core]->vg->mmu,
-                             page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
-                             table));
-                }
-                else
-                {
-                    gcmkONERROR(
-                        gckVGMMU_SetPage(Os->device->kernels[Core]->vg->mmu,
-                             _NonContiguousToPhys(mdl->u.nonContiguousPages, offset),
-                             table));
-                }
+                gcmkONERROR(
+                    gckMMU_SetPage(Os->device->kernels[Core]->mmu,
+                         page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
+                         table));
             }
             else
-#endif
             {
-                if (mdl->contiguous)
-                {
-                    gcmkONERROR(
-                        gckMMU_SetPage(Os->device->kernels[Core]->mmu,
-                             page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
-                             table));
-                }
-                else
-                {
-                    gcmkONERROR(
-                        gckMMU_SetPage(Os->device->kernels[Core]->mmu,
-                             _NonContiguousToPhys(mdl->u.nonContiguousPages, offset),
-                             table));
-                }
+                gcmkONERROR(
+                    gckMMU_SetPage(Os->device->kernels[Core]->mmu,
+                         _NonContiguousToPhys(mdl->u.nonContiguousPages, offset),
+                         table));
             }
 
             table++;
@@ -4535,22 +4513,11 @@ gckOS_MapPagesEx(
 
         while (PageCount-- > 0)
         {
-#if gcdENABLE_VG
-            if (Core == gcvCORE_VG)
-            {
-                gcmkONERROR(
-                        gckVGMMU_SetPage(Os->device->kernels[Core]->vg->mmu,
-                                         page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
-                                         table));
-            }
-            else
-#endif
-            {
-                gcmkONERROR(
-                        gckMMU_SetPage(Os->device->kernels[Core]->mmu,
-                                         page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
-                                         table));
-            }
+            gcmkONERROR(
+                    gckMMU_SetPage(Os->device->kernels[Core]->mmu,
+                                     page_to_phys(nth_page(mdl->u.contiguousPages, offset)),
+                                     table));
+
             table++;
             offset += 1;
         }
@@ -4785,117 +4752,6 @@ OnError:
     gcmkFOOTER();
     return status;
 }
-
-#if gcdENABLE_VG
-/******************************************************************************
-**
-**  gckOS_GetKernelLogical
-**
-**  Return the kernel logical pointer that corresponods to the specified
-**  hardware address.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      gctUINT32 Address
-**          Hardware physical address.
-**
-**  OUTPUT:
-**
-**      gctPOINTER * KernelPointer
-**          Pointer to a variable receiving the pointer in kernel address space.
-*/
-gceSTATUS
-gckOS_GetKernelLogical(
-    IN gckOS Os,
-    IN gctUINT32 Address,
-    OUT gctPOINTER * KernelPointer
-    )
-{
-    return gckOS_GetKernelLogicalEx(Os, gcvCORE_MAJOR, Address, KernelPointer);
-}
-
-gceSTATUS
-gckOS_GetKernelLogicalEx(
-    IN gckOS Os,
-    IN gceCORE Core,
-    IN gctUINT32 Address,
-    OUT gctPOINTER * KernelPointer
-    )
-{
-    gceSTATUS status;
-
-    gcmkHEADER_ARG("Os=0x%X Core=%d Address=0x%08x", Os, Core, Address);
-
-    do
-    {
-        gckGALDEVICE device;
-        gckKERNEL kernel;
-        gcePOOL pool;
-        gctUINT32 offset;
-        gctPOINTER logical;
-
-        /* Extract the pointer to the gckGALDEVICE class. */
-        device = (gckGALDEVICE) Os->device;
-
-        /* Kernel shortcut. */
-        kernel = device->kernels[Core];
-#if gcdENABLE_VG
-       if (Core == gcvCORE_VG)
-       {
-           gcmkERR_BREAK(gckVGHARDWARE_SplitMemory(
-                kernel->vg->hardware, Address, &pool, &offset
-                ));
-       }
-       else
-#endif
-       {
-        /* Split the memory address into a pool type and offset. */
-            gcmkERR_BREAK(gckHARDWARE_SplitMemory(
-                kernel->hardware, Address, &pool, &offset
-                ));
-       }
-
-        /* Dispatch on pool. */
-        switch (pool)
-        {
-        case gcvPOOL_LOCAL_INTERNAL:
-            /* Internal memory. */
-            logical = device->internalLogical;
-            break;
-
-        case gcvPOOL_LOCAL_EXTERNAL:
-            /* External memory. */
-            logical = device->externalLogical;
-            break;
-
-        case gcvPOOL_SYSTEM:
-            /* System memory. */
-            logical = device->contiguousBase;
-            break;
-
-        default:
-            /* Invalid memory pool. */
-            gcmkFOOTER();
-            return gcvSTATUS_INVALID_ARGUMENT;
-        }
-
-        /* Build logical address of specified address. */
-        * KernelPointer = ((gctUINT8_PTR) logical) + offset;
-
-        /* Success. */
-        gcmkFOOTER_ARG("*KernelPointer=0x%X", *KernelPointer);
-        return gcvSTATUS_OK;
-    }
-    while (gcvFALSE);
-
-    /* Return status. */
-    gcmkFOOTER();
-    return status;
-}
-#endif
 
 /*******************************************************************************
 **
@@ -5524,24 +5380,12 @@ OnError:
 
         }
 
-#if gcdENABLE_VG
-        if (Core == gcvCORE_VG)
-        {
-            /* Allocate pages inside the page table. */
-            gcmkERR_BREAK(gckVGMMU_AllocatePages(Os->device->kernels[Core]->vg->mmu,
-                                              pageCount * (PAGE_SIZE/4096),
-                                              (gctPOINTER *) &pageTable,
-                                              &address));
-        }
-        else
-#endif
-        {
-            /* Allocate pages inside the page table. */
-            gcmkERR_BREAK(gckMMU_AllocatePages(Os->device->kernels[Core]->mmu,
-                                              pageCount * (PAGE_SIZE/4096),
-                                              (gctPOINTER *) &pageTable,
-                                              &address));
-        }
+        /* Allocate pages inside the page table. */
+        gcmkERR_BREAK(gckMMU_AllocatePages(Os->device->kernels[Core]->mmu,
+                                          pageCount * (PAGE_SIZE/4096),
+                                          (gctPOINTER *) &pageTable,
+                                          &address));
+
         /* Fill the page table. */
         for (i = 0; i < pageCount; i++)
         {
@@ -5557,24 +5401,11 @@ OnError:
                 phys = (physical & PAGE_MASK) + i * PAGE_SIZE;
             }
 
-#if gcdENABLE_VG
-            if (Core == gcvCORE_VG)
-            {
-                /* Get the physical address from page struct. */
-                gcmkONERROR(
-                    gckVGMMU_SetPage(Os->device->kernels[Core]->vg->mmu,
-                                   phys,
-                                   tab));
-            }
-            else
-#endif
-            {
-                /* Get the physical address from page struct. */
-                gcmkONERROR(
-                    gckMMU_SetPage(Os->device->kernels[Core]->mmu,
-                                   phys,
-                                   tab));
-            }
+            /* Get the physical address from page struct. */
+            gcmkONERROR(
+                gckMMU_SetPage(Os->device->kernels[Core]->mmu,
+                               phys,
+                               tab));
 
             for (j = 1; j < (PAGE_SIZE/4096); j++)
             {
@@ -5588,12 +5419,7 @@ OnError:
                 i, phys, pageTable[i]);
         }
 
-#if gcdENABLE_VG
-        if (Core != gcvCORE_VG)
-#endif
-        {
-            gcmkONERROR(gckMMU_Flush(Os->device->kernels[Core]->mmu));
-        }
+        gcmkONERROR(gckMMU_Flush(Os->device->kernels[Core]->mmu));
 
         /* Save pointer to page table. */
         info->pageTable = pageTable;
@@ -5833,24 +5659,11 @@ OnError:
 
         MEMORY_MAP_LOCK(Os);
 
-#if gcdENABLE_VG
-        if (Core == gcvCORE_VG)
-        {
-            /* Free the pages from the MMU. */
-            gcmkERR_BREAK(gckVGMMU_FreePages(Os->device->kernels[Core]->vg->mmu,
-                                          info->pageTable,
-                                          pageCount * (PAGE_SIZE/4096)
-                                          ));
-        }
-        else
-#endif
-        {
-            /* Free the pages from the MMU. */
-            gcmkERR_BREAK(gckMMU_FreePages(Os->device->kernels[Core]->mmu,
-                                          info->pageTable,
-                                          pageCount * (PAGE_SIZE/4096)
-                                          ));
-        }
+        /* Free the pages from the MMU. */
+        gcmkERR_BREAK(gckMMU_FreePages(Os->device->kernels[Core]->mmu,
+                                      info->pageTable,
+                                      pageCount * (PAGE_SIZE/4096)
+                                      ));
 
         /* Release the page cache. */
         if (pages)
@@ -7178,66 +6991,6 @@ gckOS_Signal(
     return gcvSTATUS_OK;
 }
 
-#if gcdENABLE_VG
-gceSTATUS
-gckOS_SetSignalVG(
-    IN gckOS Os,
-    IN gctHANDLE Process,
-    IN gctSIGNAL Signal
-    )
-{
-    gceSTATUS status;
-    gctINT result;
-    struct task_struct * userTask;
-    struct siginfo info;
-
-    userTask = FIND_TASK_BY_PID((pid_t) Process);
-
-    if (userTask != gcvNULL)
-    {
-        info.si_signo = 48;
-        info.si_code  = __SI_CODE(__SI_RT, SI_KERNEL);
-        info.si_pid   = 0;
-        info.si_uid   = 0;
-        info.si_ptr   = (gctPOINTER) Signal;
-
-        /* Signals with numbers between 32 and 63 are real-time,
-           send a real-time signal to the user process. */
-        result = send_sig_info(48, &info, userTask);
-
-        printk("gckOS_SetSignalVG:0x%x\n", result);
-        /* Error? */
-        if (result < 0)
-        {
-            status = gcvSTATUS_GENERIC_IO;
-
-            gcmkTRACE(
-                gcvLEVEL_ERROR,
-                "%s(%d): an error has occurred.\n",
-                __FUNCTION__, __LINE__
-                );
-        }
-        else
-        {
-            status = gcvSTATUS_OK;
-        }
-    }
-    else
-    {
-        status = gcvSTATUS_GENERIC_IO;
-
-        gcmkTRACE(
-            gcvLEVEL_ERROR,
-            "%s(%d): an error has occurred.\n",
-            __FUNCTION__, __LINE__
-            );
-    }
-
-    /* Return status. */
-    return status;
-}
-#endif
-
 /*******************************************************************************
 **
 **  gckOS_UserSignal
@@ -8105,270 +7858,6 @@ gckOS_CleanProcessSignal(
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 }
-
-#if gcdENABLE_VG
-gceSTATUS
-gckOS_CreateSemaphoreVG(
-    IN gckOS Os,
-    OUT gctSEMAPHORE * Semaphore
-    )
-{
-    gceSTATUS status;
-    struct semaphore * newSemaphore;
-
-    gcmkHEADER_ARG("Os=0x%X Semaphore=0x%x", Os, Semaphore);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
-
-    do
-    {
-        /* Allocate the semaphore structure. */
-	newSemaphore = (struct semaphore *)kmalloc(gcmSIZEOF(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
-	if (newSemaphore == gcvNULL)
-	{
-		gcmkERR_BREAK(gcvSTATUS_OUT_OF_MEMORY);
-	}
-
-        /* Initialize the semaphore. */
-        sema_init(newSemaphore, 0);
-
-        /* Set the handle. */
-        * Semaphore = (gctSEMAPHORE) newSemaphore;
-
-        /* Success. */
-        status = gcvSTATUS_OK;
-    }
-    while (gcvFALSE);
-
-    gcmkFOOTER();
-    /* Return the status. */
-    return status;
-}
-
-
-gceSTATUS
-gckOS_IncrementSemaphore(
-    IN gckOS Os,
-    IN gctSEMAPHORE Semaphore
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X Semaphore=0x%x", Os, Semaphore);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
-
-    /* Increment the semaphore's count. */
-    up((struct semaphore *) Semaphore);
-
-    gcmkFOOTER_NO();
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-
-gceSTATUS
-gckOS_DecrementSemaphore(
-    IN gckOS Os,
-    IN gctSEMAPHORE Semaphore
-    )
-{
-    gceSTATUS status;
-    gctINT result;
-
-    gcmkHEADER_ARG("Os=0x%X Semaphore=0x%x", Os, Semaphore);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Semaphore != gcvNULL);
-
-    do
-    {
-        /* Decrement the semaphore's count. If the count is zero, wait
-           until it gets incremented. */
-        result = down_interruptible((struct semaphore *) Semaphore);
-
-        /* Signal received? */
-        if (result != 0)
-        {
-            status = gcvSTATUS_TERMINATE;
-            break;
-        }
-
-        /* Success. */
-        status = gcvSTATUS_OK;
-    }
-    while (gcvFALSE);
-
-    gcmkFOOTER();
-    /* Return the status. */
-    return status;
-}
-
-/*******************************************************************************
-**
-**  gckOS_SetSignal
-**
-**  Set the specified signal to signaled state.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to the gckOS object.
-**
-**      gctHANDLE Process
-**          Handle of process owning the signal.
-**
-**      gctSIGNAL Signal
-**          Pointer to the gctSIGNAL.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-gceSTATUS
-gckOS_SetSignal(
-    IN gckOS Os,
-    IN gctHANDLE Process,
-    IN gctSIGNAL Signal
-    )
-{
-    gceSTATUS status;
-    gctINT result;
-    struct task_struct * userTask;
-    struct siginfo info;
-
-    userTask = FIND_TASK_BY_PID((pid_t) Process);
-
-    if (userTask != gcvNULL)
-    {
-        info.si_signo = 48;
-        info.si_code  = __SI_CODE(__SI_RT, SI_KERNEL);
-        info.si_pid   = 0;
-        info.si_uid   = 0;
-        info.si_ptr   = (gctPOINTER) Signal;
-
-        /* Signals with numbers between 32 and 63 are real-time,
-           send a real-time signal to the user process. */
-        result = send_sig_info(48, &info, userTask);
-
-        /* Error? */
-        if (result < 0)
-        {
-            status = gcvSTATUS_GENERIC_IO;
-
-            gcmkTRACE(
-                gcvLEVEL_ERROR,
-                "%s(%d): an error has occurred.\n",
-                __FUNCTION__, __LINE__
-                );
-        }
-        else
-        {
-            status = gcvSTATUS_OK;
-        }
-    }
-    else
-    {
-        status = gcvSTATUS_GENERIC_IO;
-
-        gcmkTRACE(
-            gcvLEVEL_ERROR,
-            "%s(%d): an error has occurred.\n",
-            __FUNCTION__, __LINE__
-            );
-    }
-
-    /* Return status. */
-    return status;
-}
-
-/******************************************************************************\
-******************************** Thread Object *********************************
-\******************************************************************************/
-
-gceSTATUS
-gckOS_StartThread(
-    IN gckOS Os,
-    IN gctTHREADFUNC ThreadFunction,
-    IN gctPOINTER ThreadParameter,
-    OUT gctTHREAD * Thread
-    )
-{
-    gceSTATUS status;
-    struct task_struct * thread;
-
-    gcmkHEADER_ARG("Os=0x%X ", Os);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(ThreadFunction != gcvNULL);
-    gcmkVERIFY_ARGUMENT(Thread != gcvNULL);
-
-    do
-    {
-        /* Create the thread. */
-        thread = kthread_create(
-            ThreadFunction,
-            ThreadParameter,
-            "Vivante Kernel Thread"
-            );
-
-        /* Failed? */
-        if (IS_ERR(thread))
-        {
-            status = gcvSTATUS_GENERIC_IO;
-            break;
-        }
-
-        /* Start the thread. */
-        wake_up_process(thread);
-
-        /* Set the thread handle. */
-        * Thread = (gctTHREAD) thread;
-
-        /* Success. */
-        status = gcvSTATUS_OK;
-    }
-    while (gcvFALSE);
-
-    gcmkFOOTER();
-    /* Return the status. */
-    return status;
-}
-
-gceSTATUS
-gckOS_StopThread(
-    IN gckOS Os,
-    IN gctTHREAD Thread
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X Thread=0x%x", Os, Thread);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Thread != gcvNULL);
-
-    /* Thread should have already been enabled to terminate. */
-    kthread_stop((struct task_struct *) Thread);
-
-    gcmkFOOTER_NO();
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-
-gceSTATUS
-gckOS_VerifyThread(
-    IN gckOS Os,
-    IN gctTHREAD Thread
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X Thread=0x%x", Os, Thread);
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Thread != gcvNULL);
-
-    gcmkFOOTER_NO();
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-#endif
 
 /*******************************************************************************
 **

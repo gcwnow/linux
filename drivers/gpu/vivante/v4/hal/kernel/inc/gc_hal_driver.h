@@ -27,10 +27,6 @@
 #include "gc_hal_enum.h"
 #include "gc_hal_types.h"
 
-#if gcdENABLE_VG
-#include "gc_hal_driver_vg.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -812,34 +808,6 @@ typedef struct _gcsHAL_INTERFACE
             gctUINT32                   timeOut;
         }
         SetTimeOut;
-
-#if gcdENABLE_VG
-		/* gcvHAL_COMMIT */
-		struct _gcsHAL_VGCOMMIT
-		{
-			/* Context buffer. */
-			IN gcsVGCONTEXT_PTR			context;
-
-			/* Command queue. */
-			IN gcsVGCMDQUEUE_PTR			queue;
-
-			/* Number of entries in the queue. */
-			IN gctUINT					entryCount;
-
-			/* Task table. */
-			IN gcsTASK_MASTER_TABLE_PTR	taskTable;
-		}
-		VGCommit;
-
-		/* gcvHAL_QUERY_COMMAND_BUFFER */
-		struct _gcsHAL_QUERY_COMMAND_BUFFER
-		{
-			/* Command buffer attributes. */
-			OUT gcsCOMMAND_BUFFER_INFO	information;
-		}
-		QueryCommandBuffer;
-
-#endif
 
         struct _gcsHAL_GET_SHARED_INFO
         {

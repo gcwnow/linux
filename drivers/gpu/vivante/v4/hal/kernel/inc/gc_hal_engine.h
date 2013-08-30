@@ -28,10 +28,6 @@
 #include "gc_hal_types.h"
 #include "gc_hal_enum.h"
 
-#if gcdENABLE_VG
-#include "gc_hal_engine_vg.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
