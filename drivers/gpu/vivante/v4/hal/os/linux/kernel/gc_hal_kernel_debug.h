@@ -24,7 +24,8 @@
 #ifndef __gc_hal_kernel_debug_h_
 #define __gc_hal_kernel_debug_h_
 
-#include <gc_hal_kernel_linux.h>
+#include "gc_hal_kernel_linux.h"
+
 #include <linux/spinlock.h>
 #include <linux/time.h>
 #include <stdarg.h>
