@@ -26,10 +26,6 @@
 
 #include "gc_hal_kernel_buffer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Maps state locations within the context buffer. */
 typedef struct _gcsSTATE_MAP * gcsSTATE_MAP_PTR;
 typedef struct _gcsSTATE_MAP
@@ -137,9 +133,5 @@ struct _gckCONTEXT
     gctBOOL_PTR                 hint;
 #endif
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_kernel_context_h_ */

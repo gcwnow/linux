@@ -28,10 +28,6 @@
 #include "gc_hal_types.h"
 #include "gc_hal_enum.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 ****************************** Object Declarations *****************************
 \******************************************************************************/
@@ -1834,10 +1830,6 @@ gcoHAL_SetSharedInfo(
     IN gctUINT8_PTR NodeData,
     IN gceVIDMEM_NODE_SHARED_INFO_TYPE SharedInfoType
     );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* VIVANTE_NO_3D */
 #endif /* __gc_hal_engine_h_ */

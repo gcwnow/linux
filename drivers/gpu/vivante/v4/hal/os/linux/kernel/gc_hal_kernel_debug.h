@@ -30,9 +30,6 @@
 #include <linux/time.h>
 #include <stdarg.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /******************************************************************************\
 ****************************** OS-dependent Macros *****************************
@@ -93,9 +90,5 @@ typedef va_list gctARGUMENTS;
 /* If not zero, forces data alignment in the variable argument list
    by its individual size. */
 #define gcdALIGNBYSIZE      1
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_kernel_debug_h_ */

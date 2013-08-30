@@ -24,11 +24,6 @@
 #ifndef __gc_hal_kernel_buffer_h_
 #define __gc_hal_kernel_buffer_h_
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 ************************ Command Buffer and Event Objects **********************
 \******************************************************************************/
@@ -177,9 +172,5 @@ struct _gcoQUEUE
     /* Number of records currently in queue */
     gctUINT32                   recordCount;
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_kernel_buffer_h_ */

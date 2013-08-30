@@ -37,10 +37,6 @@
 #pragma warning(disable:4206)   /* Translation unit is empty. */
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 **  Platform macros.
 */
@@ -156,11 +152,7 @@ typedef gctUINT64 *             gctUINT64_PTR;
 typedef unsigned long           gctSIZE_T;
 typedef gctSIZE_T *             gctSIZE_T_PTR;
 
-#ifdef __cplusplus
-#   define gcvNULL              0
-#else
-#   define gcvNULL              ((void *) 0)
-#endif
+#define gcvNULL                 ((void *) 0)
 
 typedef float                   gctFLOAT;
 typedef signed int              gctFIXED_POINT;
@@ -962,9 +954,5 @@ typedef struct _gcsHAL_FRAME_INFO
     OUT gctUINT                 txMissCount;
 }
 gcsHAL_FRAME_INFO;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_types_h_ */

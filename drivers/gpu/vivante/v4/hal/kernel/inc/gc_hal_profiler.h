@@ -22,10 +22,6 @@
 #ifndef __gc_hal_profiler_h_
 #define __gc_hal_profiler_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define GLVERTEX_OBJECT 10
 #define GLVERTEX_OBJECT_BYTES 11
 
@@ -1303,9 +1299,5 @@ gcoPROFILER_ShaderFS(
     IN gcoHAL Hal,
     IN gctPOINTER Fs
     );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_profiler_h_ */

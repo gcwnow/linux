@@ -31,10 +31,6 @@
 #include "gc_hal_profiler.h"
 #include "gc_hal_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 ******************************* Alignment Macros *******************************
 \******************************************************************************/
@@ -2263,12 +2259,6 @@ gckHARDWARE_QueryProfileRegisters(
     IN gckHARDWARE Hardware,
     OUT gcsPROFILER_COUNTERS * Counters
     );
-#endif
-
-
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif /* __gc_hal_h_ */

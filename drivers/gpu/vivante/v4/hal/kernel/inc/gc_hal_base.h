@@ -29,10 +29,6 @@
 
 #include "gc_hal_dump.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 ****************************** Object Declarations *****************************
 \******************************************************************************/
@@ -3560,9 +3556,5 @@ gckOS_DebugStatus2Name(
                 _gcmVERIFY_ARGUMENT_RETURN(gcmk, arg, value)
 
 #define MAX_LOOP_COUNT 0x7FFFFFFF
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_base_h_ */

@@ -28,10 +28,6 @@
 #include "gc_hal_kernel_hardware.h"
 #include "gc_hal_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /*******************************************************************************
 ***** New MMU Defination *******************************************************/
@@ -738,9 +734,5 @@ gckCONTEXT_Update(
     IN gctUINT32 ProcessID,
     IN gcsSTATE_DELTA_PTR StateDelta
     );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_kernel_h_ */

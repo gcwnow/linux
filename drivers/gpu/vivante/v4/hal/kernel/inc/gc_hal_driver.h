@@ -27,10 +27,6 @@
 #include "gc_hal_enum.h"
 #include "gc_hal_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************\
 ******************************* I/O Control Codes ******************************
 \******************************************************************************/
@@ -836,10 +832,5 @@ typedef struct _gcsHAL_INTERFACE
     u;
 }
 gcsHAL_INTERFACE;
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_driver_h_ */

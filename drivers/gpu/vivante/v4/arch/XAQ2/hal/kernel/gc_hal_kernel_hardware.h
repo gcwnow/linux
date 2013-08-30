@@ -24,10 +24,6 @@
 #ifndef __gc_hal_kernel_hardware_h_
 #define __gc_hal_kernel_hardware_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* gckHARDWARE object. */
 struct _gckHARDWARE
 {
@@ -99,9 +95,5 @@ gckHARDWARE_GetFrameInfo(
     IN gckHARDWARE Hardware,
     OUT gcsHAL_FRAME_INFO * FrameInfo
     );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_kernel_hardware_h_ */

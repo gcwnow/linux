@@ -23,10 +23,6 @@
 #ifndef __gc_hal_dump_h_
 #define __gc_hal_dump_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
 **	FILE LAYOUT:
 **
@@ -80,9 +76,5 @@ typedef struct _gcsDUMP_DATA
 	gctUINT32     		address;	/* Address for the data. */
 }
 gcsDUMP_DATA;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __gc_hal_dump_h_ */
