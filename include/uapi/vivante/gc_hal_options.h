@@ -61,22 +61,6 @@
 #endif
 
 /*
-    USE_SW_FB
-
-        Set to 1 if the frame buffer memory cannot be accessed by the GPU.
-*/
-#ifndef USE_SW_FB
-#   define USE_SW_FB                            0
-#endif
-
-/*
-    USE_SUPER_SAMPLING
-
-        This define enables super-sampling support.
-*/
-#define USE_SUPER_SAMPLING                      0
-
-/*
     PROFILE_HAL_COUNTERS
 
         This define enables HAL counter profiling support.  HW and SHADER
@@ -84,24 +68,6 @@
 */
 #ifndef PROFILE_HAL_COUNTERS
 #   define PROFILE_HAL_COUNTERS                 1
-#endif
-
-/*
-    PROFILE_HW_COUNTERS
-
-        This define enables HW counter profiling support.
-*/
-#ifndef PROFILE_HW_COUNTERS
-#   define PROFILE_HW_COUNTERS                  1
-#endif
-
-/*
-    PROFILE_SHADER_COUNTERS
-
-        This define enables SHADER counter profiling support.
-*/
-#ifndef PROFILE_SHADER_COUNTERS
-#   define PROFILE_SHADER_COUNTERS              1
 #endif
 
 /*
@@ -145,17 +111,6 @@
 
 
 /*
-    gcdDUMP_IN_KERNEL
-
-        When set to 1, all dumps will happen in the kernel.  This is handy if
-        you want the kernel to dump its command buffers as well and the data
-        needs to be in sync.
-*/
-#ifndef gcdDUMP_IN_KERNEL
-#   define gcdDUMP_IN_KERNEL                    0
-#endif
-
-/*
     gcdDUMP_COMMAND
 
         When set to non-zero, the command queue will dump all incoming command
@@ -167,15 +122,6 @@
 #endif
 
 /*
-    gcdDUMP_FRAME_TGA
-
-    When set to a value other than 0, a dump of the frame specified by the value,
-    will be done into frame.tga. Frame count starts from 1.
- */
-#ifndef gcdDUMP_FRAME_TGA
-#define gcdDUMP_FRAME_TGA                       0
-#endif
-/*
     gcdNULL_DRIVER
 
     Set to 1 for infinite speed hardware.
@@ -184,42 +130,6 @@
 */
 #ifndef gcdNULL_DRIVER
 #   define gcdNULL_DRIVER  0
-#endif
-
-/*
-    gcdENABLE_TIMEOUT_DETECTION
-
-        Enable timeout detection.
-*/
-#ifndef gcdENABLE_TIMEOUT_DETECTION
-#   define gcdENABLE_TIMEOUT_DETECTION          0
-#endif
-
-/*
-    gcdCMD_BUFFER_SIZE
-
-        Number of bytes in a command buffer.
-*/
-#ifndef gcdCMD_BUFFER_SIZE
-#   define gcdCMD_BUFFER_SIZE                   (128 << 10)
-#endif
-
-/*
-    gcdCMD_BUFFERS
-
-        Number of command buffers to use per client.
-*/
-#ifndef gcdCMD_BUFFERS
-#   define gcdCMD_BUFFERS                       2
-#endif
-
-/*
-    gcdMAX_CMD_BUFFERS
-
-        Maximum number of command buffers to use per client.
-*/
-#ifndef gcdMAX_CMD_BUFFERS
-#   define gcdMAX_CMD_BUFFERS                   8
 #endif
 
 /*
@@ -310,35 +220,12 @@
 #endif
 
 /*
-    gcdHEAP_SIZE
-
-        Set the allocation size for the internal heaps.  Each time a heap is
-        full, a new heap will be allocated with this minmimum amount of bytes.
-        The bigger this size, the fewer heaps there are to allocate, the better
-        the performance.  However, heaps won't be freed until they are
-        completely free, so there might be some more memory waste if the size is
-        too big.
-*/
-#ifndef gcdHEAP_SIZE
-#   define gcdHEAP_SIZE                         (64 << 10)
-#endif
-
-/*
     gcdPOWER_MANAGEMENT
 
         This define enables the power management code.
 */
 #ifndef gcdPOWER_MANAGEMENT
 #   define gcdPOWER_MANAGEMENT                  1
-#endif
-
-/*
-    gcdFPGA_BUILD
-
-        This define enables work arounds for FPGA images.
-*/
-#ifndef gcdFPGA_BUILD
-#   define gcdFPGA_BUILD                        0
 #endif
 
 /*
@@ -351,11 +238,7 @@
         If the value is 0, no timeout will be checked for.
 */
 #ifndef gcdGPU_TIMEOUT
-#   if gcdFPGA_BUILD
-#       define gcdGPU_TIMEOUT                   0
-#   else
-#       define gcdGPU_TIMEOUT                   (2000 * 5)
-#   endif
+#   define gcdGPU_TIMEOUT                       (2000 * 5)
 #endif
 
 /*
@@ -365,24 +248,6 @@
 */
 #ifndef gcdGPU_ADVANCETIMER
 #   define gcdGPU_ADVANCETIMER                  250
-#endif
-
-/*
-    gcdSTATIC_LINK
-
-        This define disalbes static linking;
-*/
-#ifndef gcdSTATIC_LINK
-#   define gcdSTATIC_LINK                       0
-#endif
-
-/*
-    gcdUSE_NEW_HEAP
-
-        Setting this define to 1 enables new heap.
-*/
-#ifndef gcdUSE_NEW_HEAP
-#   define gcdUSE_NEW_HEAP                      0
 #endif
 
 /*
@@ -488,26 +353,6 @@
 #ifndef gcdFRAME_DB
 #   define gcdFRAME_DB                          0
 #   define gcdFRAME_DB_RESET                    0
-#   define gcdFRAME_DB_NAME                     "/var/log/frameDB.log"
-#endif
-
-/*
-    gcdDYNAMIC_MAP_RESERVED_MEMORY
-
-        When gcvPOOL_SYSTEM is constructed from RESERVED memory,
-        driver can map the whole reserved memory to kernel space
-        at the beginning, or just map a piece of memory when need
-        to access.
-
-        Notice:
-        -  It's only for the 2D openVG. For other cores, there is
-           _NO_ need to map reserved memory to kernel.
-        -  It's meaningless when memory is allocated by
-           gckOS_AllocateContiguous, in that case, memory is always
-           mapped by system when allocated.
-*/
-#ifndef gcdDYNAMIC_MAP_RESERVED_MEMORY
-#   define gcdDYNAMIC_MAP_RESERVED_MEMORY      1
 #endif
 
 /*
@@ -550,24 +395,6 @@
 #endif
 
 /*
-    gcdENABLE_INFINITE_SPEED_HW
-            enable the Infinte HW , this is for 2D openVG
-*/
-
-#ifndef gcdENABLE_INFINITE_SPEED_HW
-#   define gcdENABLE_INFINITE_SPEED_HW          0
-#endif
-
-/*
-    gcdENABLE_TS_DOUBLE_BUFFER
-            enable the TS double buffer, this is for 2D openVG
-*/
-
-#ifndef gcdENABLE_TS_DOUBLE_BUFFER
-#   define gcdENABLE_TS_DOUBLE_BUFFER           1
-#endif
-
-/*
     gcd6000_SUPPORT
 
     Temporary define to enable/disable 6000 support.
@@ -605,16 +432,6 @@
 #endif
 
 /*
-    gcdRENDER_THREADS
-
-        Number of render threads. Make it zero, and there will be no render
-        threads.
-*/
-#ifndef gcdRENDER_THREADS
-#   define gcdRENDER_THREADS                    0
-#endif
-
-/*
     gcdSMP
 
         This define enables SMP support.
@@ -625,40 +442,6 @@
 */
 #ifndef gcdSMP
 #   define gcdSMP                               0
-#endif
-
-/*
-    gcdDEFER_RESOLVES
-
-        Support deferred resolves for 3D apps.
-*/
-#ifndef gcdDEFER_RESOLVES
-#   define gcdDEFER_RESOLVES                    0
-#endif
-
-/*
-    gcdGPU_LINEAR_BUFFER_ENABLED
-
-        Use linear buffer for GPU apps so HWC can do 2D composition.
-*/
-#ifndef gcdGPU_LINEAR_BUFFER_ENABLED
-#   define gcdGPU_LINEAR_BUFFER_ENABLED         0
-#endif
-
-/*
-    gcdSHARED_RESOLVE_BUFFER_ENABLED
-
-        Use shared resolve buffer for all app buffers.
-*/
-#ifndef gcdSHARED_RESOLVE_BUFFER_ENABLED
-#   define gcdSHARED_RESOLVE_BUFFER_ENABLED         0
-#endif
-
-/*
-     gcdUSE_TRIANGLE_STRIP_PATCH
- */
-#ifndef gcdUSE_TRIANGLE_STRIP_PATCH
-#   define gcdUSE_TRIANGLE_STRIP_PATCH            1
 #endif
 
 /*
