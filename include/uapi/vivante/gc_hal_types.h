@@ -25,7 +25,7 @@
 #define __gc_hal_types_h_
 
 #include "gc_hal_version.h"
-#include "gc_hal_options.h"
+#include "gc_hal_options_to_be_removed.h"
 
 
 /******************************************************************************\
