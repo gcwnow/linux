@@ -25,6 +25,7 @@
 #define __gc_hal_kernel_h_
 
 #include "gc_hal.h"
+#include "gc_hal_internal.h"
 #include "gc_hal_kernel_hardware.h"
 #include "gc_hal_driver.h"
 #include "gc_hal_options.h"

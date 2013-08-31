@@ -34,6 +34,7 @@ endif
 # Include paths.
 #
 ccflags-y += \
+	-I$(obj) \
 	-I$(obj)/arch/XAQ2/hal/kernel \
 	-I$(obj)/hal/kernel \
 	-I$(obj)/hal/os/linux/kernel \

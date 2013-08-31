@@ -51,6 +51,7 @@
 
 #define NTSTRSAFE_NO_CCH_FUNCTIONS
 #include "gc_hal.h"
+#include "gc_hal_internal.h"
 #include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 #include "gc_hal_kernel_device.h"
