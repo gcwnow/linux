@@ -36,8 +36,8 @@ endif
 ccflags-y += \
 	-I$(obj)/arch/XAQ2/hal/kernel \
 	-I$(obj)/hal/kernel \
-	-I$(obj)/hal/kernel/inc \
-	-I$(obj)/hal/os/linux/kernel
+	-I$(obj)/hal/os/linux/kernel \
+	-Iinclude/uapi/vivante
 
 obj-$(CONFIG_GPU_VIVANTE_V4) += galcore_v4.o
 
