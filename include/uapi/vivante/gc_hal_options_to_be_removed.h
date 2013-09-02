@@ -65,16 +65,4 @@
 #   define gcdSECURE_USER                       0
 #endif
 
-/*
-    gcdPOWEROFF_TIMEOUT
-
-        When non-zero, GPU will power off automatically from
-        idle state, and gcdPOWEROFF_TIMEOUT is also the default
-        timeout in milliseconds.
- */
-
-#ifndef gcdPOWEROFF_TIMEOUT
-#   define gcdPOWEROFF_TIMEOUT                  300
-#endif
-
 #endif /* __gc_hal_options_to_be_removed_h_ */

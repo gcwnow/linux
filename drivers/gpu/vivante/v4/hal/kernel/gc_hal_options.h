@@ -364,6 +364,18 @@
 #endif
 
 /*
+    gcdPOWEROFF_TIMEOUT
+
+        When non-zero, GPU will power off automatically from
+        idle state, and gcdPOWEROFF_TIMEOUT is also the default
+        timeout in milliseconds.
+ */
+
+#ifndef gcdPOWEROFF_TIMEOUT
+#   define gcdPOWEROFF_TIMEOUT                  300
+#endif
+
+/*
     gcdUSE_VIDMEM_PER_PID
 */
 #ifndef gcdUSE_VIDMEM_PER_PID
