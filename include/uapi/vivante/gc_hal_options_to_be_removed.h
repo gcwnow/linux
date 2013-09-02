@@ -25,15 +25,6 @@
 #define __gc_hal_options_to_be_removed_h_
 
 /*
-    USE_NEW_LINUX_SIGNAL
-
-        This define enables the Linux kernel signaling between kernel and user.
-*/
-#ifndef USE_NEW_LINUX_SIGNAL
-#   define USE_NEW_LINUX_SIGNAL                 0
-#endif
-
-/*
     VIVANTE_PROFILER
 
         This define enables the profiler.

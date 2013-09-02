@@ -36,6 +36,15 @@
 #endif
 
 /*
+    USE_NEW_LINUX_SIGNAL
+
+        This define enables the Linux kernel signaling between kernel and user.
+*/
+#ifndef USE_NEW_LINUX_SIGNAL
+#   define USE_NEW_LINUX_SIGNAL                 0
+#endif
+
+/*
     NO_USER_DIRECT_ACCESS_FROM_KERNEL
 
         This define enables the Linux kernel behavior accessing user memory.
