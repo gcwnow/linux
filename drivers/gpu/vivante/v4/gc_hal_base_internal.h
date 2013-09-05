@@ -26,6 +26,7 @@
 
 #include "gc_hal_enum.h"
 #include "gc_hal_types.h"
+#include "gc_hal_types_internal.h"
 
 #include "gc_hal_dump.h"
 #include "gc_hal_version.h"
