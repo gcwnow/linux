@@ -59,6 +59,8 @@
     sizeof(a) / sizeof(a[0]) \
 )
 
+typedef struct _gckHARDWARE *       gckHARDWARE;
+
 /* CORE flags. */
 typedef enum _gceCORE
 {

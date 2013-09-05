@@ -80,6 +80,4 @@ typedef struct _gcsOBJECT
 }
 gcsOBJECT;
 
-typedef struct _gckHARDWARE *       gckHARDWARE;
-
 #endif /* __gc_hal_h_ */
