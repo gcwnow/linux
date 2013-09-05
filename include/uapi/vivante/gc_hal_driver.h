@@ -31,7 +31,6 @@
 ******************************* I/O Control Codes ******************************
 \******************************************************************************/
 
-#define gcvHAL_CLASS                    "galcore"
 #define IOCTL_GCHAL_INTERFACE           30000
 #define IOCTL_GCHAL_KERNEL_INTERFACE    30001
 #define IOCTL_GCHAL_TERMINATE           30002
