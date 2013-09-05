@@ -54,11 +54,6 @@ typedef struct _gcsSTATE_DELTA
     gctUINT                     num;
 #endif
 
-    /* For dumping. */
-#if gcdDUMP
-    gcoOS                       os;
-#endif
-
     /* Main state delta ID. Every time state delta structure gets reinitialized,
        main ID is incremented. If main state ID overflows, all map entry IDs get
        reinitialized to make sure there is no potential erroneous match after

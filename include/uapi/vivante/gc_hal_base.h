@@ -28,28 +28,7 @@
 ****************************** Object Declarations *****************************
 \******************************************************************************/
 
-typedef struct _gckOS *                 gckOS;
-typedef struct _gcoHAL *                gcoHAL;
-typedef struct _gcoOS *                 gcoOS;
-typedef struct _gco2D *                 gco2D;
-
-#ifndef VIVANTE_NO_3D
-typedef struct _gco3D *                 gco3D;
-#endif
-
-typedef struct _gcoSURF *               gcoSURF;
-typedef struct _gcsSURF_INFO *          gcsSURF_INFO_PTR;
-typedef struct _gcsSURF_NODE *          gcsSURF_NODE_PTR;
-typedef struct _gcsSURF_FORMAT_INFO *   gcsSURF_FORMAT_INFO_PTR;
-typedef struct _gcsPOINT *              gcsPOINT_PTR;
-typedef struct _gcsSIZE *               gcsSIZE_PTR;
-typedef struct _gcsRECT *               gcsRECT_PTR;
-typedef struct _gcsBOUNDARY *           gcsBOUNDARY_PTR;
-typedef struct _gcoDUMP *               gcoDUMP;
-typedef struct _gcoHARDWARE *           gcoHARDWARE;
 typedef union  _gcuVIDMEM_NODE *        gcuVIDMEM_NODE_PTR;
-
-typedef void *                          gcoVG;
 
 /******************************************************************************\
 ********************************* Enumerations *********************************
