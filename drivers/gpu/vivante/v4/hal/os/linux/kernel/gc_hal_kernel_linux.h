@@ -24,7 +24,7 @@
 #ifndef __gc_hal_kernel_linux_h_
 #define __gc_hal_kernel_linux_h_
 
-#include "gc_hal_options.h"
+#include "gc_hal_options_internal.h"
 
 #include <linux/version.h>
 #include <linux/init.h>

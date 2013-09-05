@@ -31,7 +31,7 @@
 #include "gc_hal_dump.h"
 #include "gc_hal_version.h"
 
-#include "gc_hal_options.h"
+#include "gc_hal_options_internal.h"
 
 
 /******************************************************************************\

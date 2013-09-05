@@ -21,10 +21,10 @@
 
 
 
-#ifndef __gc_hal_options_h_
-#define __gc_hal_options_h_
+#ifndef __gc_hal_options_internal_h_
+#define __gc_hal_options_internal_h_
 
-#include "gc_hal_options_to_be_removed.h"
+#include "gc_hal_options.h"
 
 /*
     gcdPRINT_VERSION
@@ -456,4 +456,4 @@
 #   define gcdRATIO_FOR_SMALL_MEMORY            32
 #endif
 
-#endif /* __gc_hal_options_h_ */
+#endif /* __gc_hal_options_internal_h_ */

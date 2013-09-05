@@ -21,8 +21,8 @@
 
 
 
-#ifndef __gc_hal_options_to_be_removed_h_
-#define __gc_hal_options_to_be_removed_h_
+#ifndef __gc_hal_options_h_
+#define __gc_hal_options_h_
 
 /*
     VIVANTE_PROFILER
@@ -45,4 +45,4 @@
 #   define gcdSECURE_USER                       0
 #endif
 
-#endif /* __gc_hal_options_to_be_removed_h_ */
+#endif /* __gc_hal_options_h_ */
