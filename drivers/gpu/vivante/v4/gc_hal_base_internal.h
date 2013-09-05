@@ -28,6 +28,7 @@
 #include "gc_hal_types.h"
 
 #include "gc_hal_dump.h"
+#include "gc_hal_version.h"
 
 #include "gc_hal_options.h"
 
