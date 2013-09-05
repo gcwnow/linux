@@ -130,7 +130,7 @@ typedef enum _gceSTATUS
     gcvSTATUS_INVALID_CONFIG        =   15,
     gcvSTATUS_CHANGED               =   16,
     gcvSTATUS_NOT_SUPPORT_DITHER    =   17,
-	gcvSTATUS_EXECUTED				=	18,
+    gcvSTATUS_EXECUTED              =   18,
     gcvSTATUS_TERMINATE             =   19,
 
     gcvSTATUS_INVALID_ARGUMENT      =   -1,
