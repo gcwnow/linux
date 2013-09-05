@@ -150,7 +150,7 @@ _IdentifyHardware(
                              0x0001C,
                              &Identity->chipFeatures));
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
     /* Disable fast clear on GC700. */
     if (Identity->chipModel == gcv700)
     {
@@ -786,7 +786,7 @@ gckHARDWARE_InitializeHardware(
                                           + 0x00100,
                                           data));
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
         /* Disable PE clock gating on revs < 5.0 when HZ is present without a
         ** bug fix. */
         if ((Hardware->identity.chipRevision < 0x5000)
@@ -2453,7 +2453,7 @@ gckHARDWARE_QuerySystemMemory(
     return gcvSTATUS_OK;
 }
 
-#if !defined(VIVANTE_NO_3D)
+#if !VIVANTE_NO_3D
 /*******************************************************************************
 **
 **  gckHARDWARE_QueryShaderCaps
@@ -3177,7 +3177,7 @@ gckHARDWARE_SetFastClear(
     IN gctINT Compression
     )
 {
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
     gctUINT32 debug;
     gceSTATUS status;
 
@@ -4667,7 +4667,7 @@ gckHARDWARE_NeedBaseAddress(
     /* Make sure this is a load state. */
     if (((((gctUINT32) (State)) >> (0 ? 31:27) & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1)))))) == (0x01 & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))))
     {
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
         /* Get the state address. */
         switch ((((((gctUINT32) (State)) >> (0 ? 15:0)) & ((gctUINT32) ((((1 ? 15:0) - (0 ? 15:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 15:0) - (0 ? 15:0) + 1)))))) ))
         {
@@ -4755,7 +4755,7 @@ gckHARDWARE_Compose(
     IN gctUINT8 EventID
     )
 {
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
     gceSTATUS status;
     gctUINT32_PTR triggerState;
 

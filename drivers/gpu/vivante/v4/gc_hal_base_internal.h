@@ -43,7 +43,7 @@ typedef struct _gcoHAL *                gcoHAL;
 typedef struct _gcoOS *                 gcoOS;
 typedef struct _gco2D *                 gco2D;
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 typedef struct _gco3D *                 gco3D;
 #endif
 
@@ -112,7 +112,7 @@ typedef struct _gcsTLS
     gctTLS_DESTRUCTOR           destructor;
     gctBOOL                     ProcessExiting;
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 	gco3D						engine3D;
 #endif
 	gco2D						engine2D;
@@ -206,7 +206,7 @@ gcoHAL_Get2DEngine(
     OUT gco2D * Engine
     );
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 /* Get pointer to gco3D object. */
 gceSTATUS
 gcoHAL_Get3DEngine(
@@ -1571,7 +1571,7 @@ gcoSURF_IsValid(
     IN gcoSURF Surface
     );
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 /* Verify and return the state of the tile status mechanism. */
 gceSTATUS
 gcoSURF_IsTileStatusSupported(

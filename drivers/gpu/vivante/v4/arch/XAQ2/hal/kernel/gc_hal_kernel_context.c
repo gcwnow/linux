@@ -127,7 +127,7 @@
 #define gcdSTATE_MASK \
     (((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))) | (((gctUINT32) (0x03 | 0xC0FFEE & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))))
 
-#if !defined(VIVANTE_NO_3D)
+#if !VIVANTE_NO_3D
 static gctSIZE_T
 _TerminateStateBlock(
     IN gckCONTEXT Context,
@@ -276,7 +276,7 @@ _SwitchPipe(
     return 2;
 }
 
-#if !defined(VIVANTE_NO_3D)
+#if !VIVANTE_NO_3D
 static gctSIZE_T
 _State(
     IN gckCONTEXT Context,
@@ -434,7 +434,7 @@ _InitializeContextBuffer(
     gctUINT32_PTR buffer;
     gctSIZE_T index;
 
-#if !defined(VIVANTE_NO_3D)
+#if !VIVANTE_NO_3D
     gctUINT i;
     gctUINT vertexUniforms, fragmentUniforms;
     gctUINT fe2vsCount;
@@ -456,7 +456,7 @@ _InitializeContextBuffer(
     /* Build 2D states. *******************************************************/
 
 
-#if !defined(VIVANTE_NO_3D)
+#if !VIVANTE_NO_3D
     /**************************************************************************/
     /* Build 3D states. *******************************************************/
 
@@ -1014,7 +1014,7 @@ gckCONTEXT_Construct(
     context->hardware    = Hardware;
 
 
-#if defined(VIVANTE_NO_3D)
+#if VIVANTE_NO_3D
     context->entryPipe = gcvPIPE_2D;
     context->exitPipe  = gcvPIPE_2D;
 #elif gcdCMD_NO_2D_CONTEXT
@@ -1314,7 +1314,7 @@ gckCONTEXT_Update(
     IN gcsSTATE_DELTA_PTR StateDelta
     )
 {
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
     gceSTATUS status = gcvSTATUS_OK;
     gcsSTATE_DELTA _stateDelta;
     gckKERNEL kernel;
@@ -1376,7 +1376,7 @@ gckCONTEXT_Update(
     gcmkONERROR(gckKERNEL_GetProcessDBCache(kernel, ProcessID, &cache));
 #endif
 
-#if gcmIS_DEBUG(gcdDEBUG_CODE) && 1 && !defined(VIVANTE_NO_3D)
+#if gcmIS_DEBUG(gcdDEBUG_CODE) && !VIVANTE_NO_3D
     /* Update current context token. */
     buffer->logical[Context->map[0x0E14].index]
         = gcmPTR2INT(Context);

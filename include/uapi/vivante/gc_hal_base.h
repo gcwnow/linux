@@ -24,6 +24,9 @@
 #ifndef __gc_hal_base_h_
 #define __gc_hal_base_h_
 
+#include "gc_hal_options.h"
+
+
 /******************************************************************************\
 ****************************** Object Declarations *****************************
 \******************************************************************************/
@@ -59,7 +62,7 @@ typedef enum _gcePOOL
 }
 gcePOOL;
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 /* Blending functions. */
 typedef enum _gceBLEND_FUNCTION
 {

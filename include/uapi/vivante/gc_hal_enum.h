@@ -24,6 +24,9 @@
 #ifndef __gc_hal_enum_h_
 #define __gc_hal_enum_h_
 
+#include "gc_hal_options.h"
+
+
 /* Chip models. */
 typedef enum _gceCHIPMODEL
 {
@@ -604,7 +607,7 @@ typedef enum _gce2D_COMMAND
 }
 gce2D_COMMAND;
 
-#ifndef VIVANTE_NO_3D
+#if !VIVANTE_NO_3D
 /* Texture functions. */
 typedef enum _gceTEXTURE_FUNCTION
 {
