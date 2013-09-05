@@ -71,6 +71,17 @@
 #define COMMAND_PROCESSOR_VERSION               1
 
 /*
+    gcdDUMP
+
+        When set to 1, a dump of all states and memory uploads, as well as other
+        hardware related execution will be printed to the debug console.  This
+        data can be used for playing back applications.
+*/
+#ifndef gcdDUMP
+#   define gcdDUMP                              0
+#endif
+
+/*
     gcdDUMP_API
 
         When set to 1, a high level dump of the EGL and GL/VG APs's are

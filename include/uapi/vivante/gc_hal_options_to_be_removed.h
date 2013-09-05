@@ -34,17 +34,6 @@
 #endif
 
 /*
-    gcdDUMP
-
-        When set to 1, a dump of all states and memory uploads, as well as other
-        hardware related execution will be printed to the debug console.  This
-        data can be used for playing back applications.
-*/
-#ifndef gcdDUMP
-#   define gcdDUMP                              0
-#endif
-
-/*
     gcdSECURE_USER
 
         Use logical addresses instead of physical addresses in user land.  In
