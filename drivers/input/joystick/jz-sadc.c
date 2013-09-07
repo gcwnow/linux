@@ -65,12 +65,24 @@ static irqreturn_t jz_joystick_irq_handler(int irq, void *devid)
 	return IRQ_HANDLED;
 }
 
+static void jz_joystick_enable(struct jz_joystick *joystick)
+{
+	joystick->cell->enable(joystick->pdev);
+	enable_irq(joystick->irq);
+}
+
+static void jz_joystick_disable(struct jz_joystick *joystick)
+{
+	disable_irq(joystick->irq);
+	joystick->cell->disable(joystick->pdev);
+}
+
 static int jz_joystick_open(struct input_dev *input)
 {
 	struct jz_joystick *joystick = input_get_drvdata(input);
 
 	joystick->is_open = true;
-	joystick->cell->enable(joystick->pdev);
+	jz_joystick_enable(joystick);
 
 	return 0;
 }
@@ -79,7 +91,7 @@ static void jz_joystick_close(struct input_dev *input)
 {
 	struct jz_joystick *joystick = input_get_drvdata(input);
 
-	joystick->cell->disable(joystick->pdev);
+	jz_joystick_disable(joystick);
 	joystick->is_open = false;
 }
 
@@ -176,7 +188,6 @@ static int jz_joystick_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
 		return ret;
 	}
-	enable_irq(joystick->irq);
 
 	ret = input_register_device(input_dev);
 	if (ret) {
@@ -203,7 +214,7 @@ static int jz_joystick_suspend(struct device *dev)
 	struct jz_joystick *joystick = dev_get_drvdata(dev);
 
 	if (joystick->is_open)
-		joystick->cell->disable(joystick->pdev);
+		jz_joystick_disable(joystick);
 
 	return 0;
 }
@@ -213,7 +224,7 @@ static int jz_joystick_resume(struct device *dev)
 	struct jz_joystick *joystick = dev_get_drvdata(dev);
 
 	if (joystick->is_open)
-		joystick->cell->enable(joystick->pdev);
+		jz_joystick_enable(joystick);
 
 	return 0;
 }
