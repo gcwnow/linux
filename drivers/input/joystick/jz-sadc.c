@@ -204,7 +204,7 @@ static int jz_joystick_suspend(struct device *dev)
 {
 	struct jz_joystick *joystick = dev_get_drvdata(dev);
 
-	if (joystick->is_open);
+	if (joystick->is_open)
 		joystick->cell->disable(joystick->pdev);
 
 	return 0;
@@ -214,7 +214,7 @@ static int jz_joystick_resume(struct device *dev)
 {
 	struct jz_joystick *joystick = dev_get_drvdata(dev);
 
-	if (joystick->is_open);
+	if (joystick->is_open)
 		joystick->cell->enable(joystick->pdev);
 
 	return 0;
