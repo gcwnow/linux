@@ -147,13 +147,23 @@ static inline void jz4770_adc_set_enabled(struct jz4770_adc *adc, int engine,
 			spin_lock_irqsave(&adc->lock, flags);
 			val = readb(adc->base + JZ_REG_ADC_ENABLE);
 		}
-		val |= BIT(engine);
+		writeb(val | BIT(engine), adc->base + JZ_REG_ADC_ENABLE);
 	} else {
 		val &= ~BIT(engine);
+		writeb(val, adc->base + JZ_REG_ADC_ENABLE);
+
+		/*
+		 * The touch screen engine can take a very short time to shut
+		 * down; wait for it by polling its enable bit.
+		 * We wait for the other engines as well; this is probably not
+		 * needed but the overhead is neglible.
+		 */
+		while (readb(adc->base + JZ_REG_ADC_ENABLE) & BIT(engine));
+
 		if (val == 0)
-			val |= JZ_ADC_ENABLE_POWER;
+			writeb(JZ_ADC_ENABLE_POWER,
+			       adc->base + JZ_REG_ADC_ENABLE);
 	}
-	writeb(val, adc->base + JZ_REG_ADC_ENABLE);
 
 	spin_unlock_irqrestore(&adc->lock, flags);
 }
