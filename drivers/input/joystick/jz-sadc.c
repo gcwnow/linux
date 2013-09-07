@@ -87,8 +87,10 @@ static int jz_joystick_probe(struct platform_device *pdev)
 {
 	struct jz_joystick *joystick;
 	struct input_dev *input_dev;
-	struct resource *mem;
 	int ret;
+
+
+	/* Acquire resources. */
 
 	joystick = devm_kzalloc(&pdev->dev, sizeof(*joystick), GFP_KERNEL);
 	if (!joystick) {
@@ -96,23 +98,14 @@ static int jz_joystick_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!mem) {
-		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
-		return -ENOENT;
-	}
-
-	joystick->base = devm_request_and_ioremap(&pdev->dev, mem);
-	if (!joystick->base) {
+	joystick->base = devm_ioremap_resource(&pdev->dev,
+			platform_get_resource(pdev, IORESOURCE_MEM, 0));
+	if (IS_ERR(joystick->base)) {
+		ret = PTR_ERR(joystick->base);
 		dev_err(&pdev->dev,
-			"Failed to request and remap mmio memory region\n");
-		return -EBUSY;
+			"Failed to get and remap mmio region: %d\n", ret);
+		return ret;
 	}
-
-	joystick->cell = mfd_get_cell(pdev);
-	joystick->pdev = pdev;
-
-	/* Set up "result ready" IRQ. */
 
 	joystick->irq = platform_get_irq(pdev, 0);
 	if (joystick->irq < 0) {
@@ -120,18 +113,17 @@ static int jz_joystick_probe(struct platform_device *pdev)
 			joystick->irq);
 		return joystick->irq;
 	}
+	dev_info(&pdev->dev, "Got platform irq: %d\n", joystick->irq);
 
-	ret = devm_request_irq(&pdev->dev, joystick->irq,
-			       jz_joystick_irq_handler, 0, pdev->name,
-			       joystick);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
-		return ret;
-	}
+	joystick->cell = mfd_get_cell(pdev);
+	joystick->pdev = pdev;
+
+	platform_set_drvdata(pdev, joystick);
+
 
 	/* Set up input device. */
 
-	input_dev = input_allocate_device();
+	input_dev = devm_input_allocate_device(&pdev->dev);
 	if (!input_dev) {
 		dev_err(&pdev->dev, "Failed to allocate input device\n");
 		return -ENOMEM;
@@ -152,15 +144,6 @@ static int jz_joystick_probe(struct platform_device *pdev)
 	input_dev->open = jz_joystick_open;
 	input_dev->close = jz_joystick_close;
 
-	ret = input_register_device(input_dev);
-	if (ret) {
-		dev_err(&pdev->dev,
-			"Failed to register input device: %d\n", ret);
-		input_free_device(input_dev);
-		return ret;
-	}
-
-	platform_set_drvdata(pdev, joystick);
 
 	/* Initialize touch screen registers. */
 
@@ -182,9 +165,25 @@ static int jz_joystick_probe(struct platform_device *pdev)
 	writew(2, joystick->base + JZ_REG_ADC_TS_SAME);
 	writew(80, joystick->base + JZ_REG_ADC_TS_WAIT);
 
+	joystick->cell->disable(pdev);
+
+
+	/* Set up "result ready" IRQ. */
+	ret = devm_request_irq(&pdev->dev, joystick->irq,
+			       jz_joystick_irq_handler, 0, pdev->name,
+			       joystick);
+	if (ret) {
+		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
+		return ret;
+	}
 	enable_irq(joystick->irq);
 
-	joystick->cell->disable(pdev);
+	ret = input_register_device(input_dev);
+	if (ret) {
+		dev_err(&pdev->dev,
+			"Failed to register input device: %d\n", ret);
+		return ret;
+	}
 
 	return 0;
 }
@@ -194,7 +193,6 @@ static int jz_joystick_remove(struct platform_device *pdev)
 	struct jz_joystick *joystick = platform_get_drvdata(pdev);
 
 	input_unregister_device(joystick->input_dev);
-	platform_set_drvdata(pdev, NULL);
 
 	return 0;
 }
