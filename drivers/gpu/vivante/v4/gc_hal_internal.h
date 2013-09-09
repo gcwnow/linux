@@ -29,6 +29,7 @@
 #include "gc_hal_base.h"
 #include "gc_hal_base_internal.h"
 #include "gc_hal_profiler.h"
+#include "gc_hal_profiler_internal.h"
 #include "gc_hal_driver.h"
 
 /******************************************************************************\
