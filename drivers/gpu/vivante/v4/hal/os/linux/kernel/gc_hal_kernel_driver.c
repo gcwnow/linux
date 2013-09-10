@@ -722,8 +722,10 @@ static void enable_jzsoc_gpu_clock(void)
         unsigned int pll_clk;
         unsigned int gpu_clk = 0;
 
+        /* Right now: hardcode PLL0.
+	 * Later: use generic clock interface.
         pll_clk = cpm_get_pllout1();
-        if ( pll_clk == 0 ) {
+        if ( pll_clk == 0 )*/ {
             gpu_use_pll1 = 0;   /* use pll0 */
             pll_clk = cpm_get_pllout();
             if ((INREG32(CPM_CPCCR) & CPCCR_PCS) != 0 )
