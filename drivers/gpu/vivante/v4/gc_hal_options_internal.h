@@ -18,9 +18,6 @@
 *
 *****************************************************************************/
 
-
-
-
 #ifndef __gc_hal_options_internal_h_
 #define __gc_hal_options_internal_h_
 

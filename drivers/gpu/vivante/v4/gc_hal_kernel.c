@@ -118,11 +118,7 @@ gctCONST_STRING _DispatchText[] =
 **          Pointer to a variable that will hold the pointer to the gckKERNEL
 **          object.
 */
-#if gcdNEW_PROFILER_FILE
 #define DEFAULT_PROFILE_FILE_NAME   "vprofiler.vpd"
-#else
-#define DEFAULT_PROFILE_FILE_NAME   "vprofiler.xml"
-#endif
 
 gceSTATUS
 gckKERNEL_Construct(
