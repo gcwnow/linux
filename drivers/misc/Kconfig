@@ -528,6 +528,12 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
+config JZ_VPU
+	bool "Ingenic VPU driver"
+	help
+	  Tightly-coupled shared memory (TCSM) driver for communication with
+	  the VPU onboard the Ingenic JZ4770 SoC.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
