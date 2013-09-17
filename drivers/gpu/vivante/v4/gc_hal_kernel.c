@@ -26,6 +26,10 @@
 #include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 
+#include <linux/bug.h>
+#include <linux/kernel.h>
+
+
 #define _GC_OBJ_ZONE    gcvZONE_KERNEL
 
 /*******************************************************************************
@@ -181,7 +185,7 @@ gckKERNEL_Construct(
         kernel->db->lastIdle     = 0;
         kernel->db->lastSlowdown = 0;
 
-        for (i = 0; i < gcmCOUNTOF(kernel->db->db); ++i)
+        for (i = 0; i < ARRAY_SIZE(kernel->db->db); ++i)
         {
             kernel->db->db[i] = gcvNULL;
         }
@@ -195,7 +199,7 @@ gckKERNEL_Construct(
         kernel->dbCreated        = gcvFALSE;
     }
 
-    for (i = 0; i < gcmCOUNTOF(kernel->timers); ++i)
+    for (i = 0; i < ARRAY_SIZE(kernel->timers); ++i)
     {
         kernel->timers[i].startTime = 0;
         kernel->timers[i].stopTime = 0;
@@ -319,7 +323,7 @@ gckKERNEL_Destroy(
     /* Destroy the database. */
     if (Kernel->dbCreated)
     {
-        for (i = 0; i < gcmCOUNTOF(Kernel->db->db); ++i)
+        for (i = 0; i < ARRAY_SIZE(Kernel->db->db); ++i)
         {
             if (Kernel->db->db[i] != gcvNULL)
             {
@@ -1300,7 +1304,7 @@ gckKERNEL_Dispatch(
 
     case gcvHAL_TIMESTAMP:
         /* Check for invalid timer. */
-        if ((Interface->u.TimeStamp.timer >= gcmCOUNTOF(Kernel->timers))
+        if ((Interface->u.TimeStamp.timer >= ARRAY_SIZE(Kernel->timers))
         ||  (Interface->u.TimeStamp.request != 2))
         {
             Interface->u.TimeStamp.timeDelta = 0;
@@ -1997,7 +2001,7 @@ gckKERNEL_MapLogicalToPhysical(
                 gcmkASSERT(slot->logical == gcvNULL);
 
                 ++ Cache->cacheFree;
-                if (Cache->cacheFree >= gcmCOUNTOF(Cache->cache))
+                if (Cache->cacheFree >= ARRAY_SIZE(Cache->cache))
                 {
                     Cache->cacheFree = 0;
                 }
@@ -2042,7 +2046,7 @@ gckKERNEL_MapLogicalToPhysical(
 
         /* Generate a hash key. */
         key   = (data >> 24) + (data >> 16) + (data >> 8) + data;
-        index = key % gcmCOUNTOF(Cache->hash);
+        index = key % ARRAY_SIZE(Cache->hash);
 
         /* Get the hash entry. */
         hash = &Cache->hash[index];
@@ -2175,7 +2179,7 @@ gckKERNEL_FlushTranslationCache(
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
         /* Zero the hash table. */
-        for (i = 0; i < gcmCOUNTOF(Cache->hash); ++i)
+        for (i = 0; i < ARRAY_SIZE(Cache->hash); ++i)
         {
             Cache->hash[i].nextHash = gcvNULL;
         }
@@ -2270,7 +2274,7 @@ gckKERNEL_FlushTranslationCache(
 
         /* Walk all hash tables. */
         for (i = 0, hash = Cache->hash;
-             i < gcmCOUNTOF(Cache->hash);
+             i < ARRAY_SIZE(Cache->hash);
              ++i, ++hash)
         {
             /* Walk all slots in the hash. */

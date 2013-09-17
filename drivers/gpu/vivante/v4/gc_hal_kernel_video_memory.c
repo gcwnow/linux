@@ -26,6 +26,10 @@
 #include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 
+#include <linux/bug.h>
+#include <linux/kernel.h>
+
+
 #define _GC_OBJ_ZONE    gcvZONE_VIDMEM
 
 /******************************************************************************\
@@ -424,7 +428,7 @@ gckVIDMEM_Construct(
     BaseAddress = 0;
 
     /* Walk all possible banks. */
-    for (i = 0; i < gcmCOUNTOF(memory->sentinel); ++i)
+    for (i = 0; i < ARRAY_SIZE(memory->sentinel); ++i)
     {
         gctSIZE_T bytes;
 
@@ -594,7 +598,7 @@ gckVIDMEM_Destroy(
     gcmkVERIFY_OBJECT(Memory, gcvOBJ_VIDMEM);
 
     /* Walk all sentinels. */
-    for (i = 0; i < gcmCOUNTOF(Memory->sentinel); ++i)
+    for (i = 0; i < ARRAY_SIZE(Memory->sentinel); ++i)
     {
         /* Bail out of the heap is not used. */
         if (Memory->sentinel[i].VidMem.next == gcvNULL)
@@ -880,7 +884,7 @@ gckVIDMEM_AllocateLinear(
 #endif
 
     /* Find the default bank for this surface type. */
-    gcmkASSERT((gctINT) Type < gcmCOUNTOF(Memory->mapping));
+    gcmkASSERT((gctINT) Type < ARRAY_SIZE(Memory->mapping));
     bank      = Memory->mapping[Type];
     alignment = Alignment;
 
@@ -909,7 +913,7 @@ gckVIDMEM_AllocateLinear(
     if (node == gcvNULL)
     {
         /* Walk all upper banks. */
-        for (i = bank + 1; i < gcmCOUNTOF(Memory->sentinel); ++i)
+        for (i = bank + 1; i < ARRAY_SIZE(Memory->sentinel); ++i)
         {
             if (Memory->sentinel[i].VidMem.nextFree == gcvNULL)
             {

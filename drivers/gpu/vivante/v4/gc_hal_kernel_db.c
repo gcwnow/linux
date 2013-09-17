@@ -26,6 +26,10 @@
 #include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 
+#include <linux/bug.h>
+#include <linux/kernel.h>
+
+
 #define _GC_OBJ_ZONE    gcvZONE_DATABASE
 
 /*******************************************************************************
@@ -87,7 +91,7 @@ gckKERNEL_NewDatabase(
     }
 
     /* Compute the hash for the database. */
-    slot = ProcessID % gcmCOUNTOF(Kernel->db->db);
+    slot = ProcessID % ARRAY_SIZE(Kernel->db->db);
 
     /* Insert the database into the hash. */
     database->next   = Kernel->db->db[slot];
@@ -160,7 +164,7 @@ gckKERNEL_FindDatabase(
                    Kernel, ProcessID, LastProcessID);
 
     /* Compute the hash for the database. */
-    slot = ProcessID % gcmCOUNTOF(Kernel->db->db);
+    slot = ProcessID % ARRAY_SIZE(Kernel->db->db);
 
     /* Acquire the database mutex. */
     gcmkONERROR(
@@ -267,9 +271,9 @@ gckKERNEL_DeleteDatabase(
     acquired = gcvTRUE;
 
     /* Check slot value. */
-    gcmkVERIFY_ARGUMENT(Database->slot < gcmCOUNTOF(Kernel->db->db));
+    gcmkVERIFY_ARGUMENT(Database->slot < ARRAY_SIZE(Kernel->db->db));
 
-    if (Database->slot < gcmCOUNTOF(Kernel->db->db))
+    if (Database->slot < ARRAY_SIZE(Kernel->db->db))
     {
         /* Check if database if the head of the hash list. */
         if (Kernel->db->db[Database->slot] == Database)
@@ -708,7 +712,7 @@ gckKERNEL_CreateProcessDB(
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
         /* Zero out the hash table. */
-        for (slot = 0; slot < gcmCOUNTOF(cache->hash); ++slot)
+        for (slot = 0; slot < ARRAY_SIZE(cache->hash); ++slot)
         {
             cache->hash[slot].logical  = gcvNULL;
             cache->hash[slot].nextHash = gcvNULL;

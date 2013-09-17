@@ -51,11 +51,6 @@
     (gctSIZE_T) (sizeof(a)) \
 )
 
-#define gcmCOUNTOF(a) \
-( \
-    sizeof(a) / sizeof(a[0]) \
-)
-
 typedef struct _gckHARDWARE *       gckHARDWARE;
 
 /* CORE flags. */

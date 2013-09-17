@@ -35,6 +35,8 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/math64.h>
+#include <linux/bug.h>
+#include <linux/kernel.h>
 
 #define _GC_OBJ_ZONE    gcvZONE_OS
 
@@ -494,7 +496,7 @@ _DumpGPUState(
     gcmkPRINT_N(8, "    cal state           = %d (%s)\n", calState,    _calState   [calState]);
     gcmkPRINT_N(8, "    VE request state    = %d (%s)\n", veReqState,  _veReqState [veReqState]);
 
-    for (i = 0; i < gcmCOUNTOF(_dbgRegs); i += 1)
+    for (i = 0; i < ARRAY_SIZE(_dbgRegs); i += 1)
     {
         gcmkONERROR(_DumpDebugRegisters(Os, &_dbgRegs[i]));
     }
@@ -515,7 +517,7 @@ _DumpGPUState(
     }
 
     gcmkPRINT_N(0, "  Other Registers:\n");
-    for (i = 0; i < gcmCOUNTOF(_otherRegs); i += 1)
+    for (i = 0; i < ARRAY_SIZE(_otherRegs); i += 1)
     {
         gctUINT32 read;
         gcmkONERROR(gckOS_ReadRegisterEx(Os, kernel->core, _otherRegs[i], &read));

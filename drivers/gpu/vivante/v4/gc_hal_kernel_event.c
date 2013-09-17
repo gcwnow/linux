@@ -27,6 +27,10 @@
 #include "gc_hal_kernel.h"
 #include "gc_hal_kernel_buffer.h"
 
+#include <linux/bug.h>
+#include <linux/kernel.h>
+
+
 #define _GC_OBJ_ZONE                    gcvZONE_EVENT
 
 #define gcdEVENT_ALLOCATION_COUNT       (4096 / gcmSIZEOF(gcsHAL_INTERFACE))
@@ -157,7 +161,7 @@ gckEVENT_IsEmpty(
     *IsEmpty = gcvTRUE;
 
     /* Walk the event queue. */
-    for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+    for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
     {
         /* Check whether this event is in use. */
         if (Event->queues[i].head != gcvNULL)
@@ -373,7 +377,7 @@ gckEVENT_Construct(
     gcmkONERROR(gckOS_AtomConstruct(os, &eventObj->freeAtom));
     gcmkONERROR(gckOS_AtomSet(os,
                               eventObj->freeAtom,
-                              gcmCOUNTOF(eventObj->queues)));
+                              ARRAY_SIZE(eventObj->queues)));
 
 #ifdef CONFIG_SMP
     gcmkONERROR(gckOS_AtomConstruct(os, &eventObj->pending));
@@ -584,10 +588,10 @@ gckEVENT_GetEvent(
 
         /* Walk through all events. */
         id = Event->lastID;
-        for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+        for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
         {
             gctINT nextID = gckMATH_ModuloInt((id + 1),
-                                              gcmCOUNTOF(Event->queues));
+                                              ARRAY_SIZE(Event->queues));
 
             if (Event->queues[id].head == gcvNULL)
             {
@@ -1501,7 +1505,7 @@ gckEVENT_Notify(
     gcmDEBUG_ONLY(
         if (IDs != 0)
         {
-            for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+            for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
             {
                 if (Event->queues[i].head != gcvNULL)
                 {
@@ -1550,7 +1554,7 @@ gckEVENT_Notify(
         gcmDEBUG_ONLY(
             if (IDs == 0)
             {
-                for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+                for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
                 {
                     if (Event->queues[i].head != gcvNULL)
                     {
@@ -1565,7 +1569,7 @@ gckEVENT_Notify(
         );
 
         /* Find the oldest pending interrupt. */
-        for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+        for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
         {
             if ((Event->queues[i].head != gcvNULL)
             &&  (pending & (1 << i))
@@ -1612,7 +1616,7 @@ gckEVENT_Notify(
         }
 
         /* Check whether there is a missed interrupt. */
-        for (i = 0; i < gcmCOUNTOF(Event->queues); ++i)
+        for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
         {
             if ((Event->queues[i].head != gcvNULL)
             &&  (Event->queues[i].stamp < queue->stamp)
