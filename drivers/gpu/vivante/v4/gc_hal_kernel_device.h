@@ -95,38 +95,6 @@ typedef struct _gcsHAL_PRIVATE_DATA
 }
 gcsHAL_PRIVATE_DATA, * gcsHAL_PRIVATE_DATA_PTR;
 
-gceSTATUS gckGALDEVICE_Setup_ISR(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Setup_ISR_2D(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Setup_ISR_VG(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Release_ISR(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Release_ISR_2D(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Release_ISR_VG(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Start_Threads(
-    IN gckGALDEVICE Device
-    );
-
-gceSTATUS gckGALDEVICE_Stop_Threads(
-    gckGALDEVICE Device
-    );
-
 gceSTATUS gckGALDEVICE_Start(
     IN gckGALDEVICE Device
     );
