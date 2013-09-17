@@ -92,6 +92,19 @@ gctCONST_STRING _DispatchText[] =
 };
 #endif
 
+static void
+gckKERNEL_SetTimeOut(
+    IN gckKERNEL Kernel,
+    IN gctUINT32 timeOut
+    )
+{
+    gcmkHEADER_ARG("Kernel=0x%x timeOut=%d", Kernel, timeOut);
+#if gcdGPU_TIMEOUT
+    Kernel->timeOut = timeOut;
+#endif
+    gcmkFOOTER_NO();
+}
+
 /*******************************************************************************
 **
 **  gckKERNEL_Construct
@@ -2599,19 +2612,6 @@ OnError:
     /* Return the status. */
     gcmkFOOTER();
     return status;
-}
-
-void
-gckKERNEL_SetTimeOut(
-    IN gckKERNEL Kernel,
-    IN gctUINT32 timeOut
-    )
-{
-    gcmkHEADER_ARG("Kernel=0x%x timeOut=%d", Kernel, timeOut);
-#if gcdGPU_TIMEOUT
-    Kernel->timeOut = timeOut;
-#endif
-    gcmkFOOTER_NO();
 }
 
 

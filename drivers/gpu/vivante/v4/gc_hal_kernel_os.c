@@ -2377,58 +2377,6 @@ gceSTATUS gckOS_GetPageSize(
     return gcvSTATUS_OK;
 }
 
-/*******************************************************************************
-**
-**  gckOS_GetPhysicalAddress
-**
-**  Get the physical system address of a corresponding virtual address.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      gctPOINTER Logical
-**          Logical address.
-**
-**  OUTPUT:
-**
-**      gctUINT32 * Address
-**          Poinetr to a variable that receives the 32-bit physical adress.
-*/
-gceSTATUS
-gckOS_GetPhysicalAddress(
-    IN gckOS Os,
-    IN gctPOINTER Logical,
-    OUT gctUINT32 * Address
-    )
-{
-    gceSTATUS status;
-    gctUINT32 processID;
-
-    gcmkHEADER_ARG("Os=0x%X Logical=0x%X", Os, Logical);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Address != gcvNULL);
-
-    /* Get current process ID. */
-    processID = _GetProcessID();
-
-    /* Route through other function. */
-    gcmkONERROR(
-        gckOS_GetPhysicalAddressProcess(Os, Logical, processID, Address));
-
-    /* Success. */
-    gcmkFOOTER_ARG("*Address=0x%08x", *Address);
-    return gcvSTATUS_OK;
-
-OnError:
-    /* Return the status. */
-    gcmkFOOTER();
-    return status;
-}
-
 #if gcdSECURE_USER
 static gceSTATUS
 gckOS_AddMapping(
@@ -2628,7 +2576,7 @@ _ConvertLogical2Physical(
 **      gctUINT32 * Address
 **          Poinetr to a variable that receives the 32-bit physical adress.
 */
-gceSTATUS
+static gceSTATUS
 gckOS_GetPhysicalAddressProcess(
     IN gckOS Os,
     IN gctPOINTER Logical,
@@ -2702,6 +2650,58 @@ gckOS_GetPhysicalAddressProcess(
         gcmkASSERT(*Address >= Os->device->baseAddress);
         *Address -= Os->device->baseAddress;
     }
+
+    /* Success. */
+    gcmkFOOTER_ARG("*Address=0x%08x", *Address);
+    return gcvSTATUS_OK;
+
+OnError:
+    /* Return the status. */
+    gcmkFOOTER();
+    return status;
+}
+
+/*******************************************************************************
+**
+**  gckOS_GetPhysicalAddress
+**
+**  Get the physical system address of a corresponding virtual address.
+**
+**  INPUT:
+**
+**      gckOS Os
+**          Pointer to an gckOS object.
+**
+**      gctPOINTER Logical
+**          Logical address.
+**
+**  OUTPUT:
+**
+**      gctUINT32 * Address
+**          Poinetr to a variable that receives the 32-bit physical adress.
+*/
+gceSTATUS
+gckOS_GetPhysicalAddress(
+    IN gckOS Os,
+    IN gctPOINTER Logical,
+    OUT gctUINT32 * Address
+    )
+{
+    gceSTATUS status;
+    gctUINT32 processID;
+
+    gcmkHEADER_ARG("Os=0x%X Logical=0x%X", Os, Logical);
+
+    /* Verify the arguments. */
+    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
+    gcmkVERIFY_ARGUMENT(Address != gcvNULL);
+
+    /* Get current process ID. */
+    processID = _GetProcessID();
+
+    /* Route through other function. */
+    gcmkONERROR(
+        gckOS_GetPhysicalAddressProcess(Os, Logical, processID, Address));
 
     /* Success. */
     gcmkFOOTER_ARG("*Address=0x%08x", *Address);
@@ -6617,6 +6617,90 @@ gckOS_DestroySignal(
 
 /*******************************************************************************
 **
+**	gckOS_UnmapSignal
+**
+**	Unmap a signal .
+**
+**	INPUT:
+**
+**		gckOS Os
+**			Pointer to an gckOS object.
+**
+**		gctSIGNAL Signal
+**			Pointer to that gctSIGNAL mapped.
+*/
+static gceSTATUS
+gckOS_UnmapSignal(
+    IN gckOS Os,
+    IN gctSIGNAL Signal
+    )
+{
+    gctINT signalID;
+    gcsSIGNAL_PTR signal;
+    gceSTATUS status;
+    gctBOOL acquired = gcvFALSE;
+
+    gcmkHEADER_ARG("Os=0x%X Signal=0x%X ", Os, Signal);
+
+    gcmkVERIFY_ARGUMENT(Signal != gcvNULL);
+
+    signalID = (gctINT) Signal - 1;
+
+    gcmkONERROR(gckOS_AcquireMutex(Os, Os->signal.lock, gcvINFINITE));
+    acquired = gcvTRUE;
+
+    if (signalID >= 0 && signalID < Os->signal.tableLen)
+    {
+        /* It is a user space signal. */
+        signal = Os->signal.table[signalID];
+
+        if (signal == gcvNULL)
+        {
+            gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+        }
+
+        if (atomic_read(&signal->ref) == 1)
+        {
+            /* Update the table. */
+            Os->signal.table[signalID] = gcvNULL;
+
+            if (Os->signal.unused++ == 0)
+            {
+                Os->signal.currentID = signalID;
+            }
+        }
+
+        gcmkONERROR(gckOS_DestroySignal(Os, signal));
+    }
+    else
+    {
+        /* It is a kernel space signal structure. */
+        signal = (gcsSIGNAL_PTR) Signal;
+
+        gcmkONERROR(gckOS_DestroySignal(Os, signal));
+    }
+
+    /* Release the mutex. */
+    gcmkONERROR(gckOS_ReleaseMutex(Os, Os->signal.lock));
+
+    /* Success. */
+    gcmkFOOTER();
+    return gcvSTATUS_OK;
+
+OnError:
+    if (acquired)
+    {
+        /* Release the mutex. */
+        gcmkVERIFY_OK(gckOS_ReleaseMutex(Os, Os->signal.lock));
+    }
+
+    /* Return the staus. */
+    gcmkFOOTER();
+    return status;
+}
+
+/*******************************************************************************
+**
 **  gckOS_Signal
 **
 **  Set a state of the specified signal.
@@ -6974,90 +7058,6 @@ gckOS_MapSignal(
 
     /* Success. */
     gcmkFOOTER_ARG("*MappedSignal=0x%X", *MappedSignal);
-    return gcvSTATUS_OK;
-
-OnError:
-    if (acquired)
-    {
-        /* Release the mutex. */
-        gcmkVERIFY_OK(gckOS_ReleaseMutex(Os, Os->signal.lock));
-    }
-
-    /* Return the staus. */
-    gcmkFOOTER();
-    return status;
-}
-
-/*******************************************************************************
-**
-**	gckOS_UnmapSignal
-**
-**	Unmap a signal .
-**
-**	INPUT:
-**
-**		gckOS Os
-**			Pointer to an gckOS object.
-**
-**		gctSIGNAL Signal
-**			Pointer to that gctSIGNAL mapped.
-*/
-gceSTATUS
-gckOS_UnmapSignal(
-    IN gckOS Os,
-    IN gctSIGNAL Signal
-    )
-{
-    gctINT signalID;
-    gcsSIGNAL_PTR signal;
-    gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
-
-    gcmkHEADER_ARG("Os=0x%X Signal=0x%X ", Os, Signal);
-
-    gcmkVERIFY_ARGUMENT(Signal != gcvNULL);
-
-    signalID = (gctINT) Signal - 1;
-
-    gcmkONERROR(gckOS_AcquireMutex(Os, Os->signal.lock, gcvINFINITE));
-    acquired = gcvTRUE;
-
-    if (signalID >= 0 && signalID < Os->signal.tableLen)
-    {
-        /* It is a user space signal. */
-        signal = Os->signal.table[signalID];
-
-        if (signal == gcvNULL)
-        {
-            gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
-        }
-
-        if (atomic_read(&signal->ref) == 1)
-        {
-            /* Update the table. */
-            Os->signal.table[signalID] = gcvNULL;
-
-            if (Os->signal.unused++ == 0)
-            {
-                Os->signal.currentID = signalID;
-            }
-        }
-
-        gcmkONERROR(gckOS_DestroySignal(Os, signal));
-    }
-    else
-    {
-        /* It is a kernel space signal structure. */
-        signal = (gcsSIGNAL_PTR) Signal;
-
-        gcmkONERROR(gckOS_DestroySignal(Os, signal));
-    }
-
-    /* Release the mutex. */
-    gcmkONERROR(gckOS_ReleaseMutex(Os, Os->signal.lock));
-
-    /* Success. */
-    gcmkFOOTER();
     return gcvSTATUS_OK;
 
 OnError:
@@ -7577,7 +7577,7 @@ gckOS_DumpGPUState(
 ******************************** Software Timer ********************************
 \******************************************************************************/
 
-void
+static void
 _TimerFunction(
     struct work_struct * work
     )

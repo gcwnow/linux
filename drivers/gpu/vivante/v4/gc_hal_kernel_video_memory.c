@@ -307,7 +307,7 @@ OnError:
 **
 **      Nothing.
 */
-gceSTATUS
+static gceSTATUS
 gckVIDMEM_DestroyVirtual(
     IN gcuVIDMEM_NODE_PTR Node
     )

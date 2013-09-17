@@ -555,7 +555,7 @@ gckEVENT_Destroy(
 **      gctUINT8 * EventID
 **          Reserved event ID.
 */
-gceSTATUS
+static gceSTATUS
 gckEVENT_GetEvent(
     IN gckEVENT Event,
     IN gctBOOL Wait,
@@ -713,7 +713,7 @@ OnError:
 **      gcsEVENT_PTR * Record
 **          Allocated event record.
 */
-gceSTATUS
+static gceSTATUS
 gckEVENT_AllocateRecord(
     IN gckEVENT Event,
     IN gctBOOL AllocateAllowed,

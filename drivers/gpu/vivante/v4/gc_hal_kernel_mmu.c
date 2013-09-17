@@ -529,7 +529,7 @@ OnError:
 **      gckMMU * Mmu
 **          Pointer to a variable that receives the gckMMU object pointer.
 */
-gceSTATUS
+static gceSTATUS
 _Construct(
     IN gckKERNEL Kernel,
     IN gctSIZE_T MmuSize,
@@ -699,7 +699,7 @@ OnError:
 **
 **      Nothing.
 */
-gceSTATUS
+static gceSTATUS
 _Destroy(
     IN gckMMU Mmu
     )

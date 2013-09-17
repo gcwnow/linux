@@ -309,15 +309,6 @@ gckOS_GetPhysicalAddress(
     OUT gctUINT32 * Address
     );
 
-/* Get the physical address of a corresponding logical address. */
-gceSTATUS
-gckOS_GetPhysicalAddressProcess(
-    IN gckOS Os,
-    IN gctPOINTER Logical,
-    IN gctUINT32 ProcessID,
-    OUT gctUINT32 * Address
-    );
-
 /* Map physical memory. */
 gceSTATUS
 gckOS_MapPhysical(
@@ -878,13 +869,6 @@ gckOS_MapSignal(
     OUT gctSIGNAL * MappedSignal
     );
 
-/* Unmap a user signal */
-gceSTATUS
-gckOS_UnmapSignal(
-    IN gckOS Os,
-    IN gctSIGNAL Signal
-    );
-
 /* Map user memory. */
 gceSTATUS
 gckOS_MapUserMemoryEx(
@@ -1222,12 +1206,6 @@ gckVIDMEM_ConstructVirtual(
     OUT gcuVIDMEM_NODE_PTR * Node
     );
 
-/* Destroy a gcuVIDMEM_NODE union for virtual memory. */
-gceSTATUS
-gckVIDMEM_DestroyVirtual(
-    IN gcuVIDMEM_NODE_PTR Node
-    );
-
 /******************************************************************************\
 ******************************** gckKERNEL Object ******************************
 \******************************************************************************/
@@ -1379,13 +1357,6 @@ gckKERNEL_QuerySettings(
 gceSTATUS
 gckKERNEL_Recovery(
     IN gckKERNEL Kernel
-    );
-
-/* Set the value of timeout on HW operation. */
-void
-gckKERNEL_SetTimeOut(
-    IN gckKERNEL Kernel,
-	IN gctUINT32 timeOut
     );
 
 /* Get access to the user data. */
@@ -1753,15 +1724,6 @@ gceSTATUS
 gckEVENT_Destroy(
     IN gckEVENT Event
     );
-
-/* Reserve the next available hardware event. */
-gceSTATUS
-gckEVENT_GetEvent(
-    IN gckEVENT Event,
-    IN gctBOOL Wait,
-    OUT gctUINT8 * EventID,
-    IN gceKERNEL_WHERE Source
-   );
 
 /* Add a new event to the list of events. */
 gceSTATUS

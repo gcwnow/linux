@@ -379,7 +379,7 @@ OnError:
 }
 
 #if gcdPOWEROFF_TIMEOUT
-void
+static void
 _PowerTimerFunction(
     gctPOINTER Data
     )
