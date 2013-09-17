@@ -371,11 +371,7 @@ gckKERNEL_Notify(
     {
     case gcvNOTIFY_INTERRUPT:
         /* Process the interrupt. */
-#if COMMAND_PROCESSOR_VERSION > 1
-        status = gckINTERRUPT_Notify(Kernel->interrupt, Data);
-#else
         status = gckHARDWARE_Interrupt(Kernel->hardware, Data);
-#endif
         break;
 
     default:

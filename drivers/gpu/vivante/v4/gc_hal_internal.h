@@ -1591,22 +1591,6 @@ gckHARDWARE_IsFeatureAvailable(
     );
 
 /******************************************************************************\
-***************************** gckINTERRUPT Object ******************************
-\******************************************************************************/
-
-typedef struct _gckINTERRUPT *  gckINTERRUPT;
-
-typedef gceSTATUS (* gctINTERRUPT_HANDLER)(
-    IN gckKERNEL Kernel
-    );
-
-gceSTATUS
-gckINTERRUPT_Notify(
-    IN gckINTERRUPT Interrupt,
-    IN gctBOOL Valid
-    );
-
-/******************************************************************************\
 ******************************** gckEVENT Object *******************************
 \******************************************************************************/
 

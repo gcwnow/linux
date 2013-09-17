@@ -61,13 +61,6 @@
 #endif
 
 /*
-    COMMAND_PROCESSOR_VERSION
-
-        The version of the command buffer and task manager.
-*/
-#define COMMAND_PROCESSOR_VERSION               1
-
-/*
     gcdDUMP
 
         When set to 1, a dump of all states and memory uploads, as well as other
