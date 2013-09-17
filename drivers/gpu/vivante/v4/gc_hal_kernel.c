@@ -2391,7 +2391,7 @@ gckKERNEL_Recovery(
     gcmkVERIFY_OBJECT(hardware, gcvOBJ_HARDWARE);
 
     /* Handle all outstanding events now. */
-#if gcdSMP
+#ifdef CONFIG_SMP
     gcmkONERROR(gckOS_AtomSet(Kernel->os, eventObj->pending, ~0U));
 #else
     eventObj->pending = ~0U;
@@ -2399,7 +2399,7 @@ gckKERNEL_Recovery(
     gcmkONERROR(gckEVENT_Notify(eventObj, 1));
 
     /* Again in case more events got submitted. */
-#if gcdSMP
+#ifdef CONFIG_SMP
     gcmkONERROR(gckOS_AtomSet(Kernel->os, eventObj->pending, ~0U));
 #else
     eventObj->pending = ~0U;

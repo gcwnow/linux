@@ -472,7 +472,7 @@ struct _gckEVENT
     gctPOINTER                  freeAtom;
 
     /* Pending events. */
-#if gcdSMP
+#ifdef CONFIG_SMP
     gctPOINTER                  pending;
 #else
     volatile gctUINT            pending;

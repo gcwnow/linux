@@ -402,19 +402,6 @@
 #endif
 
 /*
-    gcdSMP
-
-        This define enables SMP support.
-
-        Kbuild will config it according to whether
-        CONFIG_SMP is set.
-
-*/
-#ifndef gcdSMP
-#   define gcdSMP                               0
-#endif
-
-/*
     gcdENABLE_OUTER_CACHE_PATCH
 
         Enable the outer cache patch.

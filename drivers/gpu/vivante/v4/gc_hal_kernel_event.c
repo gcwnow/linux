@@ -375,7 +375,7 @@ gckEVENT_Construct(
                               eventObj->freeAtom,
                               gcmCOUNTOF(eventObj->queues)));
 
-#if gcdSMP
+#ifdef CONFIG_SMP
     gcmkONERROR(gckOS_AtomConstruct(os, &eventObj->pending));
 #endif
 
@@ -418,7 +418,7 @@ OnError:
             gcmkVERIFY_OK(gckOS_AtomDestroy(os, eventObj->freeAtom));
         }
 
-#if gcdSMP
+#ifdef CONFIG_SMP
         if (eventObj->pending != gcvNULL)
         {
             gcmkVERIFY_OK(gckOS_AtomDestroy(os, eventObj->pending));
@@ -518,7 +518,7 @@ gckEVENT_Destroy(
     /* Delete the atom. */
     gcmkVERIFY_OK(gckOS_AtomDestroy(Event->os, Event->freeAtom));
 
-#if gcdSMP
+#ifdef CONFIG_SMP
     gcmkVERIFY_OK(gckOS_AtomDestroy(Event->os, Event->pending));
 #endif
     /* Mark the gckEVENT object as unknown. */
@@ -1446,7 +1446,7 @@ gckEVENT_Interrupt(
     gcmkVERIFY_OBJECT(Event, gcvOBJ_EVENT);
 
     /* Combine current interrupt status with pending flags. */
-#if gcdSMP
+#ifdef CONFIG_SMP
     gckOS_AtomSetMask(Event->pending, Data);
 #else
     Event->pending |= Data;
@@ -1522,7 +1522,7 @@ gckEVENT_Notify(
         suspended = gcvTRUE;
 
         /* Get current interrupts. */
-#if gcdSMP
+#ifdef CONFIG_SMP
         gckOS_AtomGet(Event->os, Event->pending, (gctINT32_PTR)&pending);
 #else
         pending = Event->pending;
@@ -1598,7 +1598,7 @@ gckEVENT_Notify(
             suspended = gcvTRUE;
 
             /* Mark pending interrupts as handled. */
-#if gcdSMP
+#ifdef CONFIG_SMP
             gckOS_AtomClearMask(Event->pending, pending);
 #else
             Event->pending &= ~pending;
@@ -1949,7 +1949,7 @@ gckEVENT_Notify(
         suspended = gcvTRUE;
 
         /* Mark pending interrupt as handled. */
-#if gcdSMP
+#ifdef CONFIG_SMP
         gckOS_AtomClearMask(Event->pending, mask);
 #else
         Event->pending &= ~mask;

@@ -370,7 +370,7 @@ gckOS_AtomicExchange(
     OUT gctUINT32_PTR OldValue
     );
 
-#if gcdSMP
+#ifdef CONFIG_SMP
 gceSTATUS
 gckOS_AtomSetMask(
     IN gctPOINTER Atom,

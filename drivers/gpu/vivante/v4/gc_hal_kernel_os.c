@@ -3186,7 +3186,7 @@ gckOS_AtomicExchange(
     return gcvSTATUS_OK;
 }
 
-#if gcdSMP
+#ifdef CONFIG_SMP
 /*******************************************************************************
 **
 **  gckOS_AtomicSetMask
