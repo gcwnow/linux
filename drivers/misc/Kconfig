@@ -525,6 +525,12 @@ config VEXPRESS_SYSCFG
 	  bus. System Configuration interface is one of the possible means
 	  of generating transactions on this bus.
 
+config JZ_VPU
+	tristate "Ingenic VPU driver"
+	help
+	  Tightly-coupled shared memory (TCSM) driver for communication with
+	  the VPU onboard the Ingenic JZ4770 SoC.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
