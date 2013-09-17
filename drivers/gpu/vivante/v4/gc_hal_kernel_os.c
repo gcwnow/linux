@@ -282,11 +282,11 @@ _DumpDebugRegisters(
 
     for (i = 0; i < 500; i += 1)
     {
-        gcmkONERROR(gckOS_WriteRegister(Os, Descriptor->index, select));
+        gcmkONERROR(gckOS_WriteRegisterEx(Os, gcvCORE_MAJOR, Descriptor->index, select));
 #if !gcdENABLE_RECOVERY
         gcmkONERROR(gckOS_Delay(Os, 1000));
 #endif
-        gcmkONERROR(gckOS_ReadRegister(Os, Descriptor->data, &data));
+        gcmkONERROR(gckOS_ReadRegisterEx(Os, gcvCORE_MAJOR, Descriptor->data, &data));
 
         if (data == Descriptor->signature)
         {
@@ -307,11 +307,11 @@ _DumpDebugRegisters(
     {
         select = i << Descriptor->shift;
 
-        gcmkONERROR(gckOS_WriteRegister(Os, Descriptor->index, select));
+        gcmkONERROR(gckOS_WriteRegisterEx(Os, gcvCORE_MAJOR, Descriptor->index, select));
 #if !gcdENABLE_RECOVERY
         gcmkONERROR(gckOS_Delay(Os, 1000));
 #endif
-        gcmkONERROR(gckOS_ReadRegister(Os, Descriptor->data, &data));
+        gcmkONERROR(gckOS_ReadRegisterEx(Os, gcvCORE_MAJOR, Descriptor->data, &data));
 
         gcmkPRINT_N(12, "    [0x%02X] 0x%08X\n", i, data);
     }
@@ -2274,7 +2274,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
 
 /*******************************************************************************
 **
-**  gckOS_ReadRegister
+**  gckOS_ReadRegisterEx
 **
 **  Read data from a register.
 **
@@ -2291,16 +2291,6 @@ gceSTATUS gckOS_FreeNonPagedMemory(
 **      gctUINT32 * Data
 **          Pointer to a variable that receives the data read from the register.
 */
-gceSTATUS
-gckOS_ReadRegister(
-    IN gckOS Os,
-    IN gctUINT32 Address,
-    OUT gctUINT32 * Data
-    )
-{
-    return gckOS_ReadRegisterEx(Os, gcvCORE_MAJOR, Address, Data);
-}
-
 gceSTATUS
 gckOS_ReadRegisterEx(
     IN gckOS Os,
@@ -2324,7 +2314,7 @@ gckOS_ReadRegisterEx(
 
 /*******************************************************************************
 **
-**  gckOS_WriteRegister
+**  gckOS_WriteRegisterEx
 **
 **  Write data to a register.
 **
@@ -2343,16 +2333,6 @@ gckOS_ReadRegisterEx(
 **
 **      Nothing.
 */
-gceSTATUS
-gckOS_WriteRegister(
-    IN gckOS Os,
-    IN gctUINT32 Address,
-    IN gctUINT32 Data
-    )
-{
-    return gckOS_WriteRegisterEx(Os, gcvCORE_MAJOR, Address, Data);
-}
-
 gceSTATUS
 gckOS_WriteRegisterEx(
     IN gckOS Os,
@@ -4303,7 +4283,7 @@ gckOS_LockPages(
 
 /*******************************************************************************
 **
-**  gckOS_MapPages
+**  gckOS_MapPagesEx
 **
 **  Map paged memory into a page table.
 **
@@ -4325,21 +4305,6 @@ gckOS_LockPages(
 **
 **      Nothing.
 */
-gceSTATUS
-gckOS_MapPages(
-    IN gckOS Os,
-    IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T PageCount,
-    IN gctPOINTER PageTable
-    )
-{
-    return gckOS_MapPagesEx(Os,
-                            gcvCORE_MAJOR,
-                            Physical,
-                            PageCount,
-                            PageTable);
-}
-
 gceSTATUS
 gckOS_MapPagesEx(
     IN gckOS Os,
@@ -5053,7 +5018,7 @@ OnError:
 
 /*******************************************************************************
 **
-**  gckOS_MapUserMemory
+**  gckOS_MapUserMemoryEx
 **
 **  Lock down a user buffer and return an DMA'able address to be used by the
 **  hardware to access it.
@@ -5070,24 +5035,12 @@ OnError:
 **
 **      gctPOINTER * Info
 **          Pointer to variable receiving the information record required by
-**          gckOS_UnmapUserMemory.
+**          gckOS_UnmapUserMemoryEx.
 **
 **      gctUINT32_PTR Address
 **          Pointer to a variable that will receive the address DMA'able by the
 **          hardware.
 */
-gceSTATUS
-gckOS_MapUserMemory(
-    IN gckOS Os,
-    IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
-    OUT gctPOINTER * Info,
-    OUT gctUINT32_PTR Address
-    )
-{
-    return gckOS_MapUserMemoryEx(Os, gcvCORE_MAJOR, Memory, Size, Info, Address);
-}
-
 gceSTATUS
 gckOS_MapUserMemoryEx(
     IN gckOS Os,
@@ -5443,10 +5396,10 @@ OnError:
 
 /*******************************************************************************
 **
-**  gckOS_UnmapUserMemory
+**  gckOS_UnmapUserMemoryEx
 **
 **  Unlock a user buffer and that was previously locked down by
-**  gckOS_MapUserMemory.
+**  gckOS_MapUserMemoryEx.
 **
 **  INPUT:
 **
@@ -5457,27 +5410,15 @@ OnError:
 **          Size in bytes of the memory to unlock.
 **
 **      gctPOINTER Info
-**          Information record returned by gckOS_MapUserMemory.
+**          Information record returned by gckOS_MapUserMemoryEx.
 **
 **      gctUINT32_PTR Address
-**          The address returned by gckOS_MapUserMemory.
+**          The address returned by gckOS_MapUserMemoryEx.
 **
 **  OUTPUT:
 **
 **      Nothing.
 */
-gceSTATUS
-gckOS_UnmapUserMemory(
-    IN gckOS Os,
-    IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
-    IN gctPOINTER Info,
-    IN gctUINT32 Address
-    )
-{
-    return gckOS_UnmapUserMemoryEx(Os, gcvCORE_MAJOR, Memory, Size, Info, Address);
-}
-
 gceSTATUS
 gckOS_UnmapUserMemoryEx(
     IN gckOS Os,
@@ -5663,14 +5604,6 @@ gckOS_GetBaseAddress(
 }
 
 gceSTATUS
-gckOS_SuspendInterrupt(
-    IN gckOS Os
-    )
-{
-    return gckOS_SuspendInterruptEx(Os, gcvCORE_MAJOR);
-}
-
-gceSTATUS
 gckOS_SuspendInterruptEx(
     IN gckOS Os,
     IN gceCORE Core
@@ -5685,14 +5618,6 @@ gckOS_SuspendInterruptEx(
 
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
-}
-
-gceSTATUS
-gckOS_ResumeInterrupt(
-    IN gckOS Os
-    )
-{
-    return gckOS_ResumeInterruptEx(Os, gcvCORE_MAJOR);
 }
 
 gceSTATUS

@@ -841,10 +841,11 @@ gckKERNEL_Dispatch(
         {
             /* Map video memory address into user space. */
             gcmkONERROR(
-                gckKERNEL_MapVideoMemory(Kernel,
-                                         FromUser,
-                                         Interface->u.LockVideoMemory.address,
-                                         &Interface->u.LockVideoMemory.memory));
+                gckKERNEL_MapVideoMemoryEx(Kernel,
+                                           gcvCORE_MAJOR,
+                                           FromUser,
+                                           Interface->u.LockVideoMemory.address,
+                                           &Interface->u.LockVideoMemory.memory));
         }
         else
         {

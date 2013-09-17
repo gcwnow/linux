@@ -221,7 +221,7 @@ gckKERNEL_UnmapMemory(
 
 /*******************************************************************************
 **
-**  gckKERNEL_MapVideoMemory
+**  gckKERNEL_MapVideoMemoryEx
 **
 **  Get the logical address for a hardware specific memory address for the
 **  current process.
@@ -333,40 +333,6 @@ OnError:
     return status;
 }
 
-/*******************************************************************************
-**
-**  gckKERNEL_MapVideoMemory
-**
-**  Get the logical address for a hardware specific memory address for the
-**  current process.
-**
-**  INPUT:
-**
-**      gckKERNEL Kernel
-**          Pointer to an gckKERNEL object.
-**
-**      gctBOOL InUserSpace
-**          gcvTRUE to map the memory into the user space.
-**
-**      gctUINT32 Address
-**          Hardware specific memory address.
-**
-**  OUTPUT:
-**
-**      gctPOINTER * Logical
-**          Pointer to a variable that will hold the logical address of the
-**          specified memory address.
-*/
-gceSTATUS
-gckKERNEL_MapVideoMemory(
-    IN gckKERNEL Kernel,
-    IN gctBOOL InUserSpace,
-    IN gctUINT32 Address,
-    OUT gctPOINTER * Logical
-    )
-{
-    return gckKERNEL_MapVideoMemoryEx(Kernel, gcvCORE_MAJOR, InUserSpace, Address, Logical);
-}
 /*******************************************************************************
 **
 **  gckKERNEL_Notify

@@ -239,15 +239,6 @@ gckOS_LockPages(
 
 /* Map pages. */
 gceSTATUS
-gckOS_MapPages(
-    IN gckOS Os,
-    IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T PageCount,
-    IN gctPOINTER PageTable
-    );
-
-/* Map pages. */
-gceSTATUS
 gckOS_MapPagesEx(
     IN gckOS Os,
     IN gceCORE Core,
@@ -354,27 +345,11 @@ gckOS_UnmapPhysical(
 
 /* Read data from a hardware register. */
 gceSTATUS
-gckOS_ReadRegister(
-    IN gckOS Os,
-    IN gctUINT32 Address,
-    OUT gctUINT32 * Data
-    );
-
-/* Read data from a hardware register. */
-gceSTATUS
 gckOS_ReadRegisterEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctUINT32 Address,
     OUT gctUINT32 * Data
-    );
-
-/* Write data to a hardware register. */
-gceSTATUS
-gckOS_WriteRegister(
-    IN gckOS Os,
-    IN gctUINT32 Address,
-    IN gctUINT32 Data
     );
 
 /* Write data to a hardware register. */
@@ -786,19 +761,9 @@ gckOS_CopyToUserData(
     );
 
 gceSTATUS
-gckOS_SuspendInterrupt(
-    IN gckOS Os
-    );
-
-gceSTATUS
 gckOS_SuspendInterruptEx(
     IN gckOS Os,
     IN gceCORE Core
-    );
-
-gceSTATUS
-gckOS_ResumeInterrupt(
-    IN gckOS Os
     );
 
 gceSTATUS
@@ -939,16 +904,6 @@ gckOS_UnmapSignal(
 
 /* Map user memory. */
 gceSTATUS
-gckOS_MapUserMemory(
-    IN gckOS Os,
-    IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
-    OUT gctPOINTER * Info,
-    OUT gctUINT32_PTR Address
-    );
-
-/* Map user memory. */
-gceSTATUS
 gckOS_MapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
@@ -956,16 +911,6 @@ gckOS_MapUserMemoryEx(
     IN gctSIZE_T Size,
     OUT gctPOINTER * Info,
     OUT gctUINT32_PTR Address
-    );
-
-/* Unmap user memory. */
-gceSTATUS
-gckOS_UnmapUserMemory(
-    IN gckOS Os,
-    IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
-    IN gctPOINTER Info,
-    IN gctUINT32 Address
     );
 
 /* Unmap user memory. */
@@ -1414,15 +1359,6 @@ gckKERNEL_RemoveVideoMemoryPoolPid(
     IN gckVIDMEM VideoMemory
     );
 #endif
-
-/* Map video memory. */
-gceSTATUS
-gckKERNEL_MapVideoMemory(
-    IN gckKERNEL Kernel,
-    IN gctBOOL InUserSpace,
-    IN gctUINT32 Address,
-    OUT gctPOINTER * Logical
-    );
 
 /* Map video memory. */
 gceSTATUS
