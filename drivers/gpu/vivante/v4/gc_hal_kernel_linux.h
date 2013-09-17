@@ -46,18 +46,12 @@
 
 #include <linux/clk.h>
 
-#define NTSTRSAFE_NO_CCH_FUNCTIONS
 #include "gc_hal.h"
 #include "gc_hal_internal.h"
 #include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 #include "gc_hal_kernel_device.h"
 #include "gc_hal_kernel_os.h"
-
-#define _WIDE(string)				L##string
-#define WIDE(string)				_WIDE(string)
-
-#define countof(a)					(sizeof(a) / sizeof(a[0]))
 
 #define DRV_NAME          			"galcore"
 

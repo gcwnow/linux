@@ -164,8 +164,6 @@ gckOS_DebugFatal(
 #   define gcmkFATAL(...)
 #endif
 
-#define gcmENUM2TEXT(e)         case e: return #e
-
 /*******************************************************************************
 **
 **  gcmTRACE
@@ -226,51 +224,10 @@ gckOS_DebugTraceN(
 #define gcvZONE_DATABASE        (1 << 11)
 #define gcvZONE_INTERRUPT       (1 << 12)
 
-/* User zones. */
-#define gcvZONE_HAL             (1 << 3)
-#define gcvZONE_BUFFER          (1 << 4)
-#define gcvZONE_CONTEXT         (1 << 5)
-#define gcvZONE_SURFACE         (1 << 6)
-#define gcvZONE_INDEX           (1 << 7)
-#define gcvZONE_STREAM          (1 << 8)
-#define gcvZONE_TEXTURE         (1 << 9)
-#define gcvZONE_2D              (1 << 10)
-#define gcvZONE_3D              (1 << 11)
-#define gcvZONE_COMPILER        (1 << 12)
-#define gcvZONE_MEMORY          (1 << 13)
-#define gcvZONE_STATE           (1 << 14)
-#define gcvZONE_AUX             (1 << 15)
-#define gcvZONE_VERTEX          (1 << 16)
-#define gcvZONE_CL              (1 << 17)
-#define gcvZONE_COMPOSITION     (1 << 17)
-#define gcvZONE_VG              (1 << 18)
-#define gcvZONE_IMAGE           (1 << 19)
-#define gcvZONE_UTILITY         (1 << 20)
-#define gcvZONE_PARAMETERS      (1 << 21)
-
-/* API definitions. */
-#define gcvZONE_API_HAL         (1 << 28)
-#define gcvZONE_API_EGL         (2 << 28)
-#define gcvZONE_API_ES11        (3 << 28)
-#define gcvZONE_API_ES20        (4 << 28)
-#define gcvZONE_API_VG11        (5 << 28)
-#define gcvZONE_API_GL          (6 << 28)
-#define gcvZONE_API_DFB         (7 << 28)
-#define gcvZONE_API_GDI         (8 << 28)
-#define gcvZONE_API_D3D         (9 << 28)
-
-
-#define gcmZONE_GET_API(zone)   ((zone) >> 28)
-/*Set gcdZONE_MASE like 0x0 | gcvZONE_API_EGL
-will enable print EGL module debug info*/
-#define gcdZONE_MASK            0x0FFFFFFF
 
 /* Handy zones. */
 #define gcvZONE_NONE            0
 #define gcvZONE_ALL             0x0FFFFFFF
-
-/*Dump API depth set 1 for API, 2 for API and API behavior*/
-#define gcvDUMP_API_DEPTH       1
 
 /*******************************************************************************
 **
@@ -365,7 +322,6 @@ gckOS_DebugTraceZoneN(
 
 #define gcmOPT_VALUE(ptr)           (((ptr) == gcvNULL) ? 0 : *(ptr))
 #define gcmOPT_POINTER(ptr)         (((ptr) == gcvNULL) ? gcvNULL : *(ptr))
-#define gcmOPT_STRING(ptr)          (((ptr) == gcvNULL) ? "(nil)" : (ptr))
 
 void
 gckOS_Print(
@@ -595,35 +551,6 @@ gckOS_DebugStatus2Name(
 
 /*******************************************************************************
 **
-**  gcmERR_RETURN
-**
-**      Executes a return on error.
-**
-**  ASSUMPTIONS:
-**
-**      'status' variable of gceSTATUS type must be defined.
-**
-**  ARGUMENTS:
-**
-**      func    Function to evaluate.
-*/
-#define _gcmkERR_RETURN(prefix, func) \
-    status = func; \
-    if (gcmIS_ERROR(status)) \
-    { \
-        prefix##PRINT_VERSION(); \
-        prefix##TRACE(gcvLEVEL_ERROR, \
-            #prefix "ERR_RETURN: status=%d(%s) @ %s(%d)", \
-            status, gckOS_DebugStatus2Name(status), __FUNCTION__, __LINE__); \
-        prefix##FOOTER(); \
-        return status; \
-    } \
-    do { } while (gcvFALSE)
-#define gcmkERR_RETURN(func)        _gcmkERR_RETURN(gcmk, func)
-
-
-/*******************************************************************************
-**
 **  gcmONERROR
 **
 **      Jump to the error handler in case there is an error.
@@ -651,35 +578,6 @@ gckOS_DebugStatus2Name(
     } \
     while (gcvFALSE)
 #define gcmkONERROR(func)           _gcmkONERROR(gcmk, func)
-
-/*******************************************************************************
-**
-**  gcmCHECK_STATUS
-**
-**      Executes a break statement on error.
-**
-**  ASSUMPTIONS:
-**
-**      'status' variable of gceSTATUS type must be defined.
-**
-**  ARGUMENTS:
-**
-**      func    Function to evaluate.
-*/
-#define _gcmkCHECK_STATUS(prefix, func) \
-    do \
-    { \
-        last = func; \
-        if (gcmIS_ERROR(last)) \
-        { \
-            prefix##TRACE(gcvLEVEL_ERROR, \
-                #prefix "CHECK_STATUS: status=%d(%s) @ %s(%d)", \
-                last, gckOS_DebugStatus2Name(last), __FUNCTION__, __LINE__); \
-            status = last; \
-        } \
-    } \
-    while (gcvFALSE)
-#define gcmkCHECK_STATUS(func)      _gcmkCHECK_STATUS(gcmk, func)
 
 /*******************************************************************************
 **
@@ -748,7 +646,5 @@ gckOS_DebugStatus2Name(
        while (gcvFALSE)
 #   define gcmkVERIFY_ARGUMENT_RETURN(arg, value) \
                 _gcmVERIFY_ARGUMENT_RETURN(gcmk, arg, value)
-
-#define MAX_LOOP_COUNT 0x7FFFFFFF
 
 #endif /* __gc_hal_base_internal_h_ */
