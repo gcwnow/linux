@@ -131,18 +131,6 @@ gckOS_Destroy(
     IN gckOS Os
     );
 
-/* Query the video memory. */
-gceSTATUS
-gckOS_QueryVideoMemory(
-    IN gckOS Os,
-    OUT gctPHYS_ADDR * InternalAddress,
-    OUT gctSIZE_T * InternalSize,
-    OUT gctPHYS_ADDR * ExternalAddress,
-    OUT gctSIZE_T * ExternalSize,
-    OUT gctPHYS_ADDR * ContiguousAddress,
-    OUT gctSIZE_T * ContiguousSize
-    );
-
 /* Allocate memory from the heap. */
 gceSTATUS
 gckOS_Allocate(
@@ -732,18 +720,6 @@ gckOS_ZeroMemory(
     IN gctSIZE_T Bytes
     );
 
-/* Device I/O control to the kernel HAL layer. */
-gceSTATUS
-gckOS_DeviceControl(
-    IN gckOS Os,
-    IN gctBOOL FromUser,
-    IN gctUINT32 IoControlCode,
-    IN gctPOINTER InputBuffer,
-    IN gctSIZE_T InputBufferSize,
-    OUT gctPOINTER OutputBuffer,
-    IN gctSIZE_T OutputBufferSize
-    );
-
 /*******************************************************************************
 **
 **  gckOS_GetProcessID
@@ -761,11 +737,6 @@ gckOS_DeviceControl(
 */
 gceSTATUS
 gckOS_GetProcessID(
-    OUT gctUINT32_PTR ProcessID
-    );
-
-gceSTATUS
-gckOS_GetCurrentProcessID(
     OUT gctUINT32_PTR ProcessID
     );
 
@@ -943,11 +914,6 @@ void
 gckOS_SetDebugZones(
     IN gctUINT32 Zones,
     IN gctBOOL Enable
-    );
-
-void
-gckOS_SetDebugFile(
-    IN gctCONST_STRING FileName
     );
 
 /*******************************************************************************
@@ -1252,12 +1218,6 @@ gckKERNEL_CreateVideoMemoryPoolPid(
     IN gcePOOL Pool,
     IN gctUINT32 Pid,
     OUT gckVIDMEM * VideoMemory
-    );
-
-gceSTATUS
-gckKERNEL_RemoveVideoMemoryPoolPid(
-    IN gckKERNEL Kernel,
-    IN gckVIDMEM VideoMemory
     );
 #endif
 
@@ -1571,12 +1531,6 @@ gckHARDWARE_SetFastClear(
     IN gctINT Compression
     );
 
-gceSTATUS
-gckHARDWARE_ReadInterrupt(
-    IN gckHARDWARE Hardware,
-    OUT gctUINT32_PTR IDs
-    );
-
 /* Power management. */
 gceSTATUS
 gckHARDWARE_SetPowerManagementState(
@@ -1644,24 +1598,6 @@ typedef struct _gckINTERRUPT *  gckINTERRUPT;
 
 typedef gceSTATUS (* gctINTERRUPT_HANDLER)(
     IN gckKERNEL Kernel
-    );
-
-gceSTATUS
-gckINTERRUPT_Construct(
-    IN gckKERNEL Kernel,
-    OUT gckINTERRUPT * Interrupt
-    );
-
-gceSTATUS
-gckINTERRUPT_Destroy(
-    IN gckINTERRUPT Interrupt
-    );
-
-gceSTATUS
-gckINTERRUPT_SetHandler(
-    IN gckINTERRUPT Interrupt,
-    IN OUT gctINT32_PTR Id,
-    IN gctINTERRUPT_HANDLER Handler
     );
 
 gceSTATUS
