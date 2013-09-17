@@ -68,7 +68,6 @@
 #define IRQ_HARB2	44
 #define IRQ_I2S2	45
 #define IRQ_CPM		47
-
 #define INTC_IRQ_NUM	48
 
 // 2nd-level interrupts
@@ -86,5 +85,9 @@
 #define IRQ_SADC_BASE	(IRQ_BDMA_0 + BDMA_IRQ_NUM) /* 82-87 */
 
 #define IRQ_GPIO_0	(IRQ_SADC_BASE + SADC_IRQ_NUM)
+
+// Coprocessor 0 interrupts
+
+#define IRQ_VPU         48
 
 #endif
