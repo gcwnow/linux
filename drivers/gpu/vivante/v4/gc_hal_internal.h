@@ -1238,53 +1238,6 @@ gckOS_StopTimer(
     );
 
 /******************************************************************************\
-********************************* gckHEAP Object ********************************
-\******************************************************************************/
-
-typedef struct _gckHEAP *       gckHEAP;
-
-/* Construct a new gckHEAP object. */
-gceSTATUS
-gckHEAP_Construct(
-    IN gckOS Os,
-    IN gctSIZE_T AllocationSize,
-    OUT gckHEAP * Heap
-    );
-
-/* Destroy an gckHEAP object. */
-gceSTATUS
-gckHEAP_Destroy(
-    IN gckHEAP Heap
-    );
-
-/* Allocate memory. */
-gceSTATUS
-gckHEAP_Allocate(
-    IN gckHEAP Heap,
-    IN gctSIZE_T Bytes,
-    OUT gctPOINTER * Node
-    );
-
-/* Free memory. */
-gceSTATUS
-gckHEAP_Free(
-    IN gckHEAP Heap,
-    IN gctPOINTER Node
-    );
-
-/* Profile the heap. */
-gceSTATUS
-gckHEAP_ProfileStart(
-    IN gckHEAP Heap
-    );
-
-gceSTATUS
-gckHEAP_ProfileEnd(
-    IN gckHEAP Heap,
-    IN gctCONST_STRING Title
-    );
-
-/******************************************************************************\
 ******************************** gckVIDMEM Object ******************************
 \******************************************************************************/
 

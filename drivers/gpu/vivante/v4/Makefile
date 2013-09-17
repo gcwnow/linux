@@ -49,7 +49,6 @@ galcore_v4-objs += \
 	gc_hal_kernel_driver.o \
 	gc_hal_kernel_event.o \
 	gc_hal_kernel_hardware.o \
-	gc_hal_kernel_heap.o \
 	gc_hal_kernel_linux.o \
 	gc_hal_kernel_mmu.o \
 	gc_hal_kernel_os.o \

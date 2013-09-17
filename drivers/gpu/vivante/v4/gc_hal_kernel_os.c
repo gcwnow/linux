@@ -130,9 +130,6 @@ struct _gckOS
     /* Object. */
     gcsOBJECT                   object;
 
-    /* Heap. */
-    gckHEAP                     heap;
-
     /* Pointer to device */
     gckGALDEVICE                device;
 
@@ -1083,9 +1080,6 @@ gckOS_Construct(
     /* Set device device. */
     os->device = Context;
 
-    /* IMPORTANT! No heap yet. */
-    os->heap = gcvNULL;
-
     /* Initialize the memory lock. */
     gcmkONERROR(gckOS_CreateMutex(os, &os->memoryLock));
     gcmkONERROR(gckOS_CreateMutex(os, &os->memoryMapLock));
@@ -1166,12 +1160,6 @@ OnError:
             gckOS_DeleteMutex(os, os->signal.lock));
     }
 
-    if (os->heap != gcvNULL)
-    {
-        gcmkVERIFY_OK(
-            gckHEAP_Destroy(os->heap));
-    }
-
     if (os->memoryMapLock != gcvNULL)
     {
         gcmkVERIFY_OK(
@@ -1222,8 +1210,6 @@ gckOS_Destroy(
     IN gckOS Os
     )
 {
-    gckHEAP heap;
-
     gcmkHEADER_ARG("Os=0x%X", Os);
 
     /* Verify the arguments. */
@@ -1242,16 +1228,6 @@ gckOS_Destroy(
 
     /* Free the signal table. */
     kfree(Os->signal.table);
-
-    if (Os->heap != gcvNULL)
-    {
-        /* Mark gckHEAP as gone. */
-        heap     = Os->heap;
-        Os->heap = gcvNULL;
-
-        /* Destroy the gckHEAP object. */
-        gcmkVERIFY_OK(gckHEAP_Destroy(heap));
-    }
 
     /* Destroy the memory lock. */
     gcmkVERIFY_OK(gckOS_DeleteMutex(Os, Os->memoryMapLock));
@@ -1362,16 +1338,7 @@ gckOS_Allocate(
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Memory != gcvNULL);
 
-    /* Do we have a heap? */
-    if (Os->heap != gcvNULL)
-    {
-        /* Allocate from the heap. */
-        gcmkONERROR(gckHEAP_Allocate(Os->heap, Bytes, Memory));
-    }
-    else
-    {
-        gcmkONERROR(gckOS_AllocateMemory(Os, Bytes, Memory));
-    }
+    gcmkONERROR(gckOS_AllocateMemory(Os, Bytes, Memory));
 
     /* Success. */
     gcmkFOOTER_ARG("*Memory=0x%X", *Memory);
@@ -1415,16 +1382,7 @@ gckOS_Free(
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Memory != gcvNULL);
 
-    /* Do we have a heap? */
-    if (Os->heap != gcvNULL)
-    {
-        /* Free from the heap. */
-        gcmkONERROR(gckHEAP_Free(Os->heap, Memory));
-    }
-    else
-    {
-        gcmkONERROR(gckOS_FreeMemory(Os, Memory));
-    }
+    gcmkONERROR(gckOS_FreeMemory(Os, Memory));
 
     /* Success. */
     gcmkFOOTER_NO();
