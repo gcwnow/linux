@@ -118,7 +118,6 @@ gctCONST_STRING _DispatchText[] =
 **          Pointer to a variable that will hold the pointer to the gckKERNEL
 **          object.
 */
-#define DEFAULT_PROFILE_FILE_NAME   "vprofiler.vpd"
 
 gceSTATUS
 gckKERNEL_Construct(
@@ -225,16 +224,6 @@ gckKERNEL_Construct(
     /* Construct the gckMMU object. */
     gcmkONERROR(
         gckMMU_Construct(kernel, gcdMMU_SIZE, &kernel->mmu));
-
-#if VIVANTE_PROFILER
-    /* Initialize profile setting */
-    kernel->profileEnable = gcvTRUE;
-
-    gcmkVERIFY_OK(
-        gckOS_MemCopy(kernel->profileFileName,
-                      DEFAULT_PROFILE_FILE_NAME,
-                      gcmSIZEOF(DEFAULT_PROFILE_FILE_NAME) + 1));
-#endif
 
     /* Return pointer to the gckKERNEL object. */
     *Kernel = kernel;
@@ -1163,30 +1152,10 @@ gckKERNEL_Dispatch(
         break;
 
     case gcvHAL_GET_PROFILE_SETTING:
-#if VIVANTE_PROFILER
-        /* Get profile setting */
-        Interface->u.GetProfileSetting.enable = Kernel->profileEnable;
-
-        gcmkVERIFY_OK(
-            gckOS_MemCopy(Interface->u.GetProfileSetting.fileName,
-                          Kernel->profileFileName,
-                          gcdMAX_PROFILE_FILE_NAME));
-#endif
-
         status = gcvSTATUS_OK;
         break;
 
     case gcvHAL_SET_PROFILE_SETTING:
-#if VIVANTE_PROFILER
-        /* Set profile setting */
-        Kernel->profileEnable = Interface->u.SetProfileSetting.enable;
-
-        gcmkVERIFY_OK(
-            gckOS_MemCopy(Kernel->profileFileName,
-                          Interface->u.SetProfileSetting.fileName,
-                          gcdMAX_PROFILE_FILE_NAME));
-#endif
-
         status = gcvSTATUS_OK;
         break;
 

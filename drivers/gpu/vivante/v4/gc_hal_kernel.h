@@ -307,14 +307,6 @@ struct _gckKERNEL
     /* Arom holding number of clients. */
     gctPOINTER                  atomClients;
 
-#if VIVANTE_PROFILER
-    /* Enable profiling */
-    gctBOOL                     profileEnable;
-
-    /* The profile file name */
-    gctCHAR                     profileFileName[gcdMAX_PROFILE_FILE_NAME];
-#endif
-
     /* Database management. */
     gckDB                       db;
     gctBOOL                     dbCreated;
