@@ -707,14 +707,6 @@ FindMdlMap(
     return gcvNULL;
 }
 
-void
-OnProcessExit(
-    IN gckOS Os,
-    IN gckKERNEL Kernel
-    )
-{
-}
-
 static void
 _NonContiguousFree(
     IN struct page ** Pages,
@@ -3194,51 +3186,6 @@ gckOS_AtomicExchange(
     return gcvSTATUS_OK;
 }
 
-/*******************************************************************************
-**
-**  gckOS_AtomicExchangePtr
-**
-**  Atomically exchange a pair of pointers.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      IN OUT gctPOINTER * Target
-**          Pointer to the 32-bit value to exchange.
-**
-**      IN gctPOINTER NewValue
-**          Specifies a new value for the pointer pointed to by Target.
-**
-**      OUT gctPOINTER * OldValue
-**          The old value of the pointer pointed to by Target.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-gceSTATUS
-gckOS_AtomicExchangePtr(
-    IN gckOS Os,
-    IN OUT gctPOINTER * Target,
-    IN gctPOINTER NewValue,
-    OUT gctPOINTER * OldValue
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X Target=0x%X NewValue=0x%X", Os, Target, NewValue);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-
-    /* Exchange the pair of pointers. */
-    *OldValue = (gctPOINTER) atomic_xchg((atomic_t *) Target, (int) NewValue);
-
-    /* Success. */
-    gcmkFOOTER_ARG("*OldValue=0x%X", *OldValue);
-    return gcvSTATUS_OK;
-}
-
 #if gcdSMP
 /*******************************************************************************
 **
@@ -3744,55 +3691,6 @@ gckOS_MemoryBarrier(
     /* Success. */
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
-}
-
-/*******************************************************************************
-**
-**  gckOS_AllocatePagedMemory
-**
-**  Allocate memory from the paged pool.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      gctSIZE_T Bytes
-**          Number of bytes to allocate.
-**
-**  OUTPUT:
-**
-**      gctPHYS_ADDR * Physical
-**          Pointer to a variable that receives the physical address of the
-**          memory allocation.
-*/
-gceSTATUS
-gckOS_AllocatePagedMemory(
-    IN gckOS Os,
-    IN gctSIZE_T Bytes,
-    OUT gctPHYS_ADDR * Physical
-    )
-{
-    gceSTATUS status;
-
-    gcmkHEADER_ARG("Os=0x%X Bytes=%lu", Os, Bytes);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Bytes > 0);
-    gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
-
-    /* Allocate the memory. */
-    gcmkONERROR(gckOS_AllocatePagedMemoryEx(Os, gcvFALSE, Bytes, Physical));
-
-    /* Success. */
-    gcmkFOOTER_ARG("*Physical=0x%X", *Physical);
-    return gcvSTATUS_OK;
-
-OnError:
-    /* Return the status. */
-    gcmkFOOTER();
-    return status;
 }
 
 /*******************************************************************************
@@ -6597,20 +6495,6 @@ gckOS_GetProfileTick(
     ktime_get_ts(&time);
 
     *Tick = time.tv_nsec + time.tv_sec * 1000000000ULL;
-
-    return gcvSTATUS_OK;
-}
-
-gceSTATUS
-gckOS_QueryProfileTickRate(
-    OUT gctUINT64_PTR TickRate
-    )
-{
-    struct timespec res;
-
-    hrtimer_get_res(CLOCK_MONOTONIC, &res);
-
-    *TickRate = res.tv_nsec + res.tv_sec * 1000000000ULL;
 
     return gcvSTATUS_OK;
 }

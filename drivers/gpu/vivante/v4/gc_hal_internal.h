@@ -211,14 +211,6 @@ gckOS_FreeMemory(
 
 /* Allocate paged memory. */
 gceSTATUS
-gckOS_AllocatePagedMemory(
-    IN gckOS Os,
-    IN gctSIZE_T Bytes,
-    OUT gctPHYS_ADDR * Physical
-    );
-
-/* Allocate paged memory. */
-gceSTATUS
 gckOS_AllocatePagedMemoryEx(
     IN gckOS Os,
     IN gctBOOL Contiguous,
@@ -433,15 +425,6 @@ gckOS_AtomicExchange(
     IN OUT gctUINT32_PTR Target,
     IN gctUINT32 NewValue,
     OUT gctUINT32_PTR OldValue
-    );
-
-/* Atomically exchange a pair of pointers. */
-gceSTATUS
-gckOS_AtomicExchangePtr(
-    IN gckOS Os,
-    IN OUT gctPOINTER * Target,
-    IN gctPOINTER NewValue,
-    OUT gctPOINTER * OldValue
     );
 
 #if gcdSMP
@@ -1009,17 +992,6 @@ gckOS_SetDebugLevel(
     );
 
 void
-gckOS_SetDebugZone(
-    IN gctUINT32 Zone
-    );
-
-void
-gckOS_SetDebugLevelZone(
-    IN gctUINT32 Level,
-    IN gctUINT32 Zone
-    );
-
-void
 gckOS_SetDebugZones(
     IN gctUINT32 Zones,
     IN gctBOOL Enable
@@ -1205,19 +1177,6 @@ gckVIDMEM_Construct(
 gceSTATUS
 gckVIDMEM_Destroy(
     IN gckVIDMEM Memory
-    );
-
-/* Allocate rectangular memory. */
-gceSTATUS
-gckVIDMEM_Allocate(
-    IN gckVIDMEM Memory,
-    IN gctUINT Width,
-    IN gctUINT Height,
-    IN gctUINT Depth,
-    IN gctUINT BytesPerPixel,
-    IN gctUINT32 Alignment,
-    IN gceSURF_TYPE Type,
-    OUT gcuVIDMEM_NODE_PTR * Node
     );
 
 /* Allocate linear memory. */
@@ -1537,15 +1496,6 @@ gckHARDWARE_Nop(
     IN OUT gctSIZE_T * Bytes
     );
 
-/* Add a WAIT command in the command queue. */
-gceSTATUS
-gckHARDWARE_Wait(
-    IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
-    IN gctUINT32 Count,
-    IN OUT gctSIZE_T * Bytes
-    );
-
 /* Add a PIPESELECT command in the command queue. */
 gceSTATUS
 gckHARDWARE_PipeSelect(
@@ -1705,20 +1655,6 @@ gckHARDWARE_QueryPowerManagementState(
     OUT gceCHIPPOWERSTATE* State
     );
 
-#if gcdPOWEROFF_TIMEOUT
-gceSTATUS
-gckHARDWARE_SetPowerOffTimeout(
-    IN gckHARDWARE  Hardware,
-    IN gctUINT32    Timeout
-);
-
-gceSTATUS
-gckHARDWARE_QueryPowerOffTimeout(
-    IN gckHARDWARE  Hardware,
-    OUT gctUINT32*  Timeout
-);
-#endif
-
 /* Profile 2D Engine. */
 gceSTATUS
 gckHARDWARE_ProfileEngine2D(
@@ -1836,49 +1772,12 @@ gckEVENT_AddList(
     IN gctBOOL AllocateAllowed
     );
 
-/* Schedule a FreeNonPagedMemory event. */
-gceSTATUS
-gckEVENT_FreeNonPagedMemory(
-    IN gckEVENT Event,
-    IN gctSIZE_T Bytes,
-    IN gctPHYS_ADDR Physical,
-    IN gctPOINTER Logical,
-    IN gceKERNEL_WHERE FromWhere
-    );
-
-/* Schedule a FreeContiguousMemory event. */
-gceSTATUS
-gckEVENT_FreeContiguousMemory(
-    IN gckEVENT Event,
-    IN gctSIZE_T Bytes,
-    IN gctPHYS_ADDR Physical,
-    IN gctPOINTER Logical,
-    IN gceKERNEL_WHERE FromWhere
-    );
-
-/* Schedule a FreeVideoMemory event. */
-gceSTATUS
-gckEVENT_FreeVideoMemory(
-    IN gckEVENT Event,
-    IN gcuVIDMEM_NODE_PTR VideoMemory,
-    IN gceKERNEL_WHERE FromWhere
-    );
-
 /* Schedule a signal event. */
 gceSTATUS
 gckEVENT_Signal(
     IN gckEVENT Event,
     IN gctSIGNAL Signal,
     IN gceKERNEL_WHERE FromWhere
-    );
-
-/* Schedule an Unlock event. */
-gceSTATUS
-gckEVENT_Unlock(
-    IN gckEVENT Event,
-    IN gceKERNEL_WHERE FromWhere,
-    IN gcuVIDMEM_NODE_PTR Node,
-    IN gceSURF_TYPE Type
     );
 
 gceSTATUS

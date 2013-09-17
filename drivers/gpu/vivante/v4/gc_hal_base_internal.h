@@ -53,11 +53,6 @@ gckOS_GetProfileTick(
     OUT gctUINT64_PTR Tick
     );
 
-gceSTATUS
-gckOS_QueryProfileTickRate(
-    OUT gctUINT64_PTR TickRate
-    );
-
 gctUINT32
 gckOS_ProfileToMS(
     IN gctUINT64 Ticks

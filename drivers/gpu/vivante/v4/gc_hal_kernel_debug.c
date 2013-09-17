@@ -2274,58 +2274,6 @@ gckOS_SetDebugLevel(
 
 /*******************************************************************************
 **
-**  gckOS_SetDebugZone
-**
-**  Set the debug zone.
-**
-**  INPUT:
-**
-**      gctUINT32 Zone
-**          New debug zone.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-void
-gckOS_SetDebugZone(
-    IN gctUINT32 Zone
-    )
-{
-    _debugZones = Zone;
-}
-
-/*******************************************************************************
-**
-**  gckOS_SetDebugLevelZone
-**
-**  Set the debug level and zone.
-**
-**  INPUT:
-**
-**      gctUINT32 Level
-**          New debug level.
-**
-**      gctUINT32 Zone
-**          New debug zone.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-
-void
-gckOS_SetDebugLevelZone(
-    IN gctUINT32 Level,
-    IN gctUINT32 Zone
-    )
-{
-    _debugLevel = Level;
-    _debugZones = Zone;
-}
-
-/*******************************************************************************
-**
 **  gckOS_SetDebugZones
 **
 **  Enable or disable debug zones.

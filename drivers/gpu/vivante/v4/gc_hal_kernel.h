@@ -491,13 +491,6 @@ struct _gckEVENT
     gctPOINTER                  eventListMutex;
 };
 
-/* Free all events belonging to a process. */
-gceSTATUS
-gckEVENT_FreeProcess(
-    IN gckEVENT Event,
-    IN gctUINT32 ProcessID
-    );
-
 gceSTATUS
 gckEVENT_Stop(
     IN gckEVENT Event,

@@ -1603,100 +1603,6 @@ OnError:
 
 /*******************************************************************************
 **
-**  gckHARDWARE_Wait
-**
-**  Append a WAIT command at the specified location in the command queue.
-**
-**  INPUT:
-**
-**      gckHARDWARE Hardware
-**          Pointer to an gckHARDWARE object.
-**
-**      gctPOINTER Logical
-**          Pointer to the current location inside the command queue to append
-**          WAIT command at or gcvNULL just to query the size of the WAIT command.
-**
-**      gctUINT32 Count
-**          Number of cycles to wait.
-**
-**      gctSIZE_T * Bytes
-**          Pointer to the number of bytes available for the WAIT command.  If
-**          'Logical' is gcvNULL, this argument will be ignored.
-**
-**  OUTPUT:
-**
-**      gctSIZE_T * Bytes
-**          Pointer to a variable that will receive the number of bytes required
-**          for the NOP command.  If 'Bytes' is gcvNULL, nothing will be returned.
-*/
-gceSTATUS
-gckHARDWARE_Wait(
-    IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
-    IN gctUINT32 Count,
-    IN OUT gctSIZE_T * Bytes
-    )
-{
-    gceSTATUS status;
-    gctUINT32_PTR logical;
-
-    gcmkHEADER_ARG("Hardware=0x%x Logical=0x%x Count=%u *Bytes=%lu",
-                   Hardware, Logical, Count, gcmOPT_VALUE(Bytes));
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
-
-    /* Cast the input pointer. */
-    logical = (gctUINT32_PTR) Logical;
-
-    if (Logical != gcvNULL)
-    {
-        if (*Bytes < 8)
-        {
-            /* Command queue too small. */
-            gcmkONERROR(gcvSTATUS_BUFFER_TOO_SMALL);
-        }
-
-        /* Append WAIT. */
-        logical[0] = ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))) | (((gctUINT32) (0x07 & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27)))
-                   | ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 15:0) - (0 ? 15:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 15:0) - (0 ? 15:0) + 1))))))) << (0 ? 15:0))) | (((gctUINT32) ((gctUINT32) (Count) & ((gctUINT32) ((((1 ? 15:0) - (0 ? 15:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 15:0) - (0 ? 15:0) + 1))))))) << (0 ? 15:0)));
-
-#if gcmIS_DEBUG(gcdDEBUG_TRACE)
-        {
-            gctUINT32 address;
-
-            /* Convert logical into hardware specific address. */
-            gcmkONERROR(gckHARDWARE_ConvertLogical(
-                Hardware, logical, &address
-                ));
-
-            gcmkTRACE_ZONE(
-                gcvLEVEL_INFO, gcvZONE_HARDWARE,
-                "0x%08x: WAIT %u", address, Count
-                );
-        }
-#endif
-    }
-
-    if (Bytes != gcvNULL)
-    {
-        /* Return number of bytes required by the WAIT command. */
-        *Bytes = 8;
-    }
-
-    /* Success. */
-    gcmkFOOTER_ARG("*Bytes=%lu", gcmOPT_VALUE(Bytes));
-    return gcvSTATUS_OK;
-
-OnError:
-    /* Return the status. */
-    gcmkFOOTER();
-    return status;
-}
-
-/*******************************************************************************
-**
 **  gckHARDWARE_Event
 **
 **  Append an EVENT command at the specified location in the command queue.
@@ -2210,56 +2116,6 @@ OnError:
     /* Return the status. */
     gcmkFOOTER();
     return status;
-}
-
-/*******************************************************************************
-**
-**  gckHARDWARE_ConvertPhysical
-**
-**  Convert a physical address into a hardware specific address.
-**
-**  INPUT:
-**
-**      gckHARDWARE Hardware
-**          Pointer to an gckHARDWARE object.
-**
-**      gctPHYS_ADDR Physical
-**          Physical address to convert.
-**
-**      gctUINT32* Address
-**          Return hardware specific address.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-gceSTATUS
-gckHARDWARE_ConvertPhysical(
-    IN gckHARDWARE Hardware,
-    IN gctPHYS_ADDR Physical,
-    OUT gctUINT32 * Address
-    )
-{
-    gctUINT32 address;
-
-    gcmkHEADER_ARG("Hardware=0x%x Physical=0x%x", Hardware, Physical);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Physical != gcvNULL);
-    gcmkVERIFY_ARGUMENT(Address != gcvNULL);
-
-    address = gcmPTR2INT(Physical);
-
-    /* Return hardware specific address. */
-    *Address = (Hardware->mmuVersion == 0)
-             ? ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31))) | (((gctUINT32) (0x0 & ((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31)))
-               | ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 30:0) - (0 ? 30:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 30:0) - (0 ? 30:0) + 1))))))) << (0 ? 30:0))) | (((gctUINT32) ((gctUINT32) (address) & ((gctUINT32) ((((1 ? 30:0) - (0 ? 30:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 30:0) - (0 ? 30:0) + 1))))))) << (0 ? 30:0)))
-             : address;
-
-    /* Return the status. */
-    gcmkFOOTER_ARG("*Address=0x%08x", *Address);
-    return gcvSTATUS_OK;
 }
 
 /*******************************************************************************
@@ -4051,37 +3907,6 @@ gckHARDWARE_QueryPowerManagementState(
     gcmkFOOTER_ARG("*State=%d", *State);
     return gcvSTATUS_OK;
 }
-
-#if gcdPOWEROFF_TIMEOUT
-gceSTATUS
-gckHARDWARE_SetPowerOffTimeout(
-    IN gckHARDWARE  Hardware,
-    IN gctUINT32    Timeout
-)
-{
-    gcmkHEADER_ARG("Hardware=0x%x Timeout=%d", Hardware, Timeout);
-
-    Hardware->powerOffTimeout = Timeout;
-
-    gcmkFOOTER_NO();
-    return gcvSTATUS_OK;
-}
-
-
-gceSTATUS
-gckHARDWARE_QueryPowerOffTimeout(
-    IN gckHARDWARE  Hardware,
-    OUT gctUINT32*  Timeout
-)
-{
-    gcmkHEADER_ARG("Hardware=0x%x", Hardware);
-
-    *Timeout = Hardware->powerOffTimeout;
-
-    gcmkFOOTER_ARG("*Timeout=%d", *Timeout);
-    return gcvSTATUS_OK;
-}
-#endif
 
 gceSTATUS
 gckHARDWARE_QueryIdle(
