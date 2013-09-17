@@ -68,8 +68,9 @@
 #define IRQ_HARB2	44
 #define IRQ_I2S2	45
 #define IRQ_CPM		47
+#define IRQ_VPU         48
 
-#define INTC_IRQ_NUM	48
+#define INTC_IRQ_NUM	49
 
 // 2nd-level interrupts
 

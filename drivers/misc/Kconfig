@@ -528,6 +528,11 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
+config JZ_TCSM_70LATER
+	bool "JZ TCSM for multimedia (multi-thread)"
+	help
+	 TCSM driver with a new method that support multi-thread.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
