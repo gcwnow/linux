@@ -730,7 +730,7 @@ OnError:
 **  INPUT:
 **
 **      gckOS Os
-**          Pointer to gcoOS object.
+**          Pointer to gckOS object.
 **
 **      gceSURF_TYPE Type
 **          Type of allocation.
