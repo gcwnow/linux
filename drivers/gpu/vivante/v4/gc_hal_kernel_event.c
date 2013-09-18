@@ -33,7 +33,7 @@
 
 #define _GC_OBJ_ZONE                    gcvZONE_EVENT
 
-#define gcdEVENT_ALLOCATION_COUNT       (4096 / gcmSIZEOF(gcsHAL_INTERFACE))
+#define gcdEVENT_ALLOCATION_COUNT       (4096 / sizeof(gcsHAL_INTERFACE))
 #define gcdEVENT_MIN_THRESHOLD          4
 
 /******************************************************************************\
@@ -335,12 +335,12 @@ gckEVENT_Construct(
     gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
 
     /* Allocate the gckEVENT object. */
-    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(struct _gckEVENT), &pointer));
+    gcmkONERROR(gckOS_Allocate(os, sizeof(struct _gckEVENT), &pointer));
 
     eventObj = pointer;
 
     /* Reset the object. */
-    gcmkVERIFY_OK(gckOS_ZeroMemory(eventObj, gcmSIZEOF(struct _gckEVENT)));
+    gcmkVERIFY_OK(gckOS_ZeroMemory(eventObj, sizeof(struct _gckEVENT)));
 
     /* Initialize the gckEVENT object. */
     eventObj->object.type = gcvOBJ_EVENT;
@@ -356,7 +356,7 @@ gckEVENT_Construct(
     for (i = 0; i < gcdEVENT_ALLOCATION_COUNT; i += 1)
     {
         /* Allocate an event record. */
-        gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(gcsEVENT), &pointer));
+        gcmkONERROR(gckOS_Allocate(os, sizeof(gcsEVENT), &pointer));
 
         record = pointer;
 
@@ -493,7 +493,7 @@ gckEVENT_Destroy(
 
             gcmkTRACE_ZONE_N(
                 gcvLEVEL_WARNING, gcvZONE_EVENT,
-                gcmSIZEOF(record) + gcmSIZEOF(queue->source),
+                sizeof(record) + sizeof(queue->source),
                 "Event record 0x%x is still pending for %d.",
                 record, queue->source
                 );
@@ -623,7 +623,7 @@ gckEVENT_GetEvent(
                 /* Success. */
                 gcmkTRACE_ZONE_N(
                     gcvLEVEL_INFO, gcvZONE_EVENT,
-                    gcmSIZEOF(id),
+                    sizeof(id),
                     "Using id=%d",
                     id
                     );
@@ -670,7 +670,7 @@ gckEVENT_GetEvent(
         {
             gcmkTRACE_N(
                 gcvLEVEL_ERROR,
-                gcmSIZEOF(gctCONST_STRING) + gcmSIZEOF(gctINT),
+                sizeof(gctCONST_STRING) + sizeof(gctINT),
                 "%s(%d): no available events\n",
                 __FUNCTION__, __LINE__
                 );
@@ -749,7 +749,7 @@ gckEVENT_AllocateRecord(
         {
             /* Allocate an event record. */
             gcmkONERROR(gckOS_Allocate(Event->os,
-                                       gcmSIZEOF(gcsEVENT),
+                                       sizeof(gcsEVENT),
                                        &pointer));
 
             record = pointer;
@@ -860,7 +860,7 @@ gckEVENT_AddList(
     record->next = NULL;
 
     /* Copy the event interface into the record. */
-    gcmkONERROR(gckOS_MemCopy(&record->info, Interface, gcmSIZEOF(record->info)));
+    gcmkONERROR(gckOS_MemCopy(&record->info, Interface, sizeof(record->info)));
 
     /* Get process ID. */
     gcmkONERROR(gckOS_GetProcessID(&record->processID));
@@ -1253,7 +1253,7 @@ gckEVENT_Commit(
             gcmkONERROR(gckOS_CopyFromUserData(Event->os,
                                                record,
                                                Queue,
-                                               gcmSIZEOF(gcsQUEUE)));
+                                               sizeof(gcsQUEUE)));
         }
         else
         {
@@ -1262,7 +1262,7 @@ gckEVENT_Commit(
             /* Map record into kernel memory. */
             gcmkONERROR(gckOS_MapUserPointer(Event->os,
                                              Queue,
-                                             gcmSIZEOF(gcsQUEUE),
+                                             sizeof(gcsQUEUE),
                                              &pointer));
 
             record = pointer;
@@ -1281,7 +1281,7 @@ gckEVENT_Commit(
             gcmkONERROR(
                 gckOS_UnmapUserPointer(Event->os,
                                        Queue,
-                                       gcmSIZEOF(gcsQUEUE),
+                                       sizeof(gcsQUEUE),
                                        (gctPOINTER *) record));
             record = NULL;
         }
@@ -1302,7 +1302,7 @@ OnError:
         /* Roll back. */
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(Event->os,
                                              Queue,
-                                             gcmSIZEOF(gcsQUEUE),
+                                             sizeof(gcsQUEUE),
                                              (gctPOINTER *) record));
     }
 
@@ -1544,7 +1544,7 @@ gckEVENT_Notify(
 
         gcmkTRACE_ZONE_N(
             gcvLEVEL_INFO, gcvZONE_EVENT,
-            gcmSIZEOF(pending),
+            sizeof(pending),
             "Pending interrupts 0x%x",
             pending
             );
@@ -1592,7 +1592,7 @@ gckEVENT_Notify(
         {
             gcmkTRACE_ZONE_N(
                 gcvLEVEL_ERROR, gcvZONE_EVENT,
-                gcmSIZEOF(pending),
+                sizeof(pending),
                 "Interrupts 0x%x are not pending.",
                 pending
                 );
@@ -1625,7 +1625,7 @@ gckEVENT_Notify(
             {
                 gcmkTRACE_N(
                     gcvLEVEL_ERROR,
-                    gcmSIZEOF(i) + gcmSIZEOF(Event->queues[i].stamp),
+                    sizeof(i) + sizeof(Event->queues[i].stamp),
                     "Event %d lost (stamp %llu)",
                     i, Event->queues[i].stamp
                     );
@@ -1641,7 +1641,7 @@ gckEVENT_Notify(
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
             gcmkTRACE_ZONE_N(
                 gcvLEVEL_INFO, gcvZONE_EVENT,
-                gcmSIZEOF(eventNumber),
+                sizeof(eventNumber),
                 "Processing interrupt %d",
                 eventNumber
                 );
@@ -1689,7 +1689,7 @@ gckEVENT_Notify(
 
                 gcmkTRACE_ZONE_N(
                     gcvLEVEL_INFO, gcvZONE_EVENT,
-                    gcmSIZEOF(record->info.command),
+                    sizeof(record->info.command),
                     "Processing event type: %d",
                     record->info.command
                     );
@@ -1761,7 +1761,7 @@ gckEVENT_Notify(
                     gcmkERR_BREAK(
                         gckOS_MapPhysical(Event->os,
                                           record->info.u.WriteData.address,
-                                          gcmSIZEOF(gctUINT32),
+                                          sizeof(gctUINT32),
                                           &logical));
 
                     /* Write data. */
@@ -1774,7 +1774,7 @@ gckEVENT_Notify(
                     gcmkERR_BREAK(
                         gckOS_UnmapPhysical(Event->os,
                                             logical,
-                                            gcmSIZEOF(gctUINT32)));
+                                            sizeof(gctUINT32)));
                     break;
 
                 case gcvHAL_UNLOCK_VIDEO_MEMORY:
@@ -1896,7 +1896,7 @@ gckEVENT_Notify(
                     default:
                         gcmkTRACE_ZONE_N(
                             gcvLEVEL_ERROR, gcvZONE_EVENT,
-                            gcmSIZEOF(record->info.u.TimeStamp.request),
+                            sizeof(record->info.u.TimeStamp.request),
                             "Invalid timestamp request: %d",
                             record->info.u.TimeStamp.request
                             );
@@ -1913,7 +1913,7 @@ gckEVENT_Notify(
                     /* Invalid argument. */
                     gcmkTRACE_ZONE_N(
                         gcvLEVEL_ERROR, gcvZONE_EVENT,
-                        gcmSIZEOF(record->info.command),
+                        sizeof(record->info.command),
                         "Unknown event type: %d",
                         record->info.command
                         );
@@ -1927,7 +1927,7 @@ gckEVENT_Notify(
                 {
                     gcmkTRACE_ZONE_N(
                         gcvLEVEL_WARNING, gcvZONE_EVENT,
-                        gcmSIZEOF(status),
+                        sizeof(status),
                         "Event produced status: %d(%s)",
                         status, gckOS_DebugStatus2Name(status));
                 }

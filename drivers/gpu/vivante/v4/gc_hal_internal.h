@@ -46,11 +46,6 @@
 ***************************** Element Count Macro *****************************
 \******************************************************************************/
 
-#define gcmSIZEOF(a) \
-( \
-    (size_t) (sizeof(a)) \
-)
-
 typedef struct _gckHARDWARE *       gckHARDWARE;
 
 /* CORE flags. */

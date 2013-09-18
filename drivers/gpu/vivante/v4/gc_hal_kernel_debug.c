@@ -176,16 +176,16 @@ static gctUINT32 _debugZones = gcvZONE_NONE;
 
 #if gcdSHOW_TIME
 #if gcmISALIGNED(gcdOFFSET, 8)
-#           define gcdTIMESIZE          gcmSIZEOF(gctUINT64)
+#           define gcdTIMESIZE          sizeof(gctUINT64)
 #       elif gcdOFFSET == 4
-#           define gcdTIMESIZE          gcmALIGNSIZE(4, gcmSIZEOF(gctUINT64))
+#           define gcdTIMESIZE          gcmALIGNSIZE(4, sizeof(gctUINT64))
 #       else
 #           error "Unexpected offset value."
 #       endif
 #       undef  gcdOFFSET
 #       define gcdOFFSET                8
 #if !defined(gcdPREFIX_LEADER)
-#           define gcdPREFIX_LEADER     gcmSIZEOF(gctUINT64)
+#           define gcdPREFIX_LEADER     sizeof(gctUINT64)
 #           define gcdTIMEFORMAT        "0x%016llX"
 #       else
 #           define gcdTIMEFORMAT        ", 0x%016llX"
@@ -197,16 +197,16 @@ static gctUINT32 _debugZones = gcvZONE_NONE;
 
 #if gcdSHOW_LINE_NUMBER
 #if gcmISALIGNED(gcdOFFSET, 8)
-#           define gcdNUMSIZE           gcmSIZEOF(gctUINT64)
+#           define gcdNUMSIZE           sizeof(gctUINT64)
 #       elif gcdOFFSET == 4
-#           define gcdNUMSIZE           gcmALIGNSIZE(4, gcmSIZEOF(gctUINT64))
+#           define gcdNUMSIZE           gcmALIGNSIZE(4, sizeof(gctUINT64))
 #       else
 #           error "Unexpected offset value."
 #       endif
 #       undef  gcdOFFSET
 #       define gcdOFFSET                8
 #if !defined(gcdPREFIX_LEADER)
-#           define gcdPREFIX_LEADER     gcmSIZEOF(gctUINT64)
+#           define gcdPREFIX_LEADER     sizeof(gctUINT64)
 #           define gcdNUMFORMAT         "%8llu"
 #       else
 #           define gcdNUMFORMAT         ", %8llu"
@@ -218,14 +218,14 @@ static gctUINT32 _debugZones = gcvZONE_NONE;
 
 #if gcdSHOW_PROCESS_ID
 #if gcmISALIGNED(gcdOFFSET, 4)
-#           define gcdPIDSIZE           gcmSIZEOF(gctUINT32)
+#           define gcdPIDSIZE           sizeof(gctUINT32)
 #       else
 #           error "Unexpected offset value."
 #       endif
 #       undef  gcdOFFSET
 #       define gcdOFFSET                4
 #if !defined(gcdPREFIX_LEADER)
-#           define gcdPREFIX_LEADER     gcmSIZEOF(gctUINT32)
+#           define gcdPREFIX_LEADER     sizeof(gctUINT32)
 #           define gcdPIDFORMAT         "pid=%5d"
 #       else
 #           define gcdPIDFORMAT         ", pid=%5d"
@@ -237,14 +237,14 @@ static gctUINT32 _debugZones = gcvZONE_NONE;
 
 #if gcdSHOW_THREAD_ID
 #if gcmISALIGNED(gcdOFFSET, 4)
-#           define gcdTIDSIZE           gcmSIZEOF(gctUINT32)
+#           define gcdTIDSIZE           sizeof(gctUINT32)
 #       else
 #           error "Unexpected offset value."
 #       endif
 #       undef  gcdOFFSET
 #       define gcdOFFSET                4
 #if !defined(gcdPREFIX_LEADER)
-#           define gcdPREFIX_LEADER     gcmSIZEOF(gctUINT32)
+#           define gcdPREFIX_LEADER     sizeof(gctUINT32)
 #           define gcdTIDFORMAT         "tid=%5d"
 #       else
 #           define gcdTIDFORMAT         ", tid=%5d"
@@ -272,13 +272,13 @@ static gctUINT32 _debugZones = gcvZONE_NONE;
 
 #else
 
-#   define gcdPREFIX_LEADER             gcmSIZEOF(gctUINT32)
+#   define gcdPREFIX_LEADER             sizeof(gctUINT32)
 #   define gcdPREFIX_SIZE               0
 
 #endif
 
 /* Assumed largest variable argument leader size. */
-#define gcdVARARG_LEADER                gcmSIZEOF(gctUINT64)
+#define gcdVARARG_LEADER                sizeof(gctUINT64)
 
 /* Alignnments. */
 #if gcdALIGNBYSIZE
@@ -429,7 +429,7 @@ _GetTerminatorItemSize(
     IN gcsBUFITEM_HEAD_PTR Item
     )
 {
-    return gcmSIZEOF(gcsBUFITEM_HEAD);
+    return sizeof(gcsBUFITEM_HEAD);
 }
 
 static gctINT
@@ -442,7 +442,7 @@ _GetPrefixItemSize(
     gctUINT vlen = ((gctUINT8_PTR) item->prefixData) - ((gctUINT8_PTR) item);
     return vlen + gcdPREFIX_SIZE;
 #else
-    return gcmSIZEOF(gcsBUFITEM_PREFIX);
+    return sizeof(gcsBUFITEM_PREFIX);
 #endif
 }
 
@@ -477,7 +477,7 @@ _GetBufferItemSize(
     return vlen + gcdPREFIX_SIZE + item->dataSize;
 #else
     gcsBUFITEM_BUFFER_PTR item = (gcsBUFITEM_BUFFER_PTR) Item;
-    return gcmSIZEOF(gcsBUFITEM_BUFFER) + item->dataSize;
+    return sizeof(gcsBUFITEM_BUFFER) + item->dataSize;
 #endif
 }
 
@@ -507,7 +507,7 @@ _DirectPrint(
     gctARGUMENTS arguments;
 
     gcmkARGUMENTS_START(arguments, Message);
-    len = gcmkVSPRINTF(buffer, gcmSIZEOF(buffer), Message, arguments);
+    len = gcmkVSPRINTF(buffer, sizeof(buffer), Message, arguments);
     gcmkARGUMENTS_END(arguments);
 
     buffer[len] = '\0';
@@ -555,7 +555,7 @@ _PrintPrefix(
     gctINT len;
 
     /* Format the string. */
-    len = gcmkVSPRINTF(buffer, gcmSIZEOF(buffer), _prefixFormat, Data);
+    len = gcmkVSPRINTF(buffer, sizeof(buffer), _prefixFormat, Data);
     buffer[len] = '\0';
 
     /* Print the string. */
@@ -576,10 +576,10 @@ _PrintString(
     gctINT len;
 
     /* Append the indent string. */
-    len = _AppendIndent(Indent, buffer, gcmSIZEOF(buffer));
+    len = _AppendIndent(Indent, buffer, sizeof(buffer));
 
     /* Format the string. */
-    len += gcmkVSPRINTF(buffer + len, gcmSIZEOF(buffer) - len, Message, Data);
+    len += gcmkVSPRINTF(buffer + len, sizeof(buffer) - len, Message, Data);
     buffer[len] = '\0';
 
     /* Add end-of-line if missing. */
@@ -625,7 +625,7 @@ _PrintBuffer(
 
     /* Append space for the prefix. */
 #if gcdHAVEPREFIX
-    indent = gcmkVSPRINTF(buffer, gcmSIZEOF(buffer), _prefixFormat, PrefixData);
+    indent = gcmkVSPRINTF(buffer, sizeof(buffer), _prefixFormat, PrefixData);
     buffer[indent] = '\0';
 #else
     indent = 0;
@@ -633,7 +633,7 @@ _PrintBuffer(
 
     /* Append the indent string. */
     indent += _AppendIndent(
-        Indent, buffer + indent, gcmSIZEOF(buffer) - indent
+        Indent, buffer + indent, sizeof(buffer) - indent
         );
 
     switch (Type)
@@ -645,7 +645,7 @@ _PrintBuffer(
     case gceDUMP_BUFFER_WAITLINK:
         /* Form and print the title string. */
         gcmkSPRINTF2(
-            buffer + indent, gcmSIZEOF(buffer) - indent,
+            buffer + indent, sizeof(buffer) - indent,
             "%s%s\n", _titleString[Type],
             ((DmaAddress >= Address) && (DmaAddress < Address + DataSize))
                 ? " (CURRENT)" : ""
@@ -684,7 +684,7 @@ _PrintBuffer(
     if (command)
     {
         gcmkSPRINTF2(
-            buffer + indent, gcmSIZEOF(buffer) - indent,
+            buffer + indent, sizeof(buffer) - indent,
             "@[kernel.command %08X %08X\n", Address, DataSize
             );
 
@@ -701,7 +701,7 @@ _PrintBuffer(
     data = (gctUINT32_PTR) Data;
 
     /* Compute the number of double words. */
-    count = DataSize / gcmSIZEOF(gctUINT32);
+    count = DataSize / sizeof(gctUINT32);
 
     /* Print the buffer. */
     for (i = 0, len = indent, column = 0; i < count; i += 1)
@@ -710,20 +710,20 @@ _PrintBuffer(
         if (column == 0)
         {
             len += gcmkSPRINTF(
-                buffer + len, gcmSIZEOF(buffer) - len, "0x%08X:", address
+                buffer + len, sizeof(buffer) - len, "0x%08X:", address
                 );
         }
 
         /* Append the data value. */
         len += gcmkSPRINTF2(
-            buffer + len, gcmSIZEOF(buffer) - len, "%c%08X",
+            buffer + len, sizeof(buffer) - len, "%c%08X",
             (address == DmaAddress)? '>' : ' ', data[i]
             );
 
         buffer[len] = '\0';
 
         /* Update the address. */
-        address += gcmSIZEOF(gctUINT32);
+        address += sizeof(gctUINT32);
 
         /* Advance column count. */
         column += 1;
@@ -732,7 +732,7 @@ _PrintBuffer(
         if ((column % COLUMN_COUNT) == 0)
         {
             /* Append EOL. */
-            gcmkSTRCAT(buffer + len, gcmSIZEOF(buffer) - len, "\n");
+            gcmkSTRCAT(buffer + len, sizeof(buffer) - len, "\n");
 
             /* Print the string. */
             gcmkOUTPUT_STRING(buffer);
@@ -747,7 +747,7 @@ _PrintBuffer(
     if (column != 0)
     {
         /* Append EOL. */
-        gcmkSTRCAT(buffer + len, gcmSIZEOF(buffer) - len, "\n");
+        gcmkSTRCAT(buffer + len, sizeof(buffer) - len, "\n");
 
         /* Print the string. */
         gcmkOUTPUT_STRING(buffer);
@@ -757,7 +757,7 @@ _PrintBuffer(
     if (command)
     {
         buffer[indent] = '\0';
-        gcmkSTRCAT(buffer, gcmSIZEOF(buffer), "] -- command\n");
+        gcmkSTRCAT(buffer, sizeof(buffer), "] -- command\n");
         gcmkOUTPUT_STRING(buffer);
     }
 }
@@ -770,7 +770,7 @@ _PrintNone(
     )
 {
     /* Return the size of the node. */
-    return gcmSIZEOF(gcsBUFITEM_HEAD);
+    return sizeof(gcsBUFITEM_HEAD);
 }
 
 static gctUINT
@@ -795,7 +795,7 @@ _PrintPrefixWrapper(
     /* Return the size of the node. */
     return vlen + gcdPREFIX_SIZE;
 #else
-    return gcmSIZEOF(gcsBUFITEM_PREFIX);
+    return sizeof(gcsBUFITEM_PREFIX);
 #endif
 }
 
@@ -918,7 +918,7 @@ _PrintBufferWrapper(
     }
 
     /* Return the size of the node. */
-    return gcmSIZEOF(gcsBUFITEM_BUFFER) + item->dataSize;
+    return sizeof(gcsBUFITEM_BUFFER) + item->dataSize;
 #endif
 }
 
@@ -1030,7 +1030,7 @@ _EnableDMABuffers(
     gcsBUFITEM_BUFFER_PTR buffers[gcdDMA_BUFFER_COUNT];
 
     /* Reset buffer pointers. */
-    gckOS_ZeroMemory(buffers, gcmSIZEOF(buffers));
+    gckOS_ZeroMemory(buffers, sizeof(buffers));
 
     /* Set the current buffer index. */
     index = -1;
@@ -1162,7 +1162,7 @@ _AllocateItem(
 
 #if gcdENABLE_OVERFLOW
     if (
-            (OutputBuffer->index + Size >= gcdBUFFERED_SIZE - gcmSIZEOF(gcsBUFITEM_HEAD))
+            (OutputBuffer->index + Size >= gcdBUFFERED_SIZE - sizeof(gcsBUFITEM_HEAD))
             ||
             (
                 (OutputBuffer->index        <  OutputBuffer->start) &&
@@ -1170,7 +1170,7 @@ _AllocateItem(
             )
     )
     {
-        if (OutputBuffer->index + Size >= gcdBUFFERED_SIZE - gcmSIZEOF(gcsBUFITEM_HEAD))
+        if (OutputBuffer->index + Size >= gcdBUFFERED_SIZE - sizeof(gcsBUFITEM_HEAD))
         {
             if (OutputBuffer->index < OutputBuffer->start)
             {
@@ -1213,7 +1213,7 @@ _AllocateItem(
         }
     }
 #else
-    if (OutputBuffer->index + Size > gcdBUFFERED_SIZE - gcmSIZEOF(gcsBUFITEM_HEAD))
+    if (OutputBuffer->index + Size > gcdBUFFERED_SIZE - sizeof(gcsBUFITEM_HEAD))
     {
         _DirectPrint("\nMessage buffer full; forcing message flush.\n\n");
         _Flush(~0U);
@@ -1269,7 +1269,7 @@ _AppendPrefix(
 
     /* Determine the maximum item size. */
     allocSize
-        = gcmSIZEOF(gcsBUFITEM_PREFIX)
+        = sizeof(gcsBUFITEM_PREFIX)
         + gcdPREFIX_SIZE
         + gcdPREFIX_ALIGNMENT;
 
@@ -1294,7 +1294,7 @@ _AppendPrefix(
 
 #if gcdALIGNBYSIZE
     /* Compute the actual node size. */
-    size = gcmSIZEOF(gcsBUFITEM_PREFIX) + gcdPREFIX_SIZE + alignment;
+    size = sizeof(gcsBUFITEM_PREFIX) + gcdPREFIX_SIZE + alignment;
 
     /* Free extra memory if any. */
     freeSize = allocSize - size;
@@ -1326,7 +1326,7 @@ _AppendString(
 
     /* Determine the maximum item size. */
     allocSize
-        = gcmSIZEOF(gcsBUFITEM_STRING)
+        = sizeof(gcsBUFITEM_STRING)
         + ArgumentSize
         + gcdVARARG_ALIGNMENT;
 
@@ -1357,7 +1357,7 @@ _AppendString(
 
 #if gcdALIGNBYSIZE
     /* Compute the actual node size. */
-    size = gcmSIZEOF(gcsBUFITEM_STRING) + ArgumentSize + alignment;
+    size = sizeof(gcsBUFITEM_STRING) + ArgumentSize + alignment;
 
     /* Free extra memory if any. */
     freeSize = allocSize - size;
@@ -1393,7 +1393,7 @@ _AppendCopy(
 
     /* Determine the maximum item size. */
     allocSize
-        = gcmSIZEOF(gcsBUFITEM_COPY)
+        = sizeof(gcsBUFITEM_COPY)
         + messageLength
         + ArgumentSize
         + gcdVARARG_ALIGNMENT;
@@ -1438,7 +1438,7 @@ _AppendCopy(
 #if gcdALIGNBYSIZE
     /* Compute the actual node size. */
     size
-        = gcmSIZEOF(gcsBUFITEM_COPY)
+        = sizeof(gcsBUFITEM_COPY)
         + messageLength
         + ArgumentSize
         + alignment;
@@ -1480,7 +1480,7 @@ _AppendBuffer(
 
     /* Determine the maximum item size. */
     allocSize
-        = gcmSIZEOF(gcsBUFITEM_BUFFER)
+        = sizeof(gcsBUFITEM_BUFFER)
         + gcdPREFIX_SIZE
         + gcdPREFIX_ALIGNMENT
         + DataSize;
@@ -1521,7 +1521,7 @@ _AppendBuffer(
 #if gcdALIGNBYSIZE
     /* Compute the actual node size. */
     size
-        = gcmSIZEOF(gcsBUFITEM_BUFFER)
+        = sizeof(gcsBUFITEM_BUFFER)
         + gcdPREFIX_SIZE
         + alignment
         + DataSize;
@@ -1541,7 +1541,7 @@ _AppendBuffer(
     gcmDBGASSERT(Data != NULL, "%p", Data);
 
     /* Determine the maximum item size. */
-    size = gcmSIZEOF(gcsBUFITEM_BUFFER) + DataSize;
+    size = sizeof(gcsBUFITEM_BUFFER) + DataSize;
 
     /* Allocate prefix item. */
     item = (gcsBUFITEM_BUFFER_PTR) _AllocateItem(OutputBuffer, size);
@@ -1660,7 +1660,7 @@ static int _GetArgumentSize(
         }
     }
 
-    return count * gcmSIZEOF(gctUINT32);
+    return count * sizeof(gctUINT32);
 }
 
 #if gcdHAVEPREFIX
@@ -1676,31 +1676,31 @@ _InitPrefixData(
     {
         gctUINT64 time;
         gckOS_GetProfileTick(&time);
-        gcmkALIGNPTR(gctUINT8_PTR, data, gcmSIZEOF(gctUINT64));
+        gcmkALIGNPTR(gctUINT8_PTR, data, sizeof(gctUINT64));
         * ((gctUINT64_PTR) data) = time;
-        data += gcmSIZEOF(gctUINT64);
+        data += sizeof(gctUINT64);
     }
 #endif
 
 #if gcdSHOW_LINE_NUMBER
     {
-        gcmkALIGNPTR(gctUINT8_PTR, data, gcmSIZEOF(gctUINT64));
+        gcmkALIGNPTR(gctUINT8_PTR, data, sizeof(gctUINT64));
         * ((gctUINT64_PTR) data) = OutputBuffer->lineNumber;
-        data += gcmSIZEOF(gctUINT64);
+        data += sizeof(gctUINT64);
     }
 #endif
 
 #if gcdSHOW_PROCESS_ID
     {
-        gcmkALIGNPTR(gctUINT8_PTR, data, gcmSIZEOF(gctUINT32));
+        gcmkALIGNPTR(gctUINT8_PTR, data, sizeof(gctUINT32));
         * ((gctUINT32_PTR) data) = gcmkGETPROCESSID();
-        data += gcmSIZEOF(gctUINT32);
+        data += sizeof(gctUINT32);
     }
 #endif
 
 #if gcdSHOW_THREAD_ID
     {
-        gcmkALIGNPTR(gctUINT8_PTR, data, gcmSIZEOF(gctUINT32));
+        gcmkALIGNPTR(gctUINT8_PTR, data, sizeof(gctUINT32));
         * ((gctUINT32_PTR) data) = gcmkGETTHREADID();
     }
 #endif

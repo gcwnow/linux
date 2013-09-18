@@ -82,7 +82,7 @@ _Split(
 
     /* Allocate a new gcuVIDMEM_NODE object. */
     if (gcmIS_ERROR(gckOS_Allocate(Os,
-                                   gcmSIZEOF(gcuVIDMEM_NODE),
+                                   sizeof(gcuVIDMEM_NODE),
                                    &pointer)))
     {
         /* Error. */
@@ -231,7 +231,7 @@ gckVIDMEM_ConstructVirtual(
     gcmkVERIFY_OBJECT(os, gcvOBJ_OS);
 
     /* Allocate an gcuVIDMEM_NODE union. */
-    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(gcuVIDMEM_NODE), &pointer));
+    gcmkONERROR(gckOS_Allocate(os, sizeof(gcuVIDMEM_NODE), &pointer));
 
     node = pointer;
 
@@ -253,7 +253,7 @@ gckVIDMEM_ConstructVirtual(
 
     node->Virtual.freed         = gcvFALSE;
 
-    gcmkONERROR(gckOS_ZeroMemory(&node->Virtual.sharedInfo, gcmSIZEOF(gcsVIDMEM_NODE_SHARED_INFO)));
+    gcmkONERROR(gckOS_ZeroMemory(&node->Virtual.sharedInfo, sizeof(gcsVIDMEM_NODE_SHARED_INFO)));
 
     /* Create the mutex. */
     gcmkONERROR(
@@ -407,7 +407,7 @@ gckVIDMEM_Construct(
     gcmkVERIFY_ARGUMENT(Memory != NULL);
 
     /* Allocate the gckVIDMEM object. */
-    gcmkONERROR(gckOS_Allocate(Os, gcmSIZEOF(struct _gckVIDMEM), &pointer));
+    gcmkONERROR(gckOS_Allocate(Os, sizeof(struct _gckVIDMEM), &pointer));
 
     memory = pointer;
 
@@ -460,7 +460,7 @@ gckVIDMEM_Construct(
         }
 
         /* Allocate one gcuVIDMEM_NODE union. */
-        gcmkONERROR(gckOS_Allocate(Os, gcmSIZEOF(gcuVIDMEM_NODE), &pointer));
+        gcmkONERROR(gckOS_Allocate(Os, sizeof(gcuVIDMEM_NODE), &pointer));
 
         node = pointer;
 
@@ -480,7 +480,7 @@ gckVIDMEM_Construct(
 
         node->VidMem.locked    = 0;
 
-        gcmkONERROR(gckOS_ZeroMemory(&node->VidMem.sharedInfo, gcmSIZEOF(gcsVIDMEM_NODE_SHARED_INFO)));
+        gcmkONERROR(gckOS_ZeroMemory(&node->VidMem.sharedInfo, sizeof(gcsVIDMEM_NODE_SHARED_INFO)));
 
         /* Initialize the linked list of nodes. */
         memory->sentinel[i].VidMem.next     =
@@ -960,7 +960,7 @@ gckVIDMEM_AllocateLinear(
         /* Allocate one gcuVIDMEM_NODE union. */
         gcmkONERROR(
             gckOS_Allocate(Memory->os,
-                           gcmSIZEOF(gcuVIDMEM_NODE),
+                           sizeof(gcuVIDMEM_NODE),
                            (gctPOINTER *) &node));
 
         /* Initialize gcuVIDMEM_NODE union. */

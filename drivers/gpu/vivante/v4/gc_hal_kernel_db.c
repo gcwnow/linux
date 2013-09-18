@@ -84,7 +84,7 @@ gckKERNEL_NewDatabase(
 
         /* Allocate a new database from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
-                                   gcmSIZEOF(gcsDATABASE),
+                                   sizeof(gcsDATABASE),
                                    &pointer));
 
         database = pointer;
@@ -385,7 +385,7 @@ gckKERNEL_NewRecord(
 
         /* Allocate the record from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
-                                   gcmSIZEOF(gcsDATABASE_RECORD),
+                                   sizeof(gcsDATABASE_RECORD),
                                    &pointer));
 
         record = pointer;
@@ -1331,19 +1331,19 @@ gckKERNEL_QueryProcessDB(
     case gcvDB_VIDEO_MEMORY:
         gcmkONERROR(gckOS_MemCopy(&Info->counters,
                                   &database->vidMem,
-                                  gcmSIZEOF(database->vidMem)));
+                                  sizeof(database->vidMem)));
         break;
 
     case gcvDB_NON_PAGED:
         gcmkONERROR(gckOS_MemCopy(&Info->counters,
                                   &database->nonPaged,
-                                  gcmSIZEOF(database->vidMem)));
+                                  sizeof(database->vidMem)));
         break;
 
     case gcvDB_CONTIGUOUS:
         gcmkONERROR(gckOS_MemCopy(&Info->counters,
                                   &database->contiguous,
-                                  gcmSIZEOF(database->vidMem)));
+                                  sizeof(database->vidMem)));
         break;
 
     case gcvDB_IDLE:
@@ -1354,13 +1354,13 @@ gckKERNEL_QueryProcessDB(
     case gcvDB_MAP_MEMORY:
         gcmkONERROR(gckOS_MemCopy(&Info->counters,
                                   &database->mapMemory,
-                                  gcmSIZEOF(database->mapMemory)));
+                                  sizeof(database->mapMemory)));
         break;
 
     case gcvDB_MAP_USER_MEMORY:
         gcmkONERROR(gckOS_MemCopy(&Info->counters,
                                   &database->mapUserMemory,
-                                  gcmSIZEOF(database->mapUserMemory)));
+                                  sizeof(database->mapUserMemory)));
         break;
 
     default:

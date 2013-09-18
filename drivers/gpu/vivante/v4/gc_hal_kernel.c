@@ -158,7 +158,7 @@ gckKERNEL_Construct(
 
     /* Allocate the gckKERNEL object. */
     gcmkONERROR(gckOS_Allocate(Os,
-                               gcmSIZEOF(struct _gckKERNEL),
+                               sizeof(struct _gckKERNEL),
                                &pointer));
 
     kernel = pointer;
@@ -172,7 +172,7 @@ gckKERNEL_Construct(
     if (SharedDB == NULL)
     {
         gcmkONERROR(gckOS_Allocate(Os,
-                                   gcmSIZEOF(struct _gckDB),
+                                   sizeof(struct _gckDB),
                                    &pointer));
 
         kernel->db               = pointer;
@@ -1629,7 +1629,7 @@ gckKERNEL_Dispatch(
                             Kernel->os,
                             &newSharedInfo,
                             Interface->u.SetSharedInfo.nodeData,
-                            gcmSIZEOF(gcsVIDMEM_NODE_SHARED_INFO)
+                            sizeof(gcsVIDMEM_NODE_SHARED_INFO)
                             ));
 
                         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)

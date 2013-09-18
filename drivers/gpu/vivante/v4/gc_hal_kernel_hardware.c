@@ -438,7 +438,7 @@ gckHARDWARE_Construct(
 
     /* Allocate the gckHARDWARE object. */
     gcmkONERROR(gckOS_Allocate(Os,
-                               gcmSIZEOF(struct _gckHARDWARE),
+                               sizeof(struct _gckHARDWARE),
                                &pointer));
 
     hardware = (gckHARDWARE) pointer;
@@ -2600,7 +2600,7 @@ gckHARDWARE_FlushMMU(
             | ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 15:0) - (0 ? 15:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 15:0) - (0 ? 15:0) + 1))))))) << (0 ? 15:0))) | (((gctUINT32) ((gctUINT32) (4) & ((gctUINT32) ((((1 ? 15:0) - (0 ? 15:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 15:0) - (0 ? 15:0) + 1))))))) << (0 ? 15:0)));
 
         buffer[7]
-            = physical + 8 * gcmSIZEOF(gctUINT32);
+            = physical + 8 * sizeof(gctUINT32);
 
         /* Flush MMU cache. */
         buffer[8]
@@ -5070,7 +5070,7 @@ gckHARDWARE_GetFrameInfo(
     gcmkONERROR(gckOS_CopyToUserData(Hardware->os,
                                      &info,
                                      FrameInfo,
-                                     gcmSIZEOF(info)));
+                                     sizeof(info)));
 
     /* Success. */
     gcmkFOOTER_NO();

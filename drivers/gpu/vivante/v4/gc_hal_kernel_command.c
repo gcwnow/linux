@@ -272,7 +272,7 @@ _ProcessHints(
         }
 
         hintArray = Command->hintArray;
-        copySize   = hintCount * gcmSIZEOF(gctUINT32);
+        copySize   = hintCount * sizeof(gctUINT32);
 
         gcmkONERROR(gckOS_CopyFromUserData(
             Command->os,
@@ -393,11 +393,11 @@ gckCOMMAND_Construct(
     os = Kernel->os;
 
     /* Allocate the gckCOMMAND structure. */
-    gcmkONERROR(gckOS_Allocate(os, gcmSIZEOF(struct _gckCOMMAND), &pointer));
+    gcmkONERROR(gckOS_Allocate(os, sizeof(struct _gckCOMMAND), &pointer));
     command = pointer;
 
     /* Reset the entire object. */
-    gcmkONERROR(gckOS_ZeroMemory(command, gcmSIZEOF(struct _gckCOMMAND)));
+    gcmkONERROR(gckOS_ZeroMemory(command, sizeof(struct _gckCOMMAND)));
 
     /* Initialize the gckCOMMAND object.*/
     command->object.type    = gcvOBJ_COMMAND;
@@ -1094,7 +1094,7 @@ gckCOMMAND_Commit(
             Command->os,
             commandBufferObject,
             CommandBuffer,
-            gcmSIZEOF(struct _gcoCMDBUF)
+            sizeof(struct _gcoCMDBUF)
             ));
 
         gcmkVERIFY_OBJECT(commandBufferObject, gcvOBJ_COMMANDBUFFER);
@@ -1104,7 +1104,7 @@ gckCOMMAND_Commit(
         gcmkONERROR(gckOS_MapUserPointer(
             Command->os,
             CommandBuffer,
-            gcmSIZEOF(struct _gcoCMDBUF),
+            sizeof(struct _gcoCMDBUF),
             &pointer
             ));
 
@@ -1926,7 +1926,7 @@ gckCOMMAND_Commit(
 
             /* Copy the data from the client. */
             gcmkONERROR(gckOS_CopyFromUserData(
-                Command->os, eventRecord, EventQueue, gcmSIZEOF(gcsQUEUE)
+                Command->os, eventRecord, EventQueue, sizeof(gcsQUEUE)
                 ));
         }
         else
@@ -1934,7 +1934,7 @@ gckCOMMAND_Commit(
             /* Map record into kernel memory. */
             gcmkONERROR(gckOS_MapUserPointer(Command->os,
                                              EventQueue,
-                                             gcmSIZEOF(gcsQUEUE),
+                                             sizeof(gcsQUEUE),
                                              &pointer));
 
             eventRecord = pointer;
@@ -1952,7 +1952,7 @@ gckCOMMAND_Commit(
         {
             /* Unmap record from kernel memory. */
             gcmkONERROR(gckOS_UnmapUserPointer(
-                Command->os, EventQueue, gcmSIZEOF(gcsQUEUE), (gctPOINTER *) eventRecord
+                Command->os, EventQueue, sizeof(gcsQUEUE), (gctPOINTER *) eventRecord
                 ));
 
             eventRecord = NULL;
@@ -1977,7 +1977,7 @@ gckCOMMAND_Commit(
         gcmkONERROR(gckOS_UnmapUserPointer(
             Command->os,
             CommandBuffer,
-            gcmSIZEOF(struct _gcoCMDBUF),
+            sizeof(struct _gcoCMDBUF),
             commandBufferObject
             ));
 
@@ -1995,7 +1995,7 @@ OnError:
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(
             Command->os,
             EventQueue,
-            gcmSIZEOF(gcsQUEUE),
+            sizeof(gcsQUEUE),
             (gctPOINTER *) eventRecord
             ));
     }
@@ -2018,7 +2018,7 @@ OnError:
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(
             Command->os,
             CommandBuffer,
-            gcmSIZEOF(struct _gcoCMDBUF),
+            sizeof(struct _gcoCMDBUF),
             commandBufferObject
             ));
     }

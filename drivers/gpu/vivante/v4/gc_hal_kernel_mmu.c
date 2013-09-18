@@ -438,7 +438,7 @@ _SetupDynamicSpace(
 
     Mmu->pageTableSize = numEntries * 4096;
 
-    Mmu->pageTableEntries = Mmu->pageTableSize / gcmSIZEOF(gctUINT32);
+    Mmu->pageTableEntries = Mmu->pageTableSize / sizeof(gctUINT32);
 
     /* Construct Slave TLB. */
     gcmkONERROR(gckOS_AllocateContiguous(Mmu->os,

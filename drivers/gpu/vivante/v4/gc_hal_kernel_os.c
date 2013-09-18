@@ -1056,7 +1056,7 @@ gckOS_Construct(
     gcmkVERIFY_ARGUMENT(Os != NULL);
 
     /* Allocate the gckOS object. */
-    os = (gckOS) kmalloc(gcmSIZEOF(struct _gckOS), GFP_KERNEL | __GFP_NOWARN);
+    os = (gckOS) kmalloc(sizeof(struct _gckOS), GFP_KERNEL | __GFP_NOWARN);
 
     if (os == NULL)
     {
@@ -1066,7 +1066,7 @@ gckOS_Construct(
     }
 
     /* Zero the memory. */
-    gckOS_ZeroMemory(os, gcmSIZEOF(struct _gckOS));
+    gckOS_ZeroMemory(os, sizeof(struct _gckOS));
 
     /* Initialize the gckOS object. */
     os->object.type = gcvOBJ_OS;
@@ -1099,7 +1099,7 @@ gckOS_Construct(
 
     /* Initialize the signal table. */
     os->signal.table =
-        kmalloc(gcmSIZEOF(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT, GFP_KERNEL | __GFP_NOWARN);
+        kmalloc(sizeof(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT, GFP_KERNEL | __GFP_NOWARN);
 
     if (os->signal.table == NULL)
     {
@@ -1108,7 +1108,7 @@ gckOS_Construct(
     }
 
     gckOS_ZeroMemory(os->signal.table,
-                     gcmSIZEOF(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT);
+                     sizeof(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT);
 
     /* Set the signal table length. */
     os->signal.tableLen = USER_SIGNAL_TABLE_LEN_INIT;
@@ -2395,7 +2395,7 @@ gckOS_AddMapping(
                    Os, Physical, Logical, Bytes);
 
     gcmkONERROR(gckOS_Allocate(Os,
-                               gcmSIZEOF(gcsUSER_MAPPING),
+                               sizeof(gcsUSER_MAPPING),
                                (gctPOINTER *) &map));
 
     map->next     = Os->userMap;
@@ -3297,7 +3297,7 @@ gckOS_AtomConstruct(
     gcmkVERIFY_ARGUMENT(Atom != NULL);
 
     /* Allocate the atom. */
-    gcmkONERROR(gckOS_Allocate(Os, gcmSIZEOF(atomic_t), Atom));
+    gcmkONERROR(gckOS_Allocate(Os, sizeof(atomic_t), Atom));
 
     /* Initialize the atom. */
     atomic_set((atomic_t *) *Atom, 0);
@@ -6162,7 +6162,7 @@ gckOS_CreateSemaphore(
     gcmkVERIFY_ARGUMENT(Semaphore != NULL);
 
     /* Allocate the semaphore structure. */
-    sem = (struct semaphore *)kmalloc(gcmSIZEOF(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
+    sem = (struct semaphore *)kmalloc(sizeof(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
     if (sem == NULL)
     {
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);

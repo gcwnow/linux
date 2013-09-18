@@ -465,7 +465,7 @@ _InitializeContextBuffer(
         Context->hardware, &vertexUniforms, &fragmentUniforms, NULL));
 
     /* Store the 3D entry index. */
-    Context->entryOffset3D = index * gcmSIZEOF(gctUINT32);
+    Context->entryOffset3D = index * sizeof(gctUINT32);
 
     /* Flush 2D pipe. */
     index += _FlushPipe(Context, index, gcvPIPE_2D);
@@ -704,7 +704,7 @@ _InitializeContextBuffer(
 	}
 
     /* Store the index of the "XD" entry. */
-    Context->entryOffsetXDFrom3D = index * gcmSIZEOF(gctUINT32);
+    Context->entryOffsetXDFrom3D = index * sizeof(gctUINT32);
 
     index += _FlushPipe(Context, index, gcvPIPE_3D);
 
@@ -816,14 +816,14 @@ _InitializeContextBuffer(
     index += 2;
 
     /* Store the end of the context buffer. */
-    Context->bufferSize = index * gcmSIZEOF(gctUINT32);
+    Context->bufferSize = index * sizeof(gctUINT32);
 
 
     /**************************************************************************/
     /* Pipe switch for the case where neither 2D nor 3D are used. *************/
 
     /* Store the 3D entry index. */
-    Context->entryOffsetXDFrom2D = index * gcmSIZEOF(gctUINT32);
+    Context->entryOffsetXDFrom2D = index * sizeof(gctUINT32);
 
     /* Flush 2D pipe. */
     index += _FlushPipe(Context, index, gcvPIPE_2D);
@@ -850,7 +850,7 @@ _InitializeContextBuffer(
     /**************************************************************************/
     /* Save size for buffer. **************************************************/
 
-    Context->totalSize = index * gcmSIZEOF(gctUINT32);
+    Context->totalSize = index * sizeof(gctUINT32);
 
 
     /* Success. */
@@ -996,7 +996,7 @@ gckCONTEXT_Construct(
     /* Allocate and initialize basic fields of gckCONTEXT. ********************/
 
     /* The context object size. */
-    allocationSize = gcmSIZEOF(struct _gckCONTEXT);
+    allocationSize = sizeof(struct _gckCONTEXT);
 
     /* Allocate the object. */
     gcmkONERROR(gckOS_Allocate(
@@ -1051,7 +1051,7 @@ gckCONTEXT_Construct(
     /* Compute the size of the record array. **********************************/
 
     context->recordArraySize
-        = gcmSIZEOF(gcsSTATE_DELTA_RECORD) * context->stateCount;
+        = sizeof(gcsSTATE_DELTA_RECORD) * context->stateCount;
 
 
     if (context->stateCount > 0)
@@ -1062,7 +1062,7 @@ gckCONTEXT_Construct(
         /* Allocate the state mapping table. */
         gcmkONERROR(gckOS_Allocate(
             Os,
-            gcmSIZEOF(gcsSTATE_MAP) * context->stateCount,
+            sizeof(gcsSTATE_MAP) * context->stateCount,
             &pointer
             ));
 
@@ -1070,7 +1070,7 @@ gckCONTEXT_Construct(
 
         /* Zero the state mapping table. */
         gcmkONERROR(gckOS_ZeroMemory(
-            context->map, gcmSIZEOF(gcsSTATE_MAP) * context->stateCount
+            context->map, sizeof(gcsSTATE_MAP) * context->stateCount
             ));
 
 
@@ -1081,7 +1081,7 @@ gckCONTEXT_Construct(
         /* Allocate hints. */
         gcmkONERROR(gckOS_Allocate(
             Os,
-            gcmSIZEOF(gctBOOL) * context->stateCount,
+            sizeof(gctBOOL) * context->stateCount,
             &pointer
             ));
 
@@ -1100,7 +1100,7 @@ gckCONTEXT_Construct(
         /* Allocate the context buffer structure. */
         gcmkONERROR(gckOS_Allocate(
             Os,
-            gcmSIZEOF(gcsCONTEXT),
+            sizeof(gcsCONTEXT),
             &pointer
             ));
 
@@ -1108,7 +1108,7 @@ gckCONTEXT_Construct(
 
         /* Reset the context buffer structure. */
         gcmkVERIFY_OK(gckOS_ZeroMemory(
-            buffer, gcmSIZEOF(gcsCONTEXT)
+            buffer, sizeof(gcsCONTEXT)
             ));
 
         /* Append to the list. */
@@ -1401,7 +1401,7 @@ gckCONTEXT_Update(
             gcmkONERROR(gckKERNEL_OpenUserData(
                 kernel, needCopy,
                 &_stateDelta,
-                uDelta, gcmSIZEOF(gcsSTATE_DELTA),
+                uDelta, sizeof(gcsSTATE_DELTA),
                 (gctPOINTER *) &kDelta
                 ));
 
@@ -1532,7 +1532,7 @@ gckCONTEXT_Update(
             gcmkONERROR(gckKERNEL_CloseUserData(
                 kernel, needCopy,
                 gcvTRUE,
-                uDelta, gcmSIZEOF(gcsSTATE_DELTA),
+                uDelta, sizeof(gcsSTATE_DELTA),
                 (gctPOINTER *) &kDelta
                 ));
 
@@ -1600,7 +1600,7 @@ gckCONTEXT_Update(
     gcmkONERROR(gckKERNEL_OpenUserData(
         kernel, needCopy,
         &_stateDelta,
-        uDelta, gcmSIZEOF(gcsSTATE_DELTA),
+        uDelta, sizeof(gcsSTATE_DELTA),
         (gctPOINTER *) &kDelta
         ));
 
@@ -1648,7 +1648,7 @@ gckCONTEXT_Update(
     gcmkONERROR(gckKERNEL_CloseUserData(
         kernel, needCopy,
         gcvTRUE,
-        uDelta, gcmSIZEOF(gcsSTATE_DELTA),
+        uDelta, sizeof(gcsSTATE_DELTA),
         (gctPOINTER *) &kDelta
         ));
 
@@ -1680,7 +1680,7 @@ OnError:
     gcmkVERIFY_OK(gckKERNEL_CloseUserData(
         kernel, needCopy,
         gcvTRUE,
-        uDelta, gcmSIZEOF(gcsSTATE_DELTA),
+        uDelta, sizeof(gcsSTATE_DELTA),
         (gctPOINTER *) &kDelta
         ));
 
