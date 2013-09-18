@@ -80,13 +80,13 @@ gceCORE;
 */
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
 #define _gcmVERIFY_OBJECT(prefix, obj, t) \
-    if ((obj) == gcvNULL) \
+    if ((obj) == NULL) \
     { \
         prefix##TRACE(gcvLEVEL_ERROR, \
                       #prefix "VERIFY_OBJECT failed: NULL"); \
         prefix##TRACE(gcvLEVEL_ERROR, "  expected: %c%c%c%c", \
                       gcmCC_PRINT(t)); \
-        prefix##ASSERT((obj) != gcvNULL); \
+        prefix##ASSERT((obj) != NULL); \
         prefix##FOOTER_ARG("status=%d", gcvSTATUS_INVALID_OBJECT); \
         return gcvSTATUS_INVALID_OBJECT; \
     } \

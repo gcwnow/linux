@@ -396,7 +396,7 @@ gckKERNEL_QuerySettings(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Settings != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Settings != NULL);
 
     /* Extract the pointer to the gckGALDEVICE class. */
     device = (gckGALDEVICE) Kernel->context;

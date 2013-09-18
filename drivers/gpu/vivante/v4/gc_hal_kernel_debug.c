@@ -416,8 +416,8 @@ typedef gctINT (* gcfGETITEMSIZE) (
 \******************************************************************************/
 
 static gcsBUFFERED_OUTPUT     _outputBuffer[gcdTHREAD_BUFFERS];
-static gcsBUFFERED_OUTPUT_PTR _outputBufferHead = gcvNULL;
-static gcsBUFFERED_OUTPUT_PTR _outputBufferTail = gcvNULL;
+static gcsBUFFERED_OUTPUT_PTR _outputBufferHead = NULL;
+static gcsBUFFERED_OUTPUT_PTR _outputBufferTail = NULL;
 
 /******************************************************************************\
 ****************************** Item Size Functions *****************************
@@ -911,7 +911,7 @@ _PrintBufferWrapper(
         /* Print buffer. */
         _PrintBuffer(
             OutputBuffer,
-            item->indent, gcvNULL,
+            item->indent, NULL,
             item + 1, item->address, item->dataSize,
             item->bufferType, dmaAddress
             );
@@ -949,7 +949,7 @@ _FindCurrentDMABuffer(
     gcsBUFITEM_BUFFER_PTR dmaCurrent;
 
     /* Reset the current buffer. */
-    dmaCurrent = gcvNULL;
+    dmaCurrent = NULL;
 
     /* Get the first stored item. */
     item = (gcsBUFITEM_HEAD_PTR) &_outputBufferHead->buffer[_outputBufferHead->start];
@@ -1073,7 +1073,7 @@ _EnableDMABuffers(
 
     for (i = 0; i < gcdDMA_BUFFER_COUNT; i += 1)
     {
-        if (buffers[index] == gcvNULL)
+        if (buffers[index] == NULL)
         {
             break;
         }
@@ -1101,13 +1101,13 @@ _Flush(
     gcsBUFFERED_OUTPUT_PTR outputBuffer = _outputBufferHead;
 
 #if gcdDMA_BUFFER_COUNT && (gcdTHREAD_BUFFERS == 1)
-    if ((outputBuffer != gcvNULL) && (outputBuffer->count != 0))
+    if ((outputBuffer != NULL) && (outputBuffer->count != 0))
     {
         /* Find the current DMA buffer. */
         gcsBUFITEM_BUFFER_PTR dmaCurrent = _FindCurrentDMABuffer(DmaAddress);
 
         /* Was the current buffer found? */
-        if (dmaCurrent == gcvNULL)
+        if (dmaCurrent == NULL)
         {
             /* No, print all buffers. */
             _EnableAllDMABuffers();
@@ -1120,7 +1120,7 @@ _Flush(
     }
 #endif
 
-    while (outputBuffer != gcvNULL)
+    while (outputBuffer != NULL)
     {
         if (outputBuffer->count != 0)
         {
@@ -1265,7 +1265,7 @@ _AppendPrefix(
     gctINT size, freeSize;
 #endif
 
-    gcmDBGASSERT(Data != gcvNULL, "%p", Data);
+    gcmDBGASSERT(Data != NULL, "%p", Data);
 
     /* Determine the maximum item size. */
     allocSize
@@ -1476,7 +1476,7 @@ _AppendBuffer(
 #endif
 
     gcmDBGASSERT(DataSize != 0, "%d", DataSize);
-    gcmDBGASSERT(Data != gcvNULL, "%p", Data);
+    gcmDBGASSERT(Data != NULL, "%p", Data);
 
     /* Determine the maximum item size. */
     allocSize
@@ -1538,7 +1538,7 @@ _AppendBuffer(
     gctINT size;
 
     gcmDBGASSERT(DataSize != 0, "%d", DataSize);
-    gcmDBGASSERT(Data != gcvNULL, "%p", Data);
+    gcmDBGASSERT(Data != NULL, "%p", Data);
 
     /* Determine the maximum item size. */
     size = gcmSIZEOF(gcsBUFITEM_BUFFER) + DataSize;
@@ -1565,11 +1565,11 @@ _InitBuffers(
 {
     int i;
 
-    if (_outputBufferHead == gcvNULL)
+    if (_outputBufferHead == NULL)
     {
         for (i = 0; i < gcdTHREAD_BUFFERS; i += 1)
         {
-            if (_outputBufferTail == gcvNULL)
+            if (_outputBufferTail == NULL)
             {
                 _outputBufferHead = &_outputBuffer[i];
             }
@@ -1583,7 +1583,7 @@ _InitBuffers(
 #endif
 
             _outputBuffer[i].prev = _outputBufferTail;
-            _outputBuffer[i].next =  gcvNULL;
+            _outputBuffer[i].next =  NULL;
 
             _outputBufferTail = &_outputBuffer[i];
         }
@@ -1604,7 +1604,7 @@ _GetOutputBuffer(
     /* Locate the output buffer for the thread. */
     outputBuffer = _outputBufferHead;
 
-    while (outputBuffer != gcvNULL)
+    while (outputBuffer != NULL)
     {
         if (outputBuffer->threadID == ThreadID)
         {
@@ -1615,16 +1615,16 @@ _GetOutputBuffer(
     }
 
     /* No matching buffer found? */
-    if (outputBuffer == gcvNULL)
+    if (outputBuffer == NULL)
     {
         /* Get the tail for the buffer. */
         outputBuffer = _outputBufferTail;
 
         /* Move it to the head. */
         _outputBufferTail       = _outputBufferTail->prev;
-        _outputBufferTail->next = gcvNULL;
+        _outputBufferTail->next = NULL;
 
-        outputBuffer->prev = gcvNULL;
+        outputBuffer->prev = NULL;
         outputBuffer->next = _outputBufferHead;
 
         _outputBufferHead->prev = outputBuffer;
@@ -1650,7 +1650,7 @@ static gcmINLINE int _GetArgumentSize(
 {
     int i, count;
 
-    gcmDBGASSERT(Message != gcvNULL, "%p", Message);
+    gcmDBGASSERT(Message != NULL, "%p", Message);
 
     for (i = 0, count = 0; Message[i]; i += 1)
     {
@@ -1949,7 +1949,7 @@ gckOS_DumpBuffer(
         userLocked = gcvFALSE;
     }
 
-    if (Buffer != gcvNULL)
+    if (Buffer != NULL)
     {
         /* Initialize output buffer list. */
         _InitBuffers();
@@ -1996,14 +1996,14 @@ gckOS_DumpBuffer(
         {
             gcdOUTPUTSTRING(
                 outputBuffer, outputBuffer->indent,
-                Buffer, 0, gcvNULL
+                Buffer, 0, NULL
                 );
         }
         else
         {
             gcdOUTPUTBUFFER(
                 outputBuffer, outputBuffer->indent,
-                gcvNULL, Buffer, address, Size, Type, 0
+                NULL, Buffer, address, Size, Type, 0
                 );
         }
 #endif

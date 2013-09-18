@@ -21,6 +21,8 @@
 #ifndef __gc_hal_types_internal_h_
 #define __gc_hal_types_internal_h_
 
+#include <linux/stddef.h>
+
 /******************************************************************************\
 ************************************ Keyword ***********************************
 \******************************************************************************/
@@ -35,8 +37,6 @@
 #define gcvTRUE                 1
 
 #define gcvINFINITE             ((gctUINT32) ~0U)
-
-#define gcvNULL                 ((void *) 0)
 
 typedef float                   gctFLOAT;
 typedef float *                 gctFLOAT_PTR;

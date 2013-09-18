@@ -145,16 +145,16 @@ gckKERNEL_Construct(
     OUT gckKERNEL * Kernel
     )
 {
-    gckKERNEL kernel = gcvNULL;
+    gckKERNEL kernel = NULL;
     gceSTATUS status;
     gctSIZE_T i;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x Context=0x%x", Os, Context);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Kernel != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Kernel != NULL);
 
     /* Allocate the gckKERNEL object. */
     gcmkONERROR(gckOS_Allocate(Os,
@@ -164,12 +164,12 @@ gckKERNEL_Construct(
     kernel = pointer;
 
     /* Zero the object pointers. */
-    kernel->hardware     = gcvNULL;
-    kernel->command      = gcvNULL;
-    kernel->eventObj     = gcvNULL;
-    kernel->mmu          = gcvNULL;
+    kernel->hardware     = NULL;
+    kernel->command      = NULL;
+    kernel->eventObj     = NULL;
+    kernel->mmu          = NULL;
 
-    if (SharedDB == gcvNULL)
+    if (SharedDB == NULL)
     {
         gcmkONERROR(gckOS_Allocate(Os,
                                    gcmSIZEOF(struct _gckDB),
@@ -177,17 +177,17 @@ gckKERNEL_Construct(
 
         kernel->db               = pointer;
         kernel->dbCreated        = gcvTRUE;
-        kernel->db->freeDatabase = gcvNULL;
-        kernel->db->freeRecord   = gcvNULL;
-        kernel->db->dbMutex      = gcvNULL;
-        kernel->db->lastDatabase = gcvNULL;
+        kernel->db->freeDatabase = NULL;
+        kernel->db->freeRecord   = NULL;
+        kernel->db->dbMutex      = NULL;
+        kernel->db->lastDatabase = NULL;
         kernel->db->idleTime     = 0;
         kernel->db->lastIdle     = 0;
         kernel->db->lastSlowdown = 0;
 
         for (i = 0; i < ARRAY_SIZE(kernel->db->db); ++i)
         {
-            kernel->db->db[i] = gcvNULL;
+            kernel->db->db[i] = NULL;
         }
 
         /* Construct a database mutex. */
@@ -216,7 +216,7 @@ gckKERNEL_Construct(
     kernel->context = Context;
 
     /* Construct atom holding number of clients. */
-    kernel->atomClients = gcvNULL;
+    kernel->atomClients = NULL;
     gcmkONERROR(gckOS_AtomConstruct(Os, &kernel->atomClients));
 
     /* Construct the gckHARDWARE object. */
@@ -250,31 +250,31 @@ gckKERNEL_Construct(
     return gcvSTATUS_OK;
 
 OnError:
-    if (kernel != gcvNULL)
+    if (kernel != NULL)
     {
-        if (kernel->eventObj != gcvNULL)
+        if (kernel->eventObj != NULL)
         {
             gcmkVERIFY_OK(gckEVENT_Destroy(kernel->eventObj));
         }
 
-        if (kernel->command != gcvNULL)
+        if (kernel->command != NULL)
         {
         gcmkVERIFY_OK(gckCOMMAND_Destroy(kernel->command));
         }
 
-        if (kernel->hardware != gcvNULL)
+        if (kernel->hardware != NULL)
         {
             gcmkVERIFY_OK(gckHARDWARE_Destroy(kernel->hardware));
         }
 
-        if (kernel->atomClients != gcvNULL)
+        if (kernel->atomClients != NULL)
         {
             gcmkVERIFY_OK(gckOS_AtomDestroy(Os, kernel->atomClients));
         }
 
-        if (kernel->dbCreated && kernel->db != gcvNULL)
+        if (kernel->dbCreated && kernel->db != NULL)
         {
-            if (kernel->db->dbMutex != gcvNULL)
+            if (kernel->db->dbMutex != NULL)
             {
                 /* Destroy the database mutex. */
                 gcmkVERIFY_OK(gckOS_DeleteMutex(Os, kernel->db->dbMutex));
@@ -325,7 +325,7 @@ gckKERNEL_Destroy(
     {
         for (i = 0; i < ARRAY_SIZE(Kernel->db->db); ++i)
         {
-            if (Kernel->db->db[i] != gcvNULL)
+            if (Kernel->db->db[i] != NULL)
             {
                 gcmkVERIFY_OK(
                     gckKERNEL_DestroyProcessDB(Kernel, Kernel->db->db[i]->processID));
@@ -334,20 +334,20 @@ gckKERNEL_Destroy(
 
         /* Free all databases. */
         for (database = Kernel->db->freeDatabase;
-             database != gcvNULL;
+             database != NULL;
              database = databaseNext)
         {
             databaseNext = database->next;
             gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Kernel->os, database));
         }
 
-        if (Kernel->db->lastDatabase != gcvNULL)
+        if (Kernel->db->lastDatabase != NULL)
         {
             gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Kernel->os, Kernel->db->lastDatabase));
         }
 
         /* Free all database records. */
-        for (record = Kernel->db->freeRecord; record != gcvNULL; record = recordNext)
+        for (record = Kernel->db->freeRecord; record != NULL; record = recordNext)
         {
             recordNext = record->next;
             gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Kernel->os, record));
@@ -420,13 +420,13 @@ _AllocateMemory(
     gceSTATUS status;
     gckVIDMEM videoMemory;
     gctINT loopCount;
-    gcuVIDMEM_NODE_PTR node = gcvNULL;
+    gcuVIDMEM_NODE_PTR node = NULL;
     gctBOOL tileStatusInVirtual;
 
     gcmkHEADER_ARG("Kernel=0x%x *Pool=%d Bytes=%lu Alignment=%lu Type=%d",
                    Kernel, *Pool, Bytes, Alignment, Type);
 
-    gcmkVERIFY_ARGUMENT(Pool != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Pool != NULL);
     gcmkVERIFY_ARGUMENT(Bytes != 0);
 
     /* Get initial pool. */
@@ -561,7 +561,7 @@ _AllocateMemory(
         }
     }
 
-    if (node == gcvNULL)
+    if (node == NULL)
     {
         /* Nothing allocated. */
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
@@ -618,7 +618,7 @@ gckKERNEL_Dispatch(
     gctSIZE_T bytes;
     gcuVIDMEM_NODE_PTR node;
     gctBOOL locked = gcvFALSE;
-    gctPHYS_ADDR physical = gcvNULL;
+    gctPHYS_ADDR physical = NULL;
     gctUINT32 address;
     gctUINT32 processID;
 #if gcdSECURE_USER
@@ -626,7 +626,7 @@ gckKERNEL_Dispatch(
     gctPOINTER logical;
 #endif
     gctBOOL asynchronous;
-    gctPOINTER paddr = gcvNULL;
+    gctPOINTER paddr = NULL;
 #if !USE_NEW_LINUX_SIGNAL
     gctSIGNAL   signal;
 #endif
@@ -639,7 +639,7 @@ gckKERNEL_Dispatch(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Interface != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Interface != NULL);
 
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
     gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_KERNEL,
@@ -828,7 +828,7 @@ gckKERNEL_Dispatch(
             gckKERNEL_AddProcessDB(Kernel,
                                    processID, gcvDB_VIDEO_MEMORY,
                                    Interface->u.AllocateLinearVideoMemory.node,
-                                   gcvNULL,
+                                   NULL,
                                    bytes));
         break;
 
@@ -881,7 +881,7 @@ gckKERNEL_Dispatch(
             gckKERNEL_AddProcessDB(Kernel,
                                    processID, gcvDB_VIDEO_MEMORY_LOCKED,
                                    Interface->u.LockVideoMemory.node,
-                                   gcvNULL,
+                                   NULL,
                                    0));
 
         break;
@@ -894,7 +894,7 @@ gckKERNEL_Dispatch(
         /* Save node information before it disappears. */
         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         {
-            logical = gcvNULL;
+            logical = NULL;
             bytes   = 0;
         }
         else
@@ -913,7 +913,7 @@ gckKERNEL_Dispatch(
 
 #if gcdSECURE_USER
         /* Flush the translation cache for virtual surfaces. */
-        if (logical != gcvNULL)
+        if (logical != NULL)
         {
             gcmkVERIFY_OK(gckKERNEL_FlushTranslationCache(Kernel,
                                                           cache,
@@ -1013,7 +1013,7 @@ gckKERNEL_Dispatch(
                 gckKERNEL_AddProcessDB(Kernel,
                                        processID, gcvDB_SIGNAL,
                                        gcmINT2PTR(Interface->u.UserSignal.id),
-                                       gcvNULL,
+                                       NULL,
                                        0));
             break;
 
@@ -1055,7 +1055,7 @@ gckKERNEL_Dispatch(
                 gckKERNEL_AddProcessDB(Kernel,
                                        processID, gcvDB_SIGNAL,
                                        gcmINT2PTR(Interface->u.UserSignal.id),
-                                       gcvNULL,
+                                       NULL,
                                        0));
             break;
 
@@ -1244,7 +1244,7 @@ gckKERNEL_Dispatch(
         break;
 
     case gcvHAL_CACHE:
-        if (Interface->u.Cache.node == gcvNULL)
+        if (Interface->u.Cache.node == NULL)
         {
             /* FIXME Surface wrap some memory which is not allocated by us,
             ** So we don't have physical address to handle outer cache, ignore it*/
@@ -1254,7 +1254,7 @@ gckKERNEL_Dispatch(
         else if (Interface->u.Cache.node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         {
             /* Video memory has no physical handles. */
-            physical = gcvNULL;
+            physical = NULL;
         }
         else
         {
@@ -1402,7 +1402,7 @@ gckKERNEL_Dispatch(
             gckKERNEL_AddProcessDB(Kernel,
                                    processID, gcvDB_CONTEXT,
                                    Interface->u.Attach.context,
-                                   gcvNULL,
+                                   NULL,
                                    0));
         break;
 
@@ -1465,7 +1465,7 @@ gckKERNEL_Dispatch(
 
         }
 
-        if ((node = Interface->u.GetSharedInfo.node) != gcvNULL)
+        if ((node = Interface->u.GetSharedInfo.node) != NULL)
         {
             switch (Interface->u.GetSharedInfo.infoType)
                 {
@@ -1594,7 +1594,7 @@ gckKERNEL_Dispatch(
                 ));
         }
 
-        if ((node = Interface->u.SetSharedInfo.node) != gcvNULL)
+        if ((node = Interface->u.SetSharedInfo.node) != NULL)
         {
             switch (Interface->u.SetSharedInfo.infoType)
                 {
@@ -1707,7 +1707,7 @@ OnError:
                     gckVIDMEM_Unlock(Kernel,
                                      Interface->u.LockVideoMemory.node,
                                      gcvSURF_TYPE_UNKNOWN,
-                                     gcvNULL));
+                                     NULL));
             }
         }
     }
@@ -1896,8 +1896,8 @@ gckKERNEL_MapLogicalToPhysical(
         gctINT i;
 
         /* Walk all used cache slots. */
-        for (i = 1, slot = Cache->cache[0].next, next = gcvNULL;
-             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != gcvNULL);
+        for (i = 1, slot = Cache->cache[0].next, next = NULL;
+             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != NULL);
              ++i, slot = slot->next
         )
         {
@@ -1910,7 +1910,7 @@ gckKERNEL_MapLogicalToPhysical(
         }
 
         /* See if we had a miss. */
-        if (next == gcvNULL)
+        if (next == NULL)
         {
             /* Use the tail of the cache. */
             slot = Cache->cache[0].prev;
@@ -1940,15 +1940,15 @@ gckKERNEL_MapLogicalToPhysical(
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LINEAR
     {
         gctINT i;
-        gcskLOGICAL_CACHE_PTR next = gcvNULL;
-        gcskLOGICAL_CACHE_PTR oldestSlot = gcvNULL;
-        slot = gcvNULL;
+        gcskLOGICAL_CACHE_PTR next = NULL;
+        gcskLOGICAL_CACHE_PTR oldestSlot = NULL;
+        slot = NULL;
 
-        if (Cache->cacheIndex != gcvNULL)
+        if (Cache->cacheIndex != NULL)
         {
             /* Walk the cache forwards. */
             for (i = 1, slot = Cache->cacheIndex;
-                 (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != gcvNULL);
+                 (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != NULL);
                  ++i, slot = slot->next)
             {
                 if (slot->logical == *Data)
@@ -1959,7 +1959,7 @@ gckKERNEL_MapLogicalToPhysical(
                 }
 
                 /* Determine age of this slot. */
-                if ((oldestSlot       == gcvNULL)
+                if ((oldestSlot       == NULL)
                 ||  (oldestSlot->stamp > slot->stamp)
                 )
                 {
@@ -1967,11 +1967,11 @@ gckKERNEL_MapLogicalToPhysical(
                 }
             }
 
-            if (next == gcvNULL)
+            if (next == NULL)
             {
                 /* Walk the cache backwards. */
                 for (slot = Cache->cacheIndex->prev;
-                     (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != gcvNULL);
+                     (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != NULL);
                      ++i, slot = slot->prev)
                 {
                     if (slot->logical == *Data)
@@ -1982,7 +1982,7 @@ gckKERNEL_MapLogicalToPhysical(
                     }
 
                     /* Determine age of this slot. */
-                    if ((oldestSlot       == gcvNULL)
+                    if ((oldestSlot       == NULL)
                     ||  (oldestSlot->stamp > slot->stamp)
                     )
                     {
@@ -1993,12 +1993,12 @@ gckKERNEL_MapLogicalToPhysical(
         }
 
         /* See if we had a miss. */
-        if (next == gcvNULL)
+        if (next == NULL)
         {
             if (Cache->cacheFree != 0)
             {
                 slot = &Cache->cache[Cache->cacheFree];
-                gcmkASSERT(slot->logical == gcvNULL);
+                gcmkASSERT(slot->logical == NULL);
 
                 ++ Cache->cacheFree;
                 if (Cache->cacheFree >= ARRAY_SIZE(Cache->cache))
@@ -2009,7 +2009,7 @@ gckKERNEL_MapLogicalToPhysical(
             else
             {
                 /* Use the oldest cache slot. */
-                gcmkASSERT(oldestSlot != gcvNULL);
+                gcmkASSERT(oldestSlot != NULL);
                 slot = oldestSlot;
 
                 /* Unlink from the chain. */
@@ -2052,7 +2052,7 @@ gckKERNEL_MapLogicalToPhysical(
         hash = &Cache->hash[index];
 
         for (slot = hash->nextHash, i = 0;
-             (slot != gcvNULL) && (i < gcdSECURE_CACHE_SLOTS);
+             (slot != NULL) && (i < gcdSECURE_CACHE_SLOTS);
              slot = slot->nextHash, ++i
         )
         {
@@ -2062,17 +2062,17 @@ gckKERNEL_MapLogicalToPhysical(
             }
         }
 
-        if (slot == gcvNULL)
+        if (slot == NULL)
         {
             /* Grab from the tail of the cache. */
             slot = Cache->cache[0].prev;
 
             /* Unlink slot from any hash table it is part of. */
-            if (slot->prevHash != gcvNULL)
+            if (slot->prevHash != NULL)
             {
                 slot->prevHash->nextHash = slot->nextHash;
             }
-            if (slot->nextHash != gcvNULL)
+            if (slot->nextHash != NULL)
             {
                 slot->nextHash->prevHash = slot->prevHash;
             }
@@ -2084,7 +2084,7 @@ gckKERNEL_MapLogicalToPhysical(
             gcmkONERROR(
                 gckOS_GetPhysicalAddress(Kernel->os, *Data, &slot->dma));
 
-            if (hash->nextHash != gcvNULL)
+            if (hash->nextHash != NULL)
             {
                 gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_KERNEL,
                                "Hash Collision: logical=0x%x key=0x%08x",
@@ -2093,7 +2093,7 @@ gckKERNEL_MapLogicalToPhysical(
 
             /* Insert the slot at the head of the hash list. */
             slot->nextHash     = hash->nextHash;
-            if (slot->nextHash != gcvNULL)
+            if (slot->nextHash != NULL)
             {
                 slot->nextHash->prevHash = slot;
             }
@@ -2164,16 +2164,16 @@ gckKERNEL_FlushTranslationCache(
                    Kernel, Cache, Logical, Bytes);
 
     /* Do we need to flush the entire cache? */
-    if (Logical == gcvNULL)
+    if (Logical == NULL)
     {
         /* Clear all cache slots. */
         for (i = 1; i <= gcdSECURE_CACHE_SLOTS; ++i)
         {
-            Cache->cache[i].logical  = gcvNULL;
+            Cache->cache[i].logical  = NULL;
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
-            Cache->cache[i].nextHash = gcvNULL;
-            Cache->cache[i].prevHash = gcvNULL;
+            Cache->cache[i].nextHash = NULL;
+            Cache->cache[i].prevHash = NULL;
 #endif
 }
 
@@ -2181,12 +2181,12 @@ gckKERNEL_FlushTranslationCache(
         /* Zero the hash table. */
         for (i = 0; i < ARRAY_SIZE(Cache->hash); ++i)
         {
-            Cache->hash[i].nextHash = gcvNULL;
+            Cache->hash[i].nextHash = NULL;
         }
 #endif
 
         /* Reset the cache functionality. */
-        Cache->cacheIndex = gcvNULL;
+        Cache->cacheIndex = NULL;
         Cache->cacheFree  = 1;
         Cache->cacheStamp = 0;
     }
@@ -2201,7 +2201,7 @@ gckKERNEL_FlushTranslationCache(
 
         /* Walk all used cache slots. */
         for (i = 1, slot = Cache->cache[0].next;
-             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != gcvNULL);
+             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != NULL);
              ++i, slot = next
         )
         {
@@ -2223,7 +2223,7 @@ gckKERNEL_FlushTranslationCache(
                 slot->next->prev = slot;
 
                 /* Mark slot as empty. */
-                slot->logical = gcvNULL;
+                slot->logical = NULL;
             }
         }
 
@@ -2231,7 +2231,7 @@ gckKERNEL_FlushTranslationCache(
         gcskLOGICAL_CACHE_PTR next;
 
         for (i = 1, slot = Cache->cache[0].next;
-             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != gcvNULL);
+             (i <= gcdSECURE_CACHE_SLOTS) && (slot->logical != NULL);
              ++i, slot = next)
         {
             /* Save pointer to next slot. */
@@ -2245,11 +2245,11 @@ gckKERNEL_FlushTranslationCache(
                 if (slot == Cache->cacheIndex)
                 {
                     /* Move to next or previous slot. */
-                    Cache->cacheIndex = (slot->next->logical != gcvNULL)
+                    Cache->cacheIndex = (slot->next->logical != NULL)
                                       ? slot->next
-                                      : (slot->prev->logical != gcvNULL)
+                                      : (slot->prev->logical != NULL)
                                       ? slot->prev
-                                      : gcvNULL;
+                                      : NULL;
                 }
 
                 /* Unlink slot from cache. */
@@ -2263,7 +2263,7 @@ gckKERNEL_FlushTranslationCache(
                 slot->next->prev = slot;
 
                 /* Mark slot as empty. */
-                slot->logical = gcvNULL;
+                slot->logical = NULL;
                 slot->stamp   = 0;
             }
         }
@@ -2279,7 +2279,7 @@ gckKERNEL_FlushTranslationCache(
         {
             /* Walk all slots in the hash. */
             for (j = 0, slot = hash->nextHash;
-                 (j < gcdSECURE_CACHE_SLOTS) && (slot != gcvNULL);
+                 (j < gcdSECURE_CACHE_SLOTS) && (slot != NULL);
                  ++j, slot = next)
             {
                 /* Save pointer to next slot. */
@@ -2299,7 +2299,7 @@ gckKERNEL_FlushTranslationCache(
                         slot->prevHash->nextHash = slot->nextHash;
                     }
 
-                    if (slot->nextHash != gcvNULL)
+                    if (slot->nextHash != NULL)
                     {
                         slot->nextHash->prevHash = slot->prevHash;
                     }
@@ -2315,9 +2315,9 @@ gckKERNEL_FlushTranslationCache(
                     slot->next->prev = slot;
 
                     /* Mark slot as empty. */
-                    slot->logical  = gcvNULL;
-                    slot->prevHash = gcvNULL;
-                    slot->nextHash = gcvNULL;
+                    slot->logical  = NULL;
+                    slot->prevHash = NULL;
+                    slot->nextHash = NULL;
                 }
             }
         }
@@ -2337,7 +2337,7 @@ gckKERNEL_FlushTranslationCache(
             if ((ptr >= low) && (ptr < high))
             {
                 /* Remove entry from cache. */
-                slot->logical = gcvNULL;
+                slot->logical = NULL;
             }
 
             /* Next block. */
@@ -2414,7 +2414,7 @@ gckKERNEL_Recovery(
     /* Flush the secure mapping cache. */
     gcmkONERROR(gckOS_GetProcessID(&processID));
     gcmkONERROR(gckKERNEL_GetProcessDBCache(Kernel, processID, &cache));
-    gcmkONERROR(gckKERNEL_FlushTranslationCache(Kernel, cache, gcvNULL, 0));
+    gcmkONERROR(gckKERNEL_FlushTranslationCache(Kernel, cache, NULL, 0));
 #endif
 
     /* Try issuing a soft reset for the GPU. */
@@ -2495,9 +2495,9 @@ gckKERNEL_OpenUserData(
 
     /* Validate the arguemnts. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(!NeedCopy || (StaticStorage != gcvNULL));
-    gcmkVERIFY_ARGUMENT(UserPointer != gcvNULL);
-    gcmkVERIFY_ARGUMENT(KernelPointer != gcvNULL);
+    gcmkVERIFY_ARGUMENT(!NeedCopy || (StaticStorage != NULL));
+    gcmkVERIFY_ARGUMENT(UserPointer != NULL);
+    gcmkVERIFY_ARGUMENT(KernelPointer != NULL);
     gcmkVERIFY_ARGUMENT(Size > 0);
 
     if (NeedCopy)
@@ -2512,7 +2512,7 @@ gckKERNEL_OpenUserData(
     }
     else
     {
-        gctPOINTER pointer = gcvNULL;
+        gctPOINTER pointer = NULL;
 
         /* Map the user pointer. */
         gcmkONERROR(gckOS_MapUserPointer(
@@ -2579,14 +2579,14 @@ gckKERNEL_CloseUserData(
 
     /* Validate the arguemnts. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(UserPointer != gcvNULL);
-    gcmkVERIFY_ARGUMENT(KernelPointer != gcvNULL);
+    gcmkVERIFY_ARGUMENT(UserPointer != NULL);
+    gcmkVERIFY_ARGUMENT(KernelPointer != NULL);
     gcmkVERIFY_ARGUMENT(Size > 0);
 
     /* Get a shortcut to the kernel pointer. */
     pointer = * KernelPointer;
 
-    if (pointer != gcvNULL)
+    if (pointer != NULL)
     {
         if (NeedCopy)
         {
@@ -2609,7 +2609,7 @@ gckKERNEL_CloseUserData(
         }
 
         /* Reset the kernel pointer. */
-        * KernelPointer = gcvNULL;
+        * KernelPointer = NULL;
     }
 
 OnError:

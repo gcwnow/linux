@@ -72,7 +72,7 @@ gckKERNEL_NewDatabase(
     gcmkONERROR(gckOS_AcquireMutex(Kernel->os, Kernel->db->dbMutex, gcvINFINITE));
     acquired = gcvTRUE;
 
-    if (Kernel->db->freeDatabase != gcvNULL)
+    if (Kernel->db->freeDatabase != NULL)
     {
         /* Allocate a database from the free list. */
         database             = Kernel->db->freeDatabase;
@@ -80,7 +80,7 @@ gckKERNEL_NewDatabase(
     }
     else
     {
-        gctPOINTER pointer = gcvNULL;
+        gctPOINTER pointer = NULL;
 
         /* Allocate a new database from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
@@ -177,7 +177,7 @@ gckKERNEL_FindDatabase(
         /* Use last database. */
         database = Kernel->db->lastDatabase;
 
-        if (database == gcvNULL)
+        if (database == NULL)
         {
             /* Database not found. */
             gcmkONERROR(gcvSTATUS_INVALID_DATA);
@@ -186,8 +186,8 @@ gckKERNEL_FindDatabase(
     else
     {
         /* Walk the hash list. */
-        for (previous = gcvNULL, database = Kernel->db->db[slot];
-             database != gcvNULL;
+        for (previous = NULL, database = Kernel->db->db[slot];
+             database != NULL;
              database = database->next)
         {
             if (database->processID == ProcessID)
@@ -199,13 +199,13 @@ gckKERNEL_FindDatabase(
             previous = database;
         }
 
-        if (database == gcvNULL)
+        if (database == NULL)
         {
             /* Database not found. */
             gcmkONERROR(gcvSTATUS_INVALID_DATA);
         }
 
-        if (previous != gcvNULL)
+        if (previous != NULL)
         {
             /* Move database to the head of the hash list. */
             previous->next   = database->next;
@@ -285,7 +285,7 @@ gckKERNEL_DeleteDatabase(
         {
             /* Walk the has list to find the database. */
             for (database = Kernel->db->db[Database->slot];
-                 database != gcvNULL;
+                 database != NULL;
                  database = database->next
             )
             {
@@ -298,7 +298,7 @@ gckKERNEL_DeleteDatabase(
                 }
             }
 
-            if (database == gcvNULL)
+            if (database == NULL)
             {
                 /* Ouch!  Something got corrupted. */
                 gcmkONERROR(gcvSTATUS_INVALID_DATA);
@@ -306,7 +306,7 @@ gckKERNEL_DeleteDatabase(
         }
     }
 
-    if (Kernel->db->lastDatabase != gcvNULL)
+    if (Kernel->db->lastDatabase != NULL)
     {
         /* Insert database to the free list. */
         Kernel->db->lastDatabase->next = Kernel->db->freeDatabase;
@@ -364,7 +364,7 @@ gckKERNEL_NewRecord(
 {
     gceSTATUS status;
     gctBOOL acquired = gcvFALSE;
-    gcsDATABASE_RECORD_PTR record = gcvNULL;
+    gcsDATABASE_RECORD_PTR record = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x Database=0x%x", Kernel, Database);
 
@@ -373,7 +373,7 @@ gckKERNEL_NewRecord(
         gckOS_AcquireMutex(Kernel->os, Kernel->db->dbMutex, gcvINFINITE));
     acquired = gcvTRUE;
 
-    if (Kernel->db->freeRecord != gcvNULL)
+    if (Kernel->db->freeRecord != NULL)
     {
         /* Allocate the record from the free list. */
         record             = Kernel->db->freeRecord;
@@ -381,7 +381,7 @@ gckKERNEL_NewRecord(
     }
     else
     {
-        gctPOINTER pointer = gcvNULL;
+        gctPOINTER pointer = NULL;
 
         /* Allocate the record from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
@@ -411,7 +411,7 @@ OnError:
         /* Release the database mutex. */
         gcmkVERIFY_OK(gckOS_ReleaseMutex(Kernel->os, Kernel->db->dbMutex));
     }
-    if (record != gcvNULL)
+    if (record != NULL)
     {
         gcmkVERIFY_OK(gcmkOS_SAFE_FREE(Kernel->os, record));
     }
@@ -444,7 +444,7 @@ OnError:
 **
 **      gctSIZE_T_PTR Bytes
 **          Pointer to a variable that receives the size of the record deleted.
-**          Can be gcvNULL if the size is not required.
+**          Can be NULL if the size is not required.
 */
 static gceSTATUS
 gckKERNEL_DeleteRecord(
@@ -468,8 +468,8 @@ gckKERNEL_DeleteRecord(
     acquired = gcvTRUE;
 
     /* Scan the database for this record. */
-    for (record = Database->list, previous = gcvNULL;
-         record != gcvNULL;
+    for (record = Database->list, previous = NULL;
+         record != NULL;
          record = record->next
     )
     {
@@ -484,20 +484,20 @@ gckKERNEL_DeleteRecord(
         previous = record;
     }
 
-    if (record == gcvNULL)
+    if (record == NULL)
     {
         /* Ouch!  This record is not found? */
         gcmkONERROR(gcvSTATUS_INVALID_DATA);
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return size of record. */
         *Bytes = record->bytes;
     }
 
     /* Remove record from database. */
-    if (previous == gcvNULL)
+    if (previous == NULL)
     {
         Database->list = record->next;
     }
@@ -552,7 +552,7 @@ OnError:
 **
 **      gctSIZE_T_PTR Bytes
 **          Pointer to a variable that receives the size of the record deleted.
-**          Can be gcvNULL if the size is not required.
+**          Can be NULL if the size is not required.
 */
 static gceSTATUS
 gckKERNEL_FindRecord(
@@ -577,7 +577,7 @@ gckKERNEL_FindRecord(
 
     /* Scan the database for this record. */
     for (record = Database->list;
-         record != gcvNULL;
+         record != NULL;
          record = record->next
     )
     {
@@ -590,13 +590,13 @@ gckKERNEL_FindRecord(
         }
     }
 
-    if (record == gcvNULL)
+    if (record == NULL)
     {
         /* Ouch!  This record is not found? */
         gcmkONERROR(gcvSTATUS_INVALID_DATA);
     }
 
-    if (Record != gcvNULL)
+    if (Record != NULL)
     {
         /* Return information of record. */
         gcmkONERROR(
@@ -650,7 +650,7 @@ gckKERNEL_CreateProcessDB(
     )
 {
     gceSTATUS status;
-    gcsDATABASE_PTR database = gcvNULL;
+    gcsDATABASE_PTR database = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d", Kernel, ProcessID);
 
@@ -677,7 +677,7 @@ gckKERNEL_CreateProcessDB(
     database->mapUserMemory.bytes      = 0;
     database->mapUserMemory.maxBytes   = 0;
     database->mapUserMemory.totalBytes = 0;
-    database->list                  = gcvNULL;
+    database->list                  = NULL;
 
 #if gcdSECURE_USER
     {
@@ -687,15 +687,15 @@ gckKERNEL_CreateProcessDB(
         /* Setup the linked list of cache nodes. */
         for (slot = 1; slot <= gcdSECURE_CACHE_SLOTS; ++slot)
         {
-            cache->cache[slot].logical = gcvNULL;
+            cache->cache[slot].logical = NULL;
 
 #if gcdSECURE_CACHE_METHOD != gcdSECURE_CACHE_TABLE
             cache->cache[slot].prev = &cache->cache[slot - 1];
             cache->cache[slot].next = &cache->cache[slot + 1];
 #   endif
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
-            cache->cache[slot].nextHash = gcvNULL;
-            cache->cache[slot].prevHash = gcvNULL;
+            cache->cache[slot].nextHash = NULL;
+            cache->cache[slot].prevHash = NULL;
 #   endif
         }
 
@@ -703,7 +703,7 @@ gckKERNEL_CreateProcessDB(
         /* Setup the head and tail of the cache. */
         cache->cache[0].next    = &cache->cache[1];
         cache->cache[0].prev    = &cache->cache[gcdSECURE_CACHE_SLOTS];
-        cache->cache[0].logical = gcvNULL;
+        cache->cache[0].logical = NULL;
 
         /* Fix up the head and tail pointers. */
         cache->cache[0].next->prev = &cache->cache[0];
@@ -714,13 +714,13 @@ gckKERNEL_CreateProcessDB(
         /* Zero out the hash table. */
         for (slot = 0; slot < ARRAY_SIZE(cache->hash); ++slot)
         {
-            cache->hash[slot].logical  = gcvNULL;
-            cache->hash[slot].nextHash = gcvNULL;
+            cache->hash[slot].logical  = NULL;
+            cache->hash[slot].nextHash = NULL;
         }
 #   endif
 
         /* Initialize cache index. */
-        cache->cacheIndex = gcvNULL;
+        cache->cacheIndex = NULL;
         cache->cacheFree  = 1;
         cache->cacheStamp = 0;
     }
@@ -780,7 +780,7 @@ gckKERNEL_AddProcessDB(
 {
     gceSTATUS status;
     gcsDATABASE_PTR database;
-    gcsDATABASE_RECORD_PTR record = gcvNULL;
+    gcsDATABASE_RECORD_PTR record = NULL;
     gcsDATABASE_COUNTERS * count;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d Type=%d Pointer=0x%x "
@@ -851,7 +851,7 @@ gckKERNEL_AddProcessDB(
     }
 
     /* Verify the arguments. */
-    gcmkVERIFY_ARGUMENT(Pointer != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Pointer != NULL);
 
     /* Find the database. */
     gcmkONERROR(gckKERNEL_FindDatabase(Kernel, ProcessID, gcvFALSE, &database));
@@ -890,11 +890,11 @@ gckKERNEL_AddProcessDB(
         break;
 
     default:
-        count = gcvNULL;
+        count = NULL;
         break;
     }
 
-    if (count != gcvNULL)
+    if (count != NULL)
     {
         /* Adjust counters. */
         count->totalBytes += Size;
@@ -956,7 +956,7 @@ gckKERNEL_RemoveProcessDB(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Pointer != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Pointer != NULL);
 
     /* Find the database. */
     gcmkONERROR(gckKERNEL_FindDatabase(Kernel, ProcessID, gcvFALSE, &database));
@@ -1044,7 +1044,7 @@ gckKERNEL_FindProcessDB(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Pointer != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Pointer != NULL);
 
     /* Find the database. */
     gcmkONERROR(gckKERNEL_FindDatabase(Kernel, ProcessID, gcvFALSE, &database));
@@ -1125,7 +1125,7 @@ gckKERNEL_DestroyProcessDB(
                    ProcessID, database->mapUserMemory.totalBytes,
                    database->mapUserMemory.maxBytes);
 
-    if (database->list != gcvNULL)
+    if (database->list != NULL)
     {
         gcmkTRACE_ZONE(gcvLEVEL_WARNING, gcvZONE_DATABASE,
                        "Process %d has entries in its database:",
@@ -1133,7 +1133,7 @@ gckKERNEL_DestroyProcessDB(
     }
 
     /* Walk all records. */
-    for (record = database->list; record != gcvNULL; record = next)
+    for (record = database->list; record != NULL; record = next)
     {
         /* Next next record. */
         next = record->next;
@@ -1201,7 +1201,7 @@ gckKERNEL_DestroyProcessDB(
                 status = gckVIDMEM_Unlock(record->kernel,
                                           record->data,
                                           gcvSURF_TYPE_UNKNOWN,
-                                          gcvNULL);
+                                          NULL);
             }
 
             gcmkTRACE_ZONE(gcvLEVEL_WARNING, gcvZONE_DATABASE,
@@ -1260,7 +1260,7 @@ gckKERNEL_DestroyProcessDB(
                                            database,
                                            record->type,
                                            record->data,
-                                           gcvNULL));
+                                           NULL));
     }
 
     /* Delete the database. */
@@ -1319,7 +1319,7 @@ gckKERNEL_QueryProcessDB(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Info != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Info != NULL);
 
     /* Find the database. */
     gcmkONERROR(
@@ -1410,7 +1410,7 @@ gckKERNEL_GetProcessDBCache(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
-    gcmkVERIFY_ARGUMENT(Cache != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Cache != NULL);
 
     /* Find the database. */
     gcmkONERROR(gckKERNEL_FindDatabase(Kernel, ProcessID, gcvFALSE, &database));

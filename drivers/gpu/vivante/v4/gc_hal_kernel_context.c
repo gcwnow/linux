@@ -141,13 +141,13 @@ _TerminateStateBlock(
     align = (Index & 1) ? 1 : 0;
 
     /* Address correct index. */
-    buffer = (Context->buffer == gcvNULL)
-        ? gcvNULL
+    buffer = (Context->buffer == NULL)
+        ? NULL
         : Context->buffer->logical;
 
     /* Flush the current state block; make sure no pairing with the states
        to follow happens. */
-    if (align && (buffer != gcvNULL))
+    if (align && (buffer != NULL))
     {
         buffer[Index] = 0xDEADDEAD;
     }
@@ -168,7 +168,7 @@ _FlushPipe(
     IN gcePIPE_SELECT Pipe
     )
 {
-    if (Context->buffer != gcvNULL)
+    if (Context->buffer != NULL)
     {
         gctUINT32_PTR buffer;
 
@@ -217,7 +217,7 @@ _SemaphoreStall(
     IN gctSIZE_T Index
     )
 {
-    if (Context->buffer != gcvNULL)
+    if (Context->buffer != NULL)
     {
         gctUINT32_PTR buffer;
 
@@ -254,7 +254,7 @@ _SwitchPipe(
     IN gcePIPE_SELECT Pipe
     )
 {
-    if (Context->buffer != gcvNULL)
+    if (Context->buffer != NULL)
     {
         gctUINT32_PTR buffer;
 
@@ -295,11 +295,11 @@ _State(
     align = (Index & 1) ? 1 : 0;
 
     /* Address correct index. */
-    buffer = (Context->buffer == gcvNULL)
-        ? gcvNULL
+    buffer = (Context->buffer == NULL)
+        ? NULL
         : Context->buffer->logical;
 
-    if ((buffer == gcvNULL) && (Address + Size > Context->stateCount))
+    if ((buffer == NULL) && (Address + Size > Context->stateCount))
     {
         /* Determine maximum state. */
         Context->stateCount = Address + Size;
@@ -308,7 +308,7 @@ _State(
     /* Do we need a new entry? */
     if ((Address != Context->lastAddress) || (FixedPoint != Context->lastFixed))
     {
-        if (buffer != gcvNULL)
+        if (buffer != NULL)
         {
             if (align)
             {
@@ -347,7 +347,7 @@ _State(
 
 #if gcdSECURE_USER
                 /* Save hint. */
-                if (Context->hint != gcvNULL)
+                if (Context->hint != NULL)
                 {
                     Context->hint[Address + i] = Hinted;
                 }
@@ -366,7 +366,7 @@ _State(
     }
 
     /* Append this state to the previous one. */
-    if (buffer != gcvNULL)
+    if (buffer != NULL)
     {
         /* Update last load state. */
         buffer[Context->lastIndex] =
@@ -383,7 +383,7 @@ _State(
 
 #if gcdSECURE_USER
             /* Save hint. */
-            if (Context->hint != gcvNULL)
+            if (Context->hint != NULL)
             {
                 Context->hint[Address + i] = Hinted;
             }
@@ -410,7 +410,7 @@ _StateMirror(
     gctSIZE_T i;
 
     /* Process when buffer is set. */
-    if (Context->buffer != gcvNULL)
+    if (Context->buffer != NULL)
     {
         /* Walk all states. */
         for (i = 0; i < Size; i++)
@@ -447,8 +447,8 @@ _InitializeContextBuffer(
     Context->lastAddress = ~0U;
 
     /* Get the buffer pointer. */
-    buffer = (Context->buffer == gcvNULL)
-        ? gcvNULL
+    buffer = (Context->buffer == NULL)
+        ? NULL
         : Context->buffer->logical;
 
 
@@ -462,7 +462,7 @@ _InitializeContextBuffer(
 
     /* Query shader support. */
     gcmkVERIFY_OK(gckHARDWARE_QueryShaderCaps(
-        Context->hardware, &vertexUniforms, &fragmentUniforms, gcvNULL));
+        Context->hardware, &vertexUniforms, &fragmentUniforms, NULL));
 
     /* Store the 3D entry index. */
     Context->entryOffset3D = index * gcmSIZEOF(gctUINT32);
@@ -803,7 +803,7 @@ _InitializeContextBuffer(
 
     Context->linkIndex3D = index;
 
-    if (buffer != gcvNULL)
+    if (buffer != NULL)
     {
         buffer[index + 0]
             = ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))) | (((gctUINT32) (0x08 & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27)))
@@ -834,7 +834,7 @@ _InitializeContextBuffer(
     /* Store the location of the link. */
     Context->linkIndexXD = index;
 
-    if (buffer != gcvNULL)
+    if (buffer != NULL)
     {
         buffer[index + 0]
             = ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))) | (((gctUINT32) (0x08 & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27)))
@@ -864,12 +864,12 @@ _DestroyContext(
 {
     gceSTATUS status = gcvSTATUS_OK;
 
-    if (Context != gcvNULL)
+    if (Context != NULL)
     {
         gcsCONTEXT_PTR bufferHead;
 
         /* Free context buffers. */
-        for (bufferHead = Context->buffer; Context->buffer != gcvNULL;)
+        for (bufferHead = Context->buffer; Context->buffer != NULL;)
         {
             /* Get a shortcut to the current buffer. */
             gcsCONTEXT_PTR buffer = Context->buffer;
@@ -880,21 +880,21 @@ _DestroyContext(
             /* Last item? */
             if (next == bufferHead)
             {
-                next = gcvNULL;
+                next = NULL;
             }
 
             /* Destroy the signal. */
-            if (buffer->signal != gcvNULL)
+            if (buffer->signal != NULL)
             {
                 gcmkONERROR(gckOS_DestroySignal(
                     Context->os, buffer->signal
                     ));
 
-                buffer->signal = gcvNULL;
+                buffer->signal = NULL;
             }
 
             /* Free state delta map. */
-            if (buffer->logical != gcvNULL)
+            if (buffer->logical != NULL)
             {
                 gcmkONERROR(gckOS_FreeContiguous(
                     Context->os,
@@ -903,7 +903,7 @@ _DestroyContext(
                     Context->totalSize
                     ));
 
-                buffer->logical = gcvNULL;
+                buffer->logical = NULL;
             }
 
             /* Free context buffer. */
@@ -915,19 +915,19 @@ _DestroyContext(
 
 #if gcdSECURE_USER
         /* Free the hint array. */
-        if (Context->hint != gcvNULL)
+        if (Context->hint != NULL)
         {
             gcmkONERROR(gcmkOS_SAFE_FREE(Context->os, Context->hint));
         }
 #endif
         /* Free record array copy. */
-        if (Context->recordArray != gcvNULL)
+        if (Context->recordArray != NULL)
         {
             gcmkONERROR(gcmkOS_SAFE_FREE(Context->os, Context->recordArray));
         }
 
         /* Free the state mapping. */
-        if (Context->map != gcvNULL)
+        if (Context->map != NULL)
         {
             gcmkONERROR(gcmkOS_SAFE_FREE(Context->os, Context->map));
         }
@@ -980,16 +980,16 @@ gckCONTEXT_Construct(
     )
 {
     gceSTATUS status;
-    gckCONTEXT context = gcvNULL;
+    gckCONTEXT context = NULL;
     gctSIZE_T allocationSize;
     gctUINT i;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%08X Hardware=0x%08X", Os, Hardware);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Context != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Context != NULL);
 
 
     /**************************************************************************/
@@ -1112,7 +1112,7 @@ gckCONTEXT_Construct(
             ));
 
         /* Append to the list. */
-        if (context->buffer == gcvNULL)
+        if (context->buffer == NULL)
         {
             buffer->next    = buffer;
             context->buffer = buffer;
@@ -1184,7 +1184,7 @@ gckCONTEXT_Construct(
 
             /* Query LINK size. */
             gcmkONERROR(gckHARDWARE_Link(
-                Hardware, gcvNULL, gcvNULL, 0, &linkBytes
+                Hardware, NULL, NULL, 0, &linkBytes
                 ));
 
             /* Generate a LINK. */
@@ -1218,7 +1218,7 @@ gckCONTEXT_Construct(
         /* Loop through all buffers. */
         while (tempContext != currContext)
         {
-            if (tempContext == gcvNULL)
+            if (tempContext == NULL)
             {
                 gcmkONERROR(gcvSTATUS_NOT_FOUND);
             }
@@ -1322,10 +1322,10 @@ gckCONTEXT_Update(
     gcsSTATE_MAP_PTR map;
     gctBOOL needCopy = gcvFALSE;
     gcsSTATE_DELTA_PTR nDelta;
-    gcsSTATE_DELTA_PTR uDelta = gcvNULL;
-    gcsSTATE_DELTA_PTR kDelta = gcvNULL;
+    gcsSTATE_DELTA_PTR uDelta = NULL;
+    gcsSTATE_DELTA_PTR kDelta = NULL;
     gcsSTATE_DELTA_RECORD_PTR record;
-    gcsSTATE_DELTA_RECORD_PTR recordArray = gcvNULL;
+    gcsSTATE_DELTA_RECORD_PTR recordArray = NULL;
     gctUINT elementCount;
     gctUINT address;
     gctUINT32 mask;
@@ -1352,7 +1352,7 @@ gckCONTEXT_Update(
     gcmkONERROR(gckOS_QueryNeedCopy(Context->os, ProcessID, &needCopy));
 
     /* Allocate the copy buffer for the user record array. */
-    if (needCopy && (Context->recordArray == gcvNULL))
+    if (needCopy && (Context->recordArray == NULL))
     {
         /* Allocate the buffer. */
         gcmkONERROR(gckOS_Allocate(
@@ -1590,7 +1590,7 @@ gckCONTEXT_Update(
 
         /* Reset pending deltas. */
         buffer->deltaCount = 0;
-        buffer->delta      = gcvNULL;
+        buffer->delta      = NULL;
     }
 
     /* Set state delta user pointer. */
@@ -1623,7 +1623,7 @@ gckCONTEXT_Update(
         /* Attach to the context if nothing is attached yet. If a delta
            is allready attached, all we need to do is to increment
            the number of deltas in the context. */
-        if (buffer->delta == gcvNULL)
+        if (buffer->delta == NULL)
         {
             buffer->delta = uDelta;
         }
@@ -1637,7 +1637,7 @@ gckCONTEXT_Update(
         /* Get the next context buffer. */
         buffer = buffer->next;
 
-		if (buffer == gcvNULL)
+		if (buffer == NULL)
 		{
 			gcmkONERROR(gcvSTATUS_NOT_FOUND);
 		}
@@ -1666,7 +1666,7 @@ gckCONTEXT_Update(
 
 OnError:
     /* Get access to the state records. */
-	if (kDelta != gcvNULL)
+	if (kDelta != NULL)
 	{
         gcmkVERIFY_OK(gckKERNEL_CloseUserData(
             kernel, needCopy,

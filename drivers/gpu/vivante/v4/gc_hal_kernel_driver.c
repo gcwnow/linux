@@ -195,12 +195,12 @@ int drv_open(
 {
     gceSTATUS status;
     gctBOOL attached = gcvFALSE;
-    gcsHAL_PRIVATE_DATA_PTR data = gcvNULL;
+    gcsHAL_PRIVATE_DATA_PTR data = NULL;
     gctINT i;
 
     gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
 
-    if (filp == gcvNULL)
+    if (filp == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -213,7 +213,7 @@ int drv_open(
 
     data = kmalloc(sizeof(gcsHAL_PRIVATE_DATA), GFP_KERNEL | __GFP_NOWARN);
 
-    if (data == gcvNULL)
+    if (data == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -225,14 +225,14 @@ int drv_open(
     }
 
     data->device             = galDevice;
-    data->mappedMemory       = gcvNULL;
-    data->contiguousLogical  = gcvNULL;
+    data->mappedMemory       = NULL;
+    data->contiguousLogical  = NULL;
     gcmkONERROR(gckOS_GetProcessID(&data->pidOpen));
 
     /* Attached the process. */
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
-        if (galDevice->kernels[i] != gcvNULL)
+        if (galDevice->kernels[i] != NULL)
         {
             gcmkONERROR(gckKERNEL_AttachProcess(galDevice->kernels[i], gcvTRUE));
         }
@@ -250,7 +250,7 @@ int drv_open(
 
         for (i = 0; i < gcdCORE_COUNT; i++)
         {
-            if (galDevice->kernels[i] != gcvNULL)
+            if (galDevice->kernels[i] != NULL)
             {
                 gcmkVERIFY_OK(gckKERNEL_AddProcessDB(
                     galDevice->kernels[i],
@@ -270,9 +270,9 @@ int drv_open(
     return 0;
 
 OnError:
-    if (data != gcvNULL)
+    if (data != NULL)
     {
-        if (data->contiguousLogical != gcvNULL)
+        if (data->contiguousLogical != NULL)
         {
             gcmkVERIFY_OK(gckOS_UnmapMemory(
                 galDevice->os,
@@ -289,7 +289,7 @@ OnError:
     {
         for (i = 0; i < gcdCORE_COUNT; i++)
         {
-            if (galDevice->kernels[i] != gcvNULL)
+            if (galDevice->kernels[i] != NULL)
             {
                 gcmkVERIFY_OK(gckKERNEL_AttachProcess(galDevice->kernels[i], gcvFALSE));
             }
@@ -314,7 +314,7 @@ int drv_release(
 
     gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
 
-    if (filp == gcvNULL)
+    if (filp == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -327,7 +327,7 @@ int drv_release(
 
     data = filp->private_data;
 
-    if (data == gcvNULL)
+    if (data == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -340,7 +340,7 @@ int drv_release(
 
     device = data->device;
 
-    if (device == gcvNULL)
+    if (device == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -353,7 +353,7 @@ int drv_release(
 
     if (!device->contiguousMapped)
     {
-        if (data->contiguousLogical != gcvNULL)
+        if (data->contiguousLogical != NULL)
         {
             gcmkVERIFY_OK(gckOS_GetProcessID(&processID));
             gcmkONERROR(gckOS_UnmapMemoryEx(
@@ -366,7 +366,7 @@ int drv_release(
 
             for (i = 0; i < gcdCORE_COUNT; i++)
             {
-                if (galDevice->kernels[i] != gcvNULL)
+                if (galDevice->kernels[i] != NULL)
                 {
                     gcmkVERIFY_OK(
                          gckKERNEL_RemoveProcessDB(galDevice->kernels[i],
@@ -375,7 +375,7 @@ int drv_release(
                 }
             }
 
-            data->contiguousLogical = gcvNULL;
+            data->contiguousLogical = NULL;
         }
     }
 
@@ -386,7 +386,7 @@ int drv_release(
     /* A process gets detached. */
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
-        if (galDevice->kernels[i] != gcvNULL)
+        if (galDevice->kernels[i] != NULL)
         {
             gcmkONERROR(gckKERNEL_AttachProcessEx(galDevice->kernels[i], gcvFALSE, data->pidOpen));
         }
@@ -427,7 +427,7 @@ long drv_ioctl(
         filp, ioctlCode, arg
         );
 
-    if (filp == gcvNULL)
+    if (filp == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -440,7 +440,7 @@ long drv_ioctl(
 
     data = filp->private_data;
 
-    if (data == gcvNULL)
+    if (data == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -453,7 +453,7 @@ long drv_ioctl(
 
     device = data->device;
 
-    if (device == gcvNULL)
+    if (device == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -528,7 +528,7 @@ long drv_ioctl(
         count = 0;
         for (i = 0; i < gcdCORE_COUNT; i++)
         {
-            if (device->kernels[i] != gcvNULL)
+            if (device->kernels[i] != NULL)
             {
                 gcmkVERIFY_OK(gckHARDWARE_GetType(device->kernels[i]->hardware,
                                                   &iface.u.ChipInfo.types[count]));
@@ -569,7 +569,7 @@ long drv_ioctl(
     if (gcmIS_SUCCESS(status) && (iface.command == gcvHAL_LOCK_VIDEO_MEMORY))
     {
         /* Special case for mapped memory. */
-        if ((data->mappedMemory != gcvNULL)
+        if ((data->mappedMemory != NULL)
         &&  (iface.u.LockVideoMemory.node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
         )
         {
@@ -628,7 +628,7 @@ static int drv_mmap(
 
     gcmkHEADER_ARG("filp=0x%08X vma=0x%08X", filp, vma);
 
-    if (filp == gcvNULL)
+    if (filp == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -641,7 +641,7 @@ static int drv_mmap(
 
     data = filp->private_data;
 
-    if (data == gcvNULL)
+    if (data == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -654,7 +654,7 @@ static int drv_mmap(
 
     device = data->device;
 
-    if (device == gcvNULL)
+    if (device == NULL)
     {
         gcmkTRACE_ZONE(
             gcvLEVEL_ERROR, gcvZONE_DRIVER,
@@ -692,7 +692,7 @@ static int drv_mmap(
                 ret
                 );
 
-            data->mappedMemory = gcvNULL;
+            data->mappedMemory = NULL;
 
             gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
         }
@@ -762,8 +762,8 @@ static int drv_init(void)
     int ret;
     int result = -EINVAL;
     gceSTATUS status;
-    gckGALDEVICE device = gcvNULL;
-    struct class* device_class = gcvNULL;
+    gckGALDEVICE device = NULL;
+    struct class* device_class = NULL;
 
     gcmkHEADER();
 
@@ -819,14 +819,14 @@ static int drv_init(void)
     gcmkONERROR(gckGALDEVICE_Start(device));
 
     if ((physSize != 0)
-       && (device->kernels[gcvCORE_MAJOR] != gcvNULL)
+       && (device->kernels[gcvCORE_MAJOR] != NULL)
        && (device->kernels[gcvCORE_MAJOR]->hardware->mmuVersion != 0))
     {
         status = gckMMU_Enable(device->kernels[gcvCORE_MAJOR]->mmu, baseAddress, physSize);
         gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
             "Enable new MMU: status=%d\n", status);
 
-        if ((device->kernels[gcvCORE_2D] != gcvNULL)
+        if ((device->kernels[gcvCORE_2D] != NULL)
             && (device->kernels[gcvCORE_2D]->hardware->mmuVersion != 0))
         {
             status = gckMMU_Enable(device->kernels[gcvCORE_2D]->mmu, baseAddress, physSize);
@@ -889,13 +889,13 @@ static int drv_init(void)
 
 OnError:
     /* Roll back. */
-    if (device_class != gcvNULL)
+    if (device_class != NULL)
     {
         device_destroy(device_class, MKDEV(major, 0));
         class_destroy(device_class);
     }
 
-    if (device != gcvNULL)
+    if (device != NULL)
     {
         gcmkVERIFY_OK(gckGALDEVICE_Stop(device));
         gcmkVERIFY_OK(gckGALDEVICE_Destroy(device));
@@ -917,7 +917,7 @@ static void drv_exit(void)
 
     gcmkHEADER();
 
-    gcmkASSERT(gpuClass != gcvNULL);
+    gcmkASSERT(gpuClass != NULL);
     device_destroy(gpuClass, MKDEV(major, 0));
     class_destroy(gpuClass);
 
@@ -1042,7 +1042,7 @@ static int gpu_suspend(struct platform_device *dev, pm_message_t state)
 
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
-        if (device->kernels[i] != gcvNULL)
+        if (device->kernels[i] != NULL)
         {
             /* Store states. */
             status = gckHARDWARE_QueryPowerManagementState(device->kernels[i]->hardware, &device->statesStored[i]);
@@ -1076,7 +1076,7 @@ static int gpu_resume(struct platform_device *dev)
 
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
-        if (device->kernels[i] != gcvNULL)
+        if (device->kernels[i] != NULL)
         {
             status = gckHARDWARE_SetPowerManagementState(device->kernels[i]->hardware, gcvPOWER_ON);
             if (gcmIS_ERROR(status))

@@ -78,7 +78,7 @@ typedef struct _gcsSharedPageTable
 }
 gcsSharedPageTable;
 
-static gcsSharedPageTable_PTR sharedPageTable = gcvNULL;
+static gcsSharedPageTable_PTR sharedPageTable = NULL;
 #endif
 
 static gceSTATUS
@@ -247,7 +247,7 @@ _FillFlatMapping(
 {
     gceSTATUS status;
     gctBOOL mutex = gcvFALSE;
-    gcsMMU_STLB_PTR head = gcvNULL, pre = gcvNULL;
+    gcsMMU_STLB_PTR head = NULL, pre = NULL;
     gctUINT32 start = PhysBase & (~gcdMMU_PAGE_64K_MASK);
     gctUINT32 end = (PhysBase + Size - 1) & (~gcdMMU_PAGE_64K_MASK);
     gctUINT32 mStart = start >> gcdMMU_MTLB_SHIFT;
@@ -265,26 +265,26 @@ _FillFlatMapping(
         if (*(Mmu->mtlbLogical + mStart) == 0)
         {
             gcsMMU_STLB_PTR stlb;
-            gctPOINTER pointer = gcvNULL;
+            gctPOINTER pointer = NULL;
             gctUINT32 last = (mStart == mEnd) ? sEnd : (gcdMMU_STLB_64K_ENTRY_NUM - 1);
 
             gcmkONERROR(gckOS_Allocate(Mmu->os, sizeof(struct _gcsMMU_STLB), &pointer));
             stlb = pointer;
 
             stlb->mtlbEntryNum = 0;
-            stlb->next = gcvNULL;
-            stlb->physical = gcvNULL;
-            stlb->logical = gcvNULL;
+            stlb->next = NULL;
+            stlb->physical = NULL;
+            stlb->logical = NULL;
             stlb->size = gcdMMU_STLB_64K_SIZE;
             stlb->pageCount = 0;
 
-            if (pre == gcvNULL)
+            if (pre == NULL)
             {
                 pre = head = stlb;
             }
             else
             {
-                gcmkASSERT(pre->next == gcvNULL);
+                gcmkASSERT(pre->next == NULL);
                 pre->next = stlb;
                 pre = stlb;
             }
@@ -358,14 +358,14 @@ _FillFlatMapping(
     }
 
     /* Insert the stlb into staticSTLB. */
-    if (Mmu->staticSTLB == gcvNULL)
+    if (Mmu->staticSTLB == NULL)
     {
         Mmu->staticSTLB = head;
     }
     else
     {
-        gcmkASSERT(pre == gcvNULL);
-        gcmkASSERT(pre->next == gcvNULL);
+        gcmkASSERT(pre == NULL);
+        gcmkASSERT(pre->next == NULL);
         pre->next = Mmu->staticSTLB;
         Mmu->staticSTLB = head;
     }
@@ -378,12 +378,12 @@ _FillFlatMapping(
 OnError:
 
     /* Roll back. */
-    while (head != gcvNULL)
+    while (head != NULL)
     {
         pre = head;
         head = head->next;
 
-        if (pre->physical != gcvNULL)
+        if (pre->physical != NULL)
         {
             gcmkVERIFY_OK(
                 gckOS_FreeContiguous(Mmu->os,
@@ -539,16 +539,16 @@ _Construct(
     gckOS os;
     gckHARDWARE hardware;
     gceSTATUS status;
-    gckMMU mmu = gcvNULL;
+    gckMMU mmu = NULL;
     gctUINT32_PTR pageTable;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x MmuSize=%lu", Kernel, MmuSize);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
     gcmkVERIFY_ARGUMENT(MmuSize > 0);
-    gcmkVERIFY_ARGUMENT(Mmu != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Mmu != NULL);
 
     /* Extract the gckOS object pointer. */
     os = Kernel->os;
@@ -567,10 +567,10 @@ _Construct(
     mmu->object.type      = gcvOBJ_MMU;
     mmu->os               = os;
     mmu->hardware         = hardware;
-    mmu->pageTableMutex   = gcvNULL;
-    mmu->pageTableLogical = gcvNULL;
-    mmu->mtlbLogical      = gcvNULL;
-    mmu->staticSTLB       = gcvNULL;
+    mmu->pageTableMutex   = NULL;
+    mmu->pageTableLogical = NULL;
+    mmu->mtlbLogical      = NULL;
+    mmu->staticSTLB       = NULL;
     mmu->enabled          = gcvFALSE;
 
     /* Create the page table mutex. */
@@ -643,9 +643,9 @@ _Construct(
 
 OnError:
     /* Roll back. */
-    if (mmu != gcvNULL)
+    if (mmu != NULL)
     {
-        if (mmu->pageTableLogical != gcvNULL)
+        if (mmu->pageTableLogical != NULL)
         {
             /* Free the page table. */
             gcmkVERIFY_OK(
@@ -656,7 +656,7 @@ OnError:
 
         }
 
-        if (mmu->mtlbLogical != gcvNULL)
+        if (mmu->mtlbLogical != NULL)
         {
             gcmkVERIFY_OK(
                 gckOS_FreeContiguous(os,
@@ -665,7 +665,7 @@ OnError:
                                      mmu->mtlbSize));
         }
 
-        if (mmu->pageTableMutex != gcvNULL)
+        if (mmu->pageTableMutex != NULL)
         {
             /* Delete the mutex. */
             gcmkVERIFY_OK(
@@ -709,12 +709,12 @@ _Destroy(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
 
-    while (Mmu->staticSTLB != gcvNULL)
+    while (Mmu->staticSTLB != NULL)
     {
         gcsMMU_STLB_PTR pre = Mmu->staticSTLB;
         Mmu->staticSTLB = pre->next;
 
-        if (pre->physical != gcvNULL)
+        if (pre->physical != NULL)
         {
             gcmkVERIFY_OK(
                 gckOS_FreeContiguous(Mmu->os,
@@ -780,7 +780,7 @@ gckMMU_Construct(
 
     gcmkHEADER_ARG("Kernel=0x%08x", Kernel);
 
-    if (sharedPageTable == gcvNULL)
+    if (sharedPageTable == NULL)
     {
         gcmkONERROR(
                 gckOS_Allocate(Kernel->os,
@@ -889,7 +889,7 @@ gckMMU_AllocatePages(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
     gcmkVERIFY_ARGUMENT(PageCount > 0);
-    gcmkVERIFY_ARGUMENT(PageTable != gcvNULL);
+    gcmkVERIFY_ARGUMENT(PageTable != NULL);
 
     if (PageCount > Mmu->pageTableEntries)
     {
@@ -1018,7 +1018,7 @@ gckMMU_AllocatePages(
                 | (slaveOffset << gcdMMU_STLB_4K_SHIFT);
     }
 
-    if (Address != gcvNULL)
+    if (Address != NULL)
     {
         *Address = address;
     }
@@ -1079,7 +1079,7 @@ gckMMU_FreePages(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-    gcmkVERIFY_ARGUMENT(PageTable != gcvNULL);
+    gcmkVERIFY_ARGUMENT(PageTable != NULL);
     gcmkVERIFY_ARGUMENT(PageCount > 0);
 
     /* Convert the pointer. */
@@ -1191,7 +1191,7 @@ gckMMU_SetPage(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Mmu, gcvOBJ_MMU);
-    gcmkVERIFY_ARGUMENT(PageEntry != gcvNULL);
+    gcmkVERIFY_ARGUMENT(PageEntry != NULL);
     gcmkVERIFY_ARGUMENT(!(PageAddress & 0xFFF));
 
     if (Mmu->hardware->mmuVersion == 0)

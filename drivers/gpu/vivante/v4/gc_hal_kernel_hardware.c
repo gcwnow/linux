@@ -422,15 +422,15 @@ gckHARDWARE_Construct(
     )
 {
     gceSTATUS status;
-    gckHARDWARE hardware = gcvNULL;
+    gckHARDWARE hardware = NULL;
     gctUINT16 data = 0xff00;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x", Os);
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(Hardware != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Hardware != NULL);
 
     /* Enable the GPU. */
     gcmkONERROR(gckOS_SetGPUPower(Os, gcvTRUE, gcvTRUE));
@@ -488,7 +488,7 @@ gckHARDWARE_Construct(
             "_ResetGPU failed: status=%d\n", status);
     }
 
-    hardware->powerMutex = gcvNULL;
+    hardware->powerMutex = NULL;
 
     hardware->mmuVersion
         = (((((gctUINT32) (hardware->identity.chipMinorFeatures1)) >> (0 ? 28:28)) & ((gctUINT32) ((((1 ? 28:28) - (0 ? 28:28) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 28:28) - (0 ? 28:28) + 1)))))) );
@@ -517,7 +517,7 @@ gckHARDWARE_Construct(
     hardware->clockState      = gcvTRUE;
     hardware->powerState      = gcvTRUE;
     hardware->lastWaitLink    = ~0U;
-    hardware->globalSemaphore = gcvNULL;
+    hardware->globalSemaphore = NULL;
 
     gcmkONERROR(gckOS_CreateMutex(Os, &hardware->powerMutex));
     gcmkONERROR(gckOS_CreateSemaphore(Os, &hardware->globalSemaphore));
@@ -542,33 +542,33 @@ gckHARDWARE_Construct(
 
 OnError:
     /* Roll back. */
-    if (hardware != gcvNULL)
+    if (hardware != NULL)
     {
         /* Turn off the power. */
         gcmkVERIFY_OK(gckOS_SetGPUPower(Os, gcvFALSE, gcvFALSE));
 
-        if (hardware->globalSemaphore != gcvNULL)
+        if (hardware->globalSemaphore != NULL)
         {
             /* Destroy the global semaphore. */
             gcmkVERIFY_OK(gckOS_DestroySemaphore(Os,
                                                  hardware->globalSemaphore));
         }
 
-        if (hardware->powerMutex != gcvNULL)
+        if (hardware->powerMutex != NULL)
         {
             /* Destroy the power mutex. */
             gcmkVERIFY_OK(gckOS_DeleteMutex(Os, hardware->powerMutex));
         }
 
 #if gcdPOWEROFF_TIMEOUT
-        if (hardware->powerOffTimer != gcvNULL)
+        if (hardware->powerOffTimer != NULL)
         {
             gcmkVERIFY_OK(gckOS_StopTimer(Os, hardware->powerOffTimer));
             gcmkVERIFY_OK(gckOS_DestoryTimer(Os, hardware->powerOffTimer));
         }
 #endif
 
-        if (hardware->pageTableDirty != gcvNULL)
+        if (hardware->pageTableDirty != NULL)
         {
             gcmkVERIFY_OK(gckOS_AtomDestroy(Os, hardware->pageTableDirty));
         }
@@ -663,7 +663,7 @@ gckHARDWARE_GetType(
     )
 {
     gcmkHEADER_ARG("Hardware=0x%x", Hardware);
-    gcmkVERIFY_ARGUMENT(Type != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Type != NULL);
 
     *Type = Hardware->type;
 
@@ -853,8 +853,8 @@ gckHARDWARE_InitializeHardware(
     }
 
     /* Test if MMU is initialized. */
-    if ((Hardware->kernel      != gcvNULL)
-    &&  (Hardware->kernel->mmu != gcvNULL)
+    if ((Hardware->kernel      != NULL)
+    &&  (Hardware->kernel->mmu != NULL)
     )
     {
         /* Reset MMU. */
@@ -891,41 +891,41 @@ OnError:
 **
 **      gctSIZE_T * InternalSize
 **          Pointer to a variable that will hold the size of the internal video
-**          memory in bytes.  If 'InternalSize' is gcvNULL, no information of the
+**          memory in bytes.  If 'InternalSize' is NULL, no information of the
 **          internal memory will be returned.
 **
 **      gctUINT32 * InternalBaseAddress
 **          Pointer to a variable that will hold the hardware's base address for
-**          the internal video memory.  This pointer cannot be gcvNULL if
-**          'InternalSize' is also non-gcvNULL.
+**          the internal video memory.  This pointer cannot be NULL if
+**          'InternalSize' is also non-NULL.
 **
 **      gctUINT32 * InternalAlignment
 **          Pointer to a variable that will hold the hardware's base address for
-**          the internal video memory.  This pointer cannot be gcvNULL if
-**          'InternalSize' is also non-gcvNULL.
+**          the internal video memory.  This pointer cannot be NULL if
+**          'InternalSize' is also non-NULL.
 **
 **      gctSIZE_T * ExternalSize
 **          Pointer to a variable that will hold the size of the external video
-**          memory in bytes.  If 'ExternalSize' is gcvNULL, no information of the
+**          memory in bytes.  If 'ExternalSize' is NULL, no information of the
 **          external memory will be returned.
 **
 **      gctUINT32 * ExternalBaseAddress
 **          Pointer to a variable that will hold the hardware's base address for
-**          the external video memory.  This pointer cannot be gcvNULL if
-**          'ExternalSize' is also non-gcvNULL.
+**          the external video memory.  This pointer cannot be NULL if
+**          'ExternalSize' is also non-NULL.
 **
 **      gctUINT32 * ExternalAlignment
 **          Pointer to a variable that will hold the hardware's base address for
-**          the external video memory.  This pointer cannot be gcvNULL if
-**          'ExternalSize' is also non-gcvNULL.
+**          the external video memory.  This pointer cannot be NULL if
+**          'ExternalSize' is also non-NULL.
 **
 **      gctUINT32 * HorizontalTileSize
 **          Number of horizontal pixels per tile.  If 'HorizontalTileSize' is
-**          gcvNULL, no horizontal pixel per tile will be returned.
+**          NULL, no horizontal pixel per tile will be returned.
 **
 **      gctUINT32 * VerticalTileSize
 **          Number of vertical pixels per tile.  If 'VerticalTileSize' is
-**          gcvNULL, no vertical pixel per tile will be returned.
+**          NULL, no vertical pixel per tile will be returned.
 */
 gceSTATUS
 gckHARDWARE_QueryMemory(
@@ -945,25 +945,25 @@ gckHARDWARE_QueryMemory(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
 
-    if (InternalSize != gcvNULL)
+    if (InternalSize != NULL)
     {
         /* No internal memory. */
         *InternalSize = 0;
     }
 
-    if (ExternalSize != gcvNULL)
+    if (ExternalSize != NULL)
     {
         /* No external memory. */
         *ExternalSize = 0;
     }
 
-    if (HorizontalTileSize != gcvNULL)
+    if (HorizontalTileSize != NULL)
     {
         /* 4x4 tiles. */
         *HorizontalTileSize = 4;
     }
 
-    if (VerticalTileSize != gcvNULL)
+    if (VerticalTileSize != NULL)
     {
         /* 4x4 tiles. */
         *VerticalTileSize = 4;
@@ -1014,7 +1014,7 @@ gckHARDWARE_QueryChipIdentity(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Identity != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Identity != NULL);
 
     /* Return chip model and revision. */
     Identity->chipModel = Hardware->identity.chipModel;
@@ -1103,8 +1103,8 @@ gckHARDWARE_SplitMemory(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Pool != gcvNULL);
-    gcmkVERIFY_ARGUMENT(Offset != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Pool != NULL);
+    gcmkVERIFY_ARGUMENT(Offset != NULL);
 
     /* Dispatch on memory type. */
     switch ((((((gctUINT32) (Address)) >> (0 ? 31:31)) & ((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1)))))) ))
@@ -1170,7 +1170,7 @@ gckHARDWARE_Execute(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Logical != NULL);
 
     /* Convert logical into hardware specific address. */
     gcmkONERROR(
@@ -1226,7 +1226,7 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          WAIT/LINK command sequence at or gcvNULL just to query the size of the
+**          WAIT/LINK command sequence at or NULL just to query the size of the
 **          WAIT/LINK command sequence.
 **
 **      gctUINT32 Offset
@@ -1234,23 +1234,23 @@ OnError:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the WAIT/LINK command
-**          sequence.  If 'Logical' is gcvNULL, this argument will be ignored.
+**          sequence.  If 'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          by the WAIT/LINK command sequence.  If 'Bytes' is gcvNULL, nothing will
+**          by the WAIT/LINK command sequence.  If 'Bytes' is NULL, nothing will
 **          be returned.
 **
 **      gctUINT32 * WaitOffset
 **          Pointer to a variable that will receive the offset of the WAIT command
 **          from the specified logcial pointer.
-**          If 'WaitOffset' is gcvNULL nothing will be returned.
+**          If 'WaitOffset' is NULL nothing will be returned.
 **
 **      gctSIZE_T * WaitSize
 **          Pointer to a variable that will receive the number of bytes used by
-**          the WAIT command.  If 'LinkSize' is gcvNULL nothing will be returned.
+**          the WAIT command.  If 'LinkSize' is NULL nothing will be returned.
 */
 gceSTATUS
 gckHARDWARE_WaitLink(
@@ -1274,7 +1274,7 @@ gckHARDWARE_WaitLink(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical != gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical != NULL) || (Bytes != NULL));
 
     /* Compute number of bytes required. */
 #if gcd6000_SUPPORT
@@ -1286,7 +1286,7 @@ gckHARDWARE_WaitLink(
     /* Cast the input pointer. */
     logical = (gctUINT32_PTR) Logical;
 
-    if (logical != gcvNULL)
+    if (logical != NULL)
     {
         /* Not enough space? */
         if (*Bytes < bytes)
@@ -1420,20 +1420,20 @@ gckHARDWARE_WaitLink(
             );
 #endif
 
-        if (WaitOffset != gcvNULL)
+        if (WaitOffset != NULL)
         {
             /* Return the offset pointer to WAIT command. */
             *WaitOffset = 0;
         }
 
-        if (WaitSize != gcvNULL)
+        if (WaitSize != NULL)
         {
             /* Return number of bytes used by the WAIT command. */
             *WaitSize = 8;
         }
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the WAIT/LINK command
         ** sequence. */
@@ -1465,17 +1465,17 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          END command at or gcvNULL just to query the size of the END command.
+**          END command at or NULL just to query the size of the END command.
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the END command.  If
-**          'Logical' is gcvNULL, this argument will be ignored.
+**          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          for the END command.  If 'Bytes' is gcvNULL, nothing will be returned.
+**          for the END command.  If 'Bytes' is NULL, nothing will be returned.
 */
 gceSTATUS
 gckHARDWARE_End(
@@ -1492,9 +1492,9 @@ gckHARDWARE_End(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical == NULL) || (Bytes != NULL));
 
-    if (Logical != gcvNULL)
+    if (Logical != NULL)
     {
         if (*Bytes < 8)
         {
@@ -1513,7 +1513,7 @@ gckHARDWARE_End(
             gckOS_MemoryBarrier(Hardware->os, Logical));
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the END command. */
         *Bytes = 8;
@@ -1542,17 +1542,17 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          NOP command at or gcvNULL just to query the size of the NOP command.
+**          NOP command at or NULL just to query the size of the NOP command.
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the NOP command.  If
-**          'Logical' is gcvNULL, this argument will be ignored.
+**          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          for the NOP command.  If 'Bytes' is gcvNULL, nothing will be returned.
+**          for the NOP command.  If 'Bytes' is NULL, nothing will be returned.
 */
 gceSTATUS
 gckHARDWARE_Nop(
@@ -1569,9 +1569,9 @@ gckHARDWARE_Nop(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical == NULL) || (Bytes != NULL));
 
-    if (Logical != gcvNULL)
+    if (Logical != NULL)
     {
         if (*Bytes < 8)
         {
@@ -1585,7 +1585,7 @@ gckHARDWARE_Nop(
         gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_HARDWARE, "0x%x: NOP", Logical);
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the NOP command. */
         *Bytes = 8;
@@ -1614,7 +1614,7 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          the EVENT command at or gcvNULL just to query the size of the EVENT
+**          the EVENT command at or NULL just to query the size of the EVENT
 **          command.
 **
 **      gctUINT8 Event
@@ -1625,13 +1625,13 @@ OnError:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the EVENT command.  If
-**          'Logical' is gcvNULL, this argument will be ignored.
+**          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          for the EVENT command.  If 'Bytes' is gcvNULL, nothing will be
+**          for the EVENT command.  If 'Bytes' is NULL, nothing will be
 **          returned.
 */
 gceSTATUS
@@ -1653,7 +1653,7 @@ gckHARDWARE_Event(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical == NULL) || (Bytes != NULL));
     gcmkVERIFY_ARGUMENT(Event < 32);
 
     /* Determine the size of the command. */
@@ -1667,7 +1667,7 @@ gckHARDWARE_Event(
          : 8;
 #endif
 
-    if (Logical != gcvNULL)
+    if (Logical != NULL)
     {
         if (*Bytes < size)
         {
@@ -1749,7 +1749,7 @@ gckHARDWARE_Event(
         }
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the EVENT command. */
         *Bytes = size;
@@ -1778,7 +1778,7 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          the PIPESELECT command at or gcvNULL just to query the size of the
+**          the PIPESELECT command at or NULL just to query the size of the
 **          PIPESELECT command.
 **
 **      gcePIPE_SELECT Pipe
@@ -1786,13 +1786,13 @@ OnError:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the PIPESELECT command.
-**          If 'Logical' is gcvNULL, this argument will be ignored.
+**          If 'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          for the PIPESELECT command.  If 'Bytes' is gcvNULL, nothing will be
+**          for the PIPESELECT command.  If 'Bytes' is NULL, nothing will be
 **          returned.
 */
 gceSTATUS
@@ -1811,10 +1811,10 @@ gckHARDWARE_PipeSelect(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical == NULL) || (Bytes != NULL));
 
     /* Append a PipeSelect. */
-    if (Logical != gcvNULL)
+    if (Logical != NULL)
     {
         gctUINT32 flush, stall;
 
@@ -1877,7 +1877,7 @@ gckHARDWARE_PipeSelect(
                        "0x%x: PIPE %d", logical + 6, Pipe);
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the PIPESELECT command. */
         *Bytes = 32;
@@ -1906,7 +1906,7 @@ OnError:
 **
 **      gctPOINTER Logical
 **          Pointer to the current location inside the command queue to append
-**          the LINK command at or gcvNULL just to query the size of the LINK
+**          the LINK command at or NULL just to query the size of the LINK
 **          command.
 **
 **      gctPOINTER FetchAddress
@@ -1917,13 +1917,13 @@ OnError:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to the number of bytes available for the LINK command.  If
-**          'Logical' is gcvNULL, this argument will be ignored.
+**          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
 **      gctSIZE_T * Bytes
 **          Pointer to a variable that will receive the number of bytes required
-**          for the LINK command.  If 'Bytes' is gcvNULL, nothing will be returned.
+**          for the LINK command.  If 'Bytes' is NULL, nothing will be returned.
 */
 gceSTATUS
 gckHARDWARE_Link(
@@ -1947,9 +1947,9 @@ gckHARDWARE_Link(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT((Logical == gcvNULL) || (Bytes != gcvNULL));
+    gcmkVERIFY_ARGUMENT((Logical == NULL) || (Bytes != NULL));
 
-    if (Logical != gcvNULL)
+    if (Logical != NULL)
     {
         if (*Bytes < 8)
         {
@@ -1983,7 +1983,7 @@ gckHARDWARE_Link(
             gckOS_MemoryBarrier(Hardware->os, logical));
     }
 
-    if (Bytes != gcvNULL)
+    if (Bytes != NULL)
     {
         /* Return number of bytes required by the LINK command. */
         *Bytes = 8;
@@ -2095,8 +2095,8 @@ gckHARDWARE_ConvertLogical(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
-    gcmkVERIFY_ARGUMENT(Address != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Logical != NULL);
+    gcmkVERIFY_ARGUMENT(Address != NULL);
 
     /* Convert logical address into a physical address. */
     gcmkONERROR(
@@ -2233,19 +2233,19 @@ gckHARDWARE_QueryCommandBuffer(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
 
-    if (Alignment != gcvNULL)
+    if (Alignment != NULL)
     {
         /* Align every 8 bytes. */
         *Alignment = 8;
     }
 
-    if (ReservedHead != gcvNULL)
+    if (ReservedHead != NULL)
     {
         /* Reserve space for SelectPipe(). */
         *ReservedHead = 32;
     }
 
-    if (ReservedTail != gcvNULL)
+    if (ReservedTail != NULL)
     {
         /* Reserve space for Link(). */
         *ReservedTail = 8;
@@ -2291,13 +2291,13 @@ gckHARDWARE_QuerySystemMemory(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
 
-    if (SystemSize != gcvNULL)
+    if (SystemSize != NULL)
     {
         /* Maximum system memory can be 2GB. */
         *SystemSize = 1U << 31;
     }
 
-    if (SystemBaseAddress != gcvNULL)
+    if (SystemBaseAddress != NULL)
     {
         /* Set system memory base address. */
         *SystemBaseAddress = ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31))) | (((gctUINT32) (0x0 & ((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31)));
@@ -2346,7 +2346,7 @@ gckHARDWARE_QueryShaderCaps(
                    Hardware, VertexUniforms,
                    FragmentUniforms, Varyings);
 
-    if (VertexUniforms != gcvNULL)
+    if (VertexUniforms != NULL)
     {
 		/* Return the vs shader const count. */
         if (Hardware->identity.chipModel < gcv4000)
@@ -2359,7 +2359,7 @@ gckHARDWARE_QueryShaderCaps(
         }
     }
 
-    if (FragmentUniforms != gcvNULL)
+    if (FragmentUniforms != NULL)
     {
 		/* Return the ps shader const count. */
         if (Hardware->identity.chipModel < gcv4000)
@@ -2372,7 +2372,7 @@ gckHARDWARE_QueryShaderCaps(
         }
     }
 
-    if (Varyings != gcvNULL)
+    if (Varyings != NULL)
     {
 		/* Return the shader varyings count. */
         if (((((gctUINT32) (Hardware->identity.chipMinorFeatures1)) >> (0 ? 23:23) & ((gctUINT32) ((((1 ? 23:23) - (0 ? 23:23) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 23:23) - (0 ? 23:23) + 1)))))) == (0x1 & ((gctUINT32) ((((1 ? 23:23) - (0 ? 23:23) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 23:23) - (0 ? 23:23) + 1))))))))
@@ -2423,7 +2423,7 @@ gckHARDWARE_SetMMU(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Logical != NULL);
 
     /* Convert the logical address into an hardware address. */
     gcmkONERROR(
@@ -2508,7 +2508,7 @@ gckHARDWARE_FlushMMU(
     gctUINT32_PTR buffer;
     gctSIZE_T bufferSize;
     gctBOOL commitEntered = gcvFALSE;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
     gctUINT32 flushSize;
     gctUINT32 count;
     gctUINT32 physical;
@@ -2692,7 +2692,7 @@ gckHARDWARE_SetMMUv2(
     gctUINT32_PTR buffer;
     gctSIZE_T bufferSize;
     gctBOOL commitEntered = gcvFALSE;
-    gctPOINTER pointer = gcvNULL;
+    gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Hardware=0x%x Enable=%d", Hardware, Enable);
 
@@ -2847,7 +2847,7 @@ gckHARDWARE_BuildVirtualAddress(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Address != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Address != NULL);
 
     /* Build virtual address. */
     *Address = ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31))) | (((gctUINT32) (0x1 & ((gctUINT32) ((((1 ? 31:31) - (0 ? 31:31) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:31) - (0 ? 31:31) + 1))))))) << (0 ? 31:31)))
@@ -2873,7 +2873,7 @@ gckHARDWARE_GetIdle(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(Data != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Data != NULL);
 
 
     /* If we have to wait, try 100 polls per millisecond. */
@@ -2980,7 +2980,7 @@ gckHARDWARE_Flush(
     /* See if there is a valid flush. */
     if (flush == 0)
     {
-        if (Bytes != gcvNULL)
+        if (Bytes != NULL)
         {
             /* No bytes required. */
             *Bytes = 0;
@@ -2990,7 +2990,7 @@ gckHARDWARE_Flush(
     else
     {
         /* Copy to command queue. */
-        if (Logical != gcvNULL)
+        if (Logical != NULL)
         {
             if (*Bytes < 8)
             {
@@ -3009,7 +3009,7 @@ gckHARDWARE_Flush(
                            "0x%x: FLUSH 0x%x", logical, flush);
         }
 
-        if (Bytes != gcvNULL)
+        if (Bytes != NULL)
         {
             /* 8 bytes required. */
             *Bytes = 8;
@@ -3182,7 +3182,7 @@ gckHARDWARE_SetPowerManagementState(
 {
 #if gcdPOWER_MANAGEMENT
     gceSTATUS status;
-    gckCOMMAND command = gcvNULL;
+    gckCOMMAND command = NULL;
     gckOS os;
     gctUINT flag, clock;
     gctPOINTER buffer;
@@ -3622,7 +3622,7 @@ gckHARDWARE_SetPowerManagementState(
             /* Get the size of the flush command. */
             gcmkONERROR(gckHARDWARE_Flush(Hardware,
                                           gcvFLUSH_ALL,
-                                          gcvNULL,
+                                          NULL,
                                           &requested));
 
             /* Reserve space in the command queue. */
@@ -3715,7 +3715,7 @@ gckHARDWARE_SetPowerManagementState(
                                              Hardware->allowCompression));
 
         /* Force the command queue to reload the next context. */
-        command->currContext = gcvNULL;
+        command->currContext = NULL;
 
         /* Need to config mmu after command start. */
         configMmu = gcvTRUE;
@@ -3898,7 +3898,7 @@ gckHARDWARE_QueryPowerManagementState(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(State != gcvNULL);
+    gcmkVERIFY_ARGUMENT(State != NULL);
 
     /* Return the statue. */
     *State = Hardware->chipPowerState;
@@ -3921,7 +3921,7 @@ gckHARDWARE_QueryIdle(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(IsIdle != gcvNULL);
+    gcmkVERIFY_ARGUMENT(IsIdle != NULL);
 
     /* We are idle when the power is not ON. */
     if (Hardware->chipPowerState != gcvPOWER_ON)
@@ -4053,7 +4053,7 @@ gckHARDWARE_ProfileEngine2D(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
 
-    if (Profile != gcvNULL)
+    if (Profile != NULL)
     {
         /* Read the cycle count. */
         gcmkONERROR(
@@ -4452,7 +4452,7 @@ gckHARDWARE_GetBaseAddress(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(BaseAddress != gcvNULL);
+    gcmkVERIFY_ARGUMENT(BaseAddress != NULL);
 
     /* Test if we have a new Memory Controller. */
     if (((((gctUINT32) (Hardware->identity.chipMinorFeatures)) >> (0 ? 22:22) & ((gctUINT32) ((((1 ? 22:22) - (0 ? 22:22) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 22:22) - (0 ? 22:22) + 1)))))) == (0x1 & ((gctUINT32) ((((1 ? 22:22) - (0 ? 22:22) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 22:22) - (0 ? 22:22) + 1))))))))
@@ -4489,7 +4489,7 @@ gckHARDWARE_NeedBaseAddress(
 
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
-    gcmkVERIFY_ARGUMENT(NeedBase != gcvNULL);
+    gcmkVERIFY_ARGUMENT(NeedBase != NULL);
 
     /* Make sure this is a load state. */
     if (((((gctUINT32) (State)) >> (0 ? 31:27) & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1)))))) == (0x01 & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))))
@@ -4536,9 +4536,9 @@ gckHARDWARE_SetIsrManager(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
 
-    if (StartIsr == gcvNULL ||
-        StopIsr == gcvNULL ||
-        Context == gcvNULL)
+    if (StartIsr == NULL ||
+        StopIsr == NULL ||
+        Context == NULL)
     {
         status = gcvSTATUS_INVALID_ARGUMENT;
 
@@ -4593,7 +4593,7 @@ gckHARDWARE_Compose(
     /* Verify the arguments. */
     gcmkVERIFY_OBJECT(Hardware, gcvOBJ_HARDWARE);
     gcmkVERIFY_ARGUMENT(((Size + 8) & 63) == 0);
-    gcmkVERIFY_ARGUMENT(Logical != gcvNULL);
+    gcmkVERIFY_ARGUMENT(Logical != NULL);
 
     /* Program the trigger state. */
     triggerState = (gctUINT32_PTR) ((gctUINT8_PTR) Logical + Offset + Size);
@@ -4610,7 +4610,7 @@ gckHARDWARE_Compose(
 #if gcdNONPAGED_MEMORY_CACHEABLE
     /* Flush the cache for the wait/link. */
     gcmkONERROR(gckOS_CacheClean(
-        Hardware->os, ProcessID, gcvNULL,
+        Hardware->os, ProcessID, NULL,
         Physical, Logical, Offset + Size
         ));
 #endif

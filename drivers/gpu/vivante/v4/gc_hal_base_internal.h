@@ -43,7 +43,7 @@ typedef struct _gcsRECT *               gcsRECT_PTR;
 
 #define gcmkOS_SAFE_FREE(os, mem) \
     gckOS_Free(os, mem); \
-	mem = gcvNULL
+	mem = NULL
 
 /*----------------------------------------------------------------------------*/
 /*----- Profile --------------------------------------------------------------*/
@@ -320,8 +320,8 @@ gckOS_DebugTraceZoneN(
                    __FUNCTION__, __LINE__, __VA_ARGS__); \
     *__kernel_ptr__ -= 1
 
-#define gcmOPT_VALUE(ptr)           (((ptr) == gcvNULL) ? 0 : *(ptr))
-#define gcmOPT_POINTER(ptr)         (((ptr) == gcvNULL) ? gcvNULL : *(ptr))
+#define gcmOPT_VALUE(ptr)           (((ptr) == NULL) ? 0 : *(ptr))
+#define gcmOPT_POINTER(ptr)         (((ptr) == NULL) ? NULL : *(ptr))
 
 void
 gckOS_Print(
