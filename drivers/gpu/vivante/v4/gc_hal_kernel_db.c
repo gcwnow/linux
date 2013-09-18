@@ -80,7 +80,7 @@ gckKERNEL_NewDatabase(
     }
     else
     {
-        gctPOINTER pointer = NULL;
+        void *pointer = NULL;
 
         /* Allocate a new database from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
@@ -381,7 +381,7 @@ gckKERNEL_NewRecord(
     }
     else
     {
-        gctPOINTER pointer = NULL;
+        void *pointer = NULL;
 
         /* Allocate the record from the heap. */
         gcmkONERROR(gckOS_Allocate(Kernel->os,
@@ -437,7 +437,7 @@ OnError:
 **      gceDATABASE_TYPE Type
 **          Type of the record to remove.
 **
-**      gctPOINTER Data
+**      void *Data
 **          Data of the record to remove.
 **
 **  OUTPUT:
@@ -451,7 +451,7 @@ gckKERNEL_DeleteRecord(
     IN gckKERNEL Kernel,
     IN gcsDATABASE_PTR Database,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Data,
+    IN void *Data,
     OUT size_t *Bytes OPTIONAL
     )
 {
@@ -545,7 +545,7 @@ OnError:
 **      gceDATABASE_TYPE Type
 **          Type of the record to remove.
 **
-**      gctPOINTER Data
+**      void *Data
 **          Data of the record to remove.
 **
 **  OUTPUT:
@@ -559,7 +559,7 @@ gckKERNEL_FindRecord(
     IN gckKERNEL Kernel,
     IN gcsDATABASE_PTR Database,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Data,
+    IN void *Data,
     OUT gcsDATABASE_RECORD_PTR Record
     )
 {
@@ -755,7 +755,7 @@ OnError:
 **      gceDATABASE_TYPE TYPE
 **          Type of the record to add.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Data of the record to add.
 **
 **      gctPHYS_ADDR Physical
@@ -773,7 +773,7 @@ gckKERNEL_AddProcessDB(
     IN gckKERNEL Kernel,
     IN gctUINT32 ProcessID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     IN gctPHYS_ADDR Physical,
     IN size_t Size
     )
@@ -932,7 +932,7 @@ OnError:
 **      gceDATABASE_TYPE TYPE
 **          Type of the record to remove.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Data of the record to remove.
 **
 **  OUTPUT:
@@ -944,7 +944,7 @@ gckKERNEL_RemoveProcessDB(
     IN gckKERNEL Kernel,
     IN gctUINT32 ProcessID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer
+    IN void *Pointer
     )
 {
     gceSTATUS status;
@@ -1018,7 +1018,7 @@ OnError:
 **      gceDATABASE_TYPE TYPE
 **          Type of the record to remove.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Data of the record to remove.
 **
 **  OUTPUT:
@@ -1032,7 +1032,7 @@ gckKERNEL_FindProcessDB(
     IN gctUINT32 ProcessID,
     IN gctUINT32 ThreadID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     OUT gcsDATABASE_RECORD_PTR Record
     )
 {

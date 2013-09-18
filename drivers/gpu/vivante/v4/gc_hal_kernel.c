@@ -123,7 +123,7 @@ gckKERNEL_SetTimeOut(
 **      gceCORE Core
 **          Specified core.
 **
-**      IN gctPOINTER Context
+**      IN void *Context
 **          Pointer to a driver defined context.
 **
 **      IN gckDB SharedDB,
@@ -140,7 +140,7 @@ gceSTATUS
 gckKERNEL_Construct(
     IN gckOS Os,
     IN gceCORE Core,
-    IN gctPOINTER Context,
+    IN void *Context,
     IN gckDB SharedDB,
     OUT gckKERNEL * Kernel
     )
@@ -148,7 +148,7 @@ gckKERNEL_Construct(
     gckKERNEL kernel = NULL;
     gceSTATUS status;
     size_t i;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x Context=0x%x", Os, Context);
 
@@ -623,16 +623,16 @@ gckKERNEL_Dispatch(
     gctUINT32 processID;
 #if gcdSECURE_USER
     gcskSECURE_CACHE_PTR cache;
-    gctPOINTER logical;
+    void *logical;
 #endif
     gctBOOL asynchronous;
-    gctPOINTER paddr = NULL;
+    void *paddr = NULL;
 #if !USE_NEW_LINUX_SIGNAL
     gctSIGNAL   signal;
 #endif
 
     gcsDATABASE_RECORD record;
-    gctPOINTER    data;
+    void *   data;
 
     gcmkHEADER_ARG("Kernel=0x%x FromUser=%d Interface=0x%x",
                    Kernel, FromUser, Interface);
@@ -1862,7 +1862,7 @@ gceSTATUS
 gckKERNEL_MapLogicalToPhysical(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
-    IN OUT gctPOINTER * Data
+    IN OUT void **Data
     )
 {
     gceSTATUS status;
@@ -2152,7 +2152,7 @@ gceSTATUS
 gckKERNEL_FlushTranslationCache(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -2460,11 +2460,11 @@ OnError:
 **      gctBOOL NeedCopy
 **          The flag indicating whether or not the data should be copied.
 **
-**      gctPOINTER StaticStorage
+**      void *StaticStorage
 **          Pointer to the kernel storage where the data is to be copied if
 **          NeedCopy is gcvTRUE.
 **
-**      gctPOINTER UserPointer
+**      void *UserPointer
 **          User pointer to the data.
 **
 **      size_t Size
@@ -2472,17 +2472,17 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * KernelPointer
+**      void ** KernelPointer
 **          Pointer to the kernel pointer that will be pointing to the data.
 */
 gceSTATUS
 gckKERNEL_OpenUserData(
     IN gckKERNEL Kernel,
     IN gctBOOL NeedCopy,
-    IN gctPOINTER StaticStorage,
-    IN gctPOINTER UserPointer,
+    IN void *StaticStorage,
+    IN void *UserPointer,
     IN size_t Size,
-    OUT gctPOINTER * KernelPointer
+    OUT void **KernelPointer
     )
 {
     gceSTATUS status;
@@ -2512,7 +2512,7 @@ gckKERNEL_OpenUserData(
     }
     else
     {
-        gctPOINTER pointer = NULL;
+        void *pointer = NULL;
 
         /* Map the user pointer. */
         gcmkONERROR(gckOS_MapUserPointer(
@@ -2547,7 +2547,7 @@ OnError:
 **      gctBOOL FlushData
 **          If gcvTRUE, the data is written back to the user.
 **
-**      gctPOINTER UserPointer
+**      void *UserPointer
 **          User pointer to the data.
 **
 **      size_t Size
@@ -2555,7 +2555,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * KernelPointer
+**      void ** KernelPointer
 **          Kernel pointer to the data.
 */
 gceSTATUS
@@ -2563,13 +2563,13 @@ gckKERNEL_CloseUserData(
     IN gckKERNEL Kernel,
     IN gctBOOL NeedCopy,
     IN gctBOOL FlushData,
-    IN gctPOINTER UserPointer,
+    IN void *UserPointer,
     IN size_t Size,
-    OUT gctPOINTER * KernelPointer
+    OUT void **KernelPointer
     )
 {
     gceSTATUS status = gcvSTATUS_OK;
-    gctPOINTER pointer;
+    void *pointer;
 
     gcmkHEADER_ARG(
         "Kernel=0x%08X NeedCopy=%d FlushData=%d "

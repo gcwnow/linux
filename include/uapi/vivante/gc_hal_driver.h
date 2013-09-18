@@ -229,7 +229,7 @@ typedef struct _gcsHAL_COMPOSE
 {
     /* Composition state buffer. */
     gctPHYS_ADDR                physical;
-    gctPOINTER                  logical;
+    void *                      logical;
     size_t                      offset;
     size_t                      size;
 
@@ -308,7 +308,7 @@ typedef struct _gcsHAL_INTERFACE
             IN size_t                   bytes;
 
             /* Address of mapped memory. */
-            OUT gctPOINTER              logical;
+            OUT void *                  logical;
         }
         MapMemory;
 
@@ -322,7 +322,7 @@ typedef struct _gcsHAL_INTERFACE
             IN size_t                   bytes;
 
             /* Address of mapped memory to unmap. */
-            IN gctPOINTER               logical;
+            IN void *                   logical;
         }
         UnmapMemory;
 
@@ -395,7 +395,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctUINT32               address;
 
             /* Mapped logical address. */
-            OUT gctPOINTER              memory;
+            OUT void *                  memory;
         }
         LockVideoMemory;
 
@@ -423,7 +423,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctPHYS_ADDR            physical;
 
             /* Logical address of allocation. */
-            OUT gctPOINTER              logical;
+            OUT void *                  logical;
         }
         AllocateNonPagedMemory;
 
@@ -437,7 +437,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPHYS_ADDR             physical;
 
             /* Logical address of allocation. */
-            IN gctPOINTER               logical;
+            IN void *                   logical;
         }
         FreeNonPagedMemory;
 
@@ -470,13 +470,13 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_MAP_USER_MEMORY
         {
             /* Base address of user memory to map. */
-            IN gctPOINTER               memory;
+            IN void *                   memory;
 
             /* Size of user memory in bytes to map. */
             IN size_t                   size;
 
             /* Info record required by gcvHAL_UNMAP_USER_MEMORY. */
-            OUT gctPOINTER              info;
+            OUT void *                  info;
 
             /* Physical address of mapped memory. */
             OUT gctUINT32               address;
@@ -487,13 +487,13 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_UNMAP_USER_MEMORY
         {
             /* Base address of user memory to unmap. */
-            IN gctPOINTER               memory;
+            IN void *                   memory;
 
             /* Size of user memory in bytes to unmap. */
             IN size_t                   size;
 
             /* Info record returned by gcvHAL_MAP_USER_MEMORY. */
-            IN gctPOINTER               info;
+            IN void *                   info;
 
             /* Physical address of mapped memory as returned by
                gcvHAL_MAP_USER_MEMORY. */
@@ -562,7 +562,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctPHYS_ADDR            physical;
 
             /* Logical address of allocation. */
-            OUT gctPOINTER              logical;
+            OUT void *                  logical;
         }
         AllocateContiguousMemory;
 
@@ -576,7 +576,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPHYS_ADDR             physical;
 
             /* Logical address of allocation. */
-            IN gctPOINTER               logical;
+            IN void *                   logical;
         }
         FreeContiguousMemory;
 
@@ -702,7 +702,7 @@ typedef struct _gcsHAL_INTERFACE
         {
             IN gceCACHEOPERATION        operation;
             IN gctHANDLE                process;
-            IN gctPOINTER               logical;
+            IN void *                   logical;
             IN size_t                   bytes;
             IN gcuVIDMEM_NODE_PTR       node;
         }

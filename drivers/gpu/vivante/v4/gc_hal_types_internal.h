@@ -176,12 +176,12 @@ typedef void *                  gctFILE;
 #ifdef __LP64__
 #   define gcmINT2PTR(i) \
     ( \
-        (gctPOINTER) (gctINT64) (i) \
+        (void *) (gctINT64) (i) \
     )
 #else
 #   define gcmINT2PTR(i) \
     ( \
-        (gctPOINTER) (i) \
+        (void *) (i) \
     )
 #endif
 

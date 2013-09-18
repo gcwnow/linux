@@ -24,7 +24,7 @@
 typedef struct _LINUX_MDL_MAP
 {
     gctINT                  pid;
-    gctPOINTER              vmaAddr;
+    void *                  vmaAddr;
     struct vm_area_struct * vma;
     struct _LINUX_MDL_MAP * next;
 }
@@ -47,7 +47,7 @@ typedef struct _LINUX_MDL
     u;
 
 #ifdef NO_DMA_COHERENT
-    gctPOINTER              kaddr;
+    void *                  kaddr;
 #endif /* NO_DMA_COHERENT */
 
     gctINT                  numPages;
@@ -68,9 +68,9 @@ FindMdlMap(
 
 typedef struct _DRIVER_ARGS
 {
-    gctPOINTER              InputBuffer;
+    void *                  InputBuffer;
     gctUINT32               InputBufferSize;
-    gctPOINTER              OutputBuffer;
+    void *                  OutputBuffer;
     gctUINT32               OutputBufferSize;
 }
 DRIVER_ARGS;

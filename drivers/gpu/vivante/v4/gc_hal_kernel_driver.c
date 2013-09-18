@@ -679,7 +679,7 @@ static int drv_mmap(
             gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
         }
 
-        data->mappedMemory = (gctPOINTER) vma->vm_start;
+        data->mappedMemory = (void *) vma->vm_start;
     }
 
     /* Success. */

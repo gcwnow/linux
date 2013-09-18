@@ -169,7 +169,7 @@ gckKERNEL_GetVideoMemoryPool(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that will hold the base address of the mapped
 **          memory region.
 */
@@ -178,7 +178,7 @@ gckKERNEL_MapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
     return gckOS_MapMemory(Kernel->os, Physical, Bytes, Logical);
@@ -201,7 +201,7 @@ gckKERNEL_MapMemory(
 **      size_t Bytes
 **          Number of bytes to map.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Base address of the mapped memory region.
 **
 **  OUTPUT:
@@ -213,7 +213,7 @@ gckKERNEL_UnmapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctPOINTER Logical
+    IN void *Logical
     )
 {
     return gckOS_UnmapMemory(Kernel->os, Physical, Bytes, Logical);
@@ -239,7 +239,7 @@ gckKERNEL_UnmapMemory(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that will hold the logical address of the
 **          specified memory address.
 */
@@ -249,7 +249,7 @@ gckKERNEL_MapVideoMemoryEx(
     IN gceCORE Core,
     IN gctBOOL InUserSpace,
     IN gctUINT32 Address,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
     gckGALDEVICE device;
@@ -258,7 +258,7 @@ gckKERNEL_MapVideoMemoryEx(
     gcePOOL pool;
     gctUINT32 offset, base;
     gceSTATUS status;
-    gctPOINTER logical;
+    void *logical;
 
     gcmkHEADER_ARG("Kernel=%p InUserSpace=%d Address=%08x",
                    Kernel, InUserSpace, Address);
@@ -303,7 +303,7 @@ gckKERNEL_MapVideoMemoryEx(
             mdlMap = FindMdlMap(mdl, processID);
             gcmkASSERT(mdlMap);
 
-            logical = (gctPOINTER) mdlMap->vmaAddr;
+            logical = (void *) mdlMap->vmaAddr;
         }
 
         gcmkVERIFY_OK(
@@ -321,7 +321,7 @@ gckKERNEL_MapVideoMemoryEx(
     }
 
     /* Build logical address of specified address. */
-    *Logical = (gctPOINTER) ((gctUINT8_PTR) logical + offset);
+    *Logical = (void *) ((gctUINT8_PTR) logical + offset);
 
     /* Success. */
     gcmkFOOTER_ARG("*Logical=%p", *Logical);

@@ -265,7 +265,7 @@ _FillFlatMapping(
         if (*(Mmu->mtlbLogical + mStart) == 0)
         {
             gcsMMU_STLB_PTR stlb;
-            gctPOINTER pointer = NULL;
+            void *pointer = NULL;
             gctUINT32 last = (mStart == mEnd) ? sEnd : (gcdMMU_STLB_64K_ENTRY_NUM - 1);
 
             gcmkONERROR(gckOS_Allocate(Mmu->os, sizeof(struct _gcsMMU_STLB), &pointer));
@@ -294,7 +294,7 @@ _FillFlatMapping(
                                              gcvFALSE,
                                              &stlb->size,
                                              &stlb->physical,
-                                             (gctPOINTER)&stlb->logical));
+                                             (void *)&stlb->logical));
 
             gcmkONERROR(gckOS_ZeroMemory(stlb->logical, stlb->size));
 
@@ -445,7 +445,7 @@ _SetupDynamicSpace(
                 gcvFALSE,
                 &Mmu->pageTableSize,
                 &Mmu->pageTablePhysical,
-                (gctPOINTER)&Mmu->pageTableLogical));
+                (void *)&Mmu->pageTableLogical));
 
     /* Invalidate all entries. */
     gcmkONERROR(gckOS_ZeroMemory(Mmu->pageTableLogical,
@@ -497,7 +497,7 @@ OnError:
         gcmkVERIFY_OK(
                 gckOS_FreeContiguous(Mmu->os,
                     Mmu->pageTablePhysical,
-                    (gctPOINTER) Mmu->pageTableLogical,
+                    (void *) Mmu->pageTableLogical,
                     Mmu->pageTableSize));
     }
 
@@ -541,7 +541,7 @@ _Construct(
     gceSTATUS status;
     gckMMU mmu = NULL;
     gctUINT32_PTR pageTable;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x MmuSize=%lu", Kernel, MmuSize);
 
@@ -613,7 +613,7 @@ _Construct(
 
         /* Set page table address. */
         gcmkONERROR(
-            gckHARDWARE_SetMMU(hardware, (gctPOINTER) mmu->pageTableLogical));
+            gckHARDWARE_SetMMU(hardware, (void *) mmu->pageTableLogical));
     }
     else
     {
@@ -651,7 +651,7 @@ OnError:
             gcmkVERIFY_OK(
                 gckOS_FreeContiguous(os,
                                      mmu->pageTablePhysical,
-                                     (gctPOINTER) mmu->pageTableLogical,
+                                     (void *) mmu->pageTableLogical,
                                      mmu->pageTableSize));
 
         }
@@ -661,7 +661,7 @@ OnError:
             gcmkVERIFY_OK(
                 gckOS_FreeContiguous(os,
                                      mmu->mtlbPhysical,
-                                     (gctPOINTER) mmu->mtlbLogical,
+                                     (void *) mmu->mtlbLogical,
                                      mmu->mtlbSize));
         }
 
@@ -742,7 +742,7 @@ _Destroy(
         gcmkVERIFY_OK(
                 gckOS_FreeContiguous(Mmu->os,
                     Mmu->mtlbPhysical,
-                    (gctPOINTER) Mmu->mtlbLogical,
+                    (void *) Mmu->mtlbLogical,
                     Mmu->mtlbSize));
     }
 
@@ -750,7 +750,7 @@ _Destroy(
     gcmkVERIFY_OK(
             gckOS_FreeContiguous(Mmu->os,
                 Mmu->pageTablePhysical,
-                (gctPOINTER) Mmu->pageTableLogical,
+                (void *) Mmu->pageTableLogical,
                 Mmu->pageTableSize));
 
     /* Delete the page table mutex. */
@@ -776,7 +776,7 @@ gckMMU_Construct(
 {
 #if gcdSHARED_PAGETABLE
     gceSTATUS status;
-    gctPOINTER pointer;
+    void *pointer;
 
     gcmkHEADER_ARG("Kernel=0x%08x", Kernel);
 
@@ -862,7 +862,7 @@ gckMMU_Destroy(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * PageTable
+**      void ** PageTable
 **          Pointer to a variable that receives the base address of the page
 **          table.
 **
@@ -873,7 +873,7 @@ gceSTATUS
 gckMMU_AllocatePages(
     IN gckMMU Mmu,
     IN size_t PageCount,
-    OUT gctPOINTER * PageTable,
+    OUT void **PageTable,
     OUT gctUINT32 * Address
     )
 {
@@ -1055,7 +1055,7 @@ OnError:
 **      gckMMU Mmu
 **          Pointer to an gckMMU object.
 **
-**      gctPOINTER PageTable
+**      void *PageTable
 **          Base address of the page table to free.
 **
 **      size_t PageCount
@@ -1068,7 +1068,7 @@ OnError:
 gceSTATUS
 gckMMU_FreePages(
     IN gckMMU Mmu,
-    IN gctPOINTER PageTable,
+    IN void *PageTable,
     IN size_t PageCount
     )
 {

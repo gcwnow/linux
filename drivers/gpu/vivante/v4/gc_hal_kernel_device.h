@@ -34,21 +34,21 @@ typedef struct _gckGALDEVICE
     /* Attributes. */
     size_t              internalSize;
     gctPHYS_ADDR        internalPhysical;
-    gctPOINTER          internalLogical;
+    void *              internalLogical;
     gckVIDMEM           internalVidMem;
     size_t              externalSize;
     gctPHYS_ADDR        externalPhysical;
-    gctPOINTER          externalLogical;
+    void *              externalLogical;
     gckVIDMEM           externalVidMem;
     gckVIDMEM           contiguousVidMem;
-    gctPOINTER          contiguousBase;
+    void *              contiguousBase;
     gctPHYS_ADDR        contiguousPhysical;
     size_t              contiguousSize;
     gctBOOL             contiguousMapped;
-    gctPOINTER          contiguousMappedUser;
+    void *              contiguousMappedUser;
     size_t              systemMemorySize;
     gctUINT32           systemMemoryBaseAddress;
-    gctPOINTER          registerBases[gcdCORE_COUNT];
+    void *              registerBases[gcdCORE_COUNT];
     size_t              registerSizes[gcdCORE_COUNT];
     gctUINT32           baseAddress;
     gctUINT32           requestedRegisterMemBases[gcdCORE_COUNT];
@@ -88,8 +88,8 @@ typedef struct _gckGALDEVICE
 typedef struct _gcsHAL_PRIVATE_DATA
 {
     gckGALDEVICE        device;
-    gctPOINTER          mappedMemory;
-    gctPOINTER          contiguousLogical;
+    void *              mappedMemory;
+    void *              contiguousLogical;
     /* The process opening the device may not be the same as the one that closes it. */
     gctUINT32           pidOpen;
 }

@@ -72,7 +72,7 @@ _Split(
     )
 {
     gcuVIDMEM_NODE_PTR node;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     /* Make sure the byte boundary makes sense. */
     if ((Bytes <= 0) || (Bytes > Node->VidMem.bytes))
@@ -216,7 +216,7 @@ gckVIDMEM_ConstructVirtual(
     gckOS os;
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node = NULL;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
     gctINT i;
 
     gcmkHEADER_ARG("Kernel=0x%x Contiguous=%d Bytes=%lu", Kernel, Contiguous, Bytes);
@@ -395,7 +395,7 @@ gckVIDMEM_Construct(
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node;
     gctINT i, banks = 0;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x BaseAddress=%08x Bytes=%lu Threshold=%lu "
                    "BankSize=%lu",
@@ -941,7 +941,7 @@ gckVIDMEM_AllocateLinear(
         size_t bytes;
         gctPHYS_ADDR physical_temp;
         gctUINT32 physical;
-        gctPOINTER logical;
+        void *logical;
 
         bytes = gcmALIGN(Bytes, gcdUSE_VIDMEM_PER_PID_SIZE);
 
@@ -961,7 +961,7 @@ gckVIDMEM_AllocateLinear(
         gcmkONERROR(
             gckOS_Allocate(Memory->os,
                            sizeof(gcuVIDMEM_NODE),
-                           (gctPOINTER *) &node));
+                           (void **) &node));
 
         /* Initialize gcuVIDMEM_NODE union. */
         node->VidMem.memory    = Memory;
@@ -1535,7 +1535,7 @@ gckVIDMEM_Unlock(
 {
     gceSTATUS status;
     gckHARDWARE hardware;
-    gctPOINTER buffer;
+    void *buffer;
     size_t requested, bufferSize;
     gckCOMMAND command = NULL;
     gceKERNEL_FLUSH flush;

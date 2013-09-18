@@ -59,8 +59,8 @@ typedef struct _gcsCONTEXT
     gctUINT32_PTR               logical;
 
     /* Pointer to the LINK commands. */
-    gctPOINTER                  link2D;
-    gctPOINTER                  link3D;
+    void *                      link2D;
+    void *                      link3D;
 
     /* The number of pending state deltas. */
     gctUINT                     deltaCount;

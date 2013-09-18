@@ -375,7 +375,7 @@ gceDUMP_BUFFER;
 void
 gckOS_DumpBuffer(
     IN gckOS Os,
-    IN gctPOINTER Buffer,
+    IN void *Buffer,
     IN gctUINT Size,
     IN gceDUMP_BUFFER Type,
     IN gctBOOL CopyMessage

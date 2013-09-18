@@ -329,7 +329,7 @@ typedef struct _gcsBUFITEM_PREFIX
 {
     gceBUFITEM              type;
 #if gcdHAVEPREFIX
-    gctPOINTER              prefixData;
+    void *                  prefixData;
 #endif
 }
 gcsBUFITEM_PREFIX;
@@ -341,7 +341,7 @@ typedef struct _gcsBUFITEM_STRING
     gceBUFITEM              type;
     gctINT                  indent;
     const char *            message;
-    gctPOINTER              messageData;
+    void *                  messageData;
     gctUINT                 messageDataSize;
 }
 gcsBUFITEM_STRING;
@@ -352,7 +352,7 @@ typedef struct _gcsBUFITEM_COPY
 {
     gceBUFITEM              type;
     gctINT                  indent;
-    gctPOINTER              messageData;
+    void *                  messageData;
     gctUINT                 messageDataSize;
 }
 gcsBUFITEM_COPY;
@@ -372,7 +372,7 @@ typedef struct _gcsBUFITEM_BUFFER
     gctUINT                 dataSize;
     gctUINT32               address;
 #if gcdHAVEPREFIX
-    gctPOINTER              prefixData;
+    void *                  prefixData;
 #endif
 }
 gcsBUFITEM_BUFFER;
@@ -548,7 +548,7 @@ _AppendIndent(
 static void
 _PrintPrefix(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     char buffer[768];
@@ -569,7 +569,7 @@ _PrintString(
     IN gctINT Indent,
     IN const char *Message,
     IN gctUINT ArgumentSize,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     char buffer[768];
@@ -597,8 +597,8 @@ static void
 _PrintBuffer(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
     IN gctINT Indent,
-    IN gctPOINTER PrefixData,
-    IN gctPOINTER Data,
+    IN void *PrefixData,
+    IN void *Data,
     IN gctUINT Address,
     IN gctUINT DataSize,
     IN gceDUMP_BUFFER Type,
@@ -862,7 +862,7 @@ _PrintBufferWrapper(
 #if gcdHAVEPREFIX
     gctUINT32 dmaAddress;
     gcsBUFITEM_BUFFER_PTR item;
-    gctPOINTER data;
+    void *data;
     gctUINT vlen;
 
     /* Get access to the data. */
@@ -1235,7 +1235,7 @@ _AllocateItem(
 static void
 _FreeExtraSpace(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
-    IN gctPOINTER Item,
+    IN void *Item,
     IN gctINT ItemSize,
     IN gctINT FreeSize
     )
@@ -1253,7 +1253,7 @@ _FreeExtraSpace(
 static void
 _AppendPrefix(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     gctUINT8_PTR prefixData;
@@ -1312,7 +1312,7 @@ _AppendString(
     IN gctINT Indent,
     IN const char *Message,
     IN gctUINT ArgumentSize,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     gctUINT8_PTR messageData;
@@ -1374,7 +1374,7 @@ _AppendCopy(
     IN gctINT Indent,
     IN const char *Message,
     IN gctUINT ArgumentSize,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     gctUINT8_PTR messageData;
@@ -1427,7 +1427,7 @@ _AppendCopy(
     item->messageDataSize = ArgumentSize;
 
     /* Copy the message. */
-    memcpy((gctPOINTER) message, Message, messageLength);
+    memcpy((void *) message, Message, messageLength);
 
     /* Copy argument value. */
     if (ArgumentSize != 0)
@@ -1456,8 +1456,8 @@ static void
 _AppendBuffer(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
     IN gctINT Indent,
-    IN gctPOINTER PrefixData,
-    IN gctPOINTER Data,
+    IN void *PrefixData,
+    IN void *Data,
     IN gctUINT Address,
     IN gctUINT DataSize,
     IN gceDUMP_BUFFER Type,
@@ -1468,7 +1468,7 @@ _AppendBuffer(
     gctUINT8_PTR prefixData;
     gcsBUFITEM_BUFFER_PTR item;
     gctINT allocSize;
-    gctPOINTER data;
+    void *data;
 
 #if gcdALIGNBYSIZE
     gctUINT alignment;
@@ -1667,7 +1667,7 @@ static int _GetArgumentSize(
 static void
 _InitPrefixData(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
-    IN gctPOINTER Data
+    IN void *Data
     )
 {
     gctUINT8_PTR data  = (gctUINT8_PTR) Data;
@@ -1760,14 +1760,14 @@ _Print(
     {
         gcdOUTPUTCOPY(
             outputBuffer, outputBuffer->indent,
-            Message, ArgumentSize, * (gctPOINTER *) &Arguments
+            Message, ArgumentSize, * (void **) &Arguments
             );
     }
     else
     {
         gcdOUTPUTSTRING(
             outputBuffer, outputBuffer->indent,
-            Message, ArgumentSize, * (gctPOINTER *) &Arguments
+            Message, ArgumentSize, * (void **) &Arguments
             );
     }
 
@@ -1898,7 +1898,7 @@ gckOS_CopyPrint(
 **      gckOS Os
 **          Pointer to gckOS object.
 **
-**      gctPOINTER Buffer
+**      void *Buffer
 **          Pointer to the buffer to print.
 **
 **      gctUINT Size
@@ -1915,7 +1915,7 @@ gckOS_CopyPrint(
 void
 gckOS_DumpBuffer(
     IN gckOS Os,
-    IN gctPOINTER Buffer,
+    IN void *Buffer,
     IN gctUINT Size,
     IN gceDUMP_BUFFER Type,
     IN gctBOOL CopyMessage

@@ -103,7 +103,7 @@ struct _gcoCMDBUF
     gctPHYS_ADDR                physical;
 
     /* Logical address of command buffer. */
-    gctPOINTER                  logical;
+    void *                      logical;
 
     /* Number of bytes in command buffer. */
     size_t                      bytes;
@@ -118,7 +118,7 @@ struct _gcoCMDBUF
     size_t                      free;
 
     /* Location of the last reserved area. */
-    gctPOINTER                  lastReserve;
+    void *                      lastReserve;
     gctUINT                     lastOffset;
 
 #if gcdSECURE_USER

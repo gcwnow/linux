@@ -381,7 +381,7 @@ OnError:
 #if gcdPOWEROFF_TIMEOUT
 static void
 _PowerTimerFunction(
-    gctPOINTER Data
+    void *Data
     )
 {
     gckHARDWARE hardware = (gckHARDWARE)Data;
@@ -424,7 +424,7 @@ gckHARDWARE_Construct(
     gceSTATUS status;
     gckHARDWARE hardware = NULL;
     gctUINT16 data = 0xff00;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x", Os);
 
@@ -526,8 +526,8 @@ gckHARDWARE_Construct(
     hardware->powerOffTimeout = gcdPOWEROFF_TIMEOUT;
 
     gcmkVERIFY_OK(gckOS_CreateTimer(Os,
-                                    (gctPOINTER)_PowerTimerFunction,
-                                    (gctPOINTER)hardware,
+                                    (void *)_PowerTimerFunction,
+                                    (void *)hardware,
                                     &hardware->powerOffTimer));
 #endif
 
@@ -1145,7 +1145,7 @@ gckHARDWARE_SplitMemory(
 **      gckHARDWARE Hardware
 **          Pointer to the gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address of command buffer.
 **
 **      size_t Bytes
@@ -1158,7 +1158,7 @@ gckHARDWARE_SplitMemory(
 gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -1224,7 +1224,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          WAIT/LINK command sequence at or NULL just to query the size of the
 **          WAIT/LINK command sequence.
@@ -1255,7 +1255,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_WaitLink(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT32 Offset,
     IN OUT size_t * Bytes,
     OUT gctUINT32 * WaitOffset,
@@ -1463,7 +1463,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          END command at or NULL just to query the size of the END command.
 **
@@ -1480,7 +1480,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_End(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN OUT size_t * Bytes
     )
 {
@@ -1540,7 +1540,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          NOP command at or NULL just to query the size of the NOP command.
 **
@@ -1557,7 +1557,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_Nop(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN OUT size_t * Bytes
     )
 {
@@ -1612,7 +1612,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          the EVENT command at or NULL just to query the size of the EVENT
 **          command.
@@ -1637,7 +1637,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_Event(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT8 Event,
     IN gceKERNEL_WHERE FromWhere,
     IN OUT size_t * Bytes
@@ -1776,7 +1776,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          the PIPESELECT command at or NULL just to query the size of the
 **          PIPESELECT command.
@@ -1798,7 +1798,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_PipeSelect(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gcePIPE_SELECT Pipe,
     IN OUT size_t * Bytes
     )
@@ -1904,12 +1904,12 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the current location inside the command queue to append
 **          the LINK command at or NULL just to query the size of the LINK
 **          command.
 **
-**      gctPOINTER FetchAddress
+**      void *FetchAddress
 **          Logical address of destination of LINK.
 **
 **      size_t FetchSize
@@ -1928,8 +1928,8 @@ OnError:
 gceSTATUS
 gckHARDWARE_Link(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
-    IN gctPOINTER FetchAddress,
+    IN void *Logical,
+    IN void *FetchAddress,
     IN size_t FetchSize,
     IN OUT size_t * Bytes
     )
@@ -2010,7 +2010,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address of the start of the command queue.
 **
 **      gctUINT32 Offset
@@ -2023,7 +2023,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_UpdateQueueTail(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT32 Offset
     )
 {
@@ -2071,7 +2071,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to convert.
 **
 **      gctUINT32* Address
@@ -2084,7 +2084,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_ConvertLogical(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     OUT gctUINT32 * Address
     )
 {
@@ -2402,7 +2402,7 @@ gckHARDWARE_QueryShaderCaps(
 **      gckHARDWARE Harwdare
 **          Pointer to an gckHARDWARE object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address of the page table.
 **
 **  OUTPUT:
@@ -2412,7 +2412,7 @@ gckHARDWARE_QueryShaderCaps(
 gceSTATUS
 gckHARDWARE_SetMMU(
     IN gckHARDWARE Hardware,
-    IN gctPOINTER Logical
+    IN void *Logical
     )
 {
     gceSTATUS status;
@@ -2508,7 +2508,7 @@ gckHARDWARE_FlushMMU(
     gctUINT32_PTR buffer;
     size_t bufferSize;
     gctBOOL commitEntered = gcvFALSE;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
     gctUINT32 flushSize;
     gctUINT32 count;
     gctUINT32 physical;
@@ -2680,9 +2680,9 @@ gceSTATUS
 gckHARDWARE_SetMMUv2(
     IN gckHARDWARE Hardware,
     IN gctBOOL Enable,
-    IN gctPOINTER MtlbAddress,
+    IN void *MtlbAddress,
     IN gceMMU_MODE Mode,
-    IN gctPOINTER SafeAddress,
+    IN void *SafeAddress,
     IN gctBOOL FromPower
     )
 {
@@ -2692,7 +2692,7 @@ gckHARDWARE_SetMMUv2(
     gctUINT32_PTR buffer;
     size_t bufferSize;
     gctBOOL commitEntered = gcvFALSE;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Hardware=0x%x Enable=%d", Hardware, Enable);
 
@@ -2935,7 +2935,7 @@ gceSTATUS
 gckHARDWARE_Flush(
     IN gckHARDWARE Hardware,
     IN gceKERNEL_FLUSH Flush,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN OUT size_t * Bytes
     )
 {
@@ -3185,7 +3185,7 @@ gckHARDWARE_SetPowerManagementState(
     gckCOMMAND command = NULL;
     gckOS os;
     gctUINT flag, clock;
-    gctPOINTER buffer;
+    void *buffer;
     size_t bytes, requested;
     gctBOOL acquired = gcvFALSE;
     gctBOOL mutexAcquired = gcvFALSE;
@@ -4525,7 +4525,7 @@ gckHARDWARE_SetIsrManager(
    IN gckHARDWARE Hardware,
    IN gctISRMANAGERFUNC StartIsr,
    IN gctISRMANAGERFUNC StopIsr,
-   IN gctPOINTER Context
+   IN void *Context
    )
 {
     gceSTATUS status = gcvSTATUS_OK;
@@ -4576,7 +4576,7 @@ gckHARDWARE_Compose(
     IN gckHARDWARE Hardware,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Physical,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Offset,
     IN size_t Size,
     IN gctUINT8 EventID

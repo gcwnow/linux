@@ -114,7 +114,7 @@ typedef struct _gcsUSER_MAPPING
     gctUINT32                   physical;
 
     /* Logical address of this mapping. */
-    gctPOINTER                  logical;
+    void *                      logical;
 
     /* Number of bytes of this mapping. */
     size_t                      bytes;
@@ -136,8 +136,8 @@ struct _gckOS
     gckGALDEVICE                device;
 
     /* Memory management */
-    gctPOINTER                  memoryLock;
-    gctPOINTER                  memoryMapLock;
+    void *                      memoryLock;
+    void *                      memoryMapLock;
 
     struct _LINUX_MDL           *mdlHead;
     struct _LINUX_MDL           *mdlTail;
@@ -152,7 +152,7 @@ struct _gckOS
         gctINT                  unused;
 
         /* The pointer to the table. */
-        gctPOINTER *            table;
+        void **                 table;
 
         /* Signal table length. */
         gctINT                  tableLen;
@@ -161,12 +161,12 @@ struct _gckOS
         gctINT                  currentID;
 
         /* Lock. */
-        gctPOINTER              lock;
+        void *                  lock;
     }
     signal;
 
     gcsUSER_MAPPING_PTR         userMap;
-    gctPOINTER                  debugLock;
+    void *                      debugLock;
 
 #if gcdUSE_NON_PAGED_MEMORY_CACHE
     gctUINT                      cacheSize;
@@ -220,7 +220,7 @@ typedef struct _gcsOSTIMER
 {
     struct delayed_work     work;
     gctTIMERFUNCTION        function;
-    gctPOINTER              data;
+    void *                  data;
 } gcsOSTIMER;
 
 /******************************************************************************\
@@ -1033,7 +1033,7 @@ _FreeAllNonPagedMemoryCache(
 **
 **  INPUT:
 **
-**      gctPOINTER Context
+**      void *Context
 **          Pointer to the gckGALDEVICE class.
 **
 **  OUTPUT:
@@ -1043,7 +1043,7 @@ _FreeAllNonPagedMemoryCache(
 */
 gceSTATUS
 gckOS_Construct(
-    IN gctPOINTER Context,
+    IN void *Context,
     OUT gckOS * Os
     )
 {
@@ -1099,7 +1099,7 @@ gckOS_Construct(
 
     /* Initialize the signal table. */
     os->signal.table =
-        kmalloc(sizeof(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT, GFP_KERNEL | __GFP_NOWARN);
+        kmalloc(sizeof(void *) * USER_SIGNAL_TABLE_LEN_INIT, GFP_KERNEL | __GFP_NOWARN);
 
     if (os->signal.table == NULL)
     {
@@ -1108,7 +1108,7 @@ gckOS_Construct(
     }
 
     gckOS_ZeroMemory(os->signal.table,
-                     sizeof(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT);
+                     sizeof(void *) * USER_SIGNAL_TABLE_LEN_INIT);
 
     /* Set the signal table length. */
     os->signal.tableLen = USER_SIGNAL_TABLE_LEN_INIT;
@@ -1313,14 +1313,14 @@ _DestoryKernelVirtualMapping(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Memory
+**      void ** Memory
 **          Pointer to a variable that will hold the allocated memory location.
 */
 gceSTATUS
 gckOS_Allocate(
     IN gckOS Os,
     IN size_t Bytes,
-    OUT gctPOINTER * Memory
+    OUT void **Memory
     )
 {
     gceSTATUS status;
@@ -1355,7 +1355,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to memory allocation to free.
 **
 **  OUTPUT:
@@ -1365,7 +1365,7 @@ OnError:
 gceSTATUS
 gckOS_Free(
     IN gckOS Os,
-    IN gctPOINTER Memory
+    IN void *Memory
     )
 {
     gceSTATUS status;
@@ -1401,17 +1401,17 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Memory
+**      void ** Memory
 **          Pointer to a variable that will hold the allocated memory location.
 */
 gceSTATUS
 gckOS_AllocateMemory(
     IN gckOS Os,
     IN size_t Bytes,
-    OUT gctPOINTER * Memory
+    OUT void **Memory
     )
 {
-    gctPOINTER memory;
+    void *memory;
     gceSTATUS status;
 
     gcmkHEADER_ARG("Os=0x%X Bytes=%lu", Os, Bytes);
@@ -1422,11 +1422,11 @@ gckOS_AllocateMemory(
 
     if (Bytes > PAGE_SIZE)
     {
-        memory = (gctPOINTER) vmalloc(Bytes);
+        memory = (void *) vmalloc(Bytes);
     }
     else
     {
-        memory = (gctPOINTER) kmalloc(Bytes, GFP_KERNEL | __GFP_NOWARN);
+        memory = (void *) kmalloc(Bytes, GFP_KERNEL | __GFP_NOWARN);
     }
 
     if (memory == NULL)
@@ -1456,7 +1456,7 @@ OnError:
 **
 **  INPUT:
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to memory allocation to free.
 **
 **  OUTPUT:
@@ -1466,7 +1466,7 @@ OnError:
 gceSTATUS
 gckOS_FreeMemory(
     IN gckOS Os,
-    IN gctPOINTER Memory
+    IN void *Memory
     )
 {
     gcmkHEADER_ARG("Memory=0x%X", Memory);
@@ -1508,7 +1508,7 @@ gckOS_FreeMemory(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Memory
+**      void ** Memory
 **          Pointer to a variable that will hold the logical address of the
 **          mapped memory.
 */
@@ -1517,7 +1517,7 @@ gckOS_MapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
     PLINUX_MDL_MAP  mdlMap;
@@ -1686,7 +1686,7 @@ gckOS_MapMemory(
 **      size_t Bytes
 **          Number of bytes to unmap.
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to a previously mapped memory region.
 **
 **  OUTPUT:
@@ -1698,7 +1698,7 @@ gckOS_UnmapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctPOINTER Logical
+    IN void *Logical
     )
 {
     gcmkHEADER_ARG("Os=0x%X Physical=0x%X Bytes=%lu Logical=0x%X",
@@ -1735,7 +1735,7 @@ gckOS_UnmapMemory(
 **      size_t Bytes
 **          Number of bytes to unmap.
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to a previously mapped memory region.
 **
 **      gctUINT32 PID
@@ -1750,7 +1750,7 @@ gckOS_UnmapMemoryEx(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT32 PID
     )
 {
@@ -1837,7 +1837,7 @@ gckOS_UnmapMemoryEx(
 **          Pointer to a variable that will hold the physical address of the
 **          allocation.
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that will hold the logical address of the
 **          allocation.
 */
@@ -1847,7 +1847,7 @@ gckOS_AllocateNonPagedMemory(
     IN gctBOOL InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
     size_t bytes;
@@ -1858,7 +1858,7 @@ gckOS_AllocateNonPagedMemory(
 #ifdef NO_DMA_COHERENT
     struct page * page;
     long size, order;
-    gctPOINTER vaddr;
+    void *vaddr;
 #endif
     gctBOOL locked = gcvFALSE;
     gceSTATUS status;
@@ -1924,7 +1924,7 @@ gckOS_AllocateNonPagedMemory(
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
     }
 
-    vaddr           = (gctPOINTER)page_address(page);
+    vaddr           = (void *)page_address(page);
     addr            = _CreateKernelVirtualMapping(page, mdl->numPages);
     mdl->dmaHandle  = virt_to_phys(vaddr);
     mdl->kaddr      = vaddr;
@@ -2060,7 +2060,7 @@ gckOS_AllocateNonPagedMemory(
     }
     else
     {
-        *Logical = (gctPOINTER)mdl->addr;
+        *Logical = (void *)mdl->addr;
     }
 
     /*
@@ -2130,7 +2130,7 @@ OnError:
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocated memory.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address of the allocated memory.
 **
 **  OUTPUT:
@@ -2141,7 +2141,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
     IN gckOS Os,
     IN size_t Bytes,
     IN gctPHYS_ADDR Physical,
-    IN gctPOINTER Logical
+    IN void *Logical
     )
 {
     PLINUX_MDL mdl;
@@ -2149,7 +2149,7 @@ gceSTATUS gckOS_FreeNonPagedMemory(
     struct task_struct * task;
 #ifdef NO_DMA_COHERENT
     unsigned size;
-    gctPOINTER vaddr;
+    void *vaddr;
 #endif /* NO_DMA_COHERENT */
 
     gcmkHEADER_ARG("Os=0x%X Bytes=%lu Physical=0x%X Logical=0x%X",
@@ -2384,7 +2384,7 @@ static gceSTATUS
 gckOS_AddMapping(
     IN gckOS Os,
     IN gctUINT32 Physical,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -2396,7 +2396,7 @@ gckOS_AddMapping(
 
     gcmkONERROR(gckOS_Allocate(Os,
                                sizeof(gcsUSER_MAPPING),
-                               (gctPOINTER *) &map));
+                               (void **) &map));
 
     map->next     = Os->userMap;
     map->physical = Physical - Os->device->baseAddress;
@@ -2418,7 +2418,7 @@ OnError:
 static gceSTATUS
 gckOS_RemoveMapping(
     IN gckOS Os,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -2467,7 +2467,7 @@ OnError:
 static gceSTATUS
 _ConvertLogical2Physical(
     IN gckOS Os,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT32 ProcessID,
     IN PLINUX_MDL Mdl,
     OUT gctUINT32_PTR Physical
@@ -2567,7 +2567,7 @@ _ConvertLogical2Physical(
 **      gckOS Os
 **          Pointer to gckOS object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address.
 **
 **      gctUINT32 ProcessID
@@ -2581,7 +2581,7 @@ _ConvertLogical2Physical(
 static gceSTATUS
 gckOS_GetPhysicalAddressProcess(
     IN gckOS Os,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctUINT32 ProcessID,
     OUT gctUINT32 * Address
     )
@@ -2674,7 +2674,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address.
 **
 **  OUTPUT:
@@ -2685,7 +2685,7 @@ OnError:
 gceSTATUS
 gckOS_GetPhysicalAddress(
     IN gckOS Os,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     OUT gctUINT32 * Address
     )
 {
@@ -2734,7 +2734,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that receives the base address of the mapped
 **          memory.
 */
@@ -2743,10 +2743,10 @@ gckOS_MapPhysical(
     IN gckOS Os,
     IN gctUINT32 Physical,
     IN size_t Bytes,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
-    gctPOINTER logical;
+    void *logical;
     PLINUX_MDL mdl;
     gctUINT32 physical;
 
@@ -2785,7 +2785,7 @@ gckOS_MapPhysical(
     {
         /* Map memory as cached memory. */
         request_mem_region(physical, Bytes, "MapRegion");
-        logical = (gctPOINTER) ioremap_nocache(physical, Bytes);
+        logical = (void *) ioremap_nocache(physical, Bytes);
 
         if (logical == NULL)
         {
@@ -2824,7 +2824,7 @@ gckOS_MapPhysical(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Pointer to the base address of the memory to unmap.
 **
 **      size_t Bytes
@@ -2837,7 +2837,7 @@ gckOS_MapPhysical(
 gceSTATUS
 gckOS_UnmapPhysical(
     IN gckOS Os,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -2858,8 +2858,8 @@ gckOS_UnmapPhysical(
     {
         if (mdl->addr != NULL)
         {
-            if (Logical >= (gctPOINTER)mdl->addr
-                    && Logical < (gctPOINTER)((char *)mdl->addr + mdl->numPages * PAGE_SIZE))
+            if (Logical >= (void *)mdl->addr
+                    && Logical < (void *)((char *)mdl->addr + mdl->numPages * PAGE_SIZE))
             {
                 break;
             }
@@ -2894,13 +2894,13 @@ gckOS_UnmapPhysical(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Mutex
+**      void ** Mutex
 **          Pointer to a variable that will hold a pointer to the mutex.
 */
 gceSTATUS
 gckOS_CreateMutex(
     IN gckOS Os,
-    OUT gctPOINTER * Mutex
+    OUT void **Mutex
     )
 {
     gcmkHEADER_ARG("Os=0x%X", Os);
@@ -2910,7 +2910,7 @@ gckOS_CreateMutex(
     gcmkVERIFY_ARGUMENT(Mutex != NULL);
 
     /* Allocate a FAST_MUTEX structure. */
-    *Mutex = (gctPOINTER)kmalloc(sizeof(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
+    *Mutex = (void *)kmalloc(sizeof(struct semaphore), GFP_KERNEL | __GFP_NOWARN);
 
     if (*Mutex == NULL)
     {
@@ -2937,7 +2937,7 @@ gckOS_CreateMutex(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Mutex
+**      void *Mutex
 **          Pointer to the mute to be deleted.
 **
 **  OUTPUT:
@@ -2947,7 +2947,7 @@ gckOS_CreateMutex(
 gceSTATUS
 gckOS_DeleteMutex(
     IN gckOS Os,
-    IN gctPOINTER Mutex
+    IN void *Mutex
     )
 {
     gcmkHEADER_ARG("Os=0x%X Mutex=0x%X", Os, Mutex);
@@ -2974,7 +2974,7 @@ gckOS_DeleteMutex(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Mutex
+**      void *Mutex
 **          Pointer to the mutex to be acquired.
 **
 **      gctUINT32 Timeout
@@ -2989,7 +2989,7 @@ gckOS_DeleteMutex(
 gceSTATUS
 gckOS_AcquireMutex(
     IN gckOS Os,
-    IN gctPOINTER Mutex,
+    IN void *Mutex,
     IN gctUINT32 Timeout
     )
 {
@@ -3116,7 +3116,7 @@ gckOS_AcquireMutex(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Mutex
+**      void *Mutex
 **          Pointer to the mutex to be released.
 **
 **  OUTPUT:
@@ -3126,7 +3126,7 @@ gckOS_AcquireMutex(
 gceSTATUS
 gckOS_ReleaseMutex(
     IN gckOS Os,
-    IN gctPOINTER Mutex
+    IN void *Mutex
     )
 {
     gcmkHEADER_ARG("Os=0x%X Mutex=0x%0x", Os, Mutex);
@@ -3196,7 +3196,7 @@ gckOS_AtomicExchange(
 **  Atomically set mask to Atom
 **
 **  INPUT:
-**      IN OUT gctPOINTER Atom
+**      IN OUT void *Atom
 **          Pointer to the atom to set.
 **
 **      IN gctUINT32 Mask
@@ -3208,7 +3208,7 @@ gckOS_AtomicExchange(
 */
 gceSTATUS
 gckOS_AtomSetMask(
-    IN gctPOINTER Atom,
+    IN OUT void *Atom,
     IN gctUINT32 Mask
     )
 {
@@ -3234,7 +3234,7 @@ gckOS_AtomSetMask(
 **  Atomically clear mask from Atom
 **
 **  INPUT:
-**      IN OUT gctPOINTER Atom
+**      IN OUT void *Atom
 **          Pointer to the atom to clear.
 **
 **      IN gctUINT32 Mask
@@ -3246,7 +3246,7 @@ gckOS_AtomSetMask(
 */
 gceSTATUS
 gckOS_AtomClearMask(
-    IN gctPOINTER Atom,
+    IN OUT void *Atom,
     IN gctUINT32 Mask
     )
 {
@@ -3279,13 +3279,13 @@ gckOS_AtomClearMask(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Atom
+**      void ** Atom
 **          Pointer to a variable receiving the constructed atom.
 */
 gceSTATUS
 gckOS_AtomConstruct(
     IN gckOS Os,
-    OUT gctPOINTER * Atom
+    OUT void **Atom
     )
 {
     gceSTATUS status;
@@ -3323,7 +3323,7 @@ OnError:
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctPOINTER Atom
+**      void *Atom
 **          Pointer to the atom to destroy.
 **
 **  OUTPUT:
@@ -3333,7 +3333,7 @@ OnError:
 gceSTATUS
 gckOS_AtomDestroy(
     IN gckOS Os,
-    OUT gctPOINTER Atom
+    IN void *Atom
     )
 {
     gceSTATUS status;
@@ -3368,7 +3368,7 @@ OnError:
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctPOINTER Atom
+**      void *Atom
 **          Pointer to the atom.
 **
 **  OUTPUT:
@@ -3379,7 +3379,7 @@ OnError:
 gceSTATUS
 gckOS_AtomGet(
     IN gckOS Os,
-    IN gctPOINTER Atom,
+    IN void *Atom,
     OUT gctINT32_PTR Value
     )
 {
@@ -3408,7 +3408,7 @@ gckOS_AtomGet(
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctPOINTER Atom
+**      void *Atom
 **          Pointer to the atom.
 **
 **      gctINT32 Value
@@ -3421,7 +3421,7 @@ gckOS_AtomGet(
 gceSTATUS
 gckOS_AtomSet(
     IN gckOS Os,
-    IN gctPOINTER Atom,
+    IN void *Atom,
     IN gctINT32 Value
     )
 {
@@ -3450,7 +3450,7 @@ gckOS_AtomSet(
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctPOINTER Atom
+**      void *Atom
 **          Pointer to the atom.
 **
 **  OUTPUT:
@@ -3461,7 +3461,7 @@ gckOS_AtomSet(
 gceSTATUS
 gckOS_AtomIncrement(
     IN gckOS Os,
-    IN gctPOINTER Atom,
+    IN void *Atom,
     OUT gctINT32_PTR Value
     )
 {
@@ -3490,7 +3490,7 @@ gckOS_AtomIncrement(
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctPOINTER Atom
+**      void *Atom
 **          Pointer to the atom.
 **
 **  OUTPUT:
@@ -3501,7 +3501,7 @@ gckOS_AtomIncrement(
 gceSTATUS
 gckOS_AtomDecrement(
     IN gckOS Os,
-    IN gctPOINTER Atom,
+    IN void *Atom,
     OUT gctINT32_PTR Value
     )
 {
@@ -3666,7 +3666,7 @@ gckOS_GetTime(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Address
+**      void *Address
 **          Address of memory that needs to be barriered.
 **
 **  OUTPUT:
@@ -3676,7 +3676,7 @@ gckOS_GetTime(
 gceSTATUS
 gckOS_MemoryBarrier(
     IN gckOS Os,
-    IN gctPOINTER Address
+    IN void *Address
     )
 {
     gcmkHEADER_ARG("Os=0x%X Address=0x%X", Os, Address);
@@ -3801,7 +3801,7 @@ gckOS_AllocatePagedMemoryEx(
         {
             gcmkVERIFY_OK(
                 gckOS_CacheFlush(Os, _GetProcessID(), NULL,
-                                 (gctPOINTER)page_to_phys(page),
+                                 (void *)page_to_phys(page),
                                  page_address(page),
                                  PAGE_SIZE));
         }
@@ -3969,7 +3969,7 @@ gckOS_FreePagedMemory(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that receives the address of the mapped
 **          memory.
 **
@@ -3983,7 +3983,7 @@ gckOS_LockPages(
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
     IN gctBOOL Cacheable,
-    OUT gctPOINTER * Logical,
+    OUT void **Logical,
     OUT size_t * PageCount
     )
 {
@@ -4198,7 +4198,7 @@ gckOS_LockPages(
 **      size_t PageCount
 **          Number of pages required for the physical address.
 **
-**      gctPOINTER PageTable
+**      void *PageTable
 **          Pointer to the page table to fill in.
 **
 **  OUTPUT:
@@ -4211,7 +4211,7 @@ gckOS_MapPagesEx(
     IN gceCORE Core,
     IN gctPHYS_ADDR Physical,
     IN size_t PageCount,
-    IN gctPOINTER PageTable
+    IN void *PageTable
     )
 {
     gceSTATUS status = gcvSTATUS_OK;
@@ -4345,7 +4345,7 @@ OnError:
 **      size_t Bytes
 **          Number of bytes of the allocation.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Address of the mapped memory.
 **
 **  OUTPUT:
@@ -4357,7 +4357,7 @@ gckOS_UnlockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctPOINTER Logical
+    IN void *Logical
     )
 {
     PLINUX_MDL_MAP          mdlMap;
@@ -4434,7 +4434,7 @@ gckOS_UnlockPages(
 **          Pointer to a variable that receives the physical address of the
 **          memory allocation.
 **
-**      gctPOINTER * Logical
+**      void ** Logical
 **          Pointer to a variable that receives the logical address of the
 **          memory allocation.
 */
@@ -4444,7 +4444,7 @@ gckOS_AllocateContiguous(
     IN gctBOOL InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
-    OUT gctPOINTER * Logical
+    OUT void **Logical
     )
 {
     gceSTATUS status;
@@ -4491,7 +4491,7 @@ OnError:
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocation.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logicval address of the allocation.
 **
 **      size_t Bytes
@@ -4505,7 +4505,7 @@ gceSTATUS
 gckOS_FreeContiguous(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -4544,7 +4544,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Pointer in user process space that needs to be mapped.
 **
 **      size_t Size
@@ -4552,23 +4552,23 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * KernelPointer
+**      void ** KernelPointer
 **          Pointer to a variable receiving the mapped pointer in kernel address
 **          space.
 */
 gceSTATUS
 gckOS_MapUserPointer(
     IN gckOS Os,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     IN size_t Size,
-    OUT gctPOINTER * KernelPointer
+    OUT void **KernelPointer
     )
 {
     gcmkHEADER_ARG("Os=0x%X Pointer=0x%X Size=%lu", Os, Pointer, Size);
 
 #if NO_USER_DIRECT_ACCESS_FROM_KERNEL
 {
-    gctPOINTER buf = NULL;
+    void *buf = NULL;
     gctUINT32 len;
 
     /* Verify the arguments. */
@@ -4629,13 +4629,13 @@ gckOS_MapUserPointer(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Pointer in user process space that needs to be unmapped.
 **
 **      size_t Size
 **          Number of bytes that need to be unmapped.
 **
-**      gctPOINTER KernelPointer
+**      void *KernelPointer
 **          Pointer in kernel address space that needs to be unmapped.
 **
 **  OUTPUT:
@@ -4645,9 +4645,9 @@ gckOS_MapUserPointer(
 gceSTATUS
 gckOS_UnmapUserPointer(
     IN gckOS Os,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     IN size_t Size,
-    IN gctPOINTER KernelPointer
+    IN void *KernelPointer
     )
 {
     gcmkHEADER_ARG("Os=0x%X Pointer=0x%X Size=%lu KernelPointer=0x%X",
@@ -4743,10 +4743,10 @@ gckOS_QueryNeedCopy(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER KernelPointer
+**      void *KernelPointer
 **          Pointer to kernel memory.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Pointer to user memory.
 **
 **      size_t Size
@@ -4759,8 +4759,8 @@ gckOS_QueryNeedCopy(
 gceSTATUS
 gckOS_CopyFromUserData(
     IN gckOS Os,
-    IN gctPOINTER KernelPointer,
-    IN gctPOINTER Pointer,
+    IN void *KernelPointer,
+    IN void *Pointer,
     IN size_t Size
     )
 {
@@ -4803,10 +4803,10 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER KernelPointer
+**      void *KernelPointer
 **          Pointer to kernel memory.
 **
-**      gctPOINTER Pointer
+**      void *Pointer
 **          Pointer to user memory.
 **
 **      size_t Size
@@ -4819,8 +4819,8 @@ OnError:
 gceSTATUS
 gckOS_CopyToUserData(
     IN gckOS Os,
-    IN gctPOINTER KernelPointer,
-    IN gctPOINTER Pointer,
+    IN void *KernelPointer,
+    IN void *Pointer,
     IN size_t Size
     )
 {
@@ -4863,7 +4863,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctPOINTER Address
+**      void *Address
 **          Address of the memory to write to.
 **
 **      gctUINT32 Data
@@ -4876,7 +4876,7 @@ OnError:
 gceSTATUS
 gckOS_WriteMemory(
     IN gckOS Os,
-    IN gctPOINTER Address,
+    IN void *Address,
     IN gctUINT32 Data
     )
 {
@@ -4925,7 +4925,7 @@ OnError:
 **
 **  INPUT:
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to memory to lock down.
 **
 **      size_t Size
@@ -4933,7 +4933,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Info
+**      void ** Info
 **          Pointer to variable receiving the information record required by
 **          gckOS_UnmapUserMemoryEx.
 **
@@ -4945,9 +4945,9 @@ gceSTATUS
 gckOS_MapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
-    IN gctPOINTER Memory,
+    IN void *Memory,
     IN size_t Size,
-    OUT gctPOINTER * Info,
+    OUT void **Info,
     OUT gctUINT32_PTR Address
     )
 {
@@ -5133,8 +5133,8 @@ OnError:
             {
                 /* Flush(clean) the data cache. */
                 gcmkONERROR(gckOS_CacheFlush(Os, _GetProcessID(), NULL,
-                                 (gctPOINTER)page_to_phys(pages[i]),
-                                 (gctPOINTER)(memory & PAGE_MASK) + i*PAGE_SIZE,
+                                 (void *)page_to_phys(pages[i]),
+                                 (void *)(memory & PAGE_MASK) + i*PAGE_SIZE,
                                  PAGE_SIZE));
             }
         }
@@ -5142,8 +5142,8 @@ OnError:
         {
             /* Flush(clean) the data cache. */
             gcmkONERROR(gckOS_CacheFlush(Os, _GetProcessID(), NULL,
-                             (gctPOINTER)(physical & PAGE_MASK),
-                             (gctPOINTER)(memory & PAGE_MASK),
+                             (void *)(physical & PAGE_MASK),
+                             (void *)(memory & PAGE_MASK),
                              PAGE_SIZE * pageCount));
 
         }
@@ -5151,7 +5151,7 @@ OnError:
         /* Allocate pages inside the page table. */
         gcmkERR_BREAK(gckMMU_AllocatePages(Os->device->kernels[Core]->mmu,
                                           pageCount * (PAGE_SIZE/4096),
-                                          (gctPOINTER *) &pageTable,
+                                          (void **) &pageTable,
                                           &address));
 
         /* Fill the page table. */
@@ -5193,7 +5193,7 @@ OnError:
         info->pageTable = pageTable;
         info->pages = pages;
 
-        *Info = (gctPOINTER) info;
+        *Info = (void *) info;
 
         gcmkTRACE_ZONE(
             gcvLEVEL_INFO, gcvZONE_OS,
@@ -5303,13 +5303,13 @@ OnError:
 **
 **  INPUT:
 **
-**      gctPOINTER Memory
+**      void *Memory
 **          Pointer to memory to unlock.
 **
 **      size_t Size
 **          Size in bytes of the memory to unlock.
 **
-**      gctPOINTER Info
+**      void *Info
 **          Information record returned by gckOS_MapUserMemoryEx.
 **
 **      gctUINT32_PTR Address
@@ -5323,9 +5323,9 @@ gceSTATUS
 gckOS_UnmapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
-    IN gctPOINTER Memory,
+    IN void *Memory,
     IN size_t Size,
-    IN gctPOINTER Info,
+    IN void *Info,
     IN gctUINT32 Address
     )
 {
@@ -5539,8 +5539,8 @@ gckOS_ResumeInterruptEx(
 
 gceSTATUS
 gckOS_MemCopy(
-    IN gctPOINTER Destination,
-    IN gctCONST_POINTER Source,
+    IN void *Destination,
+    IN const void *Source,
     IN size_t Bytes
     )
 {
@@ -5559,7 +5559,7 @@ gckOS_MemCopy(
 
 gceSTATUS
 gckOS_ZeroMemory(
-    IN gctPOINTER Memory,
+    IN void *Memory,
     IN size_t Bytes
     )
 {
@@ -5621,10 +5621,10 @@ outer_func(
 **      gctPHYS_ADDR Handle
 **          Physical address handle.  If NULL it is video memory.
 **
-**      gctPOINTER Physical
+**      void *Physical
 **          Physical address to flush.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to flush.
 **
 **      size_t Bytes
@@ -5638,8 +5638,8 @@ _HandleOuterCache(
     IN gckOS Os,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Physical,
-    IN gctPOINTER Logical,
+    IN void *Physical,
+    IN void *Logical,
     IN size_t Bytes,
     IN gceCACHEOPERATION Type
     )
@@ -5647,7 +5647,7 @@ _HandleOuterCache(
     gceSTATUS status;
     gctUINT32 i, pageNum;
     unsigned long paddr;
-    gctPOINTER vaddr;
+    void *vaddr;
 
     gcmkHEADER_ARG("Os=0x%X ProcessID=%d Handle=0x%X Logical=0x%X Bytes=%lu",
                    Os, ProcessID, Handle, Logical, Bytes);
@@ -5669,7 +5669,7 @@ _HandleOuterCache(
     else
     {
         /* Non contiguous virtual memory */
-        vaddr = (gctPOINTER)gcmALIGN_BASE((gctUINT32)Logical, PAGE_SIZE);
+        vaddr = (void *)gcmALIGN_BASE((gctUINT32)Logical, PAGE_SIZE);
         pageNum = GetPageCount(Bytes, 0);
 
         for (i = 0; i < pageNum; i += 1)
@@ -5718,10 +5718,10 @@ OnError:
 **      gctPHYS_ADDR Handle
 **          Physical address handle.  If NULL it is video memory.
 **
-**      gctPOINTER Physical
+**      void *Physical
 **          Physical address to flush.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to flush.
 **
 **      size_t Bytes
@@ -5732,8 +5732,8 @@ gckOS_CacheClean(
     IN gckOS Os,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Physical,
-    IN gctPOINTER Logical,
+    IN void *Physical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -5796,7 +5796,7 @@ gckOS_CacheClean(
 **      gctPHYS_ADDR Handle
 **          Physical address handle.  If NULL it is video memory.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to flush.
 **
 **      size_t Bytes
@@ -5807,8 +5807,8 @@ gckOS_CacheInvalidate(
     IN gckOS Os,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Physical,
-    IN gctPOINTER Logical,
+    IN void *Physical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -5869,7 +5869,7 @@ gckOS_CacheInvalidate(
 **      gctPHYS_ADDR Handle
 **          Physical address handle.  If NULL it is video memory.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to flush.
 **
 **      size_t Bytes
@@ -5880,8 +5880,8 @@ gckOS_CacheFlush(
     IN gckOS Os,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Physical,
-    IN gctPOINTER Logical,
+    IN void *Physical,
+    IN void *Logical,
     IN size_t Bytes
     )
 {
@@ -6143,13 +6143,13 @@ gckOS_BroadcastCalibrateSpeed(
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Semaphore
+**      void ** Semaphore
 **          Pointer to the variable that will receive the created semaphore.
 */
 gceSTATUS
 gckOS_CreateSemaphore(
     IN gckOS Os,
-    OUT gctPOINTER * Semaphore
+    OUT void **Semaphore
     )
 {
     gceSTATUS status;
@@ -6172,7 +6172,7 @@ gckOS_CreateSemaphore(
     sema_init(sem, 1);
 
     /* Return to caller. */
-    *Semaphore = (gctPOINTER) sem;
+    *Semaphore = (void *) sem;
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -6195,7 +6195,7 @@ OnError:
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Semaphore
+**      void *Semaphore
 **          Pointer to the semaphore thet needs to be acquired.
 **
 **  OUTPUT:
@@ -6205,7 +6205,7 @@ OnError:
 gceSTATUS
 gckOS_AcquireSemaphore(
     IN gckOS Os,
-    IN gctPOINTER Semaphore
+    IN void *Semaphore
     )
 {
     gceSTATUS status;
@@ -6243,7 +6243,7 @@ OnError:
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Semaphore
+**      void *Semaphore
 **          Pointer to the semaphore thet needs to be acquired.
 **
 **  OUTPUT:
@@ -6253,7 +6253,7 @@ OnError:
 gceSTATUS
 gckOS_TryAcquireSemaphore(
     IN gckOS Os,
-    IN gctPOINTER Semaphore
+    IN void *Semaphore
     )
 {
     gceSTATUS status;
@@ -6289,7 +6289,7 @@ gckOS_TryAcquireSemaphore(
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Semaphore
+**      void *Semaphore
 **          Pointer to the semaphore thet needs to be released.
 **
 **  OUTPUT:
@@ -6299,7 +6299,7 @@ gckOS_TryAcquireSemaphore(
 gceSTATUS
 gckOS_ReleaseSemaphore(
     IN gckOS Os,
-    IN gctPOINTER Semaphore
+    IN void *Semaphore
     )
 {
     gcmkHEADER_ARG("Os=0x%X Semaphore=0x%X", Os, Semaphore);
@@ -6327,7 +6327,7 @@ gckOS_ReleaseSemaphore(
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Semaphore
+**      void *Semaphore
 **          Pointer to the semaphore thet needs to be destroyed.
 **
 **  OUTPUT:
@@ -6337,7 +6337,7 @@ gckOS_ReleaseSemaphore(
 gceSTATUS
 gckOS_DestroySemaphore(
     IN gckOS Os,
-    IN gctPOINTER Semaphore
+    IN void *Semaphore
     )
 {
     gcmkHEADER_ARG("Os=0x%X Semaphore=0x%X", Os, Semaphore);
@@ -7105,7 +7105,7 @@ gckOS_CreateUserSignal(
 {
     gcsSIGNAL_PTR signal = NULL;
     gctINT unused, currentID, tableLen;
-    gctPOINTER * table;
+    void ** table;
     gctINT i;
     gceSTATUS status;
     gctBOOL acquired = gcvFALSE;
@@ -7124,8 +7124,8 @@ gckOS_CreateUserSignal(
     if (Os->signal.unused < 1)
     {
         /* Enlarge the table. */
-        table = (gctPOINTER *) kmalloc(
-                    sizeof(gctPOINTER) * (Os->signal.tableLen + USER_SIGNAL_TABLE_LEN_INIT),
+        table = (void **) kmalloc(
+                    sizeof(void *) * (Os->signal.tableLen + USER_SIGNAL_TABLE_LEN_INIT),
                     GFP_KERNEL | __GFP_NOWARN);
 
         if (table == NULL)
@@ -7134,8 +7134,8 @@ gckOS_CreateUserSignal(
             gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
         }
 
-        memset(table + Os->signal.tableLen, 0, sizeof(gctPOINTER) * USER_SIGNAL_TABLE_LEN_INIT);
-        memcpy(table, Os->signal.table, sizeof(gctPOINTER) * Os->signal.tableLen);
+        memset(table + Os->signal.tableLen, 0, sizeof(void *) * USER_SIGNAL_TABLE_LEN_INIT);
+        memcpy(table, Os->signal.table, sizeof(void *) * Os->signal.tableLen);
 
         /* Release the old table. */
         kfree(Os->signal.table);
@@ -7606,20 +7606,20 @@ _TimerFunction(
 **          Pointer to a call back function which will be called when timer is
 **          expired.
 **
-**      gctPOINTER Data.
+**      void *Data.
 **          Private data which will be passed to call back function.
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Timer
+**      void ** Timer
 **          Pointer to a variable receiving the created timer.
 */
 gceSTATUS
 gckOS_CreateTimer(
     IN gckOS Os,
     IN gctTIMERFUNCTION Function,
-    IN gctPOINTER Data,
-    OUT gctPOINTER * Timer
+    IN void *Data,
+    OUT void **Timer
     )
 {
     gceSTATUS status;
@@ -7630,7 +7630,7 @@ gckOS_CreateTimer(
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
     gcmkVERIFY_ARGUMENT(Timer != NULL);
 
-    gcmkONERROR(gckOS_Allocate(Os, sizeof(gcsOSTIMER), (gctPOINTER)&pointer));
+    gcmkONERROR(gckOS_Allocate(Os, sizeof(gcsOSTIMER), (void *)&pointer));
 
     pointer->function = Function;
     pointer->data = Data;
@@ -7658,7 +7658,7 @@ OnError:
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Timer
+**      void *Timer
 **          Pointer to the timer to be destoryed.
 **
 **  OUTPUT:
@@ -7668,7 +7668,7 @@ OnError:
 gceSTATUS
 gckOS_DestoryTimer(
     IN gckOS Os,
-    IN gctPOINTER Timer
+    IN void *Timer
     )
 {
     gcsOSTIMER_PTR timer;
@@ -7698,7 +7698,7 @@ gckOS_DestoryTimer(
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Timer
+**      void *Timer
 **          Pointer to the timer to be scheduled.
 **
 **      gctUINT32 Delay
@@ -7711,7 +7711,7 @@ gckOS_DestoryTimer(
 gceSTATUS
 gckOS_StartTimer(
     IN gckOS Os,
-    IN gctPOINTER Timer,
+    IN void *Timer,
     IN gctUINT32 Delay
     )
 {
@@ -7747,7 +7747,7 @@ gckOS_StartTimer(
 **      gckOS Os
 **          Pointer to the gckOS object.
 **
-**      gctPOINTER Timer
+**      void *Timer
 **          Pointer to the timer to be cancel.
 **
 **  OUTPUT:
@@ -7757,7 +7757,7 @@ gckOS_StartTimer(
 gceSTATUS
 gckOS_StopTimer(
     IN gckOS Os,
-    IN gctPOINTER Timer
+    IN void *Timer
     )
 {
     gcsOSTIMER_PTR timer;

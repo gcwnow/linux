@@ -47,18 +47,18 @@ struct _gckHARDWARE
     gctBOOL                     bigEndian;
 
     /* Chip status */
-    gctPOINTER                  powerMutex;
+    void *                      powerMutex;
     gctUINT32                   powerProcess;
     gctUINT32                   powerThread;
     gceCHIPPOWERSTATE           chipPowerState;
     gctUINT32                   lastWaitLink;
     gctBOOL                     clockState;
     gctBOOL                     powerState;
-    gctPOINTER                  globalSemaphore;
+    void *                      globalSemaphore;
 
     gctISRMANAGERFUNC           startIsr;
     gctISRMANAGERFUNC           stopIsr;
-    gctPOINTER                  isrContext;
+    void *                      isrContext;
 
     gctUINT32                   mmuVersion;
 
@@ -68,10 +68,10 @@ struct _gckHARDWARE
 #if gcdPOWEROFF_TIMEOUT
     gctUINT32                   powerOffTime;
     gctUINT32                   powerOffTimeout;
-    gctPOINTER                  powerOffTimer;
+    void *                      powerOffTimer;
 #endif
 
-    gctPOINTER                  pageTableDirty;
+    void *                      pageTableDirty;
 };
 
 gceSTATUS

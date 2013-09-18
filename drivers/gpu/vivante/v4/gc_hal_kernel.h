@@ -68,7 +68,7 @@ typedef struct _gcskLOGICAL_CACHE   gcskLOGICAL_CACHE;
 struct _gcskLOGICAL_CACHE
 {
     /* Logical address. */
-    gctPOINTER                      logical;
+    void *                          logical;
 
     /* DMAable address. */
     gctUINT32                       dma;
@@ -144,7 +144,7 @@ typedef struct _gcsDATABASE_RECORD
     gceDATABASE_TYPE                    type;
 
     /* Data for record. */
-    gctPOINTER                          data;
+    void *                              data;
     gctPHYS_ADDR                        physical;
     size_t                              bytes;
 }
@@ -194,7 +194,7 @@ gckKERNEL_AddProcessDB(
     IN gckKERNEL Kernel,
     IN gctUINT32 ProcessID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     IN gctPHYS_ADDR Physical,
     IN size_t Size
     );
@@ -205,7 +205,7 @@ gckKERNEL_RemoveProcessDB(
     IN gckKERNEL Kernel,
     IN gctUINT32 ProcessID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer
+    IN void *Pointer
     );
 
 /* Destroy the process database. */
@@ -222,7 +222,7 @@ gckKERNEL_FindProcessDB(
     IN gctUINT32 ProcessID,
     IN gctUINT32 ThreadID,
     IN gceDATABASE_TYPE Type,
-    IN gctPOINTER Pointer,
+    IN void *Pointer,
     OUT gcsDATABASE_RECORD_PTR Record
     );
 
@@ -266,7 +266,7 @@ struct _gckDB
 {
     /* Database management. */
     gcsDATABASE_PTR             db[16];
-    gctPOINTER                  dbMutex;
+    void *                      dbMutex;
     gcsDATABASE_PTR             freeDatabase;
     gcsDATABASE_RECORD_PTR      freeRecord;
     gcsDATABASE_PTR             lastDatabase;
@@ -299,13 +299,13 @@ struct _gckKERNEL
     gckEVENT                    eventObj;
 
     /* Pointer to context. */
-    gctPOINTER                  context;
+    void *                      context;
 
     /* Pointer to gckMMU object. */
     gckMMU                      mmu;
 
     /* Arom holding number of clients. */
-    gctPOINTER                  atomClients;
+    void *                      atomClients;
 
     /* Database management. */
     gckDB                       db;
@@ -340,25 +340,25 @@ struct _gckCOMMAND
     gctUINT64                   commitStamp;
 
     /* Command queue mutex. */
-    gctPOINTER                  mutexQueue;
+    void *                      mutexQueue;
 
     /* Context switching mutex. */
-    gctPOINTER                  mutexContext;
+    void *                      mutexContext;
 
     /* Command queue power semaphore. */
-    gctPOINTER                  powerSemaphore;
+    void *                      powerSemaphore;
 
     /* Current command queue. */
     struct _gcskCOMMAND_QUEUE
     {
         gctSIGNAL               signal;
         gctPHYS_ADDR            physical;
-        gctPOINTER              logical;
+        void *                  logical;
     }
     queues[gcdCOMMAND_QUEUES];
 
     gctPHYS_ADDR                physical;
-    gctPOINTER                  logical;
+    void *                      logical;
     gctUINT32                   offset;
     gctINT                      index;
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
@@ -373,7 +373,7 @@ struct _gckCOMMAND
 
     /* Pointer to last WAIT command. */
     gctPHYS_ADDR                waitPhysical;
-    gctPOINTER                  waitLogical;
+    void *                      waitLogical;
     size_t                      waitSize;
 
     /* Command buffer alignment. */
@@ -382,7 +382,7 @@ struct _gckCOMMAND
     size_t                      reservedTail;
 
     /* Commit counter. */
-    gctPOINTER                  atomCommit;
+    void *                      atomCommit;
 
     /* Kernel process ID. */
     gctUINT32                   kernelProcessID;
@@ -464,16 +464,16 @@ struct _gckEVENT
     gctUINT64                   lastCommitStamp;
 
     /* Queue mutex. */
-    gctPOINTER                  eventQueueMutex;
+    void *                      eventQueueMutex;
 
     /* Array of event queues. */
     gcsEVENT_QUEUE              queues[30];
     gctUINT8                    lastID;
-    gctPOINTER                  freeAtom;
+    void *                      freeAtom;
 
     /* Pending events. */
 #ifdef CONFIG_SMP
-    gctPOINTER                  pending;
+    void *                      pending;
 #else
     volatile gctUINT            pending;
 #endif
@@ -481,14 +481,14 @@ struct _gckEVENT
     /* List of free event structures and its mutex. */
     gcsEVENT_PTR                freeEventList;
     size_t                      freeEventCount;
-    gctPOINTER                  freeEventMutex;
+    void *                      freeEventMutex;
 
     /* Event queues. */
     gcsEVENT_QUEUE_PTR          queueHead;
     gcsEVENT_QUEUE_PTR          queueTail;
     gcsEVENT_QUEUE_PTR          freeList;
     gcsEVENT_QUEUE              repoList[gcdREPO_LIST_COUNT];
-    gctPOINTER                  eventListMutex;
+    void *                      eventListMutex;
 };
 
 gceSTATUS
@@ -496,7 +496,7 @@ gckEVENT_Stop(
     IN gckEVENT Event,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctSIGNAL Signal,
 	IN OUT size_t * waitSize
     );
@@ -554,21 +554,21 @@ typedef union _gcuVIDMEM_NODE
         gctPHYS_ADDR            physical;
         size_t                  bytes;
         /* do_mmap_pgoff address... mapped per-process. */
-        gctPOINTER              logical;
+        void *                  logical;
 
         /* Page table information. */
         /* Used only when node is not contiguous */
         size_t                  pageCount;
 
         /* Used only when node is not contiguous */
-        gctPOINTER              pageTables[gcdCORE_COUNT];
+        void *                  pageTables[gcdCORE_COUNT];
         /* Pointer to gckKERNEL object who lock this. */
         gckKERNEL               lockKernels[gcdCORE_COUNT];
         /* Actual physical address */
         gctUINT32               addresses[gcdCORE_COUNT];
 
         /* Mutex. */
-        gctPOINTER              mutex;
+        void *                  mutex;
 
         /* Locked counter. */
         gctINT32                lockeds[gcdCORE_COUNT];
@@ -612,7 +612,7 @@ struct _gckVIDMEM
     size_t                      threshold;
 
     /* The heap mutex. */
-    gctPOINTER                  mutex;
+    void *                      mutex;
 
 #if gcdUSE_VIDMEM_PER_PID
     /* The Pid this VidMem belongs to. */
@@ -635,7 +635,7 @@ struct _gckMMU
     gckHARDWARE                 hardware;
 
     /* The page table mutex. */
-    gctPOINTER                  pageTableMutex;
+    void *                      pageTableMutex;
 
     /* Page table information. */
     size_t                      pageTableSize;
@@ -653,7 +653,7 @@ struct _gckMMU
     gctUINT32                   heapList;
     gctBOOL                     freeNodes;
 
-    gctPOINTER                  staticSTLB;
+    void *                      staticSTLB;
     gctBOOL                     enabled;
 
     gctUINT32                   dynamicMappingStart;
@@ -677,14 +677,14 @@ gceSTATUS
 gckKERNEL_MapLogicalToPhysical(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
-    IN OUT gctPOINTER * Data
+    IN OUT void **Data
     );
 
 gceSTATUS
 gckKERNEL_FlushTranslationCache(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN size_t Bytes
     );
 #endif

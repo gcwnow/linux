@@ -983,7 +983,7 @@ gckCONTEXT_Construct(
     gckCONTEXT context = NULL;
     size_t allocationSize;
     gctUINT i;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%08X Hardware=0x%08X", Os, Hardware);
 
@@ -1165,7 +1165,7 @@ gckCONTEXT_Construct(
 
         if (context->linkIndexXD != 0)
         {
-            gctPOINTER xdLink;
+            void *xdLink;
             gctUINT8_PTR xdEntryLogical;
             size_t xdEntrySize;
             size_t linkBytes;
@@ -1358,7 +1358,7 @@ gckCONTEXT_Update(
         gcmkONERROR(gckOS_Allocate(
             Context->os,
             Context->recordArraySize,
-            (gctPOINTER *) &Context->recordArray
+            (void **) &Context->recordArray
             ));
     }
 
@@ -1402,7 +1402,7 @@ gckCONTEXT_Update(
                 kernel, needCopy,
                 &_stateDelta,
                 uDelta, sizeof(gcsSTATE_DELTA),
-                (gctPOINTER *) &kDelta
+                (void **) &kDelta
                 ));
 
             /* Get access to the state records. */
@@ -1410,7 +1410,7 @@ gckCONTEXT_Update(
                 kernel, needCopy,
                 Context->recordArray,
                 kDelta->recordArray, Context->recordArraySize,
-                (gctPOINTER *) &recordArray
+                (void **) &recordArray
                 ));
 
             /* Merge all pending states. */
@@ -1489,7 +1489,7 @@ gckCONTEXT_Update(
                     {
                         /* Map handle into physical address. */
                         gcmkONERROR(gckKERNEL_MapLogicalToPhysical(
-                            kernel, cache, (gctPOINTER) &data
+                            kernel, cache, (void *) &data
                             ));
                     }
 #endif
@@ -1525,7 +1525,7 @@ gckCONTEXT_Update(
                 kernel, needCopy,
                 gcvFALSE,
                 kDelta->recordArray, Context->recordArraySize,
-                (gctPOINTER *) &recordArray
+                (void **) &recordArray
                 ));
 
             /* Close access to the current state delta. */
@@ -1533,7 +1533,7 @@ gckCONTEXT_Update(
                 kernel, needCopy,
                 gcvTRUE,
                 uDelta, sizeof(gcsSTATE_DELTA),
-                (gctPOINTER *) &kDelta
+                (void **) &kDelta
                 ));
 
             /* Update the user delta pointer. */
@@ -1601,7 +1601,7 @@ gckCONTEXT_Update(
         kernel, needCopy,
         &_stateDelta,
         uDelta, sizeof(gcsSTATE_DELTA),
-        (gctPOINTER *) &kDelta
+        (void **) &kDelta
         ));
 
     /* State delta cannot be attached to anything yet. */
@@ -1649,7 +1649,7 @@ gckCONTEXT_Update(
         kernel, needCopy,
         gcvTRUE,
         uDelta, sizeof(gcsSTATE_DELTA),
-        (gctPOINTER *) &kDelta
+        (void **) &kDelta
         ));
 
     /* Schedule an event to mark the context buffer as available. */
@@ -1672,7 +1672,7 @@ OnError:
             kernel, needCopy,
             gcvFALSE,
             kDelta->recordArray, Context->recordArraySize,
-            (gctPOINTER *) &recordArray
+            (void **) &recordArray
             ));
 	}
 
@@ -1681,7 +1681,7 @@ OnError:
         kernel, needCopy,
         gcvTRUE,
         uDelta, sizeof(gcsSTATE_DELTA),
-        (gctPOINTER *) &kDelta
+        (void **) &kDelta
         ));
 
     /* Return the status. */

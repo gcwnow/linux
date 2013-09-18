@@ -61,9 +61,6 @@ typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
 typedef void *                  gctSIGNAL;
 
-typedef void *                  gctPOINTER;
-typedef const void *            gctCONST_POINTER;
-
 /* 2D Engine profile. */
 typedef struct _gcs2D_PROFILE
 {

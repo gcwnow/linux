@@ -44,7 +44,7 @@ static gceSTATUS
 _AllocateMemory(
     IN gckGALDEVICE Device,
     IN size_t Bytes,
-    OUT gctPOINTER *Logical,
+    OUT void **Logical,
     OUT gctPHYS_ADDR *Physical,
     OUT gctUINT32 *PhysAddr
     )
@@ -80,7 +80,7 @@ OnError:
 static gceSTATUS
 _FreeMemory(
     IN gckGALDEVICE Device,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctPHYS_ADDR Physical)
 {
     gceSTATUS status;
@@ -526,7 +526,7 @@ gckGALDEVICE_Construct(
             }
 #endif
 
-            device->registerBases[i] = (gctPOINTER) ioremap_nocache(
+            device->registerBases[i] = (void *) ioremap_nocache(
                 physical, device->requestedRegisterMemSizes[i]);
 
             if (device->registerBases[i] == NULL)
@@ -694,7 +694,7 @@ gckGALDEVICE_Construct(
         {
             /* Map internal memory. */
             device->internalLogical
-                = (gctPOINTER) ioremap_nocache(physical, device->internalSize);
+                = (void *) ioremap_nocache(physical, device->internalSize);
 
             if (device->internalLogical == NULL)
             {
@@ -724,7 +724,7 @@ gckGALDEVICE_Construct(
         {
             /* Map external memory. */
             device->externalLogical
-                = (gctPOINTER) ioremap_nocache(physical, device->externalSize);
+                = (void *) ioremap_nocache(physical, device->externalSize);
 
             if (device->externalLogical == NULL)
             {

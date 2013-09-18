@@ -258,7 +258,7 @@ _ProcessHints(
 
         if (!Command->hintArrayAllocated)
         {
-            gctPOINTER pointer = NULL;
+            void *pointer = NULL;
 
             gcmkONERROR(gckOS_Allocate(
                 Command->os,
@@ -283,7 +283,7 @@ _ProcessHints(
     }
     else
     {
-        gctPOINTER pointer = NULL;
+        void *pointer = NULL;
 
         gcmkONERROR(gckOS_MapUserPointer(
             Command->os,
@@ -303,7 +303,7 @@ _ProcessHints(
 
         /* Map handle into physical address. */
         gcmkONERROR(gckKERNEL_MapLogicalToPhysical(
-            kernel, cache, (gctPOINTER) hintedData
+            kernel, cache, (void *) hintedData
             ));
     }
 
@@ -381,7 +381,7 @@ gckCOMMAND_Construct(
     gckCOMMAND command = NULL;
     gceSTATUS status;
     gctINT i;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x", Kernel);
 
@@ -1018,30 +1018,30 @@ gckCOMMAND_Commit(
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR entryPhysical;
 #endif
-    gctPOINTER entryLogical;
+    void *entryLogical;
     size_t entryBytes;
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR exitPhysical;
 #endif
-    gctPOINTER exitLogical;
+    void *exitLogical;
     size_t exitBytes;
     gctPHYS_ADDR waitLinkPhysical;
-    gctPOINTER waitLinkLogical;
+    void *waitLinkLogical;
     size_t waitLinkBytes;
     gctPHYS_ADDR waitPhysical;
-    gctPOINTER waitLogical;
+    void *waitLogical;
     gctUINT32 waitOffset;
     size_t waitSize;
 
 #if gcdDUMP_COMMAND
-    gctPOINTER contextDumpLogical = NULL;
+    void *contextDumpLogical = NULL;
     size_t contextDumpBytes = 0;
-    gctPOINTER bufferDumpLogical = NULL;
+    void *bufferDumpLogical = NULL;
     size_t bufferDumpBytes = 0;
 # endif
 #endif
 
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG(
         "Command=0x%x CommandBuffer=0x%x ProcessID=%d",
@@ -1952,7 +1952,7 @@ gckCOMMAND_Commit(
         {
             /* Unmap record from kernel memory. */
             gcmkONERROR(gckOS_UnmapUserPointer(
-                Command->os, EventQueue, sizeof(gcsQUEUE), (gctPOINTER *) eventRecord
+                Command->os, EventQueue, sizeof(gcsQUEUE), (void **) eventRecord
                 ));
 
             eventRecord = NULL;
@@ -1996,7 +1996,7 @@ OnError:
             Command->os,
             EventQueue,
             sizeof(gcsQUEUE),
-            (gctPOINTER *) eventRecord
+            (void **) eventRecord
             ));
     }
 
@@ -2044,7 +2044,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctPOINTER * Buffer
+**      void ** Buffer
 **          Pointer to a variable that will receive the address of the reserved
 **          space.
 **
@@ -2056,7 +2056,7 @@ gceSTATUS
 gckCOMMAND_Reserve(
     IN gckCOMMAND Command,
     IN size_t RequestedBytes,
-    OUT gctPOINTER * Buffer,
+    OUT void **Buffer,
     OUT size_t * BufferSize
     )
 {
@@ -2158,14 +2158,14 @@ gckCOMMAND_Execute(
     size_t waitLinkBytes;
 
     gctPHYS_ADDR waitPhysical;
-    gctPOINTER waitLogical;
+    void *waitLogical;
     gctUINT32 waitOffset;
     size_t waitBytes;
 
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR execPhysical;
 #endif
-    gctPOINTER execLogical;
+    void *execLogical;
     size_t execBytes;
 
     gcmkHEADER_ARG("Command=0x%x RequestedBytes=%lu", Command, RequestedBytes);

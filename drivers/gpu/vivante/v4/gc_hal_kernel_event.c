@@ -322,7 +322,7 @@ gckEVENT_Construct(
     gckEVENT eventObj = NULL;
     int i;
     gcsEVENT_PTR record;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x", Kernel);
 
@@ -728,7 +728,7 @@ gckEVENT_AllocateRecord(
     gctBOOL acquired = gcvFALSE;
     gctINT i;
     gcsEVENT_PTR record;
-    gctPOINTER pointer = NULL;
+    void *pointer = NULL;
 
     gcmkHEADER_ARG("Event=0x%x AllocateAllowed=%d", Event, AllocateAllowed);
 
@@ -1076,7 +1076,7 @@ gckEVENT_Submit(
     gctBOOL commitEntered = gcvFALSE;
 #if !gcdNULL_DRIVER
     size_t bytes;
-    gctPOINTER buffer;
+    void *buffer;
 #endif
 
     gcmkHEADER_ARG("Event=0x%x Wait=%d", Event, Wait);
@@ -1257,7 +1257,7 @@ gckEVENT_Commit(
         }
         else
         {
-            gctPOINTER pointer = NULL;
+            void *pointer = NULL;
 
             /* Map record into kernel memory. */
             gcmkONERROR(gckOS_MapUserPointer(Event->os,
@@ -1282,7 +1282,7 @@ gckEVENT_Commit(
                 gckOS_UnmapUserPointer(Event->os,
                                        Queue,
                                        sizeof(gcsQUEUE),
-                                       (gctPOINTER *) record));
+                                       (void **) record));
             record = NULL;
         }
 
@@ -1303,7 +1303,7 @@ OnError:
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(Event->os,
                                              Queue,
                                              sizeof(gcsQUEUE),
-                                             (gctPOINTER *) record));
+                                             (void **) record));
     }
 
     /* Return the status. */
@@ -1653,7 +1653,7 @@ gckEVENT_Notify(
         {
             gcsEVENT_PTR record;
             gcsEVENT_PTR recordNext = NULL;
-            gctPOINTER logical;
+            void *logical;
 #if gcdSECURE_USER
             size_t bytes;
 #endif
@@ -2007,7 +2007,7 @@ OnError:
 **      gctPHYS_ADDR Handle
 **          Physical address handle.  If NULL it is video memory.
 **
-**      gctPOINTER Logical
+**      void *Logical
 **          Logical address to flush.
 **
 **      gctSIGNAL Signal
@@ -2022,7 +2022,7 @@ gckEVENT_Stop(
     IN gckEVENT Event,
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Handle,
-    IN gctPOINTER Logical,
+    IN void *Logical,
     IN gctSIGNAL Signal,
 	IN OUT size_t * waitSize
     )
