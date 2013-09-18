@@ -210,42 +210,6 @@ static int threadRoutine2D(void *ctxt)
     }
 }
 
-static irqreturn_t isrRoutineVG(int irq, void *ctxt)
-{
-    return IRQ_NONE;
-}
-
-static int threadRoutineVG(void *ctxt)
-{
-    gckGALDEVICE device = (gckGALDEVICE) ctxt;
-
-    gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_DRIVER,
-                   "Starting isr Thread with extension=%p",
-                   device);
-
-    for (;;)
-    {
-        static int down;
-
-        down = down_interruptible(&device->semas[gcvCORE_VG]);
-        if (down); /*To make gcc4.6 happy*/
-        device->dataReadys[gcvCORE_VG] = gcvFALSE;
-
-        if (device->killThread == gcvTRUE)
-        {
-            /* The daemon exits. */
-            while (!kthread_should_stop())
-            {
-                gckOS_Delay(device->os, 1);
-            }
-
-            return 0;
-        }
-
-        gckKERNEL_Notify(device->kernels[gcvCORE_VG], gcvNOTIFY_INTERRUPT, gcvFALSE);
-    }
-}
-
 /******************************************************************************\
 ******************************* gckGALDEVICE Code ******************************
 \******************************************************************************/
@@ -388,64 +352,6 @@ OnError:
     return status;
 }
 
-static gceSTATUS
-gckGALDEVICE_Setup_ISR_VG(
-    IN gckGALDEVICE Device
-    )
-{
-    gceSTATUS status;
-    gctINT ret;
-
-    gcmkHEADER_ARG("Device=0x%x", Device);
-
-    gcmkVERIFY_ARGUMENT(Device != NULL);
-
-    if (Device->irqLines[gcvCORE_VG] < 0)
-    {
-        gcmkONERROR(gcvSTATUS_GENERIC_IO);
-    }
-
-    /* Hook up the isr based on the irq line. */
-#ifdef FLAREON
-    gc500_handle.dev_name  = "galcore interrupt service";
-    gc500_handle.dev_id    = Device;
-    gc500_handle.handler   = isrRoutineVG;
-    gc500_handle.intr_gen  = GPIO_INTR_LEVEL_TRIGGER;
-    gc500_handle.intr_trig = GPIO_TRIG_HIGH_LEVEL;
-
-    ret = dove_gpio_request(
-        DOVE_GPIO0_7, &gc500_handle
-        );
-#else
-    ret = request_irq(
-        Device->irqLines[gcvCORE_VG], isrRoutineVG, IRQF_DISABLED,
-        "galcore interrupt service for 2D", Device
-        );
-#endif
-
-    if (ret != 0)
-    {
-        gcmkTRACE_ZONE(
-            gcvLEVEL_ERROR, gcvZONE_DRIVER,
-            "%s(%d): Could not register irq line %d (error=%d)\n",
-            __FUNCTION__, __LINE__,
-            Device->irqLines[gcvCORE_VG], ret
-            );
-
-        gcmkONERROR(gcvSTATUS_GENERIC_IO);
-    }
-
-    /* Mark ISR as initialized. */
-    Device->isrInitializeds[gcvCORE_VG] = gcvTRUE;
-
-    gcmkFOOTER_NO();
-    return gcvSTATUS_OK;
-
-OnError:
-    gcmkFOOTER();
-    return status;
-}
-
 /*******************************************************************************
 **
 **  gckGALDEVICE_Release_ISR
@@ -515,31 +421,6 @@ gckGALDEVICE_Release_ISR_2D(
     return gcvSTATUS_OK;
 }
 
-static gceSTATUS
-gckGALDEVICE_Release_ISR_VG(
-    IN gckGALDEVICE Device
-    )
-{
-    gcmkHEADER_ARG("Device=0x%x", Device);
-
-    gcmkVERIFY_ARGUMENT(Device != NULL);
-
-    /* release the irq */
-    if (Device->isrInitializeds[gcvCORE_VG])
-    {
-#ifdef FLAREON
-        dove_gpio_free(DOVE_GPIO0_7, "galcore interrupt service");
-#else
-        free_irq(Device->irqLines[gcvCORE_VG], Device);
-#endif
-
-	    Device->isrInitializeds[gcvCORE_VG] = gcvFALSE;
-    }
-
-    gcmkFOOTER_NO();
-    return gcvSTATUS_OK;
-}
-
 /*******************************************************************************
 **
 **  gckGALDEVICE_Construct
@@ -562,9 +443,6 @@ gckGALDEVICE_Construct(
     IN gctINT IrqLine2D,
     IN gctUINT32 RegisterMemBase2D,
     IN gctSIZE_T RegisterMemSize2D,
-    IN gctINT IrqLineVG,
-    IN gctUINT32 RegisterMemBaseVG,
-    IN gctSIZE_T RegisterMemSizeVG,
     IN gctUINT32 ContiguousBase,
     IN gctSIZE_T ContiguousSize,
     IN gctSIZE_T BankSize,
@@ -590,12 +468,10 @@ gckGALDEVICE_Construct(
 
     gcmkHEADER_ARG("IrqLine=%d RegisterMemBase=0x%08x RegisterMemSize=%u "
                    "IrqLine2D=%d RegisterMemBase2D=0x%08x RegisterMemSize2D=%u "
-                   "IrqLineVG=%d RegisterMemBaseVG=0x%08x RegisterMemSizeVG=%u "
                    "ContiguousBase=0x%08x ContiguousSize=%lu BankSize=%lu "
                    "FastClear=%d Compression=%d PhysBaseAddr=0x%x PhysSize=%d Signal=%d",
                    IrqLine, RegisterMemBase, RegisterMemSize,
                    IrqLine2D, RegisterMemBase2D, RegisterMemSize2D,
-                   IrqLineVG, RegisterMemBaseVG, RegisterMemSizeVG,
                    ContiguousBase, ContiguousSize, BankSize, FastClear, Compression,
                    PhysBaseAddr, PhysSize, Signal);
 
@@ -619,12 +495,6 @@ gckGALDEVICE_Construct(
     {
         device->requestedRegisterMemBases[gcvCORE_2D]       = RegisterMemBase2D;
         device->requestedRegisterMemSizes[gcvCORE_2D]       = RegisterMemSize2D;
-    }
-
-    if (IrqLineVG != -1)
-    {
-        device->requestedRegisterMemBases[gcvCORE_VG]       = RegisterMemBaseVG;
-        device->requestedRegisterMemSizes[gcvCORE_VG]       = RegisterMemSizeVG;
     }
 
     device->requestedContiguousBase  = 0;
@@ -772,15 +642,9 @@ gckGALDEVICE_Construct(
         device->kernels[gcvCORE_2D] = NULL;
     }
 
-    if (IrqLineVG == -1)
-    {
-        device->kernels[gcvCORE_VG] = NULL;
-    }
-
     /* Initialize the ISR. */
     device->irqLines[gcvCORE_MAJOR] = IrqLine;
     device->irqLines[gcvCORE_2D]    = IrqLine2D;
-    device->irqLines[gcvCORE_VG]    = IrqLineVG;
 
     /* Initialize the kernel thread semaphores. */
     for (i = 0; i < gcdCORE_COUNT; i++)
@@ -1203,30 +1067,6 @@ gckGALDEVICE_Start_Threads(
         Device->threadInitializeds[gcvCORE_2D]  = gcvFALSE;
     }
 
-    if (Device->kernels[gcvCORE_VG] != NULL)
-    {
-        /* Start the kernel thread. */
-        task = kthread_run(threadRoutineVG, Device, "galcore daemon thread for VG");
-
-        if (IS_ERR(task))
-        {
-            gcmkTRACE_ZONE(
-                gcvLEVEL_ERROR, gcvZONE_DRIVER,
-                "%s(%d): Could not start the kernel thread.\n",
-                __FUNCTION__, __LINE__
-                );
-
-            gcmkONERROR(gcvSTATUS_GENERIC_IO);
-        }
-
-        Device->threadCtxts[gcvCORE_VG]         = task;
-        Device->threadInitializeds[gcvCORE_VG]  = gcvTRUE;
-    }
-    else
-    {
-        Device->threadInitializeds[gcvCORE_VG]  = gcvFALSE;
-    }
-
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 
@@ -1339,12 +1179,6 @@ gckGALDEVICE_Start(
             ));
     }
 
-    if (Device->kernels[gcvCORE_VG] != NULL)
-    {
-        /* Setup the ISR routine. */
-        gcmkONERROR(gckGALDEVICE_Setup_ISR_VG(Device));
-    }
-
     gcmkFOOTER_NO();
     return gcvSTATUS_OK;
 
@@ -1404,12 +1238,6 @@ gckGALDEVICE_Stop(
         gcmkONERROR(gckHARDWARE_SetPowerManagementState(
             Device->kernels[gcvCORE_2D]->hardware, gcvPOWER_OFF
             ));
-    }
-
-    if (Device->kernels[gcvCORE_VG] != NULL)
-    {
-        /* Setup the ISR routine. */
-        gcmkONERROR(gckGALDEVICE_Release_ISR_VG(Device));
     }
 
     /* Stop the kernel thread. */

@@ -58,11 +58,10 @@ typedef enum _gceCORE
 {
     gcvCORE_MAJOR       = 0x0,
     gcvCORE_2D          = 0x1,
-    gcvCORE_VG          = 0x2
 }
 gceCORE;
 
-#define gcdCORE_COUNT               3
+#define gcdCORE_COUNT               2
 
 /*******************************************************************************
 **

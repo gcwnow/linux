@@ -87,15 +87,6 @@ module_param(registerMemBase2D, long, 0644);
 static ulong registerMemSize2D = 256 << 10;
 module_param(registerMemSize2D, ulong, 0644);
 
-static int irqLineVG = -1;
-module_param(irqLineVG, int, 0644);
-
-static long registerMemBaseVG = 0x00000000;
-module_param(registerMemBaseVG, long, 0644);
-
-static ulong registerMemSizeVG = 256 << 10;
-module_param(registerMemSizeVG, ulong, 0644);
-
 static long contiguousSize = JZ_GPU_MEM_SIZE;
 module_param(contiguousSize, long, 0644);
 
@@ -121,15 +112,6 @@ module_param(registerMemBase2D, long, 0644);
 
 static ulong registerMemSize2D = 256 << 10;
 module_param(registerMemSize2D, ulong, 0644);
-
-static int irqLineVG = -1;
-module_param(irqLineVG, int, 0644);
-
-static long registerMemBaseVG = 0x00000000;
-module_param(registerMemBaseVG, long, 0644);
-
-static ulong registerMemSizeVG = 256 << 10;
-module_param(registerMemSizeVG, ulong, 0644);
 
 static long contiguousSize = 4 << 20;
 module_param(contiguousSize, long, 0644);
@@ -785,13 +767,6 @@ static int drv_init(void)
             printk("  registerMemSize2D = 0x%08lX\n", registerMemSize2D);
         }
 
-        if (irqLineVG != -1)
-        {
-            printk("  irqLineVG         = %d\n",      irqLineVG);
-            printk("  registerMemBaseVG = 0x%08lX\n", registerMemBaseVG);
-            printk("  registerMemSizeVG = 0x%08lX\n", registerMemSizeVG);
-        }
-
         printk("  contiguousSize    = %ld\n",     contiguousSize);
         printk("  contiguousBase    = 0x%08lX\n", contiguousBase);
         printk("  bankSize          = 0x%08lX\n", bankSize);
@@ -808,8 +783,6 @@ static int drv_init(void)
         registerMemBase, registerMemSize,
         irqLine2D,
         registerMemBase2D, registerMemSize2D,
-        irqLineVG,
-        registerMemBaseVG, registerMemSizeVG,
         contiguousBase, contiguousSize,
         bankSize, fastClear, compression, baseAddress, physSize, signal,
         &device
