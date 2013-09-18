@@ -442,7 +442,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctSIZE_T_PTR Bytes
+**      gctSIZE_T *Bytes
 **          Pointer to a variable that receives the size of the record deleted.
 **          Can be NULL if the size is not required.
 */
@@ -452,7 +452,7 @@ gckKERNEL_DeleteRecord(
     IN gcsDATABASE_PTR Database,
     IN gceDATABASE_TYPE Type,
     IN gctPOINTER Data,
-    OUT gctSIZE_T_PTR Bytes OPTIONAL
+    OUT gctSIZE_T *Bytes OPTIONAL
     )
 {
     gceSTATUS status;
@@ -550,9 +550,9 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctSIZE_T_PTR Bytes
-**          Pointer to a variable that receives the size of the record deleted.
-**          Can be NULL if the size is not required.
+**      gcsDATABASE_RECORD_PTR Record
+**          Pointer to a variable that receives a copy of the record deleted.
+**          Can be NULL if a copy is not required.
 */
 static gceSTATUS
 gckKERNEL_FindRecord(

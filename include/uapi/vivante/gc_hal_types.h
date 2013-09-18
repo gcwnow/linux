@@ -57,7 +57,6 @@ typedef gctUINT32 *             gctUINT32_PTR;
 typedef gctUINT64 *             gctUINT64_PTR;
 
 typedef unsigned long           gctSIZE_T;
-typedef gctSIZE_T *             gctSIZE_T_PTR;
 
 typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
