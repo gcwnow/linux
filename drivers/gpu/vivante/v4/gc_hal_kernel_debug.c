@@ -1558,7 +1558,7 @@ _AppendBuffer(
 }
 #endif
 
-static gcmINLINE void
+static void
 _InitBuffers(
     void
     )
@@ -1590,7 +1590,7 @@ _InitBuffers(
     }
 }
 
-static gcmINLINE gcsBUFFERED_OUTPUT_PTR
+static gcsBUFFERED_OUTPUT_PTR
 _GetOutputBuffer(
     void
     )
@@ -1644,7 +1644,7 @@ _GetOutputBuffer(
     return outputBuffer;
 }
 
-static gcmINLINE int _GetArgumentSize(
+static int _GetArgumentSize(
     IN gctCONST_STRING Message
     )
 {
