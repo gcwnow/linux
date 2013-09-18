@@ -164,7 +164,7 @@ gckKERNEL_GetVideoMemoryPool(
 **      gctPHYS_ADDR Physical
 **          Physical address of video memory to map.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to map.
 **
 **  OUTPUT:
@@ -177,7 +177,7 @@ gceSTATUS
 gckKERNEL_MapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     )
 {
@@ -198,7 +198,7 @@ gckKERNEL_MapMemory(
 **      gctPHYS_ADDR Physical
 **          Physical address of video memory to map.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to map.
 **
 **      gctPOINTER Logical
@@ -212,7 +212,7 @@ gceSTATUS
 gckKERNEL_UnmapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     )
 {

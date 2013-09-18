@@ -64,7 +64,7 @@ gckKERNEL_NewDatabase(
     gceSTATUS status;
     gcsDATABASE_PTR database;
     gctBOOL acquired = gcvFALSE;
-    gctSIZE_T slot;
+    size_t slot;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d", Kernel, ProcessID);
 
@@ -157,7 +157,7 @@ gckKERNEL_FindDatabase(
 {
     gceSTATUS status;
     gcsDATABASE_PTR database, previous;
-    gctSIZE_T slot;
+    size_t slot;
     gctBOOL acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d LastProcessID=%d",
@@ -442,7 +442,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctSIZE_T *Bytes
+**      size_t *Bytes
 **          Pointer to a variable that receives the size of the record deleted.
 **          Can be NULL if the size is not required.
 */
@@ -452,7 +452,7 @@ gckKERNEL_DeleteRecord(
     IN gcsDATABASE_PTR Database,
     IN gceDATABASE_TYPE Type,
     IN gctPOINTER Data,
-    OUT gctSIZE_T *Bytes OPTIONAL
+    OUT size_t *Bytes OPTIONAL
     )
 {
     gceSTATUS status;
@@ -761,7 +761,7 @@ OnError:
 **      gctPHYS_ADDR Physical
 **          Physical address of the record to add.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Size of the record to add.
 **
 **  OUTPUT:
@@ -775,7 +775,7 @@ gckKERNEL_AddProcessDB(
     IN gceDATABASE_TYPE Type,
     IN gctPOINTER Pointer,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Size
+    IN size_t Size
     )
 {
     gceSTATUS status;
@@ -949,7 +949,7 @@ gckKERNEL_RemoveProcessDB(
 {
     gceSTATUS status;
     gcsDATABASE_PTR database;
-    gctSIZE_T bytes = 0;
+    size_t bytes = 0;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d Type=%d Pointer=0x%x",
                    Kernel, ProcessID, Type, Pointer);

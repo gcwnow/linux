@@ -48,7 +48,7 @@
 
 #define gcmSIZEOF(a) \
 ( \
-    (gctSIZE_T) (sizeof(a)) \
+    (size_t) (sizeof(a)) \
 )
 
 typedef struct _gckHARDWARE *       gckHARDWARE;
@@ -129,7 +129,7 @@ gckOS_Destroy(
 gceSTATUS
 gckOS_Allocate(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Memory
     );
 
@@ -144,7 +144,7 @@ gckOS_Free(
 gceSTATUS
 gckOS_AllocateMemory(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Memory
     );
 
@@ -160,7 +160,7 @@ gceSTATUS
 gckOS_AllocatePagedMemoryEx(
     IN gckOS Os,
     IN gctBOOL Contiguous,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPHYS_ADDR * Physical
     );
 
@@ -169,10 +169,10 @@ gceSTATUS
 gckOS_LockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctBOOL Cacheable,
     OUT gctPOINTER * Logical,
-    OUT gctSIZE_T * PageCount
+    OUT size_t * PageCount
     );
 
 /* Map pages. */
@@ -181,7 +181,7 @@ gckOS_MapPagesEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T PageCount,
+    IN size_t PageCount,
     IN gctPOINTER PageTable
     );
 
@@ -190,7 +190,7 @@ gceSTATUS
 gckOS_UnlockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     );
 
@@ -199,7 +199,7 @@ gceSTATUS
 gckOS_FreePagedMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /* Allocate non-paged memory. */
@@ -207,7 +207,7 @@ gceSTATUS
 gckOS_AllocateNonPagedMemory(
     IN gckOS Os,
     IN gctBOOL InUserSpace,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT gctPOINTER * Logical
     );
@@ -216,7 +216,7 @@ gckOS_AllocateNonPagedMemory(
 gceSTATUS
 gckOS_FreeNonPagedMemory(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical
     );
@@ -226,7 +226,7 @@ gceSTATUS
 gckOS_AllocateContiguous(
     IN gckOS Os,
     IN gctBOOL InUserSpace,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT gctPOINTER * Logical
     );
@@ -237,14 +237,14 @@ gckOS_FreeContiguous(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /* Get the number fo bytes per page. */
 gceSTATUS
 gckOS_GetPageSize(
     IN gckOS Os,
-    OUT gctSIZE_T * PageSize
+    OUT size_t * PageSize
     );
 
 /* Get the physical address of a corresponding logical address. */
@@ -260,7 +260,7 @@ gceSTATUS
 gckOS_MapPhysical(
     IN gckOS Os,
     IN gctUINT32 Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     );
 
@@ -269,7 +269,7 @@ gceSTATUS
 gckOS_UnmapPhysical(
     IN gckOS Os,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /* Read data from a hardware register. */
@@ -303,7 +303,7 @@ gceSTATUS
 gckOS_MapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     );
 
@@ -312,7 +312,7 @@ gceSTATUS
 gckOS_UnmapMemoryEx(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical,
     IN gctUINT32 PID
     );
@@ -322,7 +322,7 @@ gceSTATUS
 gckOS_UnmapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     );
 
@@ -575,7 +575,7 @@ gceSTATUS
 gckOS_MapUserPointer(
     IN gckOS Os,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     );
 
@@ -584,7 +584,7 @@ gceSTATUS
 gckOS_UnmapUserPointer(
     IN gckOS Os,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctPOINTER KernelPointer
     );
 
@@ -633,7 +633,7 @@ gckOS_QueryNeedCopy(
 **      gctPOINTER Pointer
 **          Pointer to user memory.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes to copy.
 **
 **  OUTPUT:
@@ -645,7 +645,7 @@ gckOS_CopyFromUserData(
     IN gckOS Os,
     IN gctPOINTER KernelPointer,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size
+    IN size_t Size
     );
 
 /*******************************************************************************
@@ -665,7 +665,7 @@ gckOS_CopyFromUserData(
 **      gctPOINTER Pointer
 **          Pointer to user memory.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes to copy.
 **
 **  OUTPUT:
@@ -677,7 +677,7 @@ gckOS_CopyToUserData(
     IN gckOS Os,
     IN gctPOINTER KernelPointer,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size
+    IN size_t Size
     );
 
 gceSTATUS
@@ -704,14 +704,14 @@ gceSTATUS
 gckOS_MemCopy(
     IN gctPOINTER Destination,
     IN gctCONST_POINTER Source,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /* Zero memory. */
 gceSTATUS
 gckOS_ZeroMemory(
     IN gctPOINTER Memory,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /*******************************************************************************
@@ -804,7 +804,7 @@ gckOS_MapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * Info,
     OUT gctUINT32_PTR Address
     );
@@ -815,7 +815,7 @@ gckOS_UnmapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctPOINTER Info,
     IN gctUINT32 Address
     );
@@ -872,7 +872,7 @@ gckOS_CacheClean(
     gctPHYS_ADDR Handle,
     gctPOINTER Physical,
     gctPOINTER Logical,
-    gctSIZE_T Bytes
+    size_t Bytes
     );
 
 gceSTATUS
@@ -882,7 +882,7 @@ gckOS_CacheFlush(
     gctPHYS_ADDR Handle,
     gctPOINTER Physical,
     gctPOINTER Logical,
-    gctSIZE_T Bytes
+    size_t Bytes
     );
 
 gceSTATUS
@@ -892,7 +892,7 @@ gckOS_CacheInvalidate(
     gctPHYS_ADDR Handle,
     gctPOINTER Physical,
     gctPOINTER Logical,
-    gctSIZE_T Bytes
+    size_t Bytes
     );
 
 /******************************************************************************\
@@ -1075,9 +1075,9 @@ gceSTATUS
 gckVIDMEM_Construct(
     IN gckOS Os,
     IN gctUINT32 BaseAddress,
-    IN gctSIZE_T Bytes,
-    IN gctSIZE_T Threshold,
-    IN gctSIZE_T Banking,
+    IN size_t Bytes,
+    IN size_t Threshold,
+    IN size_t Banking,
     OUT gckVIDMEM * Memory
     );
 
@@ -1091,7 +1091,7 @@ gckVIDMEM_Destroy(
 gceSTATUS
 gckVIDMEM_AllocateLinear(
     IN gckVIDMEM Memory,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
     OUT gcuVIDMEM_NODE_PTR * Node
@@ -1126,7 +1126,7 @@ gceSTATUS
 gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
     IN gctBOOL Contiguous,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gcuVIDMEM_NODE_PTR * Node
     );
 
@@ -1230,7 +1230,7 @@ gceSTATUS
 gckKERNEL_MapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     );
 
@@ -1239,7 +1239,7 @@ gceSTATUS
 gckKERNEL_UnmapMemory(
     IN gckKERNEL Kernel,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     );
 
@@ -1284,7 +1284,7 @@ gckKERNEL_OpenUserData(
     IN gctBOOL NeedCopy,
     IN gctPOINTER StaticStorage,
     IN gctPOINTER UserPointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     );
 
@@ -1295,7 +1295,7 @@ gckKERNEL_CloseUserData(
     IN gctBOOL NeedCopy,
     IN gctBOOL FlushData,
     IN gctPOINTER UserPointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     );
 
@@ -1328,7 +1328,7 @@ gckHARDWARE_GetType(
 gceSTATUS
 gckHARDWARE_QuerySystemMemory(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * SystemSize,
+    OUT size_t * SystemSize,
     OUT gctUINT32 * SystemBaseAddress
     );
 
@@ -1345,9 +1345,9 @@ gckHARDWARE_BuildVirtualAddress(
 gceSTATUS
 gckHARDWARE_QueryCommandBuffer(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * Alignment,
-    OUT gctSIZE_T * ReservedHead,
-    OUT gctSIZE_T * ReservedTail
+    OUT size_t * Alignment,
+    OUT size_t * ReservedHead,
+    OUT size_t * ReservedTail
     );
 
 /* Add a WAIT/LINK pair in the command queue. */
@@ -1356,9 +1356,9 @@ gckHARDWARE_WaitLink(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gctUINT32 Offset,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctUINT32 * WaitOffset,
-    OUT gctSIZE_T * WaitBytes
+    OUT size_t * WaitBytes
     );
 
 /* Kickstart the command processor. */
@@ -1366,7 +1366,7 @@ gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 
 /* Add an END command in the command queue. */
@@ -1374,7 +1374,7 @@ gceSTATUS
 gckHARDWARE_End(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     );
 
 /* Add a NOP command in the command queue. */
@@ -1382,7 +1382,7 @@ gceSTATUS
 gckHARDWARE_Nop(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     );
 
 /* Add a PIPESELECT command in the command queue. */
@@ -1391,7 +1391,7 @@ gckHARDWARE_PipeSelect(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gcePIPE_SELECT Pipe,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     );
 
 /* Add a LINK command in the command queue. */
@@ -1400,8 +1400,8 @@ gckHARDWARE_Link(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gctPOINTER FetchAddress,
-    IN gctSIZE_T FetchSize,
-    IN OUT gctSIZE_T * Bytes
+    IN size_t FetchSize,
+    IN OUT size_t * Bytes
     );
 
 /* Add an EVENT command in the command queue. */
@@ -1411,17 +1411,17 @@ gckHARDWARE_Event(
     IN gctPOINTER Logical,
     IN gctUINT8 Event,
     IN gceKERNEL_WHERE FromWhere,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     );
 
 /* Query the available memory. */
 gceSTATUS
 gckHARDWARE_QueryMemory(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * InternalSize,
+    OUT size_t * InternalSize,
     OUT gctUINT32 * InternalBaseAddress,
     OUT gctUINT32 * InternalAlignment,
-    OUT gctSIZE_T * ExternalSize,
+    OUT size_t * ExternalSize,
     OUT gctUINT32 * ExternalBaseAddress,
     OUT gctUINT32 * ExternalAlignment,
     OUT gctUINT32 * HorizontalTileSize,
@@ -1514,7 +1514,7 @@ gckHARDWARE_Flush(
     IN gckHARDWARE Hardware,
     IN gceKERNEL_FLUSH Flush,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     );
 
 /* Enable/disable fast clear. */
@@ -1572,8 +1572,8 @@ gckHARDWARE_Compose(
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Offset,
-    IN gctSIZE_T Size,
+    IN size_t Offset,
+    IN size_t Size,
     IN gctUINT8 EventID
     );
 
@@ -1726,16 +1726,16 @@ gckCOMMAND_Commit(
 gceSTATUS
 gckCOMMAND_Reserve(
     IN gckCOMMAND Command,
-    IN gctSIZE_T RequestedBytes,
+    IN size_t RequestedBytes,
     OUT gctPOINTER * Buffer,
-    OUT gctSIZE_T * BufferSize
+    OUT size_t * BufferSize
     );
 
 /* Execute reserved space in the command buffer. */
 gceSTATUS
 gckCOMMAND_Execute(
     IN gckCOMMAND Command,
-    IN gctSIZE_T RequstedBytes
+    IN size_t RequstedBytes
     );
 
 /* Stall the command queue. */
@@ -1750,7 +1750,7 @@ gceSTATUS
 gckCOMMAND_Attach(
     IN gckCOMMAND Command,
     OUT gckCONTEXT * Context,
-    OUT gctSIZE_T * StateCount,
+    OUT size_t * StateCount,
     IN gctUINT32 ProcessID
     );
 
@@ -1771,7 +1771,7 @@ typedef struct _gckMMU *            gckMMU;
 gceSTATUS
 gckMMU_Construct(
     IN gckKERNEL Kernel,
-    IN gctSIZE_T MmuSize,
+    IN size_t MmuSize,
     OUT gckMMU * Mmu
     );
 
@@ -1793,7 +1793,7 @@ gckMMU_Enable(
 gceSTATUS
 gckMMU_AllocatePages(
     IN gckMMU Mmu,
-    IN gctSIZE_T PageCount,
+    IN size_t PageCount,
     OUT gctPOINTER * PageTable,
     OUT gctUINT32 * Address
     );
@@ -1803,7 +1803,7 @@ gceSTATUS
 gckMMU_FreePages(
     IN gckMMU Mmu,
     IN gctPOINTER PageTable,
-    IN gctSIZE_T PageCount
+    IN size_t PageCount
     );
 
 /* Set the MMU page with info. */

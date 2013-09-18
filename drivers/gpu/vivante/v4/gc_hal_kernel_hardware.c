@@ -889,7 +889,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * InternalSize
+**      size_t * InternalSize
 **          Pointer to a variable that will hold the size of the internal video
 **          memory in bytes.  If 'InternalSize' is NULL, no information of the
 **          internal memory will be returned.
@@ -904,7 +904,7 @@ OnError:
 **          the internal video memory.  This pointer cannot be NULL if
 **          'InternalSize' is also non-NULL.
 **
-**      gctSIZE_T * ExternalSize
+**      size_t * ExternalSize
 **          Pointer to a variable that will hold the size of the external video
 **          memory in bytes.  If 'ExternalSize' is NULL, no information of the
 **          external memory will be returned.
@@ -930,10 +930,10 @@ OnError:
 gceSTATUS
 gckHARDWARE_QueryMemory(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * InternalSize,
+    OUT size_t * InternalSize,
     OUT gctUINT32 * InternalBaseAddress,
     OUT gctUINT32 * InternalAlignment,
-    OUT gctSIZE_T * ExternalSize,
+    OUT size_t * ExternalSize,
     OUT gctUINT32 * ExternalBaseAddress,
     OUT gctUINT32 * ExternalAlignment,
     OUT gctUINT32 * HorizontalTileSize,
@@ -1148,7 +1148,7 @@ gckHARDWARE_SplitMemory(
 **      gctPOINTER Logical
 **          Logical address of command buffer.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes for the prefetch unit (until after the first LINK).
 **
 **  OUTPUT:
@@ -1159,7 +1159,7 @@ gceSTATUS
 gckHARDWARE_Execute(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gceSTATUS status;
@@ -1232,13 +1232,13 @@ OnError:
 **      gctUINT32 Offset
 **          Offset into command buffer required for alignment.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the WAIT/LINK command
 **          sequence.  If 'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          by the WAIT/LINK command sequence.  If 'Bytes' is NULL, nothing will
 **          be returned.
@@ -1248,7 +1248,7 @@ OnError:
 **          from the specified logcial pointer.
 **          If 'WaitOffset' is NULL nothing will be returned.
 **
-**      gctSIZE_T * WaitSize
+**      size_t * WaitSize
 **          Pointer to a variable that will receive the number of bytes used by
 **          the WAIT command.  If 'LinkSize' is NULL nothing will be returned.
 */
@@ -1257,9 +1257,9 @@ gckHARDWARE_WaitLink(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gctUINT32 Offset,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctUINT32 * WaitOffset,
-    OUT gctSIZE_T * WaitSize
+    OUT size_t * WaitSize
     )
 {
     static const gctUINT waitCount = 200;
@@ -1267,7 +1267,7 @@ gckHARDWARE_WaitLink(
     gceSTATUS status;
     gctUINT32 address;
     gctUINT32_PTR logical;
-    gctSIZE_T bytes;
+    size_t bytes;
 
     gcmkHEADER_ARG("Hardware=0x%x Logical=0x%x Offset=0x%08x *Bytes=%lu",
                    Hardware, Logical, Offset, gcmOPT_VALUE(Bytes));
@@ -1467,13 +1467,13 @@ OnError:
 **          Pointer to the current location inside the command queue to append
 **          END command at or NULL just to query the size of the END command.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the END command.  If
 **          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          for the END command.  If 'Bytes' is NULL, nothing will be returned.
 */
@@ -1481,7 +1481,7 @@ gceSTATUS
 gckHARDWARE_End(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     )
 {
     gctUINT32_PTR logical = (gctUINT32_PTR) Logical;
@@ -1544,13 +1544,13 @@ OnError:
 **          Pointer to the current location inside the command queue to append
 **          NOP command at or NULL just to query the size of the NOP command.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the NOP command.  If
 **          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          for the NOP command.  If 'Bytes' is NULL, nothing will be returned.
 */
@@ -1558,7 +1558,7 @@ gceSTATUS
 gckHARDWARE_Nop(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     )
 {
     gctUINT32_PTR logical = (gctUINT32_PTR) Logical;
@@ -1623,13 +1623,13 @@ OnError:
 **      gceKERNEL_WHERE FromWhere
 **          Location of the pipe to send the event.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the EVENT command.  If
 **          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          for the EVENT command.  If 'Bytes' is NULL, nothing will be
 **          returned.
@@ -1640,7 +1640,7 @@ gckHARDWARE_Event(
     IN gctPOINTER Logical,
     IN gctUINT8 Event,
     IN gceKERNEL_WHERE FromWhere,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     )
 {
     gctUINT size;
@@ -1784,13 +1784,13 @@ OnError:
 **      gcePIPE_SELECT Pipe
 **          Pipe value to select.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the PIPESELECT command.
 **          If 'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          for the PIPESELECT command.  If 'Bytes' is NULL, nothing will be
 **          returned.
@@ -1800,7 +1800,7 @@ gckHARDWARE_PipeSelect(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gcePIPE_SELECT Pipe,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     )
 {
     gctUINT32_PTR logical = (gctUINT32_PTR) Logical;
@@ -1912,16 +1912,16 @@ OnError:
 **      gctPOINTER FetchAddress
 **          Logical address of destination of LINK.
 **
-**      gctSIZE_T FetchSize
+**      size_t FetchSize
 **          Number of bytes in destination of LINK.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes available for the LINK command.  If
 **          'Logical' is NULL, this argument will be ignored.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that will receive the number of bytes required
 **          for the LINK command.  If 'Bytes' is NULL, nothing will be returned.
 */
@@ -1930,12 +1930,12 @@ gckHARDWARE_Link(
     IN gckHARDWARE Hardware,
     IN gctPOINTER Logical,
     IN gctPOINTER FetchAddress,
-    IN gctSIZE_T FetchSize,
-    IN OUT gctSIZE_T * Bytes
+    IN size_t FetchSize,
+    IN OUT size_t * Bytes
     )
 {
     gceSTATUS status;
-    gctSIZE_T bytes;
+    size_t bytes;
     gctUINT32 address;
     gctUINT32 link;
     gctUINT32_PTR logical = (gctUINT32_PTR) Logical;
@@ -2209,23 +2209,23 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Alignment
+**      size_t * Alignment
 **          Pointer to a variable receiving the alignment for each command.
 **
-**      gctSIZE_T * ReservedHead
+**      size_t * ReservedHead
 **          Pointer to a variable receiving the number of reserved bytes at the
 **          head of each command buffer.
 **
-**      gctSIZE_T * ReservedTail
+**      size_t * ReservedTail
 **          Pointer to a variable receiving the number of bytes reserved at the
 **          tail of each command buffer.
 */
 gceSTATUS
 gckHARDWARE_QueryCommandBuffer(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * Alignment,
-    OUT gctSIZE_T * ReservedHead,
-    OUT gctSIZE_T * ReservedTail
+    OUT size_t * Alignment,
+    OUT size_t * ReservedHead,
+    OUT size_t * ReservedTail
     )
 {
     gcmkHEADER_ARG("Hardware=0x%x", Hardware);
@@ -2271,7 +2271,7 @@ gckHARDWARE_QueryCommandBuffer(
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * SystemSize
+**      size_t * SystemSize
 **          Pointer to a variable that receives the maximum size of the system
 **          memory.
 **
@@ -2282,7 +2282,7 @@ gckHARDWARE_QueryCommandBuffer(
 gceSTATUS
 gckHARDWARE_QuerySystemMemory(
     IN gckHARDWARE Hardware,
-    OUT gctSIZE_T * SystemSize,
+    OUT size_t * SystemSize,
     OUT gctUINT32 * SystemBaseAddress
     )
 {
@@ -2506,7 +2506,7 @@ gckHARDWARE_FlushMMU(
     gceSTATUS status;
     gckCOMMAND command;
     gctUINT32_PTR buffer;
-    gctSIZE_T bufferSize;
+    size_t bufferSize;
     gctBOOL commitEntered = gcvFALSE;
     gctPOINTER pointer = NULL;
     gctUINT32 flushSize;
@@ -2690,7 +2690,7 @@ gckHARDWARE_SetMMUv2(
     gctUINT32 config, address;
     gckCOMMAND command;
     gctUINT32_PTR buffer;
-    gctSIZE_T bufferSize;
+    size_t bufferSize;
     gctBOOL commitEntered = gcvFALSE;
     gctPOINTER pointer = NULL;
 
@@ -2936,7 +2936,7 @@ gckHARDWARE_Flush(
     IN gckHARDWARE Hardware,
     IN gceKERNEL_FLUSH Flush,
     IN gctPOINTER Logical,
-    IN OUT gctSIZE_T * Bytes
+    IN OUT size_t * Bytes
     )
 {
     gctUINT32 pipe;
@@ -3186,7 +3186,7 @@ gckHARDWARE_SetPowerManagementState(
     gckOS os;
     gctUINT flag, clock;
     gctPOINTER buffer;
-    gctSIZE_T bytes, requested;
+    size_t bytes, requested;
     gctBOOL acquired = gcvFALSE;
     gctBOOL mutexAcquired = gcvFALSE;
     gctBOOL stall = gcvTRUE;
@@ -4577,8 +4577,8 @@ gckHARDWARE_Compose(
     IN gctUINT32 ProcessID,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Offset,
-    IN gctSIZE_T Size,
+    IN size_t Offset,
+    IN size_t Size,
     IN gctUINT8 EventID
     )
 {

@@ -775,7 +775,7 @@ gckCOMMAND_Start(
     gceSTATUS status;
     gckHARDWARE hardware;
     gctUINT32 waitOffset;
-    gctSIZE_T waitLinkBytes;
+    size_t waitLinkBytes;
 
     gcmkHEADER_ARG("Command=0x%x", Command);
 
@@ -1010,34 +1010,34 @@ gckCOMMAND_Commit(
     gctUINT8_PTR commandBufferLogical;
     gctUINT8_PTR commandBufferLink;
     gctUINT commandBufferSize;
-    gctSIZE_T nopBytes;
-    gctSIZE_T pipeBytes;
-    gctSIZE_T linkBytes;
-    gctSIZE_T bytes;
+    size_t nopBytes;
+    size_t pipeBytes;
+    size_t linkBytes;
+    size_t bytes;
     gctUINT32 offset;
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR entryPhysical;
 #endif
     gctPOINTER entryLogical;
-    gctSIZE_T entryBytes;
+    size_t entryBytes;
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR exitPhysical;
 #endif
     gctPOINTER exitLogical;
-    gctSIZE_T exitBytes;
+    size_t exitBytes;
     gctPHYS_ADDR waitLinkPhysical;
     gctPOINTER waitLinkLogical;
-    gctSIZE_T waitLinkBytes;
+    size_t waitLinkBytes;
     gctPHYS_ADDR waitPhysical;
     gctPOINTER waitLogical;
     gctUINT32 waitOffset;
-    gctSIZE_T waitSize;
+    size_t waitSize;
 
 #if gcdDUMP_COMMAND
     gctPOINTER contextDumpLogical = NULL;
-    gctSIZE_T contextDumpBytes = 0;
+    size_t contextDumpBytes = 0;
     gctPOINTER bufferDumpLogical = NULL;
-    gctSIZE_T bufferDumpBytes = 0;
+    size_t bufferDumpBytes = 0;
 # endif
 #endif
 
@@ -2039,7 +2039,7 @@ OnError:
 **      gckCOMMAND Command
 **          Pointer to an gckCOMMAND object.
 **
-**      gctSIZE_T RequestedBytes
+**      size_t RequestedBytes
 **          Number of bytes previously reserved.
 **
 **  OUTPUT:
@@ -2048,21 +2048,21 @@ OnError:
 **          Pointer to a variable that will receive the address of the reserved
 **          space.
 **
-**      gctSIZE_T * BufferSize
+**      size_t * BufferSize
 **          Pointer to a variable that will receive the number of bytes
 **          available in the command queue.
 */
 gceSTATUS
 gckCOMMAND_Reserve(
     IN gckCOMMAND Command,
-    IN gctSIZE_T RequestedBytes,
+    IN size_t RequestedBytes,
     OUT gctPOINTER * Buffer,
-    OUT gctSIZE_T * BufferSize
+    OUT size_t * BufferSize
     )
 {
     gceSTATUS status;
-    gctSIZE_T bytes;
-    gctSIZE_T requiredBytes;
+    size_t bytes;
+    size_t requiredBytes;
     gctUINT32 requestedAligned;
 
     gcmkHEADER_ARG("Command=0x%x RequestedBytes=%lu", Command, RequestedBytes);
@@ -2137,7 +2137,7 @@ OnError:
 **      gckCOMMAND Command
 **          Pointer to an gckCOMMAND object.
 **
-**      gctSIZE_T RequestedBytes
+**      size_t RequestedBytes
 **          Number of bytes previously reserved.
 **
 **  OUTPUT:
@@ -2147,7 +2147,7 @@ OnError:
 gceSTATUS
 gckCOMMAND_Execute(
     IN gckCOMMAND Command,
-    IN gctSIZE_T RequestedBytes
+    IN size_t RequestedBytes
     )
 {
     gceSTATUS status;
@@ -2155,18 +2155,18 @@ gckCOMMAND_Execute(
     gctPHYS_ADDR waitLinkPhysical;
     gctUINT8_PTR waitLinkLogical;
     gctUINT32 waitLinkOffset;
-    gctSIZE_T waitLinkBytes;
+    size_t waitLinkBytes;
 
     gctPHYS_ADDR waitPhysical;
     gctPOINTER waitLogical;
     gctUINT32 waitOffset;
-    gctSIZE_T waitBytes;
+    size_t waitBytes;
 
 #if gcdNONPAGED_MEMORY_CACHEABLE
     gctPHYS_ADDR execPhysical;
 #endif
     gctPOINTER execLogical;
-    gctSIZE_T execBytes;
+    size_t execBytes;
 
     gcmkHEADER_ARG("Command=0x%x RequestedBytes=%lu", Command, RequestedBytes);
 
@@ -2458,7 +2458,7 @@ OnError:
 **          Pointer to a variable that will receive a pointer to a new
 **          gckCONTEXT object.
 **
-**      gctSIZE_T * StateCount
+**      size_t * StateCount
 **          Pointer to a variable that will receive the number of states
 **          in the context buffer.
 */
@@ -2466,7 +2466,7 @@ gceSTATUS
 gckCOMMAND_Attach(
     IN gckCOMMAND Command,
     OUT gckCONTEXT * Context,
-    OUT gctSIZE_T * StateCount,
+    OUT size_t * StateCount,
     IN gctUINT32 ProcessID
     )
 {

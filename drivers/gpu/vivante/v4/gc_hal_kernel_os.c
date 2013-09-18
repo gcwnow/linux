@@ -117,7 +117,7 @@ typedef struct _gcsUSER_MAPPING
     gctPOINTER                  logical;
 
     /* Number of bytes of this mapping. */
-    gctSIZE_T                   bytes;
+    size_t                      bytes;
 
     /* Starting address of this mapping. */
     gctINT8_PTR                 start;
@@ -1308,7 +1308,7 @@ _DestoryKernelVirtualMapping(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to allocate.
 **
 **  OUTPUT:
@@ -1319,7 +1319,7 @@ _DestoryKernelVirtualMapping(
 gceSTATUS
 gckOS_Allocate(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Memory
     )
 {
@@ -1396,7 +1396,7 @@ OnError:
 **
 **  INPUT:
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to allocate.
 **
 **  OUTPUT:
@@ -1407,7 +1407,7 @@ OnError:
 gceSTATUS
 gckOS_AllocateMemory(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Memory
     )
 {
@@ -1503,7 +1503,7 @@ gckOS_FreeMemory(
 **      gctPHYS_ADDR Physical
 **          Start of physical address memory.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to map.
 **
 **  OUTPUT:
@@ -1516,7 +1516,7 @@ gceSTATUS
 gckOS_MapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     )
 {
@@ -1683,7 +1683,7 @@ gckOS_MapMemory(
 **      gctPHYS_ADDR Physical
 **          Start of physical address memory.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to unmap.
 **
 **      gctPOINTER Memory
@@ -1697,7 +1697,7 @@ gceSTATUS
 gckOS_UnmapMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     )
 {
@@ -1732,7 +1732,7 @@ gckOS_UnmapMemory(
 **      gctPHYS_ADDR Physical
 **          Start of physical address memory.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to unmap.
 **
 **      gctPOINTER Memory
@@ -1749,7 +1749,7 @@ gceSTATUS
 gckOS_UnmapMemoryEx(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical,
     IN gctUINT32 PID
     )
@@ -1825,12 +1825,12 @@ gckOS_UnmapMemoryEx(
 **      gctBOOL InUserSpace
 **          gcvTRUE if the pages need to be mapped into user space.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that holds the number of bytes to allocate.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that hold the number of bytes allocated.
 **
 **      gctPHYS_ADDR * Physical
@@ -1845,12 +1845,12 @@ gceSTATUS
 gckOS_AllocateNonPagedMemory(
     IN gckOS Os,
     IN gctBOOL InUserSpace,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT gctPOINTER * Logical
     )
 {
-    gctSIZE_T bytes;
+    size_t bytes;
     gctINT numPages;
     PLINUX_MDL mdl = NULL;
     PLINUX_MDL_MAP mdlMap = NULL;
@@ -2124,7 +2124,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes allocated.
 **
 **      gctPHYS_ADDR Physical
@@ -2139,7 +2139,7 @@ OnError:
 */
 gceSTATUS gckOS_FreeNonPagedMemory(
     IN gckOS Os,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical
     )
@@ -2357,12 +2357,12 @@ gckOS_WriteRegisterEx(
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * PageSize
+**      size_t * PageSize
 **          Pointer to a variable that will receive the system's page size.
 */
 gceSTATUS gckOS_GetPageSize(
     IN gckOS Os,
-    OUT gctSIZE_T * PageSize
+    OUT size_t * PageSize
     )
 {
     gcmkHEADER_ARG("Os=0x%X", Os);
@@ -2372,7 +2372,7 @@ gceSTATUS gckOS_GetPageSize(
     gcmkVERIFY_ARGUMENT(PageSize != NULL);
 
     /* Return the page size. */
-    *PageSize = (gctSIZE_T) PAGE_SIZE;
+    *PageSize = (size_t) PAGE_SIZE;
 
     /* Success. */
     gcmkFOOTER_ARG("*PageSize", *PageSize);
@@ -2385,7 +2385,7 @@ gckOS_AddMapping(
     IN gckOS Os,
     IN gctUINT32 Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gceSTATUS status;
@@ -2419,7 +2419,7 @@ static gceSTATUS
 gckOS_RemoveMapping(
     IN gckOS Os,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gceSTATUS status;
@@ -2729,7 +2729,7 @@ OnError:
 **      gctUINT32 Physical
 **          Physical address of the memory to map.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to map.
 **
 **  OUTPUT:
@@ -2742,7 +2742,7 @@ gceSTATUS
 gckOS_MapPhysical(
     IN gckOS Os,
     IN gctUINT32 Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPOINTER * Logical
     )
 {
@@ -2827,7 +2827,7 @@ gckOS_MapPhysical(
 **      gctPOINTER Logical
 **          Pointer to the base address of the memory to unmap.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to unmap.
 **
 **  OUTPUT:
@@ -2838,7 +2838,7 @@ gceSTATUS
 gckOS_UnmapPhysical(
     IN gckOS Os,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     PLINUX_MDL  mdl;
@@ -3709,7 +3709,7 @@ gckOS_MemoryBarrier(
 **      gctBOOL Contiguous
 **          Need contiguous memory or not.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to allocate.
 **
 **  OUTPUT:
@@ -3722,14 +3722,14 @@ gceSTATUS
 gckOS_AllocatePagedMemoryEx(
     IN gckOS Os,
     IN gctBOOL Contiguous,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gctPHYS_ADDR * Physical
     )
 {
     gctINT numPages;
     gctINT i;
     PLINUX_MDL mdl = NULL;
-    gctSIZE_T bytes;
+    size_t bytes;
     gctBOOL locked = gcvFALSE;
     gceSTATUS status;
 
@@ -3866,7 +3866,7 @@ OnError:
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocation.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes of the allocation.
 **
 **  OUTPUT:
@@ -3877,7 +3877,7 @@ gceSTATUS
 gckOS_FreePagedMemory(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     PLINUX_MDL mdl = (PLINUX_MDL) Physical;
@@ -3961,7 +3961,7 @@ gckOS_FreePagedMemory(
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocation.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes of the allocation.
 **
 **      gctBOOL Cacheable
@@ -3973,7 +3973,7 @@ gckOS_FreePagedMemory(
 **          Pointer to a variable that receives the address of the mapped
 **          memory.
 **
-**      gctSIZE_T * PageCount
+**      size_t * PageCount
 **          Pointer to a variable that receives the number of pages required for
 **          the page table according to the GPU page size.
 */
@@ -3981,10 +3981,10 @@ gceSTATUS
 gckOS_LockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctBOOL Cacheable,
     OUT gctPOINTER * Logical,
-    OUT gctSIZE_T * PageCount
+    OUT size_t * PageCount
     )
 {
     PLINUX_MDL      mdl;
@@ -4195,7 +4195,7 @@ gckOS_LockPages(
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocation.
 **
-**      gctSIZE_T PageCount
+**      size_t PageCount
 **          Number of pages required for the physical address.
 **
 **      gctPOINTER PageTable
@@ -4210,7 +4210,7 @@ gckOS_MapPagesEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T PageCount,
+    IN size_t PageCount,
     IN gctPOINTER PageTable
     )
 {
@@ -4342,7 +4342,7 @@ OnError:
 **      gctPHYS_ADDR Physical
 **          Physical address of the allocation.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes of the allocation.
 **
 **      gctPOINTER Logical
@@ -4356,7 +4356,7 @@ gceSTATUS
 gckOS_UnlockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctPOINTER Logical
     )
 {
@@ -4422,12 +4422,12 @@ gckOS_UnlockPages(
 **      gctBOOL InUserSpace
 **          gcvTRUE if the pages need to be mapped into user space.
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to the number of bytes to allocate.
 **
 **  OUTPUT:
 **
-**      gctSIZE_T * Bytes
+**      size_t * Bytes
 **          Pointer to a variable that receives the number of bytes allocated.
 **
 **      gctPHYS_ADDR * Physical
@@ -4442,7 +4442,7 @@ gceSTATUS
 gckOS_AllocateContiguous(
     IN gckOS Os,
     IN gctBOOL InUserSpace,
-    IN OUT gctSIZE_T * Bytes,
+    IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT gctPOINTER * Logical
     )
@@ -4494,7 +4494,7 @@ OnError:
 **      gctPOINTER Logical
 **          Logicval address of the allocation.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes of the allocation.
 **
 **  OUTPUT:
@@ -4506,7 +4506,7 @@ gckOS_FreeContiguous(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gceSTATUS status;
@@ -4547,7 +4547,7 @@ OnError:
 **      gctPOINTER Pointer
 **          Pointer in user process space that needs to be mapped.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes that need to be mapped.
 **
 **  OUTPUT:
@@ -4560,7 +4560,7 @@ gceSTATUS
 gckOS_MapUserPointer(
     IN gckOS Os,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     )
 {
@@ -4632,7 +4632,7 @@ gckOS_MapUserPointer(
 **      gctPOINTER Pointer
 **          Pointer in user process space that needs to be unmapped.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes that need to be unmapped.
 **
 **      gctPOINTER KernelPointer
@@ -4646,7 +4646,7 @@ gceSTATUS
 gckOS_UnmapUserPointer(
     IN gckOS Os,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctPOINTER KernelPointer
     )
 {
@@ -4749,7 +4749,7 @@ gckOS_QueryNeedCopy(
 **      gctPOINTER Pointer
 **          Pointer to user memory.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes to copy.
 **
 **  OUTPUT:
@@ -4761,7 +4761,7 @@ gckOS_CopyFromUserData(
     IN gckOS Os,
     IN gctPOINTER KernelPointer,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size
+    IN size_t Size
     )
 {
     gceSTATUS status;
@@ -4809,7 +4809,7 @@ OnError:
 **      gctPOINTER Pointer
 **          Pointer to user memory.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Number of bytes to copy.
 **
 **  OUTPUT:
@@ -4821,7 +4821,7 @@ gckOS_CopyToUserData(
     IN gckOS Os,
     IN gctPOINTER KernelPointer,
     IN gctPOINTER Pointer,
-    IN gctSIZE_T Size
+    IN size_t Size
     )
 {
     gceSTATUS status;
@@ -4928,7 +4928,7 @@ OnError:
 **      gctPOINTER Memory
 **          Pointer to memory to lock down.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Size in bytes of the memory to lock down.
 **
 **  OUTPUT:
@@ -4946,7 +4946,7 @@ gckOS_MapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * Info,
     OUT gctUINT32_PTR Address
     )
@@ -4966,7 +4966,7 @@ OnError:
     return status;
 #else
 {
-    gctSIZE_T pageCount, i, j;
+    size_t pageCount, i, j;
     gctUINT32_PTR pageTable;
     gctUINT32 address = 0, physical = ~0U;
     gctUINT32 start, end, memory;
@@ -5306,7 +5306,7 @@ OnError:
 **      gctPOINTER Memory
 **          Pointer to memory to unlock.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Size in bytes of the memory to unlock.
 **
 **      gctPOINTER Info
@@ -5324,7 +5324,7 @@ gckOS_UnmapUserMemoryEx(
     IN gckOS Os,
     IN gceCORE Core,
     IN gctPOINTER Memory,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctPOINTER Info,
     IN gctUINT32 Address
     )
@@ -5347,7 +5347,7 @@ OnError:
 {
     gctUINT32 memory, start, end;
     gcsPageInfo_PTR info;
-    gctSIZE_T pageCount, i;
+    size_t pageCount, i;
     struct page **pages;
 
     /* Verify the arguments. */
@@ -5541,7 +5541,7 @@ gceSTATUS
 gckOS_MemCopy(
     IN gctPOINTER Destination,
     IN gctCONST_POINTER Source,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcmkHEADER_ARG("Destination=0x%X Source=0x%X Bytes=%lu",
@@ -5560,7 +5560,7 @@ gckOS_MemCopy(
 gceSTATUS
 gckOS_ZeroMemory(
     IN gctPOINTER Memory,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcmkHEADER_ARG("Memory=0x%X Bytes=%lu", Memory, Bytes);
@@ -5627,7 +5627,7 @@ outer_func(
 **      gctPOINTER Logical
 **          Logical address to flush.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Size of the address range in bytes to flush.
 **
 **      gceOUTERCACHE_OPERATION Type
@@ -5640,7 +5640,7 @@ _HandleOuterCache(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gceCACHEOPERATION Type
     )
 {
@@ -5724,7 +5724,7 @@ OnError:
 **      gctPOINTER Logical
 **          Logical address to flush.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Size of the address range in bytes to flush.
 */
 gceSTATUS
@@ -5734,7 +5734,7 @@ gckOS_CacheClean(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcmkHEADER_ARG("Os=0x%X ProcessID=%d Handle=0x%X Logical=0x%X Bytes=%lu",
@@ -5799,7 +5799,7 @@ gckOS_CacheClean(
 **      gctPOINTER Logical
 **          Logical address to flush.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Size of the address range in bytes to flush.
 */
 gceSTATUS
@@ -5809,7 +5809,7 @@ gckOS_CacheInvalidate(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcmkHEADER_ARG("Os=0x%X ProcessID=%d Handle=0x%X Logical=0x%X Bytes=%lu",
@@ -5872,7 +5872,7 @@ gckOS_CacheInvalidate(
 **      gctPOINTER Logical
 **          Logical address to flush.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Size of the address range in bytes to flush.
 */
 gceSTATUS
@@ -5882,7 +5882,7 @@ gckOS_CacheFlush(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Physical,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcmkHEADER_ARG("Os=0x%X ProcessID=%d Handle=0x%X Logical=0x%X Bytes=%lu",

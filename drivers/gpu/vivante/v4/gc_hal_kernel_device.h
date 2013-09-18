@@ -32,29 +32,29 @@ typedef struct _gckGALDEVICE
     gckKERNEL           kernels[gcdCORE_COUNT];
 
     /* Attributes. */
-    gctSIZE_T           internalSize;
+    size_t              internalSize;
     gctPHYS_ADDR        internalPhysical;
     gctPOINTER          internalLogical;
     gckVIDMEM           internalVidMem;
-    gctSIZE_T           externalSize;
+    size_t              externalSize;
     gctPHYS_ADDR        externalPhysical;
     gctPOINTER          externalLogical;
     gckVIDMEM           externalVidMem;
     gckVIDMEM           contiguousVidMem;
     gctPOINTER          contiguousBase;
     gctPHYS_ADDR        contiguousPhysical;
-    gctSIZE_T           contiguousSize;
+    size_t              contiguousSize;
     gctBOOL             contiguousMapped;
     gctPOINTER          contiguousMappedUser;
-    gctSIZE_T           systemMemorySize;
+    size_t              systemMemorySize;
     gctUINT32           systemMemoryBaseAddress;
     gctPOINTER          registerBases[gcdCORE_COUNT];
-    gctSIZE_T           registerSizes[gcdCORE_COUNT];
+    size_t              registerSizes[gcdCORE_COUNT];
     gctUINT32           baseAddress;
     gctUINT32           requestedRegisterMemBases[gcdCORE_COUNT];
-    gctSIZE_T           requestedRegisterMemSizes[gcdCORE_COUNT];
+    size_t              requestedRegisterMemSizes[gcdCORE_COUNT];
     gctUINT32           requestedContiguousBase;
-    gctSIZE_T           requestedContiguousSize;
+    size_t              requestedContiguousSize;
 
     /* IRQ management. */
     gctINT              irqLines[gcdCORE_COUNT];
@@ -106,13 +106,13 @@ gceSTATUS gckGALDEVICE_Stop(
 gceSTATUS gckGALDEVICE_Construct(
     IN gctINT IrqLine,
     IN gctUINT32 RegisterMemBase,
-    IN gctSIZE_T RegisterMemSize,
+    IN size_t RegisterMemSize,
     IN gctINT IrqLine2D,
     IN gctUINT32 RegisterMemBase2D,
-    IN gctSIZE_T RegisterMemSize2D,
+    IN size_t RegisterMemSize2D,
     IN gctUINT32 ContiguousBase,
-    IN gctSIZE_T ContiguousSize,
-    IN gctSIZE_T BankSize,
+    IN size_t ContiguousSize,
+    IN size_t BankSize,
     IN gctINT FastClear,
     IN gctINT Compression,
     IN gctUINT32 PhysBaseAddr,

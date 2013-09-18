@@ -106,7 +106,7 @@ struct _gcoCMDBUF
     gctPOINTER                  logical;
 
     /* Number of bytes in command buffer. */
-    gctSIZE_T                   bytes;
+    size_t                      bytes;
 
     /* Start offset into the command buffer. */
     gctUINT32                   startOffset;
@@ -115,7 +115,7 @@ struct _gcoCMDBUF
     gctUINT32                   offset;
 
     /* Number of free bytes in command buffer. */
-    gctSIZE_T                   free;
+    size_t                      free;
 
     /* Location of the last reserved area. */
     gctPOINTER                  lastReserve;

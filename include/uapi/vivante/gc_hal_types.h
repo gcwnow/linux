@@ -24,6 +24,7 @@
 #ifndef __gc_hal_types_h_
 #define __gc_hal_types_h_
 
+#include <linux/types.h>
 
 /******************************************************************************\
 ********************************** Common Types ********************************
@@ -55,8 +56,6 @@ typedef gctUINT8 *              gctUINT8_PTR;
 typedef gctUINT16 *             gctUINT16_PTR;
 typedef gctUINT32 *             gctUINT32_PTR;
 typedef gctUINT64 *             gctUINT64_PTR;
-
-typedef unsigned long           gctSIZE_T;
 
 typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
@@ -180,13 +179,13 @@ gceSTATUS;
 typedef struct _gcsDATABASE_COUNTERS
 {
     /* Number of currently allocated bytes. */
-    gctSIZE_T                   bytes;
+    size_t                      bytes;
 
     /* Maximum number of bytes allocated (memory footprint). */
-    gctSIZE_T                   maxBytes;
+    size_t                      maxBytes;
 
     /* Total number of bytes allocated. */
-    gctSIZE_T                   totalBytes;
+    size_t                      totalBytes;
 }
 gcsDATABASE_COUNTERS;
 

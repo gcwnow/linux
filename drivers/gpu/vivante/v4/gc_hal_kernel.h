@@ -146,7 +146,7 @@ typedef struct _gcsDATABASE_RECORD
     /* Data for record. */
     gctPOINTER                          data;
     gctPHYS_ADDR                        physical;
-    gctSIZE_T                           bytes;
+    size_t                              bytes;
 }
 gcsDATABASE_RECORD;
 
@@ -155,7 +155,7 @@ typedef struct _gcsDATABASE
 {
     /* Pointer to next entry is hash list. */
     gcsDATABASE_PTR                     next;
-    gctSIZE_T                           slot;
+    size_t                              slot;
 
     /* Process ID. */
     gctUINT32                           processID;
@@ -196,7 +196,7 @@ gckKERNEL_AddProcessDB(
     IN gceDATABASE_TYPE Type,
     IN gctPOINTER Pointer,
     IN gctPHYS_ADDR Physical,
-    IN gctSIZE_T Size
+    IN size_t Size
     );
 
 /* Remove a record to the process database. */
@@ -327,7 +327,7 @@ struct _gckCOMMAND
     gckOS                       os;
 
     /* Number of bytes per page. */
-    gctSIZE_T                   pageSize;
+    size_t                      pageSize;
 
     /* Current pipe select. */
     gcePIPE_SELECT              pipeSelect;
@@ -374,12 +374,12 @@ struct _gckCOMMAND
     /* Pointer to last WAIT command. */
     gctPHYS_ADDR                waitPhysical;
     gctPOINTER                  waitLogical;
-    gctSIZE_T                   waitSize;
+    size_t                      waitSize;
 
     /* Command buffer alignment. */
-    gctSIZE_T                   alignment;
-    gctSIZE_T                   reservedHead;
-    gctSIZE_T                   reservedTail;
+    size_t                      alignment;
+    size_t                      reservedHead;
+    size_t                      reservedTail;
 
     /* Commit counter. */
     gctPOINTER                  atomCommit;
@@ -480,7 +480,7 @@ struct _gckEVENT
 
     /* List of free event structures and its mutex. */
     gcsEVENT_PTR                freeEventList;
-    gctSIZE_T                   freeEventCount;
+    size_t                      freeEventCount;
     gctPOINTER                  freeEventMutex;
 
     /* Event queues. */
@@ -498,7 +498,7 @@ gckEVENT_Stop(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Logical,
     IN gctSIGNAL Signal,
-	IN OUT gctSIZE_T * waitSize
+	IN OUT size_t * waitSize
     );
 
 /* gcuVIDMEM_NODE structure. */
@@ -520,7 +520,7 @@ typedef union _gcuVIDMEM_NODE
 
         /* Information for this node. */
         gctUINT32               offset;
-        gctSIZE_T               bytes;
+        size_t                  bytes;
         gctUINT32               alignment;
 
         /* Locked counter. */
@@ -552,13 +552,13 @@ typedef union _gcuVIDMEM_NODE
         gctBOOL                 contiguous;
         /* mdl record pointer... a kmalloc address. Process agnostic. */
         gctPHYS_ADDR            physical;
-        gctSIZE_T               bytes;
+        size_t                  bytes;
         /* do_mmap_pgoff address... mapped per-process. */
         gctPOINTER              logical;
 
         /* Page table information. */
         /* Used only when node is not contiguous */
-        gctSIZE_T               pageCount;
+        size_t                  pageCount;
 
         /* Used only when node is not contiguous */
         gctPOINTER              pageTables[gcdCORE_COUNT];
@@ -599,8 +599,8 @@ struct _gckVIDMEM
 
     /* Information for this video memory heap. */
     gctUINT32                   baseAddress;
-    gctSIZE_T                   bytes;
-    gctSIZE_T                   freeBytes;
+    size_t                      bytes;
+    size_t                      freeBytes;
 
     /* Mapping for each type of surface. */
     gctINT                      mapping[gcvSURF_NUM_TYPES];
@@ -609,7 +609,7 @@ struct _gckVIDMEM
     gcuVIDMEM_NODE              sentinel[8];
 
     /* Allocation threshold. */
-    gctSIZE_T                   threshold;
+    size_t                      threshold;
 
     /* The heap mutex. */
     gctPOINTER                  mutex;
@@ -638,13 +638,13 @@ struct _gckMMU
     gctPOINTER                  pageTableMutex;
 
     /* Page table information. */
-    gctSIZE_T                   pageTableSize;
+    size_t                      pageTableSize;
     gctPHYS_ADDR                pageTablePhysical;
     gctUINT32_PTR               pageTableLogical;
     gctUINT32                   pageTableEntries;
 
     /* Master TLB information. */
-    gctSIZE_T                   mtlbSize;
+    size_t                      mtlbSize;
     gctPHYS_ADDR                mtlbPhysical;
     gctUINT32_PTR               mtlbLogical;
     gctUINT32                   mtlbEntries;
@@ -685,7 +685,7 @@ gckKERNEL_FlushTranslationCache(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     );
 #endif
 

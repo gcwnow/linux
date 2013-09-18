@@ -149,7 +149,7 @@ gckEVENT_IsEmpty(
     )
 {
     gceSTATUS status;
-    gctSIZE_T i;
+    size_t i;
 
     gcmkHEADER_ARG("Event=0x%x", Event);
 
@@ -1075,7 +1075,7 @@ gckEVENT_Submit(
     gckCOMMAND command = NULL;
     gctBOOL commitEntered = gcvFALSE;
 #if !gcdNULL_DRIVER
-    gctSIZE_T bytes;
+    size_t bytes;
     gctPOINTER buffer;
 #endif
 
@@ -1655,7 +1655,7 @@ gckEVENT_Notify(
             gcsEVENT_PTR recordNext = NULL;
             gctPOINTER logical;
 #if gcdSECURE_USER
-            gctSIZE_T bytes;
+            size_t bytes;
 #endif
 
             /* Grab the mutex queue. */
@@ -2024,11 +2024,11 @@ gckEVENT_Stop(
     IN gctPHYS_ADDR Handle,
     IN gctPOINTER Logical,
     IN gctSIGNAL Signal,
-	IN OUT gctSIZE_T * waitSize
+	IN OUT size_t * waitSize
     )
 {
     gceSTATUS status;
-   /* gctSIZE_T waitSize;*/
+   /* size_t waitSize;*/
     gcsEVENT_PTR record;
     gctUINT8 id = 0xFF;
 

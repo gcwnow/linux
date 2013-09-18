@@ -50,7 +50,7 @@
 **      gcuVIDMEM_NODE_PTR Node
 **          Pointer to the node to split.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to keep in the node.
 **
 **  OUTPUT:
@@ -68,7 +68,7 @@ static gctBOOL
 _Split(
     IN gckOS Os,
     IN gcuVIDMEM_NODE_PTR Node,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gcuVIDMEM_NODE_PTR node;
@@ -197,7 +197,7 @@ _Merge(
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of byte to allocate.
 **
 **  OUTPUT:
@@ -209,7 +209,7 @@ gceSTATUS
 gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
     IN gctBOOL Contiguous,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
@@ -364,14 +364,14 @@ gckVIDMEM_DestroyVirtual(
 **      gctUINT32 BaseAddress
 **          Base address for the video memory heap.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes in the video memory heap.
 **
-**      gctSIZE_T Threshold
+**      size_t Threshold
 **          Minimum number of bytes beyond am allocation before the node is
 **          split.  Can be used as a minimum alignment requirement.
 **
-**      gctSIZE_T BankSize
+**      size_t BankSize
 **          Number of bytes per physical memory bank.  Used by bank
 **          optimization.
 **
@@ -385,9 +385,9 @@ gceSTATUS
 gckVIDMEM_Construct(
     IN gckOS Os,
     IN gctUINT32 BaseAddress,
-    IN gctSIZE_T Bytes,
-    IN gctSIZE_T Threshold,
-    IN gctSIZE_T BankSize,
+    IN size_t Bytes,
+    IN size_t Threshold,
+    IN size_t BankSize,
     OUT gckVIDMEM * Memory
     )
 {
@@ -430,7 +430,7 @@ gckVIDMEM_Construct(
     /* Walk all possible banks. */
     for (i = 0; i < ARRAY_SIZE(memory->sentinel); ++i)
     {
-        gctSIZE_T bytes;
+        size_t bytes;
 
         if (BankSize == 0)
         {
@@ -724,7 +724,7 @@ static gcuVIDMEM_NODE_PTR
 _FindNode(
     IN gckVIDMEM Memory,
     IN gctINT Bank,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gceSURF_TYPE Type,
     IN OUT gctUINT32_PTR Alignment
     )
@@ -821,7 +821,7 @@ OnError:
 **      gckVIDMEM Memory
 **          Pointer to an gckVIDMEM object.
 **
-**      gctSIZE_T Bytes
+**      size_t Bytes
 **          Number of bytes to allocate.
 **
 **      gctUINT32 Alignment
@@ -838,7 +838,7 @@ OnError:
 gceSTATUS
 gckVIDMEM_AllocateLinear(
     IN gckVIDMEM Memory,
-    IN gctSIZE_T Bytes,
+    IN size_t Bytes,
     IN gctUINT32 Alignment,
     IN gceSURF_TYPE Type,
     OUT gcuVIDMEM_NODE_PTR * Node
@@ -938,7 +938,7 @@ gckVIDMEM_AllocateLinear(
         /* Out of memory. */
 #if gcdUSE_VIDMEM_PER_PID
         /* Allocate more memory from shared pool. */
-        gctSIZE_T bytes;
+        size_t bytes;
         gctPHYS_ADDR physical_temp;
         gctUINT32 physical;
         gctPOINTER logical;
@@ -1536,7 +1536,7 @@ gckVIDMEM_Unlock(
     gceSTATUS status;
     gckHARDWARE hardware;
     gctPOINTER buffer;
-    gctSIZE_T requested, bufferSize;
+    size_t requested, bufferSize;
     gckCOMMAND command = NULL;
     gceKERNEL_FLUSH flush;
     gckOS os = NULL;

@@ -128,14 +128,14 @@
     (((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))) | (((gctUINT32) (0x03 | 0xC0FFEE & ((gctUINT32) ((((1 ? 31:27) - (0 ? 31:27) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 31:27) - (0 ? 31:27) + 1))))))) << (0 ? 31:27))))
 
 #if !VIVANTE_NO_3D
-static gctSIZE_T
+static size_t
 _TerminateStateBlock(
     IN gckCONTEXT Context,
-    IN gctSIZE_T Index
+    IN size_t Index
     )
 {
     gctUINT32_PTR buffer;
-    gctSIZE_T align;
+    size_t align;
 
     /* Determine if we need alignment. */
     align = (Index & 1) ? 1 : 0;
@@ -161,10 +161,10 @@ _TerminateStateBlock(
 #endif
 
 
-static gctSIZE_T
+static size_t
 _FlushPipe(
     IN gckCONTEXT Context,
-    IN gctSIZE_T Index,
+    IN size_t Index,
     IN gcePIPE_SELECT Pipe
     )
 {
@@ -211,10 +211,10 @@ _FlushPipe(
     return 6;
 }
 
-static gctSIZE_T
+static size_t
 _SemaphoreStall(
     IN gckCONTEXT Context,
-    IN gctSIZE_T Index
+    IN size_t Index
     )
 {
     if (Context->buffer != NULL)
@@ -247,10 +247,10 @@ _SemaphoreStall(
     return 4;
 }
 
-static gctSIZE_T
+static size_t
 _SwitchPipe(
     IN gckCONTEXT Context,
-    IN gctSIZE_T Index,
+    IN size_t Index,
     IN gcePIPE_SELECT Pipe
     )
 {
@@ -277,19 +277,19 @@ _SwitchPipe(
 }
 
 #if !VIVANTE_NO_3D
-static gctSIZE_T
+static size_t
 _State(
     IN gckCONTEXT Context,
-    IN gctSIZE_T Index,
+    IN size_t Index,
     IN gctUINT32 Address,
     IN gctUINT32 Value,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctBOOL FixedPoint,
     IN gctBOOL Hinted
     )
 {
     gctUINT32_PTR buffer;
-    gctSIZE_T align, i;
+    size_t align, i;
 
     /* Determine if we need alignment. */
     align = (Index & 1) ? 1 : 0;
@@ -399,15 +399,15 @@ _State(
     return Size;
 }
 
-static gctSIZE_T
+static size_t
 _StateMirror(
     IN gckCONTEXT Context,
     IN gctUINT32 Address,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     IN gctUINT32 AddressMirror
     )
 {
-    gctSIZE_T i;
+    size_t i;
 
     /* Process when buffer is set. */
     if (Context->buffer != NULL)
@@ -432,7 +432,7 @@ _InitializeContextBuffer(
     )
 {
     gctUINT32_PTR buffer;
-    gctSIZE_T index;
+    size_t index;
 
 #if !VIVANTE_NO_3D
     gctUINT i;
@@ -981,7 +981,7 @@ gckCONTEXT_Construct(
 {
     gceSTATUS status;
     gckCONTEXT context = NULL;
-    gctSIZE_T allocationSize;
+    size_t allocationSize;
     gctUINT i;
     gctPOINTER pointer = NULL;
 
@@ -1167,8 +1167,8 @@ gckCONTEXT_Construct(
         {
             gctPOINTER xdLink;
             gctUINT8_PTR xdEntryLogical;
-            gctSIZE_T xdEntrySize;
-            gctSIZE_T linkBytes;
+            size_t xdEntrySize;
+            size_t linkBytes;
 
             /* Determine LINK parameters. */
             xdLink

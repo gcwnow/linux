@@ -86,14 +86,14 @@ struct _gckCONTEXT
     gckHARDWARE                 hardware;
 
     /* Command buffer alignment. */
-    gctSIZE_T                   alignment;
-    gctSIZE_T                   reservedHead;
-    gctSIZE_T                   reservedTail;
+    size_t                      alignment;
+    size_t                      reservedHead;
+    size_t                      reservedTail;
 
     /* Context buffer metrics. */
-    gctSIZE_T                   stateCount;
-    gctSIZE_T                   totalSize;
-    gctSIZE_T                   bufferSize;
+    size_t                      stateCount;
+    size_t                      totalSize;
+    size_t                      bufferSize;
     gctUINT32                   linkIndex2D;
     gctUINT32                   linkIndex3D;
     gctUINT32                   linkIndexXD;
@@ -123,7 +123,7 @@ struct _gckCONTEXT
 
     /* Variables used for building state buffer. */
     gctUINT32                   lastAddress;
-    gctSIZE_T                   lastSize;
+    size_t                      lastSize;
     gctUINT32                   lastIndex;
     gctBOOL                     lastFixed;
 

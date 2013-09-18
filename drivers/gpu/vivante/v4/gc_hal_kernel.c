@@ -147,7 +147,7 @@ gckKERNEL_Construct(
 {
     gckKERNEL kernel = NULL;
     gceSTATUS status;
-    gctSIZE_T i;
+    size_t i;
     gctPOINTER pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x Context=0x%x", Os, Context);
@@ -311,7 +311,7 @@ gckKERNEL_Destroy(
     IN gckKERNEL Kernel
     )
 {
-    gctSIZE_T i;
+    size_t i;
     gcsDATABASE_PTR database, databaseNext;
     gcsDATABASE_RECORD_PTR record, recordNext;
 
@@ -410,8 +410,8 @@ static gceSTATUS
 _AllocateMemory(
     IN gckKERNEL Kernel,
     IN OUT gcePOOL * Pool,
-    IN gctSIZE_T Bytes,
-    IN gctSIZE_T Alignment,
+    IN size_t Bytes,
+    IN size_t Alignment,
     IN gceSURF_TYPE Type,
     OUT gcuVIDMEM_NODE_PTR * Node
     )
@@ -615,7 +615,7 @@ gckKERNEL_Dispatch(
     )
 {
     gceSTATUS status = gcvSTATUS_OK;
-    gctSIZE_T bytes;
+    size_t bytes;
     gcuVIDMEM_NODE_PTR node;
     gctBOOL locked = gcvFALSE;
     gctPHYS_ADDR physical = NULL;
@@ -2153,7 +2153,7 @@ gckKERNEL_FlushTranslationCache(
     IN gckKERNEL Kernel,
     IN gcskSECURE_CACHE_PTR Cache,
     IN gctPOINTER Logical,
-    IN gctSIZE_T Bytes
+    IN size_t Bytes
     )
 {
     gctINT i;
@@ -2467,7 +2467,7 @@ OnError:
 **      gctPOINTER UserPointer
 **          User pointer to the data.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Size of the data.
 **
 **  OUTPUT:
@@ -2481,7 +2481,7 @@ gckKERNEL_OpenUserData(
     IN gctBOOL NeedCopy,
     IN gctPOINTER StaticStorage,
     IN gctPOINTER UserPointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     )
 {
@@ -2550,7 +2550,7 @@ OnError:
 **      gctPOINTER UserPointer
 **          User pointer to the data.
 **
-**      gctSIZE_T Size
+**      size_t Size
 **          Size of the data.
 **
 **  OUTPUT:
@@ -2564,7 +2564,7 @@ gckKERNEL_CloseUserData(
     IN gctBOOL NeedCopy,
     IN gctBOOL FlushData,
     IN gctPOINTER UserPointer,
-    IN gctSIZE_T Size,
+    IN size_t Size,
     OUT gctPOINTER * KernelPointer
     )
 {

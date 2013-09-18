@@ -230,8 +230,8 @@ typedef struct _gcsHAL_COMPOSE
     /* Composition state buffer. */
     gctPHYS_ADDR                physical;
     gctPOINTER                  logical;
-    gctSIZE_T                   offset;
-    gctSIZE_T                   size;
+    size_t                      offset;
+    size_t                      size;
 
     /* Composition end signal. */
     gctHANDLE                   process;
@@ -279,19 +279,19 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctPHYS_ADDR            internalPhysical;
 
             /* Size in bytes of internal memory.*/
-            OUT gctSIZE_T               internalSize;
+            OUT size_t                  internalSize;
 
             /* Physical memory address of external memory. */
             OUT gctPHYS_ADDR            externalPhysical;
 
             /* Size in bytes of external memory.*/
-            OUT gctSIZE_T               externalSize;
+            OUT size_t                  externalSize;
 
             /* Physical memory address of contiguous memory. */
             OUT gctPHYS_ADDR            contiguousPhysical;
 
             /* Size in bytes of contiguous memory.*/
-            OUT gctSIZE_T               contiguousSize;
+            OUT size_t                  contiguousSize;
         }
         QueryVideoMemory;
 
@@ -305,7 +305,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPHYS_ADDR             physical;
 
             /* Number of bytes in physical memory to map. */
-            IN gctSIZE_T                bytes;
+            IN size_t                   bytes;
 
             /* Address of mapped memory. */
             OUT gctPOINTER              logical;
@@ -319,7 +319,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPHYS_ADDR             physical;
 
             /* Number of bytes in physical memory to unmap. */
-            IN gctSIZE_T                bytes;
+            IN size_t                   bytes;
 
             /* Address of mapped memory to unmap. */
             IN gctPOINTER               logical;
@@ -417,7 +417,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_ALLOCATE_NON_PAGED_MEMORY
         {
             /* Number of bytes to allocate. */
-            IN OUT gctSIZE_T            bytes;
+            IN OUT size_t               bytes;
 
             /* Physical address of allocation. */
             OUT gctPHYS_ADDR            physical;
@@ -431,7 +431,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_FREE_NON_PAGED_MEMORY
         {
             /* Number of bytes allocated. */
-            IN gctSIZE_T                bytes;
+            IN size_t                   bytes;
 
             /* Physical address of allocation. */
             IN gctPHYS_ADDR             physical;
@@ -473,7 +473,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPOINTER               memory;
 
             /* Size of user memory in bytes to map. */
-            IN gctSIZE_T                size;
+            IN size_t                   size;
 
             /* Info record required by gcvHAL_UNMAP_USER_MEMORY. */
             OUT gctPOINTER              info;
@@ -490,7 +490,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctPOINTER               memory;
 
             /* Size of user memory in bytes to unmap. */
-            IN gctSIZE_T                size;
+            IN size_t                   size;
 
             /* Info record returned by gcvHAL_MAP_USER_MEMORY. */
             IN gctPOINTER               info;
@@ -553,7 +553,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_ALLOCATE_CONTIGUOUS_MEMORY
         {
             /* Number of bytes to allocate. */
-            IN OUT gctSIZE_T            bytes;
+            IN OUT size_t               bytes;
 
             /* Hardware address of allocation. */
             OUT gctUINT32               address;
@@ -570,7 +570,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_FREE_CONTIGUOUS_MEMORY
         {
             /* Number of bytes allocated. */
-            IN gctSIZE_T                bytes;
+            IN size_t                   bytes;
 
             /* Physical address of allocation. */
             IN gctPHYS_ADDR             physical;
@@ -703,7 +703,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gceCACHEOPERATION        operation;
             IN gctHANDLE                process;
             IN gctPOINTER               logical;
-            IN gctSIZE_T                bytes;
+            IN size_t                   bytes;
             IN gcuVIDMEM_NODE_PTR       node;
         }
         Cache;
@@ -775,7 +775,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gckCONTEXT              context;
 
             /* Number of states in the buffer. */
-            OUT gctSIZE_T               stateCount;
+            OUT size_t                  stateCount;
         }
         Attach;
 
@@ -812,7 +812,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctUINT8_PTR        data;
             /* fix size */
             OUT gctUINT8_PTR        nodeData;
-            gctSIZE_T               size;
+            size_t                  size;
             IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
         }
         GetSharedInfo;
@@ -823,7 +823,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gcuVIDMEM_NODE_PTR   node;
             IN gctUINT8_PTR         data;
             IN gctUINT8_PTR         nodeData;
-            IN gctSIZE_T            size;
+            IN size_t               size;
             IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
         }
         SetSharedInfo;

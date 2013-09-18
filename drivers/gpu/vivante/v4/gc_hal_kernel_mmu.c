@@ -55,9 +55,9 @@ typedef struct _gcsMMU_STLB
 {
     gctPHYS_ADDR    physical;
     gctUINT32_PTR   logical;
-    gctSIZE_T       size;
+    size_t          size;
     gctUINT32       physBase;
-    gctSIZE_T       pageCount;
+    size_t          pageCount;
     gctUINT32       mtlbIndex;
     gctUINT32       mtlbEntryNum;
     gcsMMU_STLB_PTR next;
@@ -242,7 +242,7 @@ static gceSTATUS
 _FillFlatMapping(
     IN gckMMU Mmu,
     IN gctUINT32 PhysBase,
-    OUT gctSIZE_T Size
+    OUT size_t Size
     )
 {
     gceSTATUS status;
@@ -521,7 +521,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctSIZE_T MmuSize
+**      size_t MmuSize
 **          Number of bytes for the page table.
 **
 **  OUTPUT:
@@ -532,7 +532,7 @@ OnError:
 static gceSTATUS
 _Construct(
     IN gckKERNEL Kernel,
-    IN gctSIZE_T MmuSize,
+    IN size_t MmuSize,
     OUT gckMMU * Mmu
     )
 {
@@ -770,7 +770,7 @@ _Destroy(
 gceSTATUS
 gckMMU_Construct(
     IN gckKERNEL Kernel,
-    IN gctSIZE_T MmuSize,
+    IN size_t MmuSize,
     OUT gckMMU * Mmu
     )
 {
@@ -857,7 +857,7 @@ gckMMU_Destroy(
 **      gckMMU Mmu
 **          Pointer to an gckMMU object.
 **
-**      gctSIZE_T PageCount
+**      size_t PageCount
 **          Number of pages to allocate.
 **
 **  OUTPUT:
@@ -872,7 +872,7 @@ gckMMU_Destroy(
 gceSTATUS
 gckMMU_AllocatePages(
     IN gckMMU Mmu,
-    IN gctSIZE_T PageCount,
+    IN size_t PageCount,
     OUT gctPOINTER * PageTable,
     OUT gctUINT32 * Address
     )
@@ -1058,7 +1058,7 @@ OnError:
 **      gctPOINTER PageTable
 **          Base address of the page table to free.
 **
-**      gctSIZE_T PageCount
+**      size_t PageCount
 **          Number of pages to free.
 **
 **  OUTPUT:
@@ -1069,7 +1069,7 @@ gceSTATUS
 gckMMU_FreePages(
     IN gckMMU Mmu,
     IN gctPOINTER PageTable,
-    IN gctSIZE_T PageCount
+    IN size_t PageCount
     )
 {
     gctUINT32_PTR pageTable;
