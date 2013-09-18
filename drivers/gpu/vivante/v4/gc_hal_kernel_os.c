@@ -91,7 +91,7 @@ typedef struct _gcsNonPagedMemoryCache
 {
 #ifndef NO_DMA_COHERENT
     gctINT                           size;
-    gctSTRING                        addr;
+    char *                           addr;
     dma_addr_t                       dmaHandle;
 #else
     long                             order;
@@ -206,7 +206,7 @@ gcsPageInfo;
 typedef struct _gcsiDEBUG_REGISTERS * gcsiDEBUG_REGISTERS_PTR;
 typedef struct _gcsiDEBUG_REGISTERS
 {
-    gctSTRING       module;
+    char *          module;
     gctUINT         index;
     gctUINT         shift;
     gctUINT         data;
@@ -330,7 +330,7 @@ _DumpGPUState(
     IN gceCORE Core
     )
 {
-    static gctCONST_STRING _cmdState[] =
+    static const char *_cmdState[] =
     {
         "PAR_IDLE_ST", "PAR_DEC_ST", "PAR_ADR0_ST", "PAR_LOAD0_ST",
         "PAR_ADR1_ST", "PAR_LOAD1_ST", "PAR_3DADR_ST", "PAR_3DCMD_ST",
@@ -340,27 +340,27 @@ _DumpGPUState(
         "PAR_LINK_ST", "PAR_END_ST", "PAR_STALL_ST"
     };
 
-    static gctCONST_STRING _cmdDmaState[] =
+    static const char *_cmdDmaState[] =
     {
         "CMD_IDLE_ST", "CMD_START_ST", "CMD_REQ_ST", "CMD_END_ST"
     };
 
-    static gctCONST_STRING _cmdFetState[] =
+    static const char *_cmdFetState[] =
     {
         "FET_IDLE_ST", "FET_RAMVALID_ST", "FET_VALID_ST"
     };
 
-    static gctCONST_STRING _reqDmaState[] =
+    static const char *_reqDmaState[] =
     {
         "REQ_IDLE_ST", "REQ_WAITIDX_ST", "REQ_CAL_ST"
     };
 
-    static gctCONST_STRING _calState[] =
+    static const char *_calState[] =
     {
         "CAL_IDLE_ST", "CAL_LDADR_ST", "CAL_IDXCALC_ST"
     };
 
-    static gctCONST_STRING _veReqState[] =
+    static const char *_veReqState[] =
     {
         "VER_IDLE_ST", "VER_CKCACHE_ST", "VER_MISS_ST"
     };
@@ -826,7 +826,7 @@ _AddNonPagedMemoryCache(
     gckOS Os,
 #ifndef NO_DMA_COHERENT
     gctINT Size,
-    gctSTRING Addr,
+    char *Addr,
     dma_addr_t DmaHandle
 #else
     long Order,
@@ -878,7 +878,7 @@ _AddNonPagedMemoryCache(
 }
 
 #ifndef NO_DMA_COHERENT
-static gctSTRING
+static char *
 _GetNonPagedMemoryCache(
     gckOS Os,
     gctINT Size,
@@ -894,7 +894,7 @@ _GetNonPagedMemoryCache(
 {
     gcsNonPagedMemoryCache *cache;
 #ifndef NO_DMA_COHERENT
-    gctSTRING addr;
+    char *addr;
 #else
     struct page * page;
 #endif
@@ -1251,13 +1251,13 @@ gckOS_Destroy(
 }
 
 #ifdef NO_DMA_COHERENT
-static gctSTRING
+static char *
 _CreateKernelVirtualMapping(
     IN struct page * Page,
     IN gctINT NumPages
     )
 {
-    gctSTRING addr = 0;
+    char *addr = 0;
 
 #if gcdNONPAGED_MEMORY_CACHEABLE
     addr = page_address(Page);
@@ -1288,7 +1288,7 @@ _CreateKernelVirtualMapping(
 
 static void
 _DestoryKernelVirtualMapping(
-    IN gctSTRING Addr
+    IN char *Addr
     )
 {
 #if !gcdNONPAGED_MEMORY_CACHEABLE
@@ -1854,7 +1854,7 @@ gckOS_AllocateNonPagedMemory(
     gctINT numPages;
     PLINUX_MDL mdl = NULL;
     PLINUX_MDL_MAP mdlMap = NULL;
-    gctSTRING addr;
+    char *addr;
 #ifdef NO_DMA_COHERENT
     struct page * page;
     long size, order;
@@ -1977,7 +1977,7 @@ gckOS_AllocateNonPagedMemory(
         /* We need to map this to user space. */
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING) do_mmap_pgoff(NULL,
+        mdlMap->vmaAddr = (char *) do_mmap_pgoff(NULL,
                 0L,
                 mdl->numPages * PAGE_SIZE,
                 PROT_READ | PROT_WRITE,
@@ -2859,7 +2859,7 @@ gckOS_UnmapPhysical(
         if (mdl->addr != NULL)
         {
             if (Logical >= (gctPOINTER)mdl->addr
-                    && Logical < (gctPOINTER)((gctSTRING)mdl->addr + mdl->numPages * PAGE_SIZE))
+                    && Logical < (gctPOINTER)((char *)mdl->addr + mdl->numPages * PAGE_SIZE))
             {
                 break;
             }
@@ -3989,7 +3989,7 @@ gckOS_LockPages(
 {
     PLINUX_MDL      mdl;
     PLINUX_MDL_MAP  mdlMap;
-    gctSTRING       addr;
+    char *          addr;
     unsigned long   start;
     unsigned long   pfn;
     gctINT          i;
@@ -4026,7 +4026,7 @@ gckOS_LockPages(
     {
         down_write(&current->mm->mmap_sem);
 
-        mdlMap->vmaAddr = (gctSTRING)do_mmap_pgoff(NULL,
+        mdlMap->vmaAddr = (char *)do_mmap_pgoff(NULL,
                         0L,
                         mdl->numPages * PAGE_SIZE,
                         PROT_READ | PROT_WRITE,

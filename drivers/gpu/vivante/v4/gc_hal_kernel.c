@@ -49,7 +49,7 @@ const char * _VERSION = "\n\0$VERSION$"
 
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
 #define gcmDEFINE2TEXT(d) #d
-gctCONST_STRING _DispatchText[] =
+const char *_DispatchText[] =
 {
     gcmDEFINE2TEXT(gcvHAL_QUERY_VIDEO_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_QUERY_CHIP_IDENTITY),

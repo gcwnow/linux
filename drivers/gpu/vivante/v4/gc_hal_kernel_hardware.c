@@ -3132,10 +3132,10 @@ typedef enum
 gcePOWER_FLAGS;
 
 #if gcmIS_DEBUG(gcdDEBUG_TRACE) && gcdPOWER_MANAGEMENT
-static gctCONST_STRING
+static const char *
 _PowerEnum(gceCHIPPOWERSTATE State)
 {
-    const gctCONST_STRING states[] =
+    const const char *states[] =
     {
         gcmSTRING(gcvPOWER_ON),
         gcmSTRING(gcvPOWER_OFF),

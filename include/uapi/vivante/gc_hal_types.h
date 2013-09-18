@@ -64,10 +64,6 @@ typedef void *                  gctSIGNAL;
 typedef void *                  gctPOINTER;
 typedef const void *            gctCONST_POINTER;
 
-typedef char                    gctCHAR;
-typedef char *                  gctSTRING;
-typedef const char *            gctCONST_STRING;
-
 /* 2D Engine profile. */
 typedef struct _gcs2D_PROFILE
 {

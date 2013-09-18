@@ -152,7 +152,7 @@ gcsVIDMEM_NODE_SHARED_INFO;
 
 void
 gckOS_DebugFatal(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -186,7 +186,7 @@ gckOS_DebugFatal(
 void
 gckOS_DebugTrace(
     IN gctUINT32 Level,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -194,7 +194,7 @@ void
 gckOS_DebugTraceN(
     IN gctUINT32 Level,
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -248,7 +248,7 @@ void
 gckOS_DebugTraceZone(
     IN gctUINT32 Level,
     IN gctUINT32 Zone,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -257,7 +257,7 @@ gckOS_DebugTraceZoneN(
     IN gctUINT32 Level,
     IN gctUINT32 Zone,
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -325,20 +325,20 @@ gckOS_DebugTraceZoneN(
 
 void
 gckOS_Print(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
 void
 gckOS_PrintN(
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
 void
 gckOS_CopyPrint(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     );
 
@@ -394,7 +394,7 @@ gckOS_DumpBuffer(
 
 void
 gckOS_DebugFlush(
-    gctCONST_STRING CallerName,
+    const char *CallerName,
     gctUINT LineNumber,
     gctUINT32 DmaAddress
     );
@@ -517,7 +517,7 @@ gckOS_Verify(
 #   define gcmkVERIFY_OK(func)      func
 #endif
 
-gctCONST_STRING
+const char *
 gckOS_DebugStatus2Name(
     gceSTATUS status
     );

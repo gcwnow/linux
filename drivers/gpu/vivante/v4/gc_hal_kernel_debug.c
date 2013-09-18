@@ -340,7 +340,7 @@ typedef struct _gcsBUFITEM_STRING
 {
     gceBUFITEM              type;
     gctINT                  indent;
-    gctCONST_STRING         message;
+    const char *            message;
     gctPOINTER              messageData;
     gctUINT                 messageDataSize;
 }
@@ -498,7 +498,7 @@ static gcfGETITEMSIZE _itemSize[] =
 #if gcdDEBUG || gcdBUFFERED_OUTPUT
 static void
 _DirectPrint(
-    gctCONST_STRING Message,
+    const char *Message,
     ...
     )
 {
@@ -567,7 +567,7 @@ static void
 _PrintString(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
     IN gctINT Indent,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     IN gctUINT ArgumentSize,
     IN gctPOINTER Data
     )
@@ -605,7 +605,7 @@ _PrintBuffer(
     IN gctUINT32 DmaAddress
     )
 {
-    static gctCONST_STRING _titleString[] =
+    static const char *_titleString[] =
     {
         "CONTEXT BUFFER",
         "USER COMMAND BUFFER",
@@ -619,7 +619,7 @@ _PrintBuffer(
 
     gctUINT i, count, column, address;
     gctUINT32_PTR data;
-    gctCHAR buffer[768];
+    char buffer[768];
     gctUINT indent, len;
     gctBOOL command;
 
@@ -831,14 +831,14 @@ _PrintCopyWrapper(
     )
 {
     gcsBUFITEM_COPY_PTR item;
-    gctCONST_STRING message;
+    const char *message;
     gctUINT vlen;
 
     /* Get access to the data. */
     item = (gcsBUFITEM_COPY_PTR) Item;
 
     /* Determine the string pointer. */
-    message = (gctCONST_STRING) (item + 1);
+    message = (const char *) (item + 1);
 
     /* Print the message. */
     _PrintString(
@@ -1310,7 +1310,7 @@ static void
 _AppendString(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
     IN gctINT Indent,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     IN gctUINT ArgumentSize,
     IN gctPOINTER Data
     )
@@ -1372,7 +1372,7 @@ static void
 _AppendCopy(
     IN gcsBUFFERED_OUTPUT_PTR OutputBuffer,
     IN gctINT Indent,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     IN gctUINT ArgumentSize,
     IN gctPOINTER Data
     )
@@ -1381,7 +1381,7 @@ _AppendCopy(
     gcsBUFITEM_COPY_PTR item;
     gctINT allocSize;
     gctINT messageLength;
-    gctCONST_STRING message;
+    const char *message;
 
 #if gcdALIGNBYSIZE
     gctUINT alignment;
@@ -1402,7 +1402,7 @@ _AppendCopy(
     item = (gcsBUFITEM_COPY_PTR) _AllocateItem(OutputBuffer, allocSize);
 
     /* Determine the message placement. */
-    message = (gctCONST_STRING) (item + 1);
+    message = (const char *) (item + 1);
 
     /* Compute the initial message data pointer. */
     messageData = (gctUINT8_PTR) message + messageLength;
@@ -1645,7 +1645,7 @@ _GetOutputBuffer(
 }
 
 static int _GetArgumentSize(
-    IN gctCONST_STRING Message
+    IN const char *Message
     )
 {
     int i, count;
@@ -1711,7 +1711,7 @@ static void
 _Print(
     IN gctUINT ArgumentSize,
     IN gctBOOL CopyMessage,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     IN gctARGUMENTS Arguments
     )
 {
@@ -1805,7 +1805,7 @@ _Print(
 **
 **  INPUT:
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -1818,7 +1818,7 @@ _Print(
 
 void
 gckOS_Print(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -1836,7 +1836,7 @@ gckOS_Print(
 **      gctUINT ArgumentSize
 **          The size of the optional arguments in bytes.
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -1850,7 +1850,7 @@ gckOS_Print(
 void
 gckOS_PrintN(
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -1867,7 +1867,7 @@ gckOS_PrintN(
 **
 **  INPUT:
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -1880,7 +1880,7 @@ gckOS_PrintN(
 
 void
 gckOS_CopyPrint(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -1924,7 +1924,7 @@ gckOS_DumpBuffer(
     gctUINT32 address;
     gcsBUFFERED_OUTPUT_PTR outputBuffer;
     static gctBOOL userLocked;
-    gctCHAR *buffer = (gctCHAR*)Buffer;
+    char *buffer = (char*)Buffer;
 
     gcmkDECLARE_LOCK(lockHandle);
 
@@ -2042,7 +2042,7 @@ gckOS_DumpBuffer(
 **      gctUINT32 Level
 **          Debug level of message.
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -2056,7 +2056,7 @@ gckOS_DumpBuffer(
 void
 gckOS_DebugTrace(
     IN gctUINT32 Level,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -2082,7 +2082,7 @@ gckOS_DebugTrace(
 **      gctUINT ArgumentSize
 **          The size of the optional arguments in bytes.
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -2097,7 +2097,7 @@ void
 gckOS_DebugTraceN(
     IN gctUINT32 Level,
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -2123,7 +2123,7 @@ gckOS_DebugTraceN(
 **      gctUINT32 Zone
 **          Debug zone for message.
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -2138,7 +2138,7 @@ void
 gckOS_DebugTraceZone(
     IN gctUINT32 Level,
     IN gctUINT32 Zone,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -2167,7 +2167,7 @@ gckOS_DebugTraceZone(
 **      gctUINT ArgumentSize
 **          The size of the optional arguments in bytes.
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -2183,7 +2183,7 @@ gckOS_DebugTraceZoneN(
     IN gctUINT32 Level,
     IN gctUINT32 Zone,
     IN gctUINT ArgumentSize,
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -2225,7 +2225,7 @@ gckOS_DebugBreak(
 **
 **  INPUT:
 **
-**      gctCONST_STRING Message
+**      const char *Message
 **          Pointer to message.
 **
 **      ...
@@ -2237,7 +2237,7 @@ gckOS_DebugBreak(
 */
 void
 gckOS_DebugFatal(
-    IN gctCONST_STRING Message,
+    IN const char *Message,
     ...
     )
 {
@@ -2342,7 +2342,7 @@ gckOS_Verify(
 **
 **  INPUT:
 **
-**      gctCONST_STRING CallerName
+**      const char *CallerName
 **          Name of the caller function.
 **
 **      gctUINT LineNumber
@@ -2358,7 +2358,7 @@ gckOS_Verify(
 
 void
 gckOS_DebugFlush(
-    gctCONST_STRING CallerName,
+    const char *CallerName,
     gctUINT LineNumber,
     gctUINT32 DmaAddress
     )
@@ -2368,7 +2368,7 @@ gckOS_DebugFlush(
     _Flush(DmaAddress);
 #endif
 }
-gctCONST_STRING
+const char *
 gckOS_DebugStatus2Name(
 	gceSTATUS status
 	)

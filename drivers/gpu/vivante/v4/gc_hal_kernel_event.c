@@ -670,7 +670,7 @@ gckEVENT_GetEvent(
         {
             gcmkTRACE_N(
                 gcvLEVEL_ERROR,
-                sizeof(gctCONST_STRING) + sizeof(gctINT),
+                sizeof(const char *) + sizeof(gctINT),
                 "%s(%d): no available events\n",
                 __FUNCTION__, __LINE__
                 );

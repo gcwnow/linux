@@ -610,7 +610,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gctBOOL             enable;
 
             /* The profile file name */
-            OUT gctCHAR             fileName[gcdMAX_PROFILE_FILE_NAME];
+            OUT char                fileName[gcdMAX_PROFILE_FILE_NAME];
         }
         GetProfileSetting;
 
@@ -621,7 +621,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctBOOL              enable;
 
             /* The profile file name */
-            IN gctCHAR              fileName[gcdMAX_PROFILE_FILE_NAME];
+            IN char                 fileName[gcdMAX_PROFILE_FILE_NAME];
         }
         SetProfileSetting;
 
@@ -693,7 +693,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctUINT32                messageSize;
 
             /* Message to print if not empty. */
-            IN gctCHAR                  message[80];
+            IN char                     message[80];
         }
         Debug;
 
