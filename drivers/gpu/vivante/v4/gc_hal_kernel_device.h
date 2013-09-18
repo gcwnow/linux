@@ -47,17 +47,17 @@ typedef struct _gckGALDEVICE
     gctBOOL             contiguousMapped;
     void *              contiguousMappedUser;
     size_t              systemMemorySize;
-    gctUINT32           systemMemoryBaseAddress;
+    u32                 systemMemoryBaseAddress;
     void *              registerBases[gcdCORE_COUNT];
     size_t              registerSizes[gcdCORE_COUNT];
-    gctUINT32           baseAddress;
-    gctUINT32           requestedRegisterMemBases[gcdCORE_COUNT];
+    u32                 baseAddress;
+    u32                 requestedRegisterMemBases[gcdCORE_COUNT];
     size_t              requestedRegisterMemSizes[gcdCORE_COUNT];
-    gctUINT32           requestedContiguousBase;
+    u32                 requestedContiguousBase;
     size_t              requestedContiguousSize;
 
     /* IRQ management. */
-    gctINT              irqLines[gcdCORE_COUNT];
+    int                 irqLines[gcdCORE_COUNT];
     gctBOOL             isrInitializeds[gcdCORE_COUNT];
     gctBOOL             dataReadys[gcdCORE_COUNT];
 
@@ -68,7 +68,7 @@ typedef struct _gckGALDEVICE
     gctBOOL             killThread;
 
     /* Signal management. */
-    gctINT              signal;
+    int                 signal;
 
     /* Core mapping */
     gceCORE             coreMapping[8];
@@ -91,7 +91,7 @@ typedef struct _gcsHAL_PRIVATE_DATA
     void *              mappedMemory;
     void *              contiguousLogical;
     /* The process opening the device may not be the same as the one that closes it. */
-    gctUINT32           pidOpen;
+    u32                 pidOpen;
 }
 gcsHAL_PRIVATE_DATA, * gcsHAL_PRIVATE_DATA_PTR;
 
@@ -104,20 +104,20 @@ gceSTATUS gckGALDEVICE_Stop(
     );
 
 gceSTATUS gckGALDEVICE_Construct(
-    IN gctINT IrqLine,
-    IN gctUINT32 RegisterMemBase,
+    IN int IrqLine,
+    IN u32 RegisterMemBase,
     IN size_t RegisterMemSize,
-    IN gctINT IrqLine2D,
-    IN gctUINT32 RegisterMemBase2D,
+    IN int IrqLine2D,
+    IN u32 RegisterMemBase2D,
     IN size_t RegisterMemSize2D,
-    IN gctUINT32 ContiguousBase,
+    IN u32 ContiguousBase,
     IN size_t ContiguousSize,
     IN size_t BankSize,
-    IN gctINT FastClear,
-    IN gctINT Compression,
-    IN gctUINT32 PhysBaseAddr,
-    IN gctUINT32 PhysSize,
-    IN gctINT Signal,
+    IN int FastClear,
+    IN int Compression,
+    IN u32 PhysBaseAddr,
+    IN u32 PhysSize,
+    IN int Signal,
     OUT gckGALDEVICE *Device
     );
 

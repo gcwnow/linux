@@ -234,7 +234,7 @@ gckKERNEL_UnmapMemory(
 **      gctBOOL InUserSpace
 **          gcvTRUE to map the memory into the user space.
 **
-**      gctUINT32 Address
+**      u32 Address
 **          Hardware specific memory address.
 **
 **  OUTPUT:
@@ -248,7 +248,7 @@ gckKERNEL_MapVideoMemoryEx(
     IN gckKERNEL Kernel,
     IN gceCORE Core,
     IN gctBOOL InUserSpace,
-    IN gctUINT32 Address,
+    IN u32 Address,
     OUT void **Logical
     )
 {
@@ -256,7 +256,7 @@ gckKERNEL_MapVideoMemoryEx(
     PLINUX_MDL mdl;
     PLINUX_MDL_MAP mdlMap;
     gcePOOL pool;
-    gctUINT32 offset, base;
+    u32 offset, base;
     gceSTATUS status;
     void *logical;
 
@@ -295,7 +295,7 @@ gckKERNEL_MapVideoMemoryEx(
         }
         else
         {
-            gctINT processID;
+            int processID;
             gckOS_GetProcessID(&processID);
 
             mdl = (PLINUX_MDL) device->contiguousPhysical;
@@ -321,7 +321,7 @@ gckKERNEL_MapVideoMemoryEx(
     }
 
     /* Build logical address of specified address. */
-    *Logical = (void *) ((gctUINT8_PTR) logical + offset);
+    *Logical = (void *) ((u8 *) logical + offset);
 
     /* Success. */
     gcmkFOOTER_ARG("*Logical=%p", *Logical);

@@ -99,7 +99,7 @@ const char *_DispatchText[] =
 static void
 gckKERNEL_SetTimeOut(
     IN gckKERNEL Kernel,
-    IN gctUINT32 timeOut
+    IN u32 timeOut
     )
 {
     gcmkHEADER_ARG("Kernel=0x%x timeOut=%d", Kernel, timeOut);
@@ -419,7 +419,7 @@ _AllocateMemory(
     gcePOOL pool;
     gceSTATUS status;
     gckVIDMEM videoMemory;
-    gctINT loopCount;
+    int loopCount;
     gcuVIDMEM_NODE_PTR node = NULL;
     gctBOOL tileStatusInVirtual;
 
@@ -435,16 +435,16 @@ _AllocateMemory(
     case gcvPOOL_DEFAULT:
     case gcvPOOL_LOCAL:
         pool      = gcvPOOL_LOCAL_INTERNAL;
-        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
+        loopCount = (int) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     case gcvPOOL_UNIFIED:
         pool      = gcvPOOL_SYSTEM;
-        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
+        loopCount = (int) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     case gcvPOOL_CONTIGUOUS:
-        loopCount = (gctINT) gcvPOOL_NUMBER_OF_POOLS;
+        loopCount = (int) gcvPOOL_NUMBER_OF_POOLS;
         break;
 
     default:
@@ -480,7 +480,7 @@ _AllocateMemory(
         {
             /* Get pointer to gckVIDMEM object for pool. */
 #if gcdUSE_VIDMEM_PER_PID
-            gctUINT32 pid;
+            u32 pid;
             gckOS_GetProcessID(&pid);
 
             status = gckKERNEL_GetVideoMemoryPoolPid(Kernel, pool, pid, &videoMemory);
@@ -619,8 +619,8 @@ gckKERNEL_Dispatch(
     gcuVIDMEM_NODE_PTR node;
     gctBOOL locked = gcvFALSE;
     gctPHYS_ADDR physical = NULL;
-    gctUINT32 address;
-    gctUINT32 processID;
+    u32 address;
+    u32 processID;
 #if gcdSECURE_USER
     gcskSECURE_CACHE_PTR cache;
     void *logical;
@@ -1314,7 +1314,7 @@ gckKERNEL_Dispatch(
         /* Return timer results and reset timer. */
         {
             gcsTIMER_PTR timer = &(Kernel->timers[Interface->u.TimeStamp.timer]);
-            gctUINT64 timeDelta = 0;
+            u64 timeDelta = 0;
 
             if (timer->stopTime < timer->startTime )
             {
@@ -1325,7 +1325,7 @@ gckKERNEL_Dispatch(
             timeDelta = timer->stopTime - timer->startTime;
 
             /* Check truncation overflow. */
-            Interface->u.TimeStamp.timeDelta = (gctINT32) timeDelta;
+            Interface->u.TimeStamp.timeDelta = (s32) timeDelta;
 			/*bit0~bit30 is available*/
             if (timeDelta>>31)
             {
@@ -1622,7 +1622,7 @@ gckKERNEL_Dispatch(
                     { /* Dirty rectangle stored */
                         gcsVIDMEM_NODE_SHARED_INFO newSharedInfo;
                         gcsVIDMEM_NODE_SHARED_INFO *currentSharedInfo;
-                        gctINT dirtyX, dirtyY, right, bottom;
+                        int dirtyX, dirtyY, right, bottom;
 
                         /* Expand the dirty rectangle stored in the node to include the rectangle passed in. */
                         gcmkONERROR(gckOS_CopyFromUserData(
@@ -1742,7 +1742,7 @@ gckKERNEL_AttachProcess(
     )
 {
     gceSTATUS status;
-    gctUINT32 processID;
+    u32 processID;
 
     gcmkHEADER_ARG("Kernel=0x%x Attach=%d", Kernel, Attach);
 
@@ -1779,7 +1779,7 @@ OnError:
 **          gcvTRUE if a new process gets attached or gcFALSE when a process
 **          gets detatched.
 **
-**      gctUINT32 PID
+**      u32 PID
 **          PID of the process to attach or detach.
 **
 **  OUTPUT:
@@ -1790,11 +1790,11 @@ gceSTATUS
 gckKERNEL_AttachProcessEx(
     IN gckKERNEL Kernel,
     IN gctBOOL Attach,
-    IN gctUINT32 PID
+    IN u32 PID
     )
 {
     gceSTATUS status;
-    gctINT32 old;
+    s32 old;
 
     gcmkHEADER_ARG("Kernel=0x%x Attach=%d PID=%d", Kernel, Attach, PID);
 
@@ -1867,7 +1867,7 @@ gckKERNEL_MapLogicalToPhysical(
 {
     gceSTATUS status;
     static gctBOOL baseAddressValid = gcvFALSE;
-    static gctUINT32 baseAddress;
+    static u32 baseAddress;
     gctBOOL needBase;
     gcskLOGICAL_CACHE_PTR slot;
 
@@ -1887,13 +1887,13 @@ gckKERNEL_MapLogicalToPhysical(
 
     /* Does this state load need a base address? */
     gcmkONERROR(gckHARDWARE_NeedBaseAddress(Kernel->hardware,
-                                            ((gctUINT32_PTR) Data)[-1],
+                                            ((u32 *) Data)[-1],
                                             &needBase));
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LRU
     {
         gcskLOGICAL_CACHE_PTR next;
-        gctINT i;
+        int i;
 
         /* Walk all used cache slots. */
         for (i = 1, slot = Cache->cache[0].next, next = NULL;
@@ -1939,7 +1939,7 @@ gckKERNEL_MapLogicalToPhysical(
     }
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LINEAR
     {
-        gctINT i;
+        int i;
         gcskLOGICAL_CACHE_PTR next = NULL;
         gcskLOGICAL_CACHE_PTR oldestSlot = NULL;
         slot = NULL;
@@ -2039,9 +2039,9 @@ gckKERNEL_MapLogicalToPhysical(
     }
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
     {
-        gctINT i;
-        gctUINT32 data = gcmPTR2INT(*Data);
-        gctUINT32 key, index;
+        int i;
+        u32 data = gcmPTR2INT(*Data);
+        u32 key, index;
         gcskLOGICAL_CACHE_PTR hash;
 
         /* Generate a hash key. */
@@ -2117,7 +2117,7 @@ gckKERNEL_MapLogicalToPhysical(
     }
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_TABLE
     {
-        gctUINT32 index = (gcmPTR2INT(*Data) % gcdSECURE_CACHE_SLOTS) + 1;
+        u32 index = (gcmPTR2INT(*Data) % gcdSECURE_CACHE_SLOTS) + 1;
 
         /* Get cache slot. */
         slot = &Cache->cache[index];
@@ -2156,9 +2156,9 @@ gckKERNEL_FlushTranslationCache(
     IN size_t Bytes
     )
 {
-    gctINT i;
+    int i;
     gcskLOGICAL_CACHE_PTR slot;
-    gctUINT8_PTR ptr;
+    u8 *ptr;
 
     gcmkHEADER_ARG("Kernel=0x%x Cache=0x%x Logical=0x%x Bytes=%lu",
                    Kernel, Cache, Logical, Bytes);
@@ -2193,8 +2193,8 @@ gckKERNEL_FlushTranslationCache(
 
     else
     {
-        gctUINT8_PTR low  = (gctUINT8_PTR) Logical;
-        gctUINT8_PTR high = low + Bytes;
+        u8 *low  = (u8 *) Logical;
+        u8 *high = low + Bytes;
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LRU
         gcskLOGICAL_CACHE_PTR next;
@@ -2209,7 +2209,7 @@ gckKERNEL_FlushTranslationCache(
             next = slot->next;
 
             /* Test if this slot falls within the range to flush. */
-            ptr = (gctUINT8_PTR) slot->logical;
+            ptr = (u8 *) slot->logical;
             if ((ptr >= low) && (ptr < high))
             {
                 /* Unlink slot. */
@@ -2238,7 +2238,7 @@ gckKERNEL_FlushTranslationCache(
             next = slot->next;
 
             /* Test if this slot falls within the range to flush. */
-            ptr = (gctUINT8_PTR) slot->logical;
+            ptr = (u8 *) slot->logical;
             if ((ptr >= low) && (ptr < high))
             {
                 /* Test if this slot is the current slot. */
@@ -2269,7 +2269,7 @@ gckKERNEL_FlushTranslationCache(
         }
 
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
-        gctINT j;
+        int j;
         gcskLOGICAL_CACHE_PTR hash, next;
 
         /* Walk all hash tables. */
@@ -2286,7 +2286,7 @@ gckKERNEL_FlushTranslationCache(
                 next = slot->next;
 
                 /* Test if this slot falls within the range to flush. */
-                ptr = (gctUINT8_PTR) slot->logical;
+                ptr = (u8 *) slot->logical;
                 if ((ptr >= low) && (ptr < high))
                 {
                     /* Unlink slot from hash table. */
@@ -2323,7 +2323,7 @@ gckKERNEL_FlushTranslationCache(
         }
 
 #elif gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_TABLE
-        gctUINT32 index;
+        u32 index;
 
         /* Loop while inside the range. */
         for (i = 1; (low < high) && (i <= gcdSECURE_CACHE_SLOTS); ++i)
@@ -2333,7 +2333,7 @@ gckKERNEL_FlushTranslationCache(
             slot  = &Cache->cache[index];
 
             /* Test if this slot falls within the range to flush. */
-            ptr = (gctUINT8_PTR) slot->logical;
+            ptr = (u8 *) slot->logical;
             if ((ptr >= low) && (ptr < high))
             {
                 /* Remove entry from cache. */
@@ -2377,7 +2377,7 @@ gckKERNEL_Recovery(
     gckEVENT eventObj;
     gckHARDWARE hardware;
 #if gcdSECURE_USER
-    gctUINT32 processID;
+    u32 processID;
     gcskSECURE_CACHE_PTR cache;
 #endif
 

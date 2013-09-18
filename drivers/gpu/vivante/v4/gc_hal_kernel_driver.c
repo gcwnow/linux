@@ -178,7 +178,7 @@ int drv_open(
     gceSTATUS status;
     gctBOOL attached = gcvFALSE;
     gcsHAL_PRIVATE_DATA_PTR data = NULL;
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
 
@@ -290,8 +290,8 @@ int drv_release(
     gceSTATUS status;
     gcsHAL_PRIVATE_DATA_PTR data;
     gckGALDEVICE device;
-    gctINT i;
-    gctUINT32 processID;
+    int i;
+    u32 processID;
 
 
     gcmkHEADER_ARG("inode=0x%08X filp=0x%08X", inode, filp);
@@ -394,11 +394,11 @@ long drv_ioctl(
 {
     gceSTATUS status;
     gcsHAL_INTERFACE iface;
-    gctUINT32 copyLen;
+    u32 copyLen;
     DRIVER_ARGS drvArgs;
     gckGALDEVICE device;
     gcsHAL_PRIVATE_DATA_PTR data;
-    gctINT32 i, count;
+    s32 i, count;
 
 #if defined(JZSOC) && defined(CONFIG_PREEMPT)
     /* 1: lock_kernel, fix bug WOWFish. */
@@ -556,13 +556,13 @@ long drv_ioctl(
         )
         {
             /* Compute offset into mapped memory. */
-            gctUINT32 offset
-                = (gctUINT8 *) iface.u.LockVideoMemory.memory
-                - (gctUINT8 *) device->contiguousBase;
+            u32 offset
+                = (u8 *) iface.u.LockVideoMemory.memory
+                - (u8 *) device->contiguousBase;
 
             /* Compute offset into user-mapped region. */
             iface.u.LockVideoMemory.memory =
-                (gctUINT8 *) data->mappedMemory + offset;
+                (u8 *) data->mappedMemory + offset;
         }
     }
 
@@ -660,7 +660,7 @@ static int drv_mmap(
         int ret = io_remap_pfn_range(
             vma,
             vma->vm_start,
-            (gctUINT32) device->contiguousPhysical >> PAGE_SHIFT,
+            (u32) device->contiguousPhysical >> PAGE_SHIFT,
             size,
             vma->vm_page_prot
             );
@@ -1006,7 +1006,7 @@ static int gpu_suspend(struct platform_device *dev, pm_message_t state)
 {
     gceSTATUS status;
     gckGALDEVICE device;
-    gctINT i;
+    int i;
 
 #ifdef CONFIG_JZSOC
     cpm_stop_clock(CGM_GPU);
@@ -1039,7 +1039,7 @@ static int gpu_resume(struct platform_device *dev)
 {
     gceSTATUS status;
     gckGALDEVICE device;
-    gctINT i;
+    int i;
     gceCHIPPOWERSTATE   statesStored;
 
 #ifdef CONFIG_JZSOC

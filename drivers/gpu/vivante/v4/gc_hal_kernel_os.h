@@ -23,7 +23,7 @@
 
 typedef struct _LINUX_MDL_MAP
 {
-    gctINT                  pid;
+    int                     pid;
     void *                  vmaAddr;
     struct vm_area_struct * vma;
     struct _LINUX_MDL_MAP * next;
@@ -34,7 +34,7 @@ typedef struct _LINUX_MDL_MAP * PLINUX_MDL_MAP;
 
 typedef struct _LINUX_MDL
 {
-    gctINT                  pid;
+    int                     pid;
     char *                  addr;
 
     union _pages
@@ -50,8 +50,8 @@ typedef struct _LINUX_MDL
     void *                  kaddr;
 #endif /* NO_DMA_COHERENT */
 
-    gctINT                  numPages;
-    gctINT                  pagedMem;
+    int                     numPages;
+    int                     pagedMem;
     gctBOOL                 contiguous;
     dma_addr_t              dmaHandle;
     PLINUX_MDL_MAP          maps;
@@ -63,15 +63,15 @@ LINUX_MDL, *PLINUX_MDL;
 extern PLINUX_MDL_MAP
 FindMdlMap(
     IN PLINUX_MDL Mdl,
-    IN gctINT PID
+    IN int PID
     );
 
 typedef struct _DRIVER_ARGS
 {
     void *                  InputBuffer;
-    gctUINT32               InputBufferSize;
+    u32                     InputBufferSize;
     void *                  OutputBuffer;
-    gctUINT32               OutputBufferSize;
+    u32                     OutputBufferSize;
 }
 DRIVER_ARGS;
 

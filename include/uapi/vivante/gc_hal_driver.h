@@ -159,7 +159,7 @@ gceHAL_COMMAND_CODES;
 typedef struct _gcsKERNEL_SETTINGS
 {
     /* Used RealTime signal between kernel and user. */
-    gctINT signal;
+    int    signal;
 }
 gcsKERNEL_SETTINGS;
 
@@ -173,52 +173,52 @@ typedef struct _gcsHAL_QUERY_CHIP_IDENTITY
     gceCHIPMODEL                chipModel;
 
     /* Revision value.*/
-    gctUINT32                   chipRevision;
+    __u32                       chipRevision;
 
     /* Supported feature fields. */
-    gctUINT32                   chipFeatures;
+    __u32                       chipFeatures;
 
     /* Supported minor feature fields. */
-    gctUINT32                   chipMinorFeatures;
+    __u32                       chipMinorFeatures;
 
     /* Supported minor feature 1 fields. */
-    gctUINT32                   chipMinorFeatures1;
+    __u32                       chipMinorFeatures1;
 
     /* Supported minor feature 2 fields. */
-    gctUINT32                   chipMinorFeatures2;
+    __u32                       chipMinorFeatures2;
 
     /* Supported minor feature 3 fields. */
-    gctUINT32                   chipMinorFeatures3;
+    __u32                       chipMinorFeatures3;
 
     /* Number of streams supported. */
-    gctUINT32                   streamCount;
+    __u32                       streamCount;
 
     /* Total number of temporary registers per thread. */
-    gctUINT32                   registerMax;
+    __u32                       registerMax;
 
     /* Maximum number of threads. */
-    gctUINT32                   threadCount;
+    __u32                       threadCount;
 
     /* Number of shader cores. */
-    gctUINT32                   shaderCoreCount;
+    __u32                       shaderCoreCount;
 
     /* Size of the vertex cache. */
-    gctUINT32                   vertexCacheSize;
+    __u32                       vertexCacheSize;
 
     /* Number of entries in the vertex output buffer. */
-    gctUINT32                   vertexOutputBufferSize;
+    __u32                       vertexOutputBufferSize;
 
     /* Number of pixel pipes. */
-    gctUINT32                   pixelPipes;
+    __u32                       pixelPipes;
 
     /* Number of instructions. */
-    gctUINT32                   instructionCount;
+    __u32                       instructionCount;
 
     /* Number of constants. */
-    gctUINT32                   numConstants;
+    __u32                       numConstants;
 
     /* Buffer size */
-    gctUINT32                   bufferSize;
+    __u32                       bufferSize;
 
 }
 gcsHAL_QUERY_CHIP_IDENTITY;
@@ -259,7 +259,7 @@ typedef struct _gcsHAL_INTERFACE
     gctHANDLE                   handle;
 
     /* Pid of the client. */
-    gctUINT32                   pid;
+    __u32                       pid;
 
     /* Union of command structures. */
     union _u
@@ -268,7 +268,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_GET_BASE_ADDRESS
         {
             /* Physical memory address of internal memory. */
-            OUT gctUINT32               baseAddress;
+            OUT __u32                   baseAddress;
         }
         GetBaseAddress;
 
@@ -330,10 +330,10 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_ALLOCATE_LINEAR_VIDEO_MEMORY
         {
             /* Number of bytes to allocate. */
-            IN OUT gctUINT              bytes;
+            IN OUT unsigned int         bytes;
 
             /* Buffer alignment. */
-            IN gctUINT                  alignment;
+            IN unsigned int             alignment;
 
             /* Type of allocation. */
             IN gceSURF_TYPE             type;
@@ -350,13 +350,13 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_ALLOCATE_VIDEO_MEMORY
         {
             /* Width of rectangle to allocate. */
-            IN OUT gctUINT              width;
+            IN OUT unsigned int         width;
 
             /* Height of rectangle to allocate. */
-            IN OUT gctUINT              height;
+            IN OUT unsigned int         height;
 
             /* Depth of rectangle to allocate. */
-            IN gctUINT                  depth;
+            IN unsigned int             depth;
 
             /* Format rectangle to allocate in gceSURF_FORMAT. */
             IN gceSURF_FORMAT           format;
@@ -392,7 +392,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctBOOL                  cacheable;
 
             /* Hardware specific address. */
-            OUT gctUINT32               address;
+            OUT __u32                   address;
 
             /* Mapped logical address. */
             OUT void *                  memory;
@@ -479,7 +479,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT void *                  info;
 
             /* Physical address of mapped memory. */
-            OUT gctUINT32               address;
+            OUT __u32                   address;
         }
         MapUserMemory;
 
@@ -497,7 +497,7 @@ typedef struct _gcsHAL_INTERFACE
 
             /* Physical address of mapped memory as returned by
                gcvHAL_MAP_USER_MEMORY. */
-            IN gctUINT32                address;
+            IN __u32                    address;
         }
         UnmapUserMemory;
 
@@ -508,13 +508,13 @@ typedef struct _gcsHAL_INTERFACE
             gceUSER_SIGNAL_COMMAND_CODES command;
 
             /* Signal ID. */
-            IN OUT gctINT               id;
+            IN OUT int                  id;
 
             /* Reset mode. */
             IN gctBOOL                  manualReset;
 
             /* Wait timedout. */
-            IN gctUINT32                wait;
+            IN __u32                    wait;
 
             /* State. */
             IN gctBOOL                  state;
@@ -542,10 +542,10 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_WRITE_DATA
         {
             /* Address to write data to. */
-            IN gctUINT32                address;
+            IN __u32                    address;
 
             /* Data to write. */
-            IN gctUINT32                data;
+            IN __u32                    data;
         }
         WriteData;
 
@@ -556,7 +556,7 @@ typedef struct _gcsHAL_INTERFACE
             IN OUT size_t               bytes;
 
             /* Hardware address of allocation. */
-            OUT gctUINT32               address;
+            OUT __u32                   address;
 
             /* Physical address of allocation. */
             OUT gctPHYS_ADDR            physical;
@@ -584,10 +584,10 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_READ_REGISTER
         {
             /* Logical address of memory to write data to. */
-            IN gctUINT32            address;
+            IN __u32                address;
 
             /* Data read. */
-            OUT gctUINT32           data;
+            OUT __u32               data;
         }
         ReadRegisterData;
 
@@ -595,10 +595,10 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_WRITE_REGISTER
         {
             /* Logical address of memory to write data to. */
-            IN gctUINT32            address;
+            IN __u32                address;
 
             /* Data read. */
-            IN gctUINT32            data;
+            IN __u32                data;
         }
         WriteRegisterData;
 
@@ -685,12 +685,12 @@ typedef struct _gcsHAL_INTERFACE
         {
             /* If gcvTRUE, set the debug information. */
             IN gctBOOL                  set;
-            IN gctUINT32                level;
-            IN gctUINT32                zones;
+            IN __u32                    level;
+            IN __u32                    zones;
             IN gctBOOL                  enable;
 
             IN gceDEBUG_MESSAGE_TYPE    type;
-            IN gctUINT32                messageSize;
+            IN __u32                    messageSize;
 
             /* Message to print if not empty. */
             IN char                     message[80];
@@ -712,13 +712,13 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_TIMESTAMP
         {
             /* Timer select. */
-            IN gctUINT32                timer;
+            IN __u32                    timer;
 
             /* Timer request type (0-stop, 1-start, 2-send delta). */
-            IN gctUINT32                request;
+            IN __u32                    request;
 
             /* Result of delta time in microseconds. */
-            OUT gctINT32                timeDelta;
+            OUT __s32                   timeDelta;
         }
         TimeStamp;
 
@@ -730,7 +730,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gctBOOL                  validProcessID;
 
             /* Process ID to query. */
-            IN gctUINT32                processID;
+            IN __u32                    processID;
 
             /* Information. */
             OUT gcuDATABASE_INFO        vidMem;
@@ -744,16 +744,16 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_VERSION
         {
             /* Major version: N.n.n. */
-            OUT gctINT32                major;
+            OUT __s32                   major;
 
             /* Minor version: n.N.n. */
-            OUT gctINT32                minor;
+            OUT __s32                   minor;
 
             /* Patch version: n.n.N. */
-            OUT gctINT32                patch;
+            OUT __s32                   patch;
 
             /* Build version. */
-            OUT gctUINT32               build;
+            OUT __u32                   build;
         }
         Version;
 
@@ -761,7 +761,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_CHIP_INFO
         {
             /* Chip count. */
-            OUT gctINT32                count;
+            OUT __s32                   count;
 
             /* Chip types. */
             OUT gceHARDWARE_TYPE        types[gcdCHIP_COUNT];
@@ -800,18 +800,18 @@ typedef struct _gcsHAL_INTERFACE
         /* gcvHAL_SET_TIME_OUT. */
         struct _gcsHAL_SET_TIMEOUT
         {
-            gctUINT32                   timeOut;
+            __u32                       timeOut;
         }
         SetTimeOut;
 
         struct _gcsHAL_GET_SHARED_INFO
         {
-            IN gctUINT32            pid;
-            IN gctUINT32            dataId;
+            IN __u32                pid;
+            IN __u32                dataId;
             IN gcuVIDMEM_NODE_PTR   node;
-            OUT gctUINT8_PTR        data;
+            OUT __u8 *              data;
             /* fix size */
-            OUT gctUINT8_PTR        nodeData;
+            OUT __u8 *              nodeData;
             size_t                  size;
             IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
         }
@@ -819,10 +819,10 @@ typedef struct _gcsHAL_INTERFACE
 
         struct _gcsHAL_SET_SHARED_INFO
         {
-            IN gctUINT32            dataId;
+            IN __u32                dataId;
             IN gcuVIDMEM_NODE_PTR   node;
-            IN gctUINT8_PTR         data;
-            IN gctUINT8_PTR         nodeData;
+            IN __u8 *               data;
+            IN __u8 *               nodeData;
             IN size_t               size;
             IN gceVIDMEM_NODE_SHARED_INFO_TYPE infoType;
         }

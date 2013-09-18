@@ -30,7 +30,7 @@
 #define gcvFALSE                0
 #define gcvTRUE                 1
 
-#define gcvINFINITE             ((gctUINT32) ~0U)
+#define gcvINFINITE             ((u32) ~0U)
 
 typedef float                   gctFLOAT;
 typedef float *                 gctFLOAT_PTR;
@@ -69,10 +69,10 @@ typedef void *                  gctFILE;
     (__gcmEND(reg_field) - __gcmSTART(reg_field) + 1)
 
 #define __gcmALIGN(data, reg_field) \
-    (((gctUINT32) (data)) << __gcmSTART(reg_field))
+    (((u32) (data)) << __gcmSTART(reg_field))
 
 #define __gcmMASK(reg_field) \
-    ((gctUINT32) ((__gcmGETSIZE(reg_field) == 32) \
+    ((u32) ((__gcmGETSIZE(reg_field) == 32) \
         ?  ~0 \
         : (~(~0 << __gcmGETSIZE(reg_field)))))
 
@@ -107,9 +107,9 @@ typedef void *                  gctFILE;
 */
 #define gcmSETFIELD(data, reg, field, value) \
 ( \
-    (((gctUINT32) (data)) \
+    (((u32) (data)) \
         & ~__gcmALIGN(__gcmMASK(reg##_##field), reg##_##field)) \
-        |  __gcmALIGN((gctUINT32) (value) \
+        |  __gcmALIGN((u32) (value) \
             & __gcmMASK(reg##_##field), reg##_##field) \
 )
 
@@ -129,7 +129,7 @@ typedef void *                  gctFILE;
 */
 #define gcmVERIFYFIELDVALUE(data, reg, field, value) \
 ( \
-    (((gctUINT32) (data)) >> __gcmSTART(reg##_##field) & \
+    (((u32) (data)) >> __gcmSTART(reg##_##field) & \
                              __gcmMASK(reg##_##field)) \
         == \
     (reg##_##field##_##value & __gcmMASK(reg##_##field)) \
@@ -154,12 +154,12 @@ typedef void *                  gctFILE;
 #if defined(__LP64__) && __LP64__
 #   define gcmPTR2INT(p) \
     ( \
-        (gctUINT32) (gctUINT64) (p) \
+        (u32) (u64) (p) \
     )
 #else
 #   define gcmPTR2INT(p) \
     ( \
-        (gctUINT32) (p) \
+        (u32) (p) \
     )
 #endif
 
@@ -176,7 +176,7 @@ typedef void *                  gctFILE;
 #ifdef __LP64__
 #   define gcmINT2PTR(i) \
     ( \
-        (void *) (gctINT64) (i) \
+        (void *) (s64) (i) \
     )
 #else
 #   define gcmINT2PTR(i) \

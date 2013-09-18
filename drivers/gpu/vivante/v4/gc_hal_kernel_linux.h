@@ -57,12 +57,12 @@
 
 #define GetPageCount(size, offset) 	((((size) + ((offset) & ~PAGE_CACHE_MASK)) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT)
 
-static inline gctINT
+static inline int
 GetOrder(
-	IN gctINT numPages
+	IN int numPages
 	)
 {
-    gctINT order = 0;
+    int order = 0;
 
 	while ((1 << order) <  numPages) order++;
 

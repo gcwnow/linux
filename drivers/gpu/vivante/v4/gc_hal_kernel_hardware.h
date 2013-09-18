@@ -40,7 +40,7 @@ struct _gckHARDWARE
     gcsHAL_QUERY_CHIP_IDENTITY  identity;
     gctBOOL                     allowFastClear;
     gctBOOL                     allowCompression;
-    gctUINT32                   powerBaseAddress;
+    u32                         powerBaseAddress;
     gctBOOL                     extraEventStates;
 
     /* Big endian */
@@ -48,10 +48,10 @@ struct _gckHARDWARE
 
     /* Chip status */
     void *                      powerMutex;
-    gctUINT32                   powerProcess;
-    gctUINT32                   powerThread;
+    u32                         powerProcess;
+    u32                         powerThread;
     gceCHIPPOWERSTATE           chipPowerState;
-    gctUINT32                   lastWaitLink;
+    u32                         lastWaitLink;
     gctBOOL                     clockState;
     gctBOOL                     powerState;
     void *                      globalSemaphore;
@@ -60,14 +60,14 @@ struct _gckHARDWARE
     gctISRMANAGERFUNC           stopIsr;
     void *                      isrContext;
 
-    gctUINT32                   mmuVersion;
+    u32                         mmuVersion;
 
     /* Type */
     gceHARDWARE_TYPE            type;
 
 #if gcdPOWEROFF_TIMEOUT
-    gctUINT32                   powerOffTime;
-    gctUINT32                   powerOffTimeout;
+    u32                         powerOffTime;
+    u32                         powerOffTimeout;
     void *                      powerOffTimer;
 #endif
 
@@ -77,13 +77,13 @@ struct _gckHARDWARE
 gceSTATUS
 gckHARDWARE_GetBaseAddress(
     IN gckHARDWARE Hardware,
-    OUT gctUINT32_PTR BaseAddress
+    OUT u32 *BaseAddress
     );
 
 gceSTATUS
 gckHARDWARE_NeedBaseAddress(
     IN gckHARDWARE Hardware,
-    IN gctUINT32 State,
+    IN u32 State,
     OUT gctBOOL_PTR NeedBase
     );
 

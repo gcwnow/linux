@@ -50,12 +50,12 @@ typedef struct _gcsRECT *               gcsRECT_PTR;
 
 gceSTATUS
 gckOS_GetProfileTick(
-    OUT gctUINT64_PTR Tick
+    OUT u64 *Tick
     );
 
-gctUINT32
+u32
 gckOS_ProfileToMS(
-    IN gctUINT64 Ticks
+    IN u64 Ticks
     );
 
 #define _gcmPROFILE_INIT(prefix, freq, start) \
@@ -91,10 +91,10 @@ gckOS_ProfileToMS(
 #   define gcmPROFILE_DECLARE_ELSE(x)       x
 #endif
 
-static inline gctINT
+static inline int
 gckMATH_ModuloInt(
-    IN gctINT X,
-    IN gctINT Y
+    IN int X,
+    IN int Y
     )
 {
     if(Y ==0) {return 0;}
@@ -107,24 +107,24 @@ gckMATH_ModuloInt(
 
 typedef struct _gcsPOINT
 {
-    gctINT32                    x;
-    gctINT32                    y;
+    s32                         x;
+    s32                         y;
 }
 gcsPOINT;
 
 typedef struct _gcsSIZE
 {
-    gctINT32                    width;
-    gctINT32                    height;
+    s32                         width;
+    s32                         height;
 }
 gcsSIZE;
 
 typedef struct _gcsRECT
 {
-    gctINT32                    left;
-    gctINT32                    top;
-    gctINT32                    right;
-    gctINT32                    bottom;
+    s32                         left;
+    s32                         top;
+    s32                         right;
+    s32                         bottom;
 }
 gcsRECT;
 
@@ -134,7 +134,7 @@ typedef struct _gcsVIDMEM_NODE_SHARED_INFO
     gcsPOINT                    SrcOrigin;
     gcsPOINT                    DestOrigin;
     gcsSIZE                     RectSize;
-    gctUINT32                   clearValue;
+    u32                         clearValue;
 }
 gcsVIDMEM_NODE_SHARED_INFO;
 
@@ -185,15 +185,15 @@ gckOS_DebugFatal(
 
 void
 gckOS_DebugTrace(
-    IN gctUINT32 Level,
+    IN u32 Level,
     IN const char *Message,
     ...
     );
 
 void
 gckOS_DebugTraceN(
-    IN gctUINT32 Level,
-    IN gctUINT ArgumentSize,
+    IN u32 Level,
+    IN unsigned int ArgumentSize,
     IN const char *Message,
     ...
     );
@@ -246,17 +246,17 @@ gckOS_DebugTraceN(
 
 void
 gckOS_DebugTraceZone(
-    IN gctUINT32 Level,
-    IN gctUINT32 Zone,
+    IN u32 Level,
+    IN u32 Zone,
     IN const char *Message,
     ...
     );
 
 void
 gckOS_DebugTraceZoneN(
-    IN gctUINT32 Level,
-    IN gctUINT32 Zone,
-    IN gctUINT ArgumentSize,
+    IN u32 Level,
+    IN u32 Zone,
+    IN unsigned int ArgumentSize,
     IN const char *Message,
     ...
     );
@@ -292,14 +292,14 @@ gckOS_DebugTraceZoneN(
 #define gcdHEADER_LEVEL             gcvLEVEL_VERBOSE
 
 #define gcmkHEADER() \
-    gctINT8 __kernel__ = 1; \
-    gctINT8_PTR __kernel_ptr__ = &__kernel__; \
+    s8 __kernel__ = 1; \
+    s8 *__kernel_ptr__ = &__kernel__; \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "++%s(%d)", __FUNCTION__, __LINE__)
 
 #define gcmkHEADER_ARG(Text, ...) \
-    gctINT8 __kernel__ = 1; \
-    gctINT8_PTR __kernel_ptr__ = &__kernel__; \
+    s8 __kernel__ = 1; \
+    s8 *__kernel_ptr__ = &__kernel__; \
     gcmkTRACE_ZONE(gcdHEADER_LEVEL, _GC_OBJ_ZONE, \
                    "++%s(%d): " Text, __FUNCTION__, __LINE__, __VA_ARGS__)
 
@@ -331,7 +331,7 @@ gckOS_Print(
 
 void
 gckOS_PrintN(
-    IN gctUINT ArgumentSize,
+    IN unsigned int ArgumentSize,
     IN const char *Message,
     ...
     );
@@ -376,7 +376,7 @@ void
 gckOS_DumpBuffer(
     IN gckOS Os,
     IN void *Buffer,
-    IN gctUINT Size,
+    IN unsigned int Size,
     IN gceDUMP_BUFFER Type,
     IN gctBOOL CopyMessage
     );
@@ -395,8 +395,8 @@ gckOS_DumpBuffer(
 void
 gckOS_DebugFlush(
     const char *CallerName,
-    gctUINT LineNumber,
-    gctUINT32 DmaAddress
+    unsigned int LineNumber,
+    u32 DmaAddress
     );
 
 #   define gcmkDEBUGFLUSH(DmaAddress) \

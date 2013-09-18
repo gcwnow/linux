@@ -71,7 +71,7 @@ struct _gcskLOGICAL_CACHE
     void *                          logical;
 
     /* DMAable address. */
-    gctUINT32                       dma;
+    u32                             dma;
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
     /* Pointer to the previous and next hash tables. */
@@ -87,7 +87,7 @@ struct _gcskLOGICAL_CACHE
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_LINEAR
     /* Time stamp. */
-    gctUINT64                       stamp;
+    u64                             stamp;
 #endif
 };
 
@@ -101,10 +101,10 @@ typedef struct _gcskSECURE_CACHE
     gcskLOGICAL_CACHE_PTR           cacheIndex;
 
     /* Current free slot for LINEAR mode. */
-    gctUINT32                       cacheFree;
+    u32                             cacheFree;
 
     /* Time stamp for LINEAR mode. */
-    gctUINT64                       cacheStamp;
+    u64                             cacheStamp;
 
 #if gcdSECURE_CACHE_METHOD == gcdSECURE_CACHE_HASH
     /* Hash table for HASH mode. */
@@ -158,7 +158,7 @@ typedef struct _gcsDATABASE
     size_t                              slot;
 
     /* Process ID. */
-    gctUINT32                           processID;
+    u32                                 processID;
 
     /* Sizes to query. */
     gcsDATABASE_COUNTERS                vidMem;
@@ -168,8 +168,8 @@ typedef struct _gcsDATABASE
     gcsDATABASE_COUNTERS                mapMemory;
 
     /* Idle time management. */
-    gctUINT64                           lastIdle;
-    gctUINT64                           idle;
+    u64                                 lastIdle;
+    u64                                 idle;
 
     /* Pointer to database. */
     gcsDATABASE_RECORD_PTR              list;
@@ -185,14 +185,14 @@ gcsDATABASE;
 gceSTATUS
 gckKERNEL_CreateProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     );
 
 /* Add a record to the process database. */
 gceSTATUS
 gckKERNEL_AddProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer,
     IN gctPHYS_ADDR Physical,
@@ -203,7 +203,7 @@ gckKERNEL_AddProcessDB(
 gceSTATUS
 gckKERNEL_RemoveProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer
     );
@@ -212,15 +212,15 @@ gckKERNEL_RemoveProcessDB(
 gceSTATUS
 gckKERNEL_DestroyProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     );
 
 /* Find a record to the process database. */
 gceSTATUS
 gckKERNEL_FindProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
-    IN gctUINT32 ThreadID,
+    IN u32 ProcessID,
+    IN u32 ThreadID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer,
     OUT gcsDATABASE_RECORD_PTR Record
@@ -230,7 +230,7 @@ gckKERNEL_FindProcessDB(
 gceSTATUS
 gckKERNEL_QueryProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctBOOL LastProcessID,
     IN gceDATABASE_TYPE Type,
     OUT gcuDATABASE_INFO * Info
@@ -241,7 +241,7 @@ gckKERNEL_QueryProcessDB(
 gceSTATUS
 gckKERNEL_GetProcessDBCache(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     OUT gcskSECURE_CACHE_PTR * Cache
     );
 #endif
@@ -252,8 +252,8 @@ typedef struct _gcsTIMER *           gcsTIMER_PTR;
 typedef struct _gcsTIMER
 {
     /* Start and Stop time holders. */
-    gctUINT64                           startTime;
-    gctUINT64                           stopTime;
+    u64                                 startTime;
+    u64                                 stopTime;
 }
 gcsTIMER;
 
@@ -270,11 +270,11 @@ struct _gckDB
     gcsDATABASE_PTR             freeDatabase;
     gcsDATABASE_RECORD_PTR      freeRecord;
     gcsDATABASE_PTR             lastDatabase;
-    gctUINT32                   lastProcessID;
-    gctUINT64                   lastIdle;
-    gctUINT64                   idleTime;
-    gctUINT64                   lastSlowdown;
-    gctUINT64                   lastSlowdownIdle;
+    u32                         lastProcessID;
+    u64                         lastIdle;
+    u64                         idleTime;
+    u64                         lastSlowdown;
+    u64                         lastSlowdownIdle;
 };
 
 /* gckKERNEL object. */
@@ -313,7 +313,7 @@ struct _gckKERNEL
 
     /* Pointer to gckEVENT object. */
     gcsTIMER                    timers[8];
-    gctUINT32                   timeOut;
+    u32                         timeOut;
 };
 
 /* gckCOMMAND object. */
@@ -337,7 +337,7 @@ struct _gckCOMMAND
 
     /* Idle flag and commit stamp. */
     gctBOOL                     idle;
-    gctUINT64                   commitStamp;
+    u64                         commitStamp;
 
     /* Command queue mutex. */
     void *                      mutexQueue;
@@ -359,10 +359,10 @@ struct _gckCOMMAND
 
     gctPHYS_ADDR                physical;
     void *                      logical;
-    gctUINT32                   offset;
-    gctINT                      index;
+    u32                         offset;
+    int                         index;
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
-    gctUINT                     wrapCount;
+    unsigned int                wrapCount;
 #endif
 
     /* The command queue is new. */
@@ -385,7 +385,7 @@ struct _gckCOMMAND
     void *                      atomCommit;
 
     /* Kernel process ID. */
-    gctUINT32                   kernelProcessID;
+    u32                         kernelProcessID;
 
     /* End Event signal. */
     gctSIGNAL                   endEventSignal;
@@ -393,8 +393,8 @@ struct _gckCOMMAND
 #if gcdSECURE_USER
     /* Hint array copy buffer. */
     gctBOOL                     hintArrayAllocated;
-    gctUINT                     hintArraySize;
-    gctUINT32_PTR               hintArray;
+    unsigned int                hintArraySize;
+    u32 *                       hintArray;
 #endif
 };
 
@@ -410,7 +410,7 @@ typedef struct _gcsEVENT
     gcsHAL_INTERFACE            info;
 
     /* Process ID owning the event. */
-    gctUINT32                   processID;
+    u32                         processID;
 }
 gcsEVENT;
 
@@ -419,7 +419,7 @@ typedef struct _gcsEVENT_QUEUE * gcsEVENT_QUEUE_PTR;
 typedef struct _gcsEVENT_QUEUE
 {
     /* Time stamp. */
-    gctUINT64                   stamp;
+    u64                         stamp;
 
     /* Source of the event. */
     gceKERNEL_WHERE             source;
@@ -460,22 +460,22 @@ struct _gckEVENT
     gckKERNEL                   kernel;
 
     /* Time stamp. */
-    gctUINT64                   stamp;
-    gctUINT64                   lastCommitStamp;
+    u64                         stamp;
+    u64                         lastCommitStamp;
 
     /* Queue mutex. */
     void *                      eventQueueMutex;
 
     /* Array of event queues. */
     gcsEVENT_QUEUE              queues[30];
-    gctUINT8                    lastID;
+    u8                          lastID;
     void *                      freeAtom;
 
     /* Pending events. */
 #ifdef CONFIG_SMP
     void *                      pending;
 #else
-    volatile gctUINT            pending;
+    volatile unsigned int       pending;
 #endif
 
     /* List of free event structures and its mutex. */
@@ -494,7 +494,7 @@ struct _gckEVENT
 gceSTATUS
 gckEVENT_Stop(
     IN gckEVENT Event,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctPHYS_ADDR Handle,
     IN void *Logical,
     IN gctSIGNAL Signal,
@@ -519,19 +519,19 @@ typedef union _gcuVIDMEM_NODE
         gcuVIDMEM_NODE_PTR      prevFree;
 
         /* Information for this node. */
-        gctUINT32               offset;
+        u32                     offset;
         size_t                  bytes;
-        gctUINT32               alignment;
+        u32                     alignment;
 
         /* Locked counter. */
-        gctINT32                locked;
+        s32                     locked;
 
         /* Memory pool. */
         gcePOOL                 pool;
-        gctUINT32               physical;
+        u32                     physical;
 
         /* Process ID owning this memory. */
-        gctUINT32               processID;
+        u32                     processID;
 
         /* Prevent compositor from freeing until client unlocks. */
         gctBOOL                 freePending;
@@ -565,16 +565,16 @@ typedef union _gcuVIDMEM_NODE
         /* Pointer to gckKERNEL object who lock this. */
         gckKERNEL               lockKernels[gcdCORE_COUNT];
         /* Actual physical address */
-        gctUINT32               addresses[gcdCORE_COUNT];
+        u32                     addresses[gcdCORE_COUNT];
 
         /* Mutex. */
         void *                  mutex;
 
         /* Locked counter. */
-        gctINT32                lockeds[gcdCORE_COUNT];
+        s32                     lockeds[gcdCORE_COUNT];
 
         /* Process ID owning this memory. */
-        gctUINT32               processID;
+        u32                     processID;
 
         /* Owner process sets freed to true
          * when it trys to free a locked
@@ -598,12 +598,12 @@ struct _gckVIDMEM
     gckOS                       os;
 
     /* Information for this video memory heap. */
-    gctUINT32                   baseAddress;
+    u32                         baseAddress;
     size_t                      bytes;
     size_t                      freeBytes;
 
     /* Mapping for each type of surface. */
-    gctINT                      mapping[gcvSURF_NUM_TYPES];
+    int                         mapping[gcvSURF_NUM_TYPES];
 
     /* Sentinel nodes for up to 8 banks. */
     gcuVIDMEM_NODE              sentinel[8];
@@ -616,7 +616,7 @@ struct _gckVIDMEM
 
 #if gcdUSE_VIDMEM_PER_PID
     /* The Pid this VidMem belongs to. */
-    gctUINT32                   pid;
+    u32                         pid;
 
     struct _gckVIDMEM*          next;
 #endif
@@ -640,23 +640,23 @@ struct _gckMMU
     /* Page table information. */
     size_t                      pageTableSize;
     gctPHYS_ADDR                pageTablePhysical;
-    gctUINT32_PTR               pageTableLogical;
-    gctUINT32                   pageTableEntries;
+    u32 *                       pageTableLogical;
+    u32                         pageTableEntries;
 
     /* Master TLB information. */
     size_t                      mtlbSize;
     gctPHYS_ADDR                mtlbPhysical;
-    gctUINT32_PTR               mtlbLogical;
-    gctUINT32                   mtlbEntries;
+    u32 *                       mtlbLogical;
+    u32                         mtlbEntries;
 
     /* Free entries. */
-    gctUINT32                   heapList;
+    u32                         heapList;
     gctBOOL                     freeNodes;
 
     void *                      staticSTLB;
     gctBOOL                     enabled;
 
-    gctUINT32                   dynamicMappingStart;
+    u32                         dynamicMappingStart;
 };
 
 gceSTATUS
@@ -669,7 +669,7 @@ gceSTATUS
 gckKERNEL_AttachProcessEx(
     IN gckKERNEL Kernel,
     IN gctBOOL Attach,
-    IN gctUINT32 PID
+    IN u32 PID
     );
 
 #if gcdSECURE_USER
@@ -703,7 +703,7 @@ gceSTATUS
 gckCONTEXT_Construct(
     IN gckOS Os,
     IN gckHARDWARE Hardware,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     OUT gckCONTEXT * Context
     );
 
@@ -715,7 +715,7 @@ gckCONTEXT_Destroy(
 gceSTATUS
 gckCONTEXT_Update(
     IN gckCONTEXT Context,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gcsSTATE_DELTA_PTR StateDelta
     );
 

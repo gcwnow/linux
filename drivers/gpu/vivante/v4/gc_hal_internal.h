@@ -247,14 +247,14 @@ gceSTATUS
 gckOS_GetPhysicalAddress(
     IN gckOS Os,
     IN void *Logical,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     );
 
 /* Map physical memory. */
 gceSTATUS
 gckOS_MapPhysical(
     IN gckOS Os,
-    IN gctUINT32 Physical,
+    IN u32 Physical,
     IN size_t Bytes,
     OUT void **Logical
     );
@@ -272,8 +272,8 @@ gceSTATUS
 gckOS_ReadRegisterEx(
     IN gckOS Os,
     IN gceCORE Core,
-    IN gctUINT32 Address,
-    OUT gctUINT32 * Data
+    IN u32 Address,
+    OUT u32 * Data
     );
 
 /* Write data to a hardware register. */
@@ -281,8 +281,8 @@ gceSTATUS
 gckOS_WriteRegisterEx(
     IN gckOS Os,
     IN gceCORE Core,
-    IN gctUINT32 Address,
-    IN gctUINT32 Data
+    IN u32 Address,
+    IN u32 Data
     );
 
 /* Write data to a 32-bit memory location. */
@@ -290,7 +290,7 @@ gceSTATUS
 gckOS_WriteMemory(
     IN gckOS Os,
     IN void *Address,
-    IN gctUINT32 Data
+    IN u32 Data
     );
 
 /* Map physical memory into the process space. */
@@ -309,7 +309,7 @@ gckOS_UnmapMemoryEx(
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
     IN void *Logical,
-    IN gctUINT32 PID
+    IN u32 PID
     );
 
 /* Unmap physical memory from the process space. */
@@ -340,7 +340,7 @@ gceSTATUS
 gckOS_AcquireMutex(
     IN gckOS Os,
     IN void *Mutex,
-    IN gctUINT32 Timeout
+    IN u32 Timeout
     );
 
 /* Release a mutex. */
@@ -354,22 +354,22 @@ gckOS_ReleaseMutex(
 gceSTATUS
 gckOS_AtomicExchange(
     IN gckOS Os,
-    IN OUT gctUINT32_PTR Target,
-    IN gctUINT32 NewValue,
-    OUT gctUINT32_PTR OldValue
+    IN OUT u32 *Target,
+    IN u32 NewValue,
+    OUT u32 *OldValue
     );
 
 #ifdef CONFIG_SMP
 gceSTATUS
 gckOS_AtomSetMask(
     IN void *Atom,
-    IN gctUINT32 Mask
+    IN u32 Mask
     );
 
 gceSTATUS
 gckOS_AtomClearMask(
     IN void *Atom,
-    IN gctUINT32 Mask
+    IN u32 Mask
     );
 #endif
 
@@ -441,14 +441,14 @@ gckOS_AtomDestroy(
 **
 **  OUTPUT:
 **
-**      gctINT32_PTR Value
+**      s32 *Value
 **          Pointer to a variable the receives the value of the atom.
 */
 gceSTATUS
 gckOS_AtomGet(
     IN gckOS Os,
     IN void *Atom,
-    OUT gctINT32_PTR Value
+    OUT s32 *Value
     );
 
 /*******************************************************************************
@@ -465,7 +465,7 @@ gckOS_AtomGet(
 **      void *Atom
 **          Pointer to the atom.
 **
-**      gctINT32 Value
+**      s32 Value
 **          The value of the atom.
 **
 **  OUTPUT:
@@ -476,7 +476,7 @@ gceSTATUS
 gckOS_AtomSet(
     IN gckOS Os,
     IN void *Atom,
-    IN gctINT32 Value
+    IN s32 Value
     );
 
 /*******************************************************************************
@@ -495,14 +495,14 @@ gckOS_AtomSet(
 **
 **  OUTPUT:
 **
-**      gctINT32_PTR Value
+**      s32 *Value
 **          Pointer to a variable the receives the original value of the atom.
 */
 gceSTATUS
 gckOS_AtomIncrement(
     IN gckOS Os,
     IN void *Atom,
-    OUT gctINT32_PTR Value
+    OUT s32 *Value
     );
 
 /*******************************************************************************
@@ -521,41 +521,41 @@ gckOS_AtomIncrement(
 **
 **  OUTPUT:
 **
-**      gctINT32_PTR Value
+**      s32 *Value
 **          Pointer to a variable the receives the original value of the atom.
 */
 gceSTATUS
 gckOS_AtomDecrement(
     IN gckOS Os,
     IN void *Atom,
-    OUT gctINT32_PTR Value
+    OUT s32 *Value
     );
 
 /* Delay a number of microseconds. */
 gceSTATUS
 gckOS_Delay(
     IN gckOS Os,
-    IN gctUINT32 Delay
+    IN u32 Delay
     );
 
 /* Get time in milliseconds. */
 gceSTATUS
 gckOS_GetTicks(
-    OUT gctUINT32_PTR Time
+    OUT u32 *Time
     );
 
 /* Compare time value. */
 gceSTATUS
 gckOS_TicksAfter(
-    IN gctUINT32 Time1,
-    IN gctUINT32 Time2,
+    IN u32 Time1,
+    IN u32 Time2,
     OUT gctBOOL_PTR IsAfter
     );
 
 /* Get time in microseconds. */
 gceSTATUS
 gckOS_GetTime(
-    OUT gctUINT64_PTR Time
+    OUT u64 *Time
     );
 
 /* Memory barrier. */
@@ -595,7 +595,7 @@ gckOS_UnmapUserPointer(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID of the current process.
 **
 **  OUTPUT:
@@ -607,7 +607,7 @@ gckOS_UnmapUserPointer(
 gceSTATUS
 gckOS_QueryNeedCopy(
     IN gckOS Os,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     OUT gctBOOL_PTR NeedCopy
     );
 
@@ -691,7 +691,7 @@ gckOS_ResumeInterruptEx(
 gceSTATUS
 gckOS_GetBaseAddress(
     IN gckOS Os,
-    OUT gctUINT32_PTR BaseAddress
+    OUT u32 *BaseAddress
     );
 
 /* Perform a memory copy. */
@@ -721,12 +721,12 @@ gckOS_ZeroMemory(
 **
 **  OUTPUT:
 **
-**      gctUINT32_PTR ProcessID
+**      u32 *ProcessID
 **          Pointer to the variable that receives the process ID.
 */
 gceSTATUS
 gckOS_GetProcessID(
-    OUT gctUINT32_PTR ProcessID
+    OUT u32 *ProcessID
     );
 
 /*******************************************************************************
@@ -741,12 +741,12 @@ gckOS_GetProcessID(
 **
 **  OUTPUT:
 **
-**      gctUINT32_PTR ThreadID
+**      u32 *ThreadID
 **          Pointer to the variable that receives the thread ID.
 */
 gceSTATUS
 gckOS_GetThreadID(
-    OUT gctUINT32_PTR ThreadID
+    OUT u32 *ThreadID
     );
 
 /******************************************************************************\
@@ -781,7 +781,7 @@ gceSTATUS
 gckOS_WaitSignal(
     IN gckOS Os,
     IN gctSIGNAL Signal,
-    IN gctUINT32 Wait
+    IN u32 Wait
     );
 
 /* Map a user signal to the kernel space. */
@@ -801,7 +801,7 @@ gckOS_MapUserMemoryEx(
     IN void *Memory,
     IN size_t Size,
     OUT void **Info,
-    OUT gctUINT32_PTR Address
+    OUT u32 *Address
     );
 
 /* Unmap user memory. */
@@ -812,7 +812,7 @@ gckOS_UnmapUserMemoryEx(
     IN void *Memory,
     IN size_t Size,
     IN void *Info,
-    IN gctUINT32 Address
+    IN u32 Address
     );
 
 #if !USE_NEW_LINUX_SIGNAL
@@ -821,29 +821,29 @@ gceSTATUS
 gckOS_CreateUserSignal(
     IN gckOS Os,
     IN gctBOOL ManualReset,
-    OUT gctINT * SignalID
+    OUT int * SignalID
     );
 
 /* Destroy signal used in the user space. */
 gceSTATUS
 gckOS_DestroyUserSignal(
     IN gckOS Os,
-    IN gctINT SignalID
+    IN int SignalID
     );
 
 /* Wait for signal used in the user space. */
 gceSTATUS
 gckOS_WaitUserSignal(
     IN gckOS Os,
-    IN gctINT SignalID,
-    IN gctUINT32 Wait
+    IN int SignalID,
+    IN u32 Wait
     );
 
 /* Signal a signal used in the user space. */
 gceSTATUS
 gckOS_SignalUserSignal(
     IN gckOS Os,
-    IN gctINT SignalID,
+    IN int SignalID,
     IN gctBOOL State
     );
 #endif /* USE_NEW_LINUX_SIGNAL */
@@ -863,7 +863,7 @@ gckOS_UserSignal(
 gceSTATUS
 gckOS_CacheClean(
     gckOS Os,
-    gctUINT32 ProcessID,
+    u32 ProcessID,
     gctPHYS_ADDR Handle,
     void *Physical,
     void *Logical,
@@ -873,7 +873,7 @@ gckOS_CacheClean(
 gceSTATUS
 gckOS_CacheFlush(
     gckOS Os,
-    gctUINT32 ProcessID,
+    u32 ProcessID,
     gctPHYS_ADDR Handle,
     void *Physical,
     void *Logical,
@@ -883,7 +883,7 @@ gckOS_CacheFlush(
 gceSTATUS
 gckOS_CacheInvalidate(
     gckOS Os,
-    gctUINT32 ProcessID,
+    u32 ProcessID,
     gctPHYS_ADDR Handle,
     void *Physical,
     void *Logical,
@@ -896,12 +896,12 @@ gckOS_CacheInvalidate(
 
 void
 gckOS_SetDebugLevel(
-    IN gctUINT32 Level
+    IN u32 Level
     );
 
 void
 gckOS_SetDebugZones(
-    IN gctUINT32 Zones,
+    IN u32 Zones,
     IN gctBOOL Enable
     );
 
@@ -942,15 +942,15 @@ gceSTATUS
 gckOS_BroadcastHurry(
     IN gckOS Os,
     IN gckHARDWARE Hardware,
-    IN gctUINT Urgency
+    IN unsigned int Urgency
     );
 
 gceSTATUS
 gckOS_BroadcastCalibrateSpeed(
     IN gckOS Os,
     IN gckHARDWARE Hardware,
-    IN gctUINT Idle,
-    IN gctUINT Time
+    IN unsigned int Idle,
+    IN unsigned int Time
     );
 
 /*******************************************************************************
@@ -1047,7 +1047,7 @@ gceSTATUS
 gckOS_StartTimer(
     IN gckOS Os,
     IN void *Timer,
-    IN gctUINT32 Delay
+    IN u32 Delay
     );
 
 /* Stop a timer. */
@@ -1069,7 +1069,7 @@ typedef struct _gckDB *             gckDB;
 gceSTATUS
 gckVIDMEM_Construct(
     IN gckOS Os,
-    IN gctUINT32 BaseAddress,
+    IN u32 BaseAddress,
     IN size_t Bytes,
     IN size_t Threshold,
     IN size_t Banking,
@@ -1087,7 +1087,7 @@ gceSTATUS
 gckVIDMEM_AllocateLinear(
     IN gckVIDMEM Memory,
     IN size_t Bytes,
-    IN gctUINT32 Alignment,
+    IN u32 Alignment,
     IN gceSURF_TYPE Type,
     OUT gcuVIDMEM_NODE_PTR * Node
     );
@@ -1104,7 +1104,7 @@ gckVIDMEM_Lock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
     IN gctBOOL Cacheable,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     );
 
 /* Unlock memory. */
@@ -1197,7 +1197,7 @@ gceSTATUS
 gckKERNEL_GetVideoMemoryPoolPid(
     IN gckKERNEL Kernel,
     IN gcePOOL Pool,
-    IN gctUINT32 Pid,
+    IN u32 Pid,
     OUT gckVIDMEM * VideoMemory
     );
 
@@ -1205,7 +1205,7 @@ gceSTATUS
 gckKERNEL_CreateVideoMemoryPoolPid(
     IN gckKERNEL Kernel,
     IN gcePOOL Pool,
-    IN gctUINT32 Pid,
+    IN u32 Pid,
     OUT gckVIDMEM * VideoMemory
     );
 #endif
@@ -1216,7 +1216,7 @@ gckKERNEL_MapVideoMemoryEx(
     IN gckKERNEL Kernel,
     IN gceCORE Core,
     IN gctBOOL InUserSpace,
-    IN gctUINT32 Address,
+    IN u32 Address,
     OUT void **Logical
     );
 
@@ -1324,16 +1324,16 @@ gceSTATUS
 gckHARDWARE_QuerySystemMemory(
     IN gckHARDWARE Hardware,
     OUT size_t * SystemSize,
-    OUT gctUINT32 * SystemBaseAddress
+    OUT u32 * SystemBaseAddress
     );
 
 /* Build virtual address. */
 gceSTATUS
 gckHARDWARE_BuildVirtualAddress(
     IN gckHARDWARE Hardware,
-    IN gctUINT32 Index,
-    IN gctUINT32 Offset,
-    OUT gctUINT32 * Address
+    IN u32 Index,
+    IN u32 Offset,
+    OUT u32 * Address
     );
 
 /* Query command buffer requirements. */
@@ -1350,9 +1350,9 @@ gceSTATUS
 gckHARDWARE_WaitLink(
     IN gckHARDWARE Hardware,
     IN void *Logical,
-    IN gctUINT32 Offset,
+    IN u32 Offset,
     IN OUT size_t * Bytes,
-    OUT gctUINT32 * WaitOffset,
+    OUT u32 * WaitOffset,
     OUT size_t * WaitBytes
     );
 
@@ -1404,7 +1404,7 @@ gceSTATUS
 gckHARDWARE_Event(
     IN gckHARDWARE Hardware,
     IN void *Logical,
-    IN gctUINT8 Event,
+    IN u8 Event,
     IN gceKERNEL_WHERE FromWhere,
     IN OUT size_t * Bytes
     );
@@ -1414,13 +1414,13 @@ gceSTATUS
 gckHARDWARE_QueryMemory(
     IN gckHARDWARE Hardware,
     OUT size_t * InternalSize,
-    OUT gctUINT32 * InternalBaseAddress,
-    OUT gctUINT32 * InternalAlignment,
+    OUT u32 * InternalBaseAddress,
+    OUT u32 * InternalAlignment,
     OUT size_t * ExternalSize,
-    OUT gctUINT32 * ExternalBaseAddress,
-    OUT gctUINT32 * ExternalAlignment,
-    OUT gctUINT32 * HorizontalTileSize,
-    OUT gctUINT32 * VerticalTileSize
+    OUT u32 * ExternalBaseAddress,
+    OUT u32 * ExternalAlignment,
+    OUT u32 * HorizontalTileSize,
+    OUT u32 * VerticalTileSize
     );
 
 /* Query the identity of the hardware. */
@@ -1434,18 +1434,18 @@ gckHARDWARE_QueryChipIdentity(
 gceSTATUS
 gckHARDWARE_QueryShaderCaps(
     IN gckHARDWARE Hardware,
-    OUT gctUINT * VertexUniforms,
-    OUT gctUINT * FragmentUniforms,
-    OUT gctUINT * Varyings
+    OUT unsigned int * VertexUniforms,
+    OUT unsigned int * FragmentUniforms,
+    OUT unsigned int * Varyings
     );
 
 /* Split a harwdare specific address into API stuff. */
 gceSTATUS
 gckHARDWARE_SplitMemory(
     IN gckHARDWARE Hardware,
-    IN gctUINT32 Address,
+    IN u32 Address,
     OUT gcePOOL * Pool,
-    OUT gctUINT32 * Offset
+    OUT u32 * Offset
     );
 
 /* Update command queue tail pointer. */
@@ -1453,7 +1453,7 @@ gceSTATUS
 gckHARDWARE_UpdateQueueTail(
     IN gckHARDWARE Hardware,
     IN void *Logical,
-    IN gctUINT32 Offset
+    IN u32 Offset
     );
 
 /* Convert logical address to hardware specific address. */
@@ -1461,7 +1461,7 @@ gceSTATUS
 gckHARDWARE_ConvertLogical(
     IN gckHARDWARE Hardware,
     IN void *Logical,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     );
 
 /* Interrupt manager. */
@@ -1500,7 +1500,7 @@ gceSTATUS
 gckHARDWARE_GetIdle(
     IN gckHARDWARE Hardware,
     IN gctBOOL Wait,
-    OUT gctUINT32 * Data
+    OUT u32 * Data
     );
 
 /* Flush the caches. */
@@ -1516,8 +1516,8 @@ gckHARDWARE_Flush(
 gceSTATUS
 gckHARDWARE_SetFastClear(
     IN gckHARDWARE Hardware,
-    IN gctINT Enable,
-    IN gctINT Compression
+    IN int Enable,
+    IN int Compression
     );
 
 /* Power management. */
@@ -1564,12 +1564,12 @@ gckHARDWARE_SetIsrManager(
 gceSTATUS
 gckHARDWARE_Compose(
     IN gckHARDWARE Hardware,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctPHYS_ADDR Physical,
     IN void *Logical,
     IN size_t Offset,
     IN size_t Size,
-    IN gctUINT8 EventID
+    IN u8 EventID
     );
 
 /* Check for Hardware features. */
@@ -1646,14 +1646,14 @@ gckEVENT_Compose(
 gceSTATUS
 gckEVENT_Notify(
     IN gckEVENT Event,
-    IN gctUINT32 IDs
+    IN u32 IDs
     );
 
 /* Event callback routine. */
 gceSTATUS
 gckEVENT_Interrupt(
     IN gckEVENT Event,
-    IN gctUINT32 IDs
+    IN u32 IDs
     );
 
 gceSTATUS
@@ -1714,7 +1714,7 @@ gckCOMMAND_Commit(
     IN gcoCMDBUF CommandBuffer,
     IN gcsSTATE_DELTA_PTR StateDelta,
     IN gcsQUEUE_PTR EventQueue,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     );
 
 /* Reserve space in the command buffer. */
@@ -1746,7 +1746,7 @@ gckCOMMAND_Attach(
     IN gckCOMMAND Command,
     OUT gckCONTEXT * Context,
     OUT size_t * StateCount,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     );
 
 /* Detach user process. */
@@ -1780,8 +1780,8 @@ gckMMU_Destroy(
 gceSTATUS
 gckMMU_Enable(
     IN gckMMU Mmu,
-    IN gctUINT32 PhysBaseAddr,
-    IN gctUINT32 PhysSize
+    IN u32 PhysBaseAddr,
+    IN u32 PhysSize
     );
 
 /* Allocate pages inside the MMU. */
@@ -1790,7 +1790,7 @@ gckMMU_AllocatePages(
     IN gckMMU Mmu,
     IN size_t PageCount,
     OUT void **PageTable,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     );
 
 /* Remove a page table from the MMU. */
@@ -1805,8 +1805,8 @@ gckMMU_FreePages(
 gceSTATUS
 gckMMU_SetPage(
    IN gckMMU Mmu,
-   IN gctUINT32 PageAddress,
-   IN gctUINT32 *PageEntry
+   IN u32 PageAddress,
+   IN u32 *PageEntry
    );
 
 gceSTATUS

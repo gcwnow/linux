@@ -217,7 +217,7 @@ gckVIDMEM_ConstructVirtual(
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node = NULL;
     void *pointer = NULL;
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("Kernel=0x%x Contiguous=%d Bytes=%lu", Kernel, Contiguous, Bytes);
 
@@ -317,7 +317,7 @@ gckVIDMEM_DestroyVirtual(
     )
 {
     gckOS os;
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -361,7 +361,7 @@ gckVIDMEM_DestroyVirtual(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctUINT32 BaseAddress
+**      u32 BaseAddress
 **          Base address for the video memory heap.
 **
 **      size_t Bytes
@@ -384,7 +384,7 @@ gckVIDMEM_DestroyVirtual(
 gceSTATUS
 gckVIDMEM_Construct(
     IN gckOS Os,
-    IN gctUINT32 BaseAddress,
+    IN u32 BaseAddress,
     IN size_t Bytes,
     IN size_t Threshold,
     IN size_t BankSize,
@@ -394,7 +394,7 @@ gckVIDMEM_Construct(
     gckVIDMEM memory = NULL;
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node;
-    gctINT i, banks = 0;
+    int i, banks = 0;
     void *pointer = NULL;
 
     gcmkHEADER_ARG("Os=0x%x BaseAddress=%08x Bytes=%lu Threshold=%lu "
@@ -590,7 +590,7 @@ gckVIDMEM_Destroy(
     )
 {
     gcuVIDMEM_NODE_PTR node, next;
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("Memory=0x%x", Memory);
 
@@ -656,12 +656,12 @@ gckVIDMEM_Destroy(
 **      gceSURF_TYPE Type
 **          Type of allocation.
 **
-**      gctUINT32 BaseAddress
+**      u32 BaseAddress
 **          Base address of current video memory node.
 **
 **  OUTPUT:
 **
-**      gctUINT32_PTR AlignmentOffset
+**      u32 *AlignmentOffset
 **          Pointer to a variable that will hold the number of bytes to skip in
 **          the current video memory node in order to make the alignment bank
 **          aligned.
@@ -669,17 +669,17 @@ gckVIDMEM_Destroy(
 static gceSTATUS
 _GetSurfaceBankAlignment(
     IN gceSURF_TYPE Type,
-    IN gctUINT32 BaseAddress,
-    OUT gctUINT32_PTR AlignmentOffset
+    IN u32 BaseAddress,
+    OUT u32 *AlignmentOffset
     )
 {
-    gctUINT32 bank;
+    u32 bank;
     /* To retrieve the bank. */
-    static const gctUINT32 bankMask = (0xFFFFFFFF << gcdBANK_BIT_START)
+    static const u32 bankMask = (0xFFFFFFFF << gcdBANK_BIT_START)
                                     ^ (0xFFFFFFFF << (gcdBANK_BIT_END + 1));
 
     /* To retrieve the bank and all the lower bytes. */
-    static const gctUINT32 byteMask = ~(0xFFFFFFFF << (gcdBANK_BIT_END + 1));
+    static const u32 byteMask = ~(0xFFFFFFFF << (gcdBANK_BIT_END + 1));
 
     gcmkHEADER_ARG("Type=%d BaseAddress=0x%x ", Type, BaseAddress);
 
@@ -723,17 +723,17 @@ _GetSurfaceBankAlignment(
 static gcuVIDMEM_NODE_PTR
 _FindNode(
     IN gckVIDMEM Memory,
-    IN gctINT Bank,
+    IN int Bank,
     IN size_t Bytes,
     IN gceSURF_TYPE Type,
-    IN OUT gctUINT32_PTR Alignment
+    IN OUT u32 *Alignment
     )
 {
     gcuVIDMEM_NODE_PTR node;
-    gctUINT32 alignment;
+    u32 alignment;
 
 #if gcdENABLE_BANK_ALIGNMENT
-    gctUINT32 bankAlignment;
+    u32 bankAlignment;
     gceSTATUS status;
 #endif
 
@@ -784,7 +784,7 @@ _FindNode(
          node = node->VidMem.nextFree)
     {
 
-        gctINT modulo = gckMATH_ModuloInt(node->VidMem.offset, *Alignment);
+        int modulo = gckMATH_ModuloInt(node->VidMem.offset, *Alignment);
 
         /* Compute number of bytes to skip for alignment. */
         alignment = (*Alignment == 0) ? 0 : (*Alignment - modulo);
@@ -824,7 +824,7 @@ OnError:
 **      size_t Bytes
 **          Number of bytes to allocate.
 **
-**      gctUINT32 Alignment
+**      u32 Alignment
 **          Byte alignment for allocation.
 **
 **      gceSURF_TYPE Type
@@ -839,15 +839,15 @@ gceSTATUS
 gckVIDMEM_AllocateLinear(
     IN gckVIDMEM Memory,
     IN size_t Bytes,
-    IN gctUINT32 Alignment,
+    IN u32 Alignment,
     IN gceSURF_TYPE Type,
     OUT gcuVIDMEM_NODE_PTR * Node
     )
 {
     gceSTATUS status;
     gcuVIDMEM_NODE_PTR node;
-    gctUINT32 alignment;
-    gctINT bank, i;
+    u32 alignment;
+    int bank, i;
     gctBOOL acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Memory=0x%x Bytes=%lu Alignment=%u Type=%d",
@@ -884,7 +884,7 @@ gckVIDMEM_AllocateLinear(
 #endif
 
     /* Find the default bank for this surface type. */
-    gcmkASSERT((gctINT) Type < ARRAY_SIZE(Memory->mapping));
+    gcmkASSERT((int) Type < ARRAY_SIZE(Memory->mapping));
     bank      = Memory->mapping[Type];
     alignment = Alignment;
 
@@ -940,7 +940,7 @@ gckVIDMEM_AllocateLinear(
         /* Allocate more memory from shared pool. */
         size_t bytes;
         gctPHYS_ADDR physical_temp;
-        gctUINT32 physical;
+        u32 physical;
         void *logical;
 
         bytes = gcmALIGN(Bytes, gcdUSE_VIDMEM_PER_PID_SIZE);
@@ -1080,7 +1080,7 @@ gckVIDMEM_Free(
     gctBOOL mutexAcquired = gcvFALSE;
     gckOS os = gcvFALSE;
     gctBOOL acquired = gcvFALSE;
-    gctINT32 i, totalLocked;
+    s32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -1267,10 +1267,10 @@ _NeedVirtualMapping(
 )
 {
     gceSTATUS status;
-    gctUINT32 phys;
-    gctUINT32 end;
+    u32 phys;
+    u32 end;
     gcePOOL pool;
-    gctUINT32 offset;
+    u32 offset;
 
     gcmkHEADER_ARG("Node=0x%X", Node);
 
@@ -1326,7 +1326,7 @@ OnError:
 **
 **  OUTPUT:
 **
-**      gctUINT32 * Address
+**      u32 * Address
 **          Pointer to a variable that will hold the hardware specific address.
 */
 gceSTATUS
@@ -1334,7 +1334,7 @@ gckVIDMEM_Lock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
     IN gctBOOL Cacheable,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     )
 {
     gceSTATUS status;
@@ -1542,7 +1542,7 @@ gckVIDMEM_Unlock(
     gckOS os = NULL;
     gctBOOL acquired = gcvFALSE;
     gctBOOL commitEntered = gcvFALSE;
-    gctINT32 i, totalLocked;
+    s32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x Type=%d *Asynchroneous=%d",
                    Node, Type, gcmOPT_VALUE(Asynchroneous));

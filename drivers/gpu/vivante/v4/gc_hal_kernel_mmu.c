@@ -54,12 +54,12 @@ typedef struct _gcsMMU_STLB *gcsMMU_STLB_PTR;
 typedef struct _gcsMMU_STLB
 {
     gctPHYS_ADDR    physical;
-    gctUINT32_PTR   logical;
+    u32 *           logical;
     size_t          size;
-    gctUINT32       physBase;
+    u32             physBase;
     size_t          pageCount;
-    gctUINT32       mtlbIndex;
-    gctUINT32       mtlbEntryNum;
+    u32             mtlbIndex;
+    u32             mtlbEntryNum;
     gcsMMU_STLB_PTR next;
 } gcsMMU_STLB;
 
@@ -74,7 +74,7 @@ typedef struct _gcsSharedPageTable
     gckHARDWARE     hardwares[gcdCORE_COUNT];
 
     /* Number of cores use this shared pagetable. */
-    gctUINT32       reference;
+    u32             reference;
 }
 gcsSharedPageTable;
 
@@ -84,8 +84,8 @@ static gcsSharedPageTable_PTR sharedPageTable = NULL;
 static gceSTATUS
 _Link(
     IN gckMMU Mmu,
-    IN gctUINT32 Index,
-    IN gctUINT32 Next
+    IN u32 Index,
+    IN u32 Next
     )
 {
     if (Index >= Mmu->pageTableEntries)
@@ -96,7 +96,7 @@ _Link(
     else
     {
         /* Address page table. */
-        gctUINT32_PTR pageTable = Mmu->pageTableLogical;
+        u32 *pageTable = Mmu->pageTableLogical;
 
         /* Dispatch on node type. */
         switch (gcmENTRY_TYPE(pageTable[Index]))
@@ -124,12 +124,12 @@ _Link(
 static gceSTATUS
 _AddFree(
     IN gckMMU Mmu,
-    IN gctUINT32 Index,
-    IN gctUINT32 Node,
-    IN gctUINT32 Count
+    IN u32 Index,
+    IN u32 Node,
+    IN u32 Count
     )
 {
-    gctUINT32_PTR pageTable = Mmu->pageTableLogical;
+    u32 *pageTable = Mmu->pageTableLogical;
 
     if (Count == 1)
     {
@@ -152,9 +152,9 @@ _Collect(
     IN gckMMU Mmu
     )
 {
-    gctUINT32_PTR pageTable = Mmu->pageTableLogical;
+    u32 *pageTable = Mmu->pageTableLogical;
     gceSTATUS status;
-    gctUINT32 i, previous, start = 0, count = 0;
+    u32 i, previous, start = 0, count = 0;
 
     previous = Mmu->heapList = ~0U;
     Mmu->freeNodes = gcvFALSE;
@@ -226,8 +226,8 @@ OnError:
     return status;
 }
 
-static gctUINT32
-_SetPage(gctUINT32 PageAddress)
+static u32
+_SetPage(u32 PageAddress)
 {
     return PageAddress
            /* writable */
@@ -241,19 +241,19 @@ _SetPage(gctUINT32 PageAddress)
 static gceSTATUS
 _FillFlatMapping(
     IN gckMMU Mmu,
-    IN gctUINT32 PhysBase,
+    IN u32 PhysBase,
     OUT size_t Size
     )
 {
     gceSTATUS status;
     gctBOOL mutex = gcvFALSE;
     gcsMMU_STLB_PTR head = NULL, pre = NULL;
-    gctUINT32 start = PhysBase & (~gcdMMU_PAGE_64K_MASK);
-    gctUINT32 end = (PhysBase + Size - 1) & (~gcdMMU_PAGE_64K_MASK);
-    gctUINT32 mStart = start >> gcdMMU_MTLB_SHIFT;
-    gctUINT32 mEnd = end >> gcdMMU_MTLB_SHIFT;
-    gctUINT32 sStart = (start & gcdMMU_STLB_64K_MASK) >> gcdMMU_STLB_64K_SHIFT;
-    gctUINT32 sEnd = (end & gcdMMU_STLB_64K_MASK) >> gcdMMU_STLB_64K_SHIFT;
+    u32 start = PhysBase & (~gcdMMU_PAGE_64K_MASK);
+    u32 end = (PhysBase + Size - 1) & (~gcdMMU_PAGE_64K_MASK);
+    u32 mStart = start >> gcdMMU_MTLB_SHIFT;
+    u32 mEnd = end >> gcdMMU_MTLB_SHIFT;
+    u32 sStart = (start & gcdMMU_STLB_64K_MASK) >> gcdMMU_STLB_64K_SHIFT;
+    u32 sEnd = (end & gcdMMU_STLB_64K_MASK) >> gcdMMU_STLB_64K_SHIFT;
 
     /* Grab the mutex. */
     gcmkONERROR(gckOS_AcquireMutex(Mmu->os, Mmu->pageTableMutex, gcvINFINITE));
@@ -266,7 +266,7 @@ _FillFlatMapping(
         {
             gcsMMU_STLB_PTR stlb;
             void *pointer = NULL;
-            gctUINT32 last = (mStart == mEnd) ? sEnd : (gcdMMU_STLB_64K_ENTRY_NUM - 1);
+            u32 last = (mStart == mEnd) ? sEnd : (gcdMMU_STLB_64K_ENTRY_NUM - 1);
 
             gcmkONERROR(gckOS_Allocate(Mmu->os, sizeof(struct _gcsMMU_STLB), &pointer));
             stlb = pointer;
@@ -416,10 +416,10 @@ _SetupDynamicSpace(
     )
 {
     gceSTATUS status;
-    gctINT i;
-    gctUINT32 physical;
-    gctINT numEntries;
-    gctUINT32_PTR pageTable;
+    int i;
+    u32 physical;
+    int numEntries;
+    u32 *pageTable;
     gctBOOL acquired = gcvFALSE;
 
     /* find the start of dynamic address space. */
@@ -438,7 +438,7 @@ _SetupDynamicSpace(
 
     Mmu->pageTableSize = numEntries * 4096;
 
-    Mmu->pageTableEntries = Mmu->pageTableSize / sizeof(gctUINT32);
+    Mmu->pageTableEntries = Mmu->pageTableSize / sizeof(u32);
 
     /* Construct Slave TLB. */
     gcmkONERROR(gckOS_AllocateContiguous(Mmu->os,
@@ -540,7 +540,7 @@ _Construct(
     gckHARDWARE hardware;
     gceSTATUS status;
     gckMMU mmu = NULL;
-    gctUINT32_PTR pageTable;
+    u32 *pageTable;
     void *pointer = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x MmuSize=%lu", Kernel, MmuSize);
@@ -590,14 +590,14 @@ _Construct(
         mmu->pageTableLogical = pointer;
 
         /* Compute number of entries in page table. */
-        mmu->pageTableEntries = mmu->pageTableSize / sizeof(gctUINT32);
+        mmu->pageTableEntries = mmu->pageTableSize / sizeof(u32);
 
         /* Mark all pages as free. */
         pageTable      = mmu->pageTableLogical;
 
 #if gcdMMU_CLEAR_VALUE
         {
-            gctUINT32 i;
+            u32 i;
 
             for (i = 0; i < mmu->pageTableEntries; ++i)
             {
@@ -866,7 +866,7 @@ gckMMU_Destroy(
 **          Pointer to a variable that receives the base address of the page
 **          table.
 **
-**      gctUINT32 * Address
+**      u32 * Address
 **          Pointer to a variable that receives the hardware specific address.
 */
 gceSTATUS
@@ -874,15 +874,15 @@ gckMMU_AllocatePages(
     IN gckMMU Mmu,
     IN size_t PageCount,
     OUT void **PageTable,
-    OUT gctUINT32 * Address
+    OUT u32 * Address
     )
 {
     gceSTATUS status;
     gctBOOL mutex = gcvFALSE;
-    gctUINT32 index = 0, previous = ~0U, left;
-    gctUINT32_PTR pageTable;
+    u32 index = 0, previous = ~0U, left;
+    u32 *pageTable;
     gctBOOL gotIt;
-    gctUINT32 address;
+    u32 address;
 
     gcmkHEADER_ARG("Mmu=0x%x PageCount=%lu", Mmu, PageCount);
 
@@ -1010,9 +1010,9 @@ gckMMU_AllocatePages(
     }
     else
     {
-        gctUINT32 masterOffset = index / gcdMMU_STLB_4K_ENTRY_NUM
+        u32 masterOffset = index / gcdMMU_STLB_4K_ENTRY_NUM
                                + Mmu->dynamicMappingStart;
-        gctUINT32 slaveOffset = index % gcdMMU_STLB_4K_ENTRY_NUM;
+        u32 slaveOffset = index % gcdMMU_STLB_4K_ENTRY_NUM;
 
         address = (masterOffset << gcdMMU_MTLB_SHIFT)
                 | (slaveOffset << gcdMMU_STLB_4K_SHIFT);
@@ -1072,7 +1072,7 @@ gckMMU_FreePages(
     IN size_t PageCount
     )
 {
-    gctUINT32_PTR pageTable;
+    u32 *pageTable;
 
     gcmkHEADER_ARG("Mmu=0x%x PageTable=0x%x PageCount=%lu",
                    Mmu, PageTable, PageCount);
@@ -1083,11 +1083,11 @@ gckMMU_FreePages(
     gcmkVERIFY_ARGUMENT(PageCount > 0);
 
     /* Convert the pointer. */
-    pageTable = (gctUINT32_PTR) PageTable;
+    pageTable = (u32 *) PageTable;
 
 #if gcdMMU_CLEAR_VALUE
     {
-        gctUINT32 i;
+        u32 i;
 
         for (i = 0; i < PageCount; ++i)
         {
@@ -1119,8 +1119,8 @@ gckMMU_FreePages(
 gceSTATUS
 gckMMU_Enable(
     IN gckMMU Mmu,
-    IN gctUINT32 PhysBaseAddr,
-    IN gctUINT32 PhysSize
+    IN u32 PhysBaseAddr,
+    IN u32 PhysSize
     )
 {
     gceSTATUS status;
@@ -1163,7 +1163,7 @@ gckMMU_Enable(
                 gcvTRUE,
                 Mmu->mtlbLogical,
                 gcvMMU_MODE_4K,
-                (gctUINT8_PTR)Mmu->mtlbLogical + gcdMMU_MTLB_SIZE,
+                (u8 *)Mmu->mtlbLogical + gcdMMU_MTLB_SIZE,
                 gcvFALSE
                 ));
 
@@ -1183,8 +1183,8 @@ OnError:
 gceSTATUS
 gckMMU_SetPage(
     IN gckMMU Mmu,
-    IN gctUINT32 PageAddress,
-    IN gctUINT32 *PageEntry
+    IN u32 PageAddress,
+    IN u32 *PageEntry
     )
 {
     gcmkHEADER_ARG("Mmu=0x%x", Mmu);
@@ -1215,7 +1215,7 @@ gckMMU_Flush(
 {
     gckHARDWARE hardware;
 #if gcdSHARED_PAGETABLE
-    gctINT i;
+    int i;
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
         hardware = sharedPageTable->hardwares[i];

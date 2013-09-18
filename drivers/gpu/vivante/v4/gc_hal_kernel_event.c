@@ -556,24 +556,24 @@ gckEVENT_Destroy(
 **
 **  OUTPUT:
 **
-**      gctUINT8 * EventID
+**      u8 * EventID
 **          Reserved event ID.
 */
 static gceSTATUS
 gckEVENT_GetEvent(
     IN gckEVENT Event,
     IN gctBOOL Wait,
-    OUT gctUINT8 * EventID,
+    OUT u8 * EventID,
     IN gceKERNEL_WHERE Source
     )
 {
-    gctINT i, id;
+    int i, id;
     gceSTATUS status;
     gctBOOL acquired = gcvFALSE;
-    gctINT32 free;
+    s32 free;
 
 #if gcdGPU_TIMEOUT
-    gctUINT32 timer = 0;
+    u32 timer = 0;
 #endif
 
     gcmkHEADER_ARG("Event=0x%x Source=%d", Event, Source);
@@ -590,14 +590,14 @@ gckEVENT_GetEvent(
         id = Event->lastID;
         for (i = 0; i < ARRAY_SIZE(Event->queues); ++i)
         {
-            gctINT nextID = gckMATH_ModuloInt((id + 1),
+            int nextID = gckMATH_ModuloInt((id + 1),
                                               ARRAY_SIZE(Event->queues));
 
             if (Event->queues[id].head == NULL)
             {
-                *EventID = (gctUINT8) id;
+                *EventID = (u8) id;
 
-                Event->lastID = (gctUINT8) nextID;
+                Event->lastID = (u8) nextID;
 
                 /* Save time stamp of event. */
                 Event->queues[id].stamp  = ++(Event->stamp);
@@ -670,7 +670,7 @@ gckEVENT_GetEvent(
         {
             gcmkTRACE_N(
                 gcvLEVEL_ERROR,
-                sizeof(const char *) + sizeof(gctINT),
+                sizeof(const char *) + sizeof(int),
                 "%s(%d): no available events\n",
                 __FUNCTION__, __LINE__
                 );
@@ -726,7 +726,7 @@ gckEVENT_AllocateRecord(
 {
     gceSTATUS status;
     gctBOOL acquired = gcvFALSE;
-    gctINT i;
+    int i;
     gcsEVENT_PTR record;
     void *pointer = NULL;
 
@@ -1069,7 +1069,7 @@ gckEVENT_Submit(
     )
 {
     gceSTATUS status;
-    gctUINT8 id = 0xFF;
+    u8 id = 0xFF;
     gcsEVENT_QUEUE_PTR queue;
     gctBOOL acquired = gcvFALSE;
     gckCOMMAND command = NULL;
@@ -1225,7 +1225,7 @@ gckEVENT_Commit(
 {
     gceSTATUS status;
     gcsQUEUE_PTR record = NULL, next;
-    gctUINT32 processID;
+    u32 processID;
     gctBOOL needCopy = gcvFALSE;
 
     gcmkHEADER_ARG("Event=0x%x Queue=0x%x", Event, Queue);
@@ -1339,8 +1339,8 @@ gckEVENT_Compose(
     gcsEVENT_PTR headRecord;
     gcsEVENT_PTR tailRecord;
     gcsEVENT_PTR tempRecord;
-    gctUINT8 id = 0xFF;
-    gctUINT32 processID;
+    u8 id = 0xFF;
+    u32 processID;
 
     gcmkHEADER_ARG("Event=0x%x Info=0x%x", Event, Info);
 
@@ -1431,7 +1431,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gctUINT32 Data
+**      u32 Data
 **          Mask for the 32 interrupts.
 **
 **  OUTPUT:
@@ -1441,7 +1441,7 @@ OnError:
 gceSTATUS
 gckEVENT_Interrupt(
     IN gckEVENT Event,
-    IN gctUINT32 Data
+    IN u32 Data
     )
 {
     gcmkHEADER_ARG("Event=0x%x Data=0x%x", Event, Data);
@@ -1479,20 +1479,20 @@ gckEVENT_Interrupt(
 gceSTATUS
 gckEVENT_Notify(
     IN gckEVENT Event,
-    IN gctUINT32 IDs
+    IN u32 IDs
     )
 {
     gceSTATUS status = gcvSTATUS_OK;
-    gctINT i;
+    int i;
     gcsEVENT_QUEUE * queue;
-    gctUINT mask = 0;
+    unsigned int mask = 0;
     gctBOOL acquired = gcvFALSE;
-    gctUINT pending;
+    unsigned int pending;
     gctBOOL suspended = gcvFALSE;
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
-    gctINT eventNumber = 0;
+    int eventNumber = 0;
 #endif
-    gctINT32 free;
+    s32 free;
 #if gcdSECURE_USER
     gcskSECURE_CACHE_PTR cache;
 #endif
@@ -1527,7 +1527,7 @@ gckEVENT_Notify(
 
         /* Get current interrupts. */
 #ifdef CONFIG_SMP
-        gckOS_AtomGet(Event->os, Event->pending, (gctINT32_PTR)&pending);
+        gckOS_AtomGet(Event->os, Event->pending, (s32 *)&pending);
 #else
         pending = Event->pending;
 #endif
@@ -1761,7 +1761,7 @@ gckEVENT_Notify(
                     gcmkERR_BREAK(
                         gckOS_MapPhysical(Event->os,
                                           record->info.u.WriteData.address,
-                                          sizeof(gctUINT32),
+                                          sizeof(u32),
                                           &logical));
 
                     /* Write data. */
@@ -1774,7 +1774,7 @@ gckEVENT_Notify(
                     gcmkERR_BREAK(
                         gckOS_UnmapPhysical(Event->os,
                                             logical,
-                                            sizeof(gctUINT32)));
+                                            sizeof(u32)));
                     break;
 
                 case gcvHAL_UNLOCK_VIDEO_MEMORY:
@@ -2001,7 +2001,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID Logical belongs.
 **
 **      gctPHYS_ADDR Handle
@@ -2020,7 +2020,7 @@ OnError:
 gceSTATUS
 gckEVENT_Stop(
     IN gckEVENT Event,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctPHYS_ADDR Handle,
     IN void *Logical,
     IN gctSIGNAL Signal,
@@ -2030,7 +2030,7 @@ gckEVENT_Stop(
     gceSTATUS status;
    /* size_t waitSize;*/
     gcsEVENT_PTR record;
-    gctUINT8 id = 0xFF;
+    u8 id = 0xFF;
 
     gcmkHEADER_ARG("Event=0x%x ProcessID=%u Handle=0x%x Logical=0x%x "
                    "Signal=0x%x",
@@ -2154,7 +2154,7 @@ gckEVENT_Dump(
     gcsEVENT_QUEUE_PTR queueHead = Event->queueHead;
     gcsEVENT_QUEUE_PTR queue;
     gcsEVENT_PTR record = NULL;
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("Event=0x%x", Event);
 

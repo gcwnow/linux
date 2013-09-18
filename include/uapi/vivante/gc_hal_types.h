@@ -33,30 +33,6 @@
 typedef int                     gctBOOL;
 typedef gctBOOL *               gctBOOL_PTR;
 
-typedef int                     gctINT;
-typedef signed char             gctINT8;
-typedef signed short            gctINT16;
-typedef signed int              gctINT32;
-typedef signed long long        gctINT64;
-
-typedef gctINT *                gctINT_PTR;
-typedef gctINT8 *               gctINT8_PTR;
-typedef gctINT16 *              gctINT16_PTR;
-typedef gctINT32 *              gctINT32_PTR;
-typedef gctINT64 *              gctINT64_PTR;
-
-typedef unsigned int            gctUINT;
-typedef unsigned char           gctUINT8;
-typedef unsigned short          gctUINT16;
-typedef unsigned int            gctUINT32;
-typedef unsigned long long      gctUINT64;
-
-typedef gctUINT *               gctUINT_PTR;
-typedef gctUINT8 *              gctUINT8_PTR;
-typedef gctUINT16 *             gctUINT16_PTR;
-typedef gctUINT32 *             gctUINT32_PTR;
-typedef gctUINT64 *             gctUINT64_PTR;
-
 typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
 typedef void *                  gctSIGNAL;
@@ -68,11 +44,11 @@ typedef struct _gcs2D_PROFILE
        32bit counter incremented every 2D clock cycle.
        Wraps back to 0 when the counter overflows.
     */
-    gctUINT32 cycleCount;
+    __u32     cycleCount;
 
     /* Pixels rendered by the 2D engine.
        Resets to 0 every time it is read. */
-    gctUINT32 pixelsRendered;
+    __u32     pixelsRendered;
 }
 gcs2D_PROFILE;
 
@@ -188,7 +164,7 @@ typedef struct _gcuDATABASE_INFO
     gcsDATABASE_COUNTERS        counters;
 
     /* Time value. */
-    gctUINT64                   time;
+    __u64                       time;
 }
 gcuDATABASE_INFO;
 
@@ -199,51 +175,51 @@ gcuDATABASE_INFO;
 typedef struct _gcsHAL_FRAME_INFO
 {
     /* Current timer tick. */
-    OUT gctUINT64               ticks;
+    OUT __u64                   ticks;
 
     /* Bandwidth counters. */
-    OUT gctUINT                 readBytes8[8];
-    OUT gctUINT                 writeBytes8[8];
+    OUT unsigned int            readBytes8[8];
+    OUT unsigned int            writeBytes8[8];
 
     /* Counters. */
-    OUT gctUINT                 cycles[8];
-    OUT gctUINT                 idleCycles[8];
-    OUT gctUINT                 mcCycles[8];
-    OUT gctUINT                 readRequests[8];
-    OUT gctUINT                 writeRequests[8];
+    OUT unsigned int            cycles[8];
+    OUT unsigned int            idleCycles[8];
+    OUT unsigned int            mcCycles[8];
+    OUT unsigned int            readRequests[8];
+    OUT unsigned int            writeRequests[8];
 
     /* 3D counters. */
-    OUT gctUINT                 vertexCount;
-    OUT gctUINT                 primitiveCount;
-    OUT gctUINT                 rejectedPrimitives;
-    OUT gctUINT                 culledPrimitives;
-    OUT gctUINT                 clippedPrimitives;
-    OUT gctUINT                 outPrimitives;
-    OUT gctUINT                 inPrimitives;
-    OUT gctUINT                 culledQuadCount;
-    OUT gctUINT                 totalQuadCount;
-    OUT gctUINT                 quadCount;
-    OUT gctUINT                 totalPixelCount;
+    OUT unsigned int            vertexCount;
+    OUT unsigned int            primitiveCount;
+    OUT unsigned int            rejectedPrimitives;
+    OUT unsigned int            culledPrimitives;
+    OUT unsigned int            clippedPrimitives;
+    OUT unsigned int            outPrimitives;
+    OUT unsigned int            inPrimitives;
+    OUT unsigned int            culledQuadCount;
+    OUT unsigned int            totalQuadCount;
+    OUT unsigned int            quadCount;
+    OUT unsigned int            totalPixelCount;
 
     /* PE counters. */
-    OUT gctUINT                 colorKilled[8];
-    OUT gctUINT                 colorDrawn[8];
-    OUT gctUINT                 depthKilled[8];
-    OUT gctUINT                 depthDrawn[8];
+    OUT unsigned int            colorKilled[8];
+    OUT unsigned int            colorDrawn[8];
+    OUT unsigned int            depthKilled[8];
+    OUT unsigned int            depthDrawn[8];
 
     /* Shader counters. */
-    OUT gctUINT                 shaderCycles;
-    OUT gctUINT                 vsInstructionCount;
-    OUT gctUINT                 vsTextureCount;
-    OUT gctUINT                 psInstructionCount;
-    OUT gctUINT                 psTextureCount;
+    OUT unsigned int            shaderCycles;
+    OUT unsigned int            vsInstructionCount;
+    OUT unsigned int            vsTextureCount;
+    OUT unsigned int            psInstructionCount;
+    OUT unsigned int            psTextureCount;
 
     /* Texture counters. */
-    OUT gctUINT                 bilinearRequests;
-    OUT gctUINT                 trilinearRequests;
-    OUT gctUINT                 txBytes8;
-    OUT gctUINT                 txHitCount;
-    OUT gctUINT                 txMissCount;
+    OUT unsigned int            bilinearRequests;
+    OUT unsigned int            trilinearRequests;
+    OUT unsigned int            txBytes8;
+    OUT unsigned int            txHitCount;
+    OUT unsigned int            txMissCount;
 }
 gcsHAL_FRAME_INFO;
 

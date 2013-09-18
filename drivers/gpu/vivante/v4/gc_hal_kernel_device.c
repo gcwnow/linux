@@ -46,7 +46,7 @@ _AllocateMemory(
     IN size_t Bytes,
     OUT void **Logical,
     OUT gctPHYS_ADDR *Physical,
-    OUT gctUINT32 *PhysAddr
+    OUT u32 *PhysAddr
     )
 {
     gceSTATUS status;
@@ -242,7 +242,7 @@ gckGALDEVICE_Setup_ISR(
     )
 {
     gceSTATUS status;
-    gctINT ret;
+    int ret;
 
     gcmkHEADER_ARG("Device=0x%x", Device);
 
@@ -300,7 +300,7 @@ gckGALDEVICE_Setup_ISR_2D(
     )
 {
     gceSTATUS status;
-    gctINT ret;
+    int ret;
 
     gcmkHEADER_ARG("Device=0x%x", Device);
 
@@ -437,32 +437,32 @@ gckGALDEVICE_Release_ISR_2D(
 */
 gceSTATUS
 gckGALDEVICE_Construct(
-    IN gctINT IrqLine,
-    IN gctUINT32 RegisterMemBase,
+    IN int IrqLine,
+    IN u32 RegisterMemBase,
     IN size_t RegisterMemSize,
-    IN gctINT IrqLine2D,
-    IN gctUINT32 RegisterMemBase2D,
+    IN int IrqLine2D,
+    IN u32 RegisterMemBase2D,
     IN size_t RegisterMemSize2D,
-    IN gctUINT32 ContiguousBase,
+    IN u32 ContiguousBase,
     IN size_t ContiguousSize,
     IN size_t BankSize,
-    IN gctINT FastClear,
-    IN gctINT Compression,
-    IN gctUINT32 PhysBaseAddr,
-    IN gctUINT32 PhysSize,
-    IN gctINT Signal,
+    IN int FastClear,
+    IN int Compression,
+    IN u32 PhysBaseAddr,
+    IN u32 PhysSize,
+    IN int Signal,
     OUT gckGALDEVICE *Device
     )
 {
-    gctUINT32 internalBaseAddress = 0, internalAlignment = 0;
-    gctUINT32 externalBaseAddress = 0, externalAlignment = 0;
-    gctUINT32 horizontalTileSize, verticalTileSize;
+    u32 internalBaseAddress = 0, internalAlignment = 0;
+    u32 externalBaseAddress = 0, externalAlignment = 0;
+    u32 horizontalTileSize, verticalTileSize;
     struct resource* mem_region;
-    gctUINT32 physAddr;
-    gctUINT32 physical;
+    u32 physAddr;
+    u32 physical;
     gckGALDEVICE device;
     gceSTATUS status;
-    gctINT32 i;
+    s32 i;
     gceHARDWARE_TYPE type;
     gckDB sharedDB = NULL;
 
@@ -873,7 +873,7 @@ gceSTATUS
 gckGALDEVICE_Destroy(
     gckGALDEVICE Device)
 {
-    gctINT i;
+    int i;
     gceSTATUS status = gcvSTATUS_OK;
 
     gcmkHEADER_ARG("Device=0x%x", Device);
@@ -1100,7 +1100,7 @@ gckGALDEVICE_Stop_Threads(
     gckGALDEVICE Device
     )
 {
-    gctINT i;
+    int i;
 
     gcmkHEADER_ARG("Device=0x%x", Device);
 

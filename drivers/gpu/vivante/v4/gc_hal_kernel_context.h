@@ -30,10 +30,10 @@ typedef struct _gcsSTATE_MAP * gcsSTATE_MAP_PTR;
 typedef struct _gcsSTATE_MAP
 {
     /* Index of the state in the context buffer. */
-    gctUINT                     index;
+    unsigned int                index;
 
     /* State mask. */
-    gctUINT32                   mask;
+    u32                         mask;
 }
 gcsSTATE_MAP;
 
@@ -43,7 +43,7 @@ typedef struct _gcsCONTEXT
 {
     /* For debugging: the number of context buffer in the order of creation. */
 #if gcmIS_DEBUG(gcdDEBUG_CODE)
-    gctUINT                     num;
+    unsigned int                num;
 #endif
 
     /* Pointer to gckEVENT object. */
@@ -56,14 +56,14 @@ typedef struct _gcsCONTEXT
     gctPHYS_ADDR                physical;
 
     /* Logical address of the context buffer. */
-    gctUINT32_PTR               logical;
+    u32 *                       logical;
 
     /* Pointer to the LINK commands. */
     void *                      link2D;
     void *                      link3D;
 
     /* The number of pending state deltas. */
-    gctUINT                     deltaCount;
+    unsigned int                deltaCount;
 
     /* Pointer to the first delta to be applied. */
     gcsSTATE_DELTA_PTR          delta;
@@ -94,12 +94,12 @@ struct _gckCONTEXT
     size_t                      stateCount;
     size_t                      totalSize;
     size_t                      bufferSize;
-    gctUINT32                   linkIndex2D;
-    gctUINT32                   linkIndex3D;
-    gctUINT32                   linkIndexXD;
-    gctUINT32                   entryOffset3D;
-    gctUINT32                   entryOffsetXDFrom2D;
-    gctUINT32                   entryOffsetXDFrom3D;
+    u32                         linkIndex2D;
+    u32                         linkIndex3D;
+    u32                         linkIndexXD;
+    u32                         entryOffset3D;
+    u32                         entryOffsetXDFrom2D;
+    u32                         entryOffsetXDFrom3D;
 
     /* Dirty flags. */
     gctBOOL                     dirty;
@@ -114,7 +114,7 @@ struct _gckCONTEXT
     gcsCONTEXT_PTR              buffer;
 
     /* A copy of the user record array. */
-    gctUINT                     recordArraySize;
+    unsigned int                recordArraySize;
     gcsSTATE_DELTA_RECORD_PTR   recordArray;
 
     /* Requested pipe select for context. */
@@ -122,9 +122,9 @@ struct _gckCONTEXT
     gcePIPE_SELECT              exitPipe;
 
     /* Variables used for building state buffer. */
-    gctUINT32                   lastAddress;
+    u32                         lastAddress;
     size_t                      lastSize;
-    gctUINT32                   lastIndex;
+    u32                         lastIndex;
     gctBOOL                     lastFixed;
 
     /* Hint array. */

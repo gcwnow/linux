@@ -45,7 +45,7 @@
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          ProcessID that identifies the database.
 **
 **  OUTPUT:
@@ -57,7 +57,7 @@
 static gceSTATUS
 gckKERNEL_NewDatabase(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     OUT gcsDATABASE_PTR * Database
     )
 {
@@ -133,7 +133,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          ProcessID that identifies the database.
 **
 **      gctBOOL LastProcessID
@@ -150,7 +150,7 @@ OnError:
 static gceSTATUS
 gckKERNEL_FindDatabase(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctBOOL LastProcessID,
     OUT gcsDATABASE_PTR * Database
     )
@@ -636,7 +636,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **  OUTPUT:
@@ -646,7 +646,7 @@ OnError:
 gceSTATUS
 gckKERNEL_CreateProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     )
 {
     gceSTATUS status;
@@ -681,7 +681,7 @@ gckKERNEL_CreateProcessDB(
 
 #if gcdSECURE_USER
     {
-        gctINT slot;
+        int slot;
         gcskSECURE_CACHE * cache = &database->cache;
 
         /* Setup the linked list of cache nodes. */
@@ -749,7 +749,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **      gceDATABASE_TYPE TYPE
@@ -771,7 +771,7 @@ OnError:
 gceSTATUS
 gckKERNEL_AddProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer,
     IN gctPHYS_ADDR Physical,
@@ -793,7 +793,7 @@ gckKERNEL_AddProcessDB(
     /* Special case the idle record. */
     if (Type == gcvDB_IDLE)
     {
-        gctUINT64 time;
+        u64 time;
 
         /* Get the current profile time. */
         gcmkONERROR(gckOS_GetProfileTick(&time));
@@ -822,13 +822,13 @@ gckKERNEL_AddProcessDB(
             else
             {
                 /* Compute ellapsed time in milliseconds. */
-                gctUINT delta = gckOS_ProfileToMS(time - Kernel->db->lastSlowdown);
+                unsigned int delta = gckOS_ProfileToMS(time - Kernel->db->lastSlowdown);
 
                 /* Test for end of period. */
                 if (delta >= gcdDYNAMIC_SPEED)
                 {
                     /* Compute number of idle milliseconds. */
-                    gctUINT idle = gckOS_ProfileToMS(
+                    unsigned int idle = gckOS_ProfileToMS(
                         Kernel->db->idleTime  - Kernel->db->lastSlowdownIdle);
 
                     /* Broadcast to slow down the GPU. */
@@ -926,7 +926,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **      gceDATABASE_TYPE TYPE
@@ -942,7 +942,7 @@ OnError:
 gceSTATUS
 gckKERNEL_RemoveProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer
     )
@@ -1012,7 +1012,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **      gceDATABASE_TYPE TYPE
@@ -1029,8 +1029,8 @@ OnError:
 gceSTATUS
 gckKERNEL_FindProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
-    IN gctUINT32 ThreadID,
+    IN u32 ProcessID,
+    IN u32 ThreadID,
     IN gceDATABASE_TYPE Type,
     IN void *Pointer,
     OUT gcsDATABASE_RECORD_PTR Record
@@ -1075,7 +1075,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **  OUTPUT:
@@ -1085,7 +1085,7 @@ OnError:
 gceSTATUS
 gckKERNEL_DestroyProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID
+    IN u32 ProcessID
     )
 {
     gceSTATUS status;
@@ -1185,7 +1185,7 @@ gckKERNEL_DestroyProcessDB(
 
             gcmkTRACE_ZONE(gcvLEVEL_WARNING, gcvZONE_DATABASE,
                            "DB: SIGNAL %d (status=%d)",
-                           (gctINT) record->data, status);
+                           (int) record->data, status);
             break;
 
         case gcvDB_VIDEO_MEMORY_LOCKED:
@@ -1286,7 +1286,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **      gctBOOL LastProcessID
@@ -1305,7 +1305,7 @@ OnError:
 gceSTATUS
 gckKERNEL_QueryProcessDB(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     IN gctBOOL LastProcessID,
     IN gceDATABASE_TYPE Type,
     OUT gcuDATABASE_INFO * Info
@@ -1388,7 +1388,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to a gckKERNEL object.
 **
-**      gctUINT32 ProcessID
+**      u32 ProcessID
 **          Process ID used to identify the database.
 **
 **  OUTPUT:
@@ -1399,7 +1399,7 @@ OnError:
 gceSTATUS
 gckKERNEL_GetProcessDBCache(
     IN gckKERNEL Kernel,
-    IN gctUINT32 ProcessID,
+    IN u32 ProcessID,
     OUT gcskSECURE_CACHE_PTR * Cache
     )
 {
