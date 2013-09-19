@@ -2129,7 +2129,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      gctBOOL InterruptValid
+**      int InterruptValid
 **          If gcvTRUE, this function will read the interrupt acknowledge
 **          register, stores the data, and return whether or not the interrupt
 **          is ours or not.  If gcvFALSE, this functions will read the interrupt
@@ -2143,7 +2143,7 @@ OnError:
 gceSTATUS
 gckHARDWARE_Interrupt(
     IN gckHARDWARE Hardware,
-    IN gctBOOL InterruptValid
+    IN int InterruptValid
     )
 {
     gckEVENT eventObj;
@@ -2507,7 +2507,7 @@ gckHARDWARE_FlushMMU(
     gckCOMMAND command;
     u32 *buffer;
     size_t bufferSize;
-    gctBOOL commitEntered = gcvFALSE;
+    int commitEntered = gcvFALSE;
     void *pointer = NULL;
     u32 flushSize;
     u32 count;
@@ -2679,11 +2679,11 @@ OnError:
 gceSTATUS
 gckHARDWARE_SetMMUv2(
     IN gckHARDWARE Hardware,
-    IN gctBOOL Enable,
+    IN int Enable,
     IN void *MtlbAddress,
     IN gceMMU_MODE Mode,
     IN void *SafeAddress,
-    IN gctBOOL FromPower
+    IN int FromPower
     )
 {
     gceSTATUS status;
@@ -2691,7 +2691,7 @@ gckHARDWARE_SetMMUv2(
     gckCOMMAND command;
     u32 *buffer;
     size_t bufferSize;
-    gctBOOL commitEntered = gcvFALSE;
+    int commitEntered = gcvFALSE;
     void *pointer = NULL;
 
     gcmkHEADER_ARG("Hardware=0x%x Enable=%d", Hardware, Enable);
@@ -2861,7 +2861,7 @@ gckHARDWARE_BuildVirtualAddress(
 gceSTATUS
 gckHARDWARE_GetIdle(
     IN gckHARDWARE Hardware,
-    IN gctBOOL Wait,
+    IN int Wait,
     OUT u32 * Data
     )
 {
@@ -3187,24 +3187,24 @@ gckHARDWARE_SetPowerManagementState(
     unsigned int flag, clock;
     void *buffer;
     size_t bytes, requested;
-    gctBOOL acquired = gcvFALSE;
-    gctBOOL mutexAcquired = gcvFALSE;
-    gctBOOL stall = gcvTRUE;
-    gctBOOL broadcast = gcvFALSE;
+    int acquired = gcvFALSE;
+    int mutexAcquired = gcvFALSE;
+    int stall = gcvTRUE;
+    int broadcast = gcvFALSE;
 #if gcdPOWEROFF_TIMEOUT
-    gctBOOL timeout = gcvFALSE;
-    gctBOOL isAfter = gcvFALSE;
+    int timeout = gcvFALSE;
+    int isAfter = gcvFALSE;
     u32 currentTime;
 #endif
     u32 process, thread;
-    gctBOOL commitEntered = gcvFALSE;
+    int commitEntered = gcvFALSE;
 #if gcdENABLE_PROFILING
     u64 time, freq, mutexTime, onTime, stallTime, stopTime, delayTime,
               initTime, offTime, startTime, totalTime;
 #endif
-    gctBOOL global = gcvFALSE;
-    gctBOOL globalAcquired = gcvFALSE;
-    gctBOOL configMmu = gcvFALSE;
+    int global = gcvFALSE;
+    int globalAcquired = gcvFALSE;
+    int configMmu = gcvFALSE;
 
     /* State transition flags. */
     static const unsigned int flags[4][4] =
@@ -3582,7 +3582,7 @@ gckHARDWARE_SetPowerManagementState(
 
     if ((flag & gcvPOWER_FLAG_STALL) && stall)
     {
-        gctBOOL idle;
+        int idle;
         s32 atomValue;
 
         /* For global operation, all pending commits have already been
@@ -3911,7 +3911,7 @@ gckHARDWARE_QueryPowerManagementState(
 gceSTATUS
 gckHARDWARE_QueryIdle(
     IN gckHARDWARE Hardware,
-    OUT gctBOOL_PTR IsIdle
+    OUT int *IsIdle
     )
 {
     gceSTATUS status;
@@ -4382,7 +4382,7 @@ gckHARDWARE_Reset(
 {
     gceSTATUS status;
     gckCOMMAND command;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Hardware=0x%x", Hardware);
 
@@ -4480,10 +4480,10 @@ gceSTATUS
 gckHARDWARE_NeedBaseAddress(
     IN gckHARDWARE Hardware,
     IN u32 State,
-    OUT gctBOOL_PTR NeedBase
+    OUT int *NeedBase
     )
 {
-    gctBOOL need = gcvFALSE;
+    int need = gcvFALSE;
 
     gcmkHEADER_ARG("Hardware=0x%x State=0x%08x", Hardware, State);
 
@@ -4655,7 +4655,7 @@ gckHARDWARE_IsFeatureAvailable(
     IN gceFEATURE Feature
     )
 {
-    gctBOOL available;
+    int available;
 
     gcmkHEADER_ARG("Hardware=0x%x Feature=%d", Hardware, Feature);
 

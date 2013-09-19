@@ -102,9 +102,9 @@ struct _gckCONTEXT
     u32                         entryOffsetXDFrom3D;
 
     /* Dirty flags. */
-    gctBOOL                     dirty;
-    gctBOOL                     dirty2D;
-    gctBOOL                     dirty3D;
+    int                         dirty;
+    int                         dirty2D;
+    int                         dirty3D;
     gcsCONTEXT_PTR              dirtyBuffer;
 
     /* State mapping. */
@@ -125,11 +125,11 @@ struct _gckCONTEXT
     u32                         lastAddress;
     size_t                      lastSize;
     u32                         lastIndex;
-    gctBOOL                     lastFixed;
+    int                         lastFixed;
 
     /* Hint array. */
 #if gcdSECURE_USER
-    gctBOOL_PTR                 hint;
+    int *                       hint;
 #endif
 };
 

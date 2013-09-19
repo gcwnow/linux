@@ -141,13 +141,13 @@ OnError:
 static gceSTATUS
 _IncrementCommitAtom(
     IN gckCOMMAND Command,
-    IN gctBOOL Increment
+    IN int Increment
     )
 {
     gceSTATUS status;
     gckHARDWARE hardware;
     s32 atomValue;
-    gctBOOL powerAcquired = gcvFALSE;
+    int powerAcquired = gcvFALSE;
 
     gcmkHEADER_ARG("Command=0x%x", Command);
 
@@ -209,7 +209,7 @@ _ProcessHints(
 {
     gceSTATUS status = gcvSTATUS_OK;
     gckKERNEL kernel;
-    gctBOOL needCopy = gcvFALSE;
+    int needCopy = gcvFALSE;
     gcskSECURE_CACHE_PTR cache;
     u8 *commandBufferLogical;
     u8 *hintedData;
@@ -626,7 +626,7 @@ gckCOMMAND_Destroy(
 **      gckCOMMAND Command
 **          Pointer to an gckCOMMAND object to destroy.
 **
-**      gctBOOL FromPower
+**      int FromPower
 **          Determines whether the call originates from inside the power
 **          management or not.
 **
@@ -637,13 +637,13 @@ gckCOMMAND_Destroy(
 gceSTATUS
 gckCOMMAND_EnterCommit(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     )
 {
     gceSTATUS status;
     gckHARDWARE hardware;
-    gctBOOL atomIncremented = gcvFALSE;
-    gctBOOL semaAcquired = gcvFALSE;
+    int atomIncremented = gcvFALSE;
+    int semaAcquired = gcvFALSE;
 
     gcmkHEADER_ARG("Command=0x%x", Command);
 
@@ -711,7 +711,7 @@ OnError:
 **      gckCOMMAND Command
 **          Pointer to an gckCOMMAND object to destroy.
 **
-**      gctBOOL FromPower
+**      int FromPower
 **          Determines whether the call originates from inside the power
 **          management or not.
 **
@@ -722,7 +722,7 @@ OnError:
 gceSTATUS
 gckCOMMAND_ExitCommit(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     )
 {
     gceSTATUS status;
@@ -872,7 +872,7 @@ OnError:
 gceSTATUS
 gckCOMMAND_Stop(
     IN gckCOMMAND Command,
-    IN gctBOOL FromRecovery
+    IN int FromRecovery
     )
 {
     gckHARDWARE hardware;
@@ -993,14 +993,14 @@ gckCOMMAND_Commit(
     )
 {
     gceSTATUS status;
-    gctBOOL commitEntered = gcvFALSE;
-    gctBOOL contextAcquired = gcvFALSE;
+    int commitEntered = gcvFALSE;
+    int contextAcquired = gcvFALSE;
     gckHARDWARE hardware;
-    gctBOOL needCopy = gcvFALSE;
+    int needCopy = gcvFALSE;
     gcsQUEUE_PTR eventRecord = NULL;
     gcsQUEUE _eventRecord;
     gcsQUEUE_PTR nextEventRecord;
-    gctBOOL commandBufferMapped = gcvFALSE;
+    int commandBufferMapped = gcvFALSE;
     gcoCMDBUF commandBufferObject = NULL;
 
 #if !gcdNULL_DRIVER
@@ -2308,7 +2308,7 @@ OnError:
 **      gckCOMMAND Command
 **          Pointer to an gckCOMMAND object.
 **
-**      gctBOOL FromPower
+**      int FromPower
 **          Determines whether the call originates from inside the power
 **          management or not.
 **
@@ -2319,7 +2319,7 @@ OnError:
 gceSTATUS
 gckCOMMAND_Stall(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     )
 {
 #if gcdNULL_DRIVER
@@ -2471,7 +2471,7 @@ gckCOMMAND_Attach(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Command=0x%x", Command);
 
@@ -2542,7 +2542,7 @@ gckCOMMAND_Detach(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Command=0x%x Context=0x%x", Command, Context);
 

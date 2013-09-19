@@ -154,7 +154,7 @@ gckOS_FreeMemory(
 gceSTATUS
 gckOS_AllocatePagedMemoryEx(
     IN gckOS Os,
-    IN gctBOOL Contiguous,
+    IN int Contiguous,
     IN size_t Bytes,
     OUT gctPHYS_ADDR * Physical
     );
@@ -165,7 +165,7 @@ gckOS_LockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctBOOL Cacheable,
+    IN int Cacheable,
     OUT void **Logical,
     OUT size_t * PageCount
     );
@@ -201,7 +201,7 @@ gckOS_FreePagedMemory(
 gceSTATUS
 gckOS_AllocateNonPagedMemory(
     IN gckOS Os,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT void **Logical
@@ -220,7 +220,7 @@ gckOS_FreeNonPagedMemory(
 gceSTATUS
 gckOS_AllocateContiguous(
     IN gckOS Os,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT void **Logical
@@ -549,7 +549,7 @@ gceSTATUS
 gckOS_TicksAfter(
     IN u32 Time1,
     IN u32 Time2,
-    OUT gctBOOL_PTR IsAfter
+    OUT int *IsAfter
     );
 
 /* Get time in microseconds. */
@@ -600,7 +600,7 @@ gckOS_UnmapUserPointer(
 **
 **  OUTPUT:
 **
-**      gctBOOL_PTR NeedCopy
+**      int *NeedCopy
 **          Pointer to a boolean receiving gcvTRUE if the memory needs a copy or
 **          gcvFALSE if the memory can be accessed or mapped dircetly.
 */
@@ -608,7 +608,7 @@ gceSTATUS
 gckOS_QueryNeedCopy(
     IN gckOS Os,
     IN u32 ProcessID,
-    OUT gctBOOL_PTR NeedCopy
+    OUT int *NeedCopy
     );
 
 /*******************************************************************************
@@ -757,7 +757,7 @@ gckOS_GetThreadID(
 gceSTATUS
 gckOS_CreateSignal(
     IN gckOS Os,
-    IN gctBOOL ManualReset,
+    IN int ManualReset,
     OUT gctSIGNAL * Signal
     );
 
@@ -773,7 +773,7 @@ gceSTATUS
 gckOS_Signal(
     IN gckOS Os,
     IN gctSIGNAL Signal,
-    IN gctBOOL State
+    IN int State
     );
 
 /* Wait for a signal. */
@@ -820,7 +820,7 @@ gckOS_UnmapUserMemoryEx(
 gceSTATUS
 gckOS_CreateUserSignal(
     IN gckOS Os,
-    IN gctBOOL ManualReset,
+    IN int ManualReset,
     OUT int * SignalID
     );
 
@@ -844,7 +844,7 @@ gceSTATUS
 gckOS_SignalUserSignal(
     IN gckOS Os,
     IN int SignalID,
-    IN gctBOOL State
+    IN int State
     );
 #endif /* USE_NEW_LINUX_SIGNAL */
 
@@ -902,7 +902,7 @@ gckOS_SetDebugLevel(
 void
 gckOS_SetDebugZones(
     IN u32 Zones,
-    IN gctBOOL Enable
+    IN int Enable
     );
 
 /*******************************************************************************
@@ -964,10 +964,10 @@ gckOS_BroadcastCalibrateSpeed(
 **      gckOS Os
 **          Pointer to a gckOS object.ß
 **
-**      gctBOOL Clock
+**      int Clock
 **          gcvTRUE to turn on the clock, or gcvFALSE to turn off the clock.
 **
-**      gctBOOL Power
+**      int Power
 **          gcvTRUE to turn on the power, or gcvFALSE to turn off the power.
 **
 **  OUTPUT:
@@ -977,8 +977,8 @@ gckOS_BroadcastCalibrateSpeed(
 gceSTATUS
 gckOS_SetGPUPower(
     IN gckOS Os,
-    IN gctBOOL Clock,
-    IN gctBOOL Power
+    IN int Clock,
+    IN int Power
     );
 
 /*******************************************************************************
@@ -1103,7 +1103,7 @@ gceSTATUS
 gckVIDMEM_Lock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
-    IN gctBOOL Cacheable,
+    IN int Cacheable,
     OUT u32 * Address
     );
 
@@ -1113,14 +1113,14 @@ gckVIDMEM_Unlock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
     IN gceSURF_TYPE Type,
-    IN OUT gctBOOL * Asynchroneous
+    IN OUT int * Asynchroneous
     );
 
 /* Construct a gcuVIDMEM_NODE union for virtual memory. */
 gceSTATUS
 gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
-    IN gctBOOL Contiguous,
+    IN int Contiguous,
     IN size_t Bytes,
     OUT gcuVIDMEM_NODE_PTR * Node
     );
@@ -1173,7 +1173,7 @@ gckKERNEL_Destroy(
 gceSTATUS
 gckKERNEL_Dispatch(
     IN gckKERNEL Kernel,
-    IN gctBOOL FromUser,
+    IN int FromUser,
     IN OUT struct _gcsHAL_INTERFACE * Interface
     );
 
@@ -1215,7 +1215,7 @@ gceSTATUS
 gckKERNEL_MapVideoMemoryEx(
     IN gckKERNEL Kernel,
     IN gceCORE Core,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN u32 Address,
     OUT void **Logical
     );
@@ -1243,7 +1243,7 @@ gceSTATUS
 gckKERNEL_Notify(
     IN gckKERNEL Kernel,
     IN gceNOTIFY Notifcation,
-    IN gctBOOL Data
+    IN int Data
     );
 
 gceSTATUS
@@ -1276,7 +1276,7 @@ gckKERNEL_Recovery(
 gceSTATUS
 gckKERNEL_OpenUserData(
     IN gckKERNEL Kernel,
-    IN gctBOOL NeedCopy,
+    IN int NeedCopy,
     IN void *StaticStorage,
     IN void *UserPointer,
     IN size_t Size,
@@ -1287,8 +1287,8 @@ gckKERNEL_OpenUserData(
 gceSTATUS
 gckKERNEL_CloseUserData(
     IN gckKERNEL Kernel,
-    IN gctBOOL NeedCopy,
-    IN gctBOOL FlushData,
+    IN int NeedCopy,
+    IN int FlushData,
     IN void *UserPointer,
     IN size_t Size,
     OUT void **KernelPointer
@@ -1468,7 +1468,7 @@ gckHARDWARE_ConvertLogical(
 gceSTATUS
 gckHARDWARE_Interrupt(
     IN gckHARDWARE Hardware,
-    IN gctBOOL InterruptValid
+    IN int InterruptValid
     );
 
 /* Program MMU. */
@@ -1488,18 +1488,18 @@ gckHARDWARE_FlushMMU(
 gceSTATUS
 gckHARDWARE_SetMMUv2(
     IN gckHARDWARE Hardware,
-    IN gctBOOL Enable,
+    IN int Enable,
     IN void *MtlbAddress,
     IN gceMMU_MODE Mode,
     IN void *SafeAddress,
-    IN gctBOOL FromPower
+    IN int FromPower
     );
 
 /* Get idle register. */
 gceSTATUS
 gckHARDWARE_GetIdle(
     IN gckHARDWARE Hardware,
-    IN gctBOOL Wait,
+    IN int Wait,
     OUT u32 * Data
     );
 
@@ -1604,7 +1604,7 @@ gckEVENT_AddList(
     IN gckEVENT Event,
     IN gcsHAL_INTERFACE_PTR Interface,
     IN gceKERNEL_WHERE FromWhere,
-    IN gctBOOL AllocateAllowed
+    IN int AllocateAllowed
     );
 
 /* Schedule a signal event. */
@@ -1624,8 +1624,8 @@ gckEVENT_CommitDone(
 gceSTATUS
 gckEVENT_Submit(
     IN gckEVENT Event,
-    IN gctBOOL Wait,
-    IN gctBOOL FromPower
+    IN int Wait,
+    IN int FromPower
     );
 
 /* Commit an event queue. */
@@ -1683,14 +1683,14 @@ gckCOMMAND_Destroy(
 gceSTATUS
 gckCOMMAND_EnterCommit(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     );
 
 /* Release command queue synchronization objects. */
 gceSTATUS
 gckCOMMAND_ExitCommit(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     );
 
 /* Start the command queue. */
@@ -1703,7 +1703,7 @@ gckCOMMAND_Start(
 gceSTATUS
 gckCOMMAND_Stop(
     IN gckCOMMAND Command,
-    IN gctBOOL FromRecovery
+    IN int FromRecovery
     );
 
 /* Commit a buffer to the command queue. */
@@ -1737,7 +1737,7 @@ gckCOMMAND_Execute(
 gceSTATUS
 gckCOMMAND_Stall(
     IN gckCOMMAND Command,
-    IN gctBOOL FromPower
+    IN int FromPower
     );
 
 /* Attach user process. */

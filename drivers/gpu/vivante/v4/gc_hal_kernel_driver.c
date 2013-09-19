@@ -176,7 +176,7 @@ int drv_open(
     )
 {
     gceSTATUS status;
-    gctBOOL attached = gcvFALSE;
+    int attached = gcvFALSE;
     gcsHAL_PRIVATE_DATA_PTR data = NULL;
     int i;
 

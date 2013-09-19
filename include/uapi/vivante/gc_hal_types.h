@@ -26,13 +26,6 @@
 
 #include <linux/types.h>
 
-/******************************************************************************\
-********************************** Common Types ********************************
-\******************************************************************************/
-
-typedef int                     gctBOOL;
-typedef gctBOOL *               gctBOOL_PTR;
-
 typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
 typedef void *                  gctSIGNAL;

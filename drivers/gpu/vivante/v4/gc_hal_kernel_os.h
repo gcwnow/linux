@@ -52,7 +52,7 @@ typedef struct _LINUX_MDL
 
     int                     numPages;
     int                     pagedMem;
-    gctBOOL                 contiguous;
+    int                     contiguous;
     dma_addr_t              dmaHandle;
     PLINUX_MDL_MAP          maps;
     struct _LINUX_MDL *     prev;

@@ -38,13 +38,13 @@ struct _gckHARDWARE
 
     /* Chip characteristics. */
     gcsHAL_QUERY_CHIP_IDENTITY  identity;
-    gctBOOL                     allowFastClear;
-    gctBOOL                     allowCompression;
+    int                         allowFastClear;
+    int                         allowCompression;
     u32                         powerBaseAddress;
-    gctBOOL                     extraEventStates;
+    int                         extraEventStates;
 
     /* Big endian */
-    gctBOOL                     bigEndian;
+    int                         bigEndian;
 
     /* Chip status */
     void *                      powerMutex;
@@ -52,8 +52,8 @@ struct _gckHARDWARE
     u32                         powerThread;
     gceCHIPPOWERSTATE           chipPowerState;
     u32                         lastWaitLink;
-    gctBOOL                     clockState;
-    gctBOOL                     powerState;
+    int                         clockState;
+    int                         powerState;
     void *                      globalSemaphore;
 
     gctISRMANAGERFUNC           startIsr;
@@ -84,7 +84,7 @@ gceSTATUS
 gckHARDWARE_NeedBaseAddress(
     IN gckHARDWARE Hardware,
     IN u32 State,
-    OUT gctBOOL_PTR NeedBase
+    OUT int *NeedBase
     );
 
 gceSTATUS

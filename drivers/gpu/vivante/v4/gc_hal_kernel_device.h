@@ -44,7 +44,7 @@ typedef struct _gckGALDEVICE
     void *              contiguousBase;
     gctPHYS_ADDR        contiguousPhysical;
     size_t              contiguousSize;
-    gctBOOL             contiguousMapped;
+    int                 contiguousMapped;
     void *              contiguousMappedUser;
     size_t              systemMemorySize;
     u32                 systemMemoryBaseAddress;
@@ -58,14 +58,14 @@ typedef struct _gckGALDEVICE
 
     /* IRQ management. */
     int                 irqLines[gcdCORE_COUNT];
-    gctBOOL             isrInitializeds[gcdCORE_COUNT];
-    gctBOOL             dataReadys[gcdCORE_COUNT];
+    int                 isrInitializeds[gcdCORE_COUNT];
+    int                 dataReadys[gcdCORE_COUNT];
 
     /* Thread management. */
     struct task_struct  *threadCtxts[gcdCORE_COUNT];
     struct semaphore    semas[gcdCORE_COUNT];
-    gctBOOL             threadInitializeds[gcdCORE_COUNT];
-    gctBOOL             killThread;
+    int                 threadInitializeds[gcdCORE_COUNT];
+    int                 killThread;
 
     /* Signal management. */
     int                 signal;

@@ -284,8 +284,8 @@ _State(
     IN u32 Address,
     IN u32 Value,
     IN size_t Size,
-    IN gctBOOL FixedPoint,
-    IN gctBOOL Hinted
+    IN int FixedPoint,
+    IN int Hinted
     )
 {
     u32 *buffer;
@@ -1081,7 +1081,7 @@ gckCONTEXT_Construct(
         /* Allocate hints. */
         gcmkONERROR(gckOS_Allocate(
             Os,
-            sizeof(gctBOOL) * context->stateCount,
+            sizeof(int) * context->stateCount,
             &pointer
             ));
 
@@ -1320,7 +1320,7 @@ gckCONTEXT_Update(
     gckKERNEL kernel;
     gcsCONTEXT_PTR buffer;
     gcsSTATE_MAP_PTR map;
-    gctBOOL needCopy = gcvFALSE;
+    int needCopy = gcvFALSE;
     gcsSTATE_DELTA_PTR nDelta;
     gcsSTATE_DELTA_PTR uDelta = NULL;
     gcsSTATE_DELTA_PTR kDelta = NULL;

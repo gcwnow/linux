@@ -104,7 +104,7 @@ gckEVENT_FreeRecord(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Event=0x%x Record=0x%x", Event, Record);
 
@@ -145,7 +145,7 @@ OnError:
 static gceSTATUS
 gckEVENT_IsEmpty(
     IN gckEVENT Event,
-    OUT gctBOOL_PTR IsEmpty
+    OUT int *IsEmpty
     )
 {
     gceSTATUS status;
@@ -204,7 +204,7 @@ _TryToIdleGPU(
 )
 {
     gceSTATUS status;
-    gctBOOL empty = gcvFALSE, idle = gcvFALSE;
+    int empty = gcvFALSE, idle = gcvFALSE;
 
     gcmkHEADER_ARG("Event=0x%x", Event);
 
@@ -547,7 +547,7 @@ gckEVENT_Destroy(
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gctBOOL Wait
+**      int Wait
 **          Set to gcvTRUE to force the function to wait if no events are
 **          immediately available.
 **
@@ -562,14 +562,14 @@ gckEVENT_Destroy(
 static gceSTATUS
 gckEVENT_GetEvent(
     IN gckEVENT Event,
-    IN gctBOOL Wait,
+    IN int Wait,
     OUT u8 * EventID,
     IN gceKERNEL_WHERE Source
     )
 {
     int i, id;
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     s32 free;
 
 #if gcdGPU_TIMEOUT
@@ -709,7 +709,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gctBOOL AllocateAllowed
+**      int AllocateAllowed
 **          State for allocation if out of free events.
 **
 **  OUTPUT:
@@ -720,12 +720,12 @@ OnError:
 static gceSTATUS
 gckEVENT_AllocateRecord(
     IN gckEVENT Event,
-    IN gctBOOL AllocateAllowed,
+    IN int AllocateAllowed,
     OUT gcsEVENT_PTR * Record
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     int i;
     gcsEVENT_PTR record;
     void *pointer = NULL;
@@ -802,7 +802,7 @@ OnError:
 **      gceKERNEL_WHERE FromWhere
 **          Place in the pipe where the event needs to be generated.
 **
-**      gctBOOL AllocateAllowed
+**      int AllocateAllowed
 **          State for allocation if out of free events.
 **
 **  OUTPUT:
@@ -814,11 +814,11 @@ gckEVENT_AddList(
     IN gckEVENT Event,
     IN gcsHAL_INTERFACE_PTR Interface,
     IN gceKERNEL_WHERE FromWhere,
-    IN gctBOOL AllocateAllowed
+    IN int AllocateAllowed
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gcsEVENT_PTR record = NULL;
     gcsEVENT_QUEUE_PTR queue;
 
@@ -1047,13 +1047,13 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gctBOOL Wait
+**      int Wait
 **          Submit requires one vacant event; if Wait is set to not zero,
 **          and there are no vacant events at this time, the function will
 **          wait until an event becomes vacant so that submission of the
 **          queue is successful.
 **
-**      gctBOOL FromPower
+**      int FromPower
 **          Determines whether the call originates from inside the power
 **          management or not.
 **
@@ -1064,16 +1064,16 @@ OnError:
 gceSTATUS
 gckEVENT_Submit(
     IN gckEVENT Event,
-    IN gctBOOL Wait,
-    IN gctBOOL FromPower
+    IN int Wait,
+    IN int FromPower
     )
 {
     gceSTATUS status;
     u8 id = 0xFF;
     gcsEVENT_QUEUE_PTR queue;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gckCOMMAND command = NULL;
-    gctBOOL commitEntered = gcvFALSE;
+    int commitEntered = gcvFALSE;
 #if !gcdNULL_DRIVER
     size_t bytes;
     void *buffer;
@@ -1226,7 +1226,7 @@ gckEVENT_Commit(
     gceSTATUS status;
     gcsQUEUE_PTR record = NULL, next;
     u32 processID;
-    gctBOOL needCopy = gcvFALSE;
+    int needCopy = gcvFALSE;
 
     gcmkHEADER_ARG("Event=0x%x Queue=0x%x", Event, Queue);
 
@@ -1486,9 +1486,9 @@ gckEVENT_Notify(
     int i;
     gcsEVENT_QUEUE * queue;
     unsigned int mask = 0;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     unsigned int pending;
-    gctBOOL suspended = gcvFALSE;
+    int suspended = gcvFALSE;
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
     int eventNumber = 0;
 #endif

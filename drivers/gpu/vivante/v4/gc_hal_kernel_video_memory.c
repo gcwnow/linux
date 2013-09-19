@@ -59,12 +59,12 @@
 **
 **  RETURNS:
 **
-**      gctBOOL
+**      int
 **          gcvTRUE if the node was split successfully, or gcvFALSE if there is an
 **          error.
 **
 */
-static gctBOOL
+static int
 _Split(
     IN gckOS Os,
     IN gcuVIDMEM_NODE_PTR Node,
@@ -208,7 +208,7 @@ _Merge(
 gceSTATUS
 gckVIDMEM_ConstructVirtual(
     IN gckKERNEL Kernel,
-    IN gctBOOL Contiguous,
+    IN int Contiguous,
     IN size_t Bytes,
     OUT gcuVIDMEM_NODE_PTR * Node
     )
@@ -848,7 +848,7 @@ gckVIDMEM_AllocateLinear(
     gcuVIDMEM_NODE_PTR node;
     u32 alignment;
     int bank, i;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Memory=0x%x Bytes=%lu Alignment=%u Type=%d",
                    Memory, Bytes, Alignment, Type);
@@ -1077,9 +1077,9 @@ gckVIDMEM_Free(
     gckKERNEL kernel = NULL;
     gckVIDMEM memory = NULL;
     gcuVIDMEM_NODE_PTR node;
-    gctBOOL mutexAcquired = gcvFALSE;
+    int mutexAcquired = gcvFALSE;
     gckOS os = gcvFALSE;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     s32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
@@ -1255,7 +1255,7 @@ OnError:
 **          Id of current GPU.
 **
 **  OUTPUT:
-**      gctBOOL * NeedMapping
+**      int * NeedMapping
 **          A pointer hold the result whether Node should be mapping.
 */
 static gceSTATUS
@@ -1263,7 +1263,7 @@ _NeedVirtualMapping(
     IN gckKERNEL Kernel,
     IN gceCORE  Core,
     IN gcuVIDMEM_NODE_PTR Node,
-    OUT gctBOOL * NeedMapping
+    OUT int * NeedMapping
 )
 {
     gceSTATUS status;
@@ -1333,15 +1333,15 @@ gceSTATUS
 gckVIDMEM_Lock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
-    IN gctBOOL Cacheable,
+    IN int Cacheable,
     OUT u32 * Address
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
-    gctBOOL locked = gcvFALSE;
+    int acquired = gcvFALSE;
+    int locked = gcvFALSE;
     gckOS os = NULL;
-    gctBOOL needMapping;
+    int needMapping;
 
     gcmkHEADER_ARG("Node=0x%x", Node);
 
@@ -1514,13 +1514,13 @@ OnError:
 **      gceSURF_TYPE Type
 **          Type of surface to unlock.
 **
-**      gctBOOL * Asynchroneous
+**      int * Asynchroneous
 **          Pointer to a variable specifying whether the surface should be
 **          unlocked asynchroneously or not.
 **
 **  OUTPUT:
 **
-**      gctBOOL * Asynchroneous
+**      int * Asynchroneous
 **          Pointer to a variable receiving the number of bytes used in the
 **          command buffer specified by 'Commands'.  If NULL, there is no
 **          command buffer.
@@ -1530,7 +1530,7 @@ gckVIDMEM_Unlock(
     IN gckKERNEL Kernel,
     IN gcuVIDMEM_NODE_PTR Node,
     IN gceSURF_TYPE Type,
-    IN OUT gctBOOL * Asynchroneous
+    IN OUT int * Asynchroneous
     )
 {
     gceSTATUS status;
@@ -1540,8 +1540,8 @@ gckVIDMEM_Unlock(
     gckCOMMAND command = NULL;
     gceKERNEL_FLUSH flush;
     gckOS os = NULL;
-    gctBOOL acquired = gcvFALSE;
-    gctBOOL commitEntered = gcvFALSE;
+    int acquired = gcvFALSE;
+    int commitEntered = gcvFALSE;
     s32 i, totalLocked;
 
     gcmkHEADER_ARG("Node=0x%x Type=%d *Asynchroneous=%d",

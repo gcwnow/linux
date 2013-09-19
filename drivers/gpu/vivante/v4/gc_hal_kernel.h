@@ -231,7 +231,7 @@ gceSTATUS
 gckKERNEL_QueryProcessDB(
     IN gckKERNEL Kernel,
     IN u32 ProcessID,
-    IN gctBOOL LastProcessID,
+    IN int LastProcessID,
     IN gceDATABASE_TYPE Type,
     OUT gcuDATABASE_INFO * Info
     );
@@ -309,7 +309,7 @@ struct _gckKERNEL
 
     /* Database management. */
     gckDB                       db;
-    gctBOOL                     dbCreated;
+    int                         dbCreated;
 
     /* Pointer to gckEVENT object. */
     gcsTIMER                    timers[8];
@@ -333,10 +333,10 @@ struct _gckCOMMAND
     gcePIPE_SELECT              pipeSelect;
 
     /* Command queue running flag. */
-    gctBOOL                     running;
+    int                         running;
 
     /* Idle flag and commit stamp. */
-    gctBOOL                     idle;
+    int                         idle;
     u64                         commitStamp;
 
     /* Command queue mutex. */
@@ -366,7 +366,7 @@ struct _gckCOMMAND
 #endif
 
     /* The command queue is new. */
-    gctBOOL                     newQueue;
+    int                         newQueue;
 
     /* Context management. */
     gckCONTEXT                  currContext;
@@ -392,7 +392,7 @@ struct _gckCOMMAND
 
 #if gcdSECURE_USER
     /* Hint array copy buffer. */
-    gctBOOL                     hintArrayAllocated;
+    int                         hintArrayAllocated;
     unsigned int                hintArraySize;
     u32 *                       hintArray;
 #endif
@@ -534,7 +534,7 @@ typedef union _gcuVIDMEM_NODE
         u32                     processID;
 
         /* Prevent compositor from freeing until client unlocks. */
-        gctBOOL                 freePending;
+        int                     freePending;
 
         /* */
         gcsVIDMEM_NODE_SHARED_INFO sharedInfo;
@@ -549,7 +549,7 @@ typedef union _gcuVIDMEM_NODE
 
         /* Information for this node. */
         /* Contiguously allocated? */
-        gctBOOL                 contiguous;
+        int                     contiguous;
         /* mdl record pointer... a kmalloc address. Process agnostic. */
         gctPHYS_ADDR            physical;
         size_t                  bytes;
@@ -579,7 +579,7 @@ typedef union _gcuVIDMEM_NODE
         /* Owner process sets freed to true
          * when it trys to free a locked
          * node */
-        gctBOOL                 freed;
+        int                     freed;
 
         /* */
         gcsVIDMEM_NODE_SHARED_INFO sharedInfo;
@@ -651,10 +651,10 @@ struct _gckMMU
 
     /* Free entries. */
     u32                         heapList;
-    gctBOOL                     freeNodes;
+    int                         freeNodes;
 
     void *                      staticSTLB;
-    gctBOOL                     enabled;
+    int                         enabled;
 
     u32                         dynamicMappingStart;
 };
@@ -662,13 +662,13 @@ struct _gckMMU
 gceSTATUS
 gckKERNEL_AttachProcess(
     IN gckKERNEL Kernel,
-    IN gctBOOL Attach
+    IN int Attach
     );
 
 gceSTATUS
 gckKERNEL_AttachProcessEx(
     IN gckKERNEL Kernel,
-    IN gctBOOL Attach,
+    IN int Attach,
     IN u32 PID
     );
 
@@ -692,7 +692,7 @@ gckKERNEL_FlushTranslationCache(
 gceSTATUS
 gckHARDWARE_QueryIdle(
     IN gckHARDWARE Hardware,
-    OUT gctBOOL_PTR IsIdle
+    OUT int *IsIdle
     );
 
 /******************************************************************************\

@@ -63,7 +63,7 @@ gckKERNEL_NewDatabase(
 {
     gceSTATUS status;
     gcsDATABASE_PTR database;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     size_t slot;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d", Kernel, ProcessID);
@@ -136,7 +136,7 @@ OnError:
 **      u32 ProcessID
 **          ProcessID that identifies the database.
 **
-**      gctBOOL LastProcessID
+**      int LastProcessID
 **          gcvTRUE if searching for the last known process ID.  gcvFALSE if
 **          we need to search for the process ID specified by the ProcessID
 **          argument.
@@ -151,14 +151,14 @@ static gceSTATUS
 gckKERNEL_FindDatabase(
     IN gckKERNEL Kernel,
     IN u32 ProcessID,
-    IN gctBOOL LastProcessID,
+    IN int LastProcessID,
     OUT gcsDATABASE_PTR * Database
     )
 {
     gceSTATUS status;
     gcsDATABASE_PTR database, previous;
     size_t slot;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d LastProcessID=%d",
                    Kernel, ProcessID, LastProcessID);
@@ -260,7 +260,7 @@ gckKERNEL_DeleteDatabase(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gcsDATABASE_PTR database;
 
     gcmkHEADER_ARG("Kernel=0x%x Database=0x%x", Kernel, Database);
@@ -363,7 +363,7 @@ gckKERNEL_NewRecord(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gcsDATABASE_RECORD_PTR record = NULL;
 
     gcmkHEADER_ARG("Kernel=0x%x Database=0x%x", Kernel, Database);
@@ -456,7 +456,7 @@ gckKERNEL_DeleteRecord(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gcsDATABASE_RECORD_PTR record, previous;
 
     gcmkHEADER_ARG("Kernel=0x%x Database=0x%x Type=%d Data=0x%x",
@@ -564,7 +564,7 @@ gckKERNEL_FindRecord(
     )
 {
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gcsDATABASE_RECORD_PTR record;
 
     gcmkHEADER_ARG("Kernel=0x%x Database=0x%x Type=%d Data=0x%x",
@@ -1091,7 +1091,7 @@ gckKERNEL_DestroyProcessDB(
     gceSTATUS status;
     gcsDATABASE_PTR database;
     gcsDATABASE_RECORD_PTR record, next;
-    gctBOOL asynchronous;
+    int asynchronous;
 
     gcmkHEADER_ARG("Kernel=0x%x ProcessID=%d", Kernel, ProcessID);
 
@@ -1289,7 +1289,7 @@ OnError:
 **      u32 ProcessID
 **          Process ID used to identify the database.
 **
-**      gctBOOL LastProcessID
+**      int LastProcessID
 **          gcvTRUE if searching for the last known process ID.  gcvFALSE if
 **          we need to search for the process ID specified by the ProcessID
 **          argument.
@@ -1306,7 +1306,7 @@ gceSTATUS
 gckKERNEL_QueryProcessDB(
     IN gckKERNEL Kernel,
     IN u32 ProcessID,
-    IN gctBOOL LastProcessID,
+    IN int LastProcessID,
     IN gceDATABASE_TYPE Type,
     OUT gcuDATABASE_INFO * Info
     )

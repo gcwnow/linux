@@ -130,7 +130,7 @@ gcsRECT;
 
 typedef struct _gcsVIDMEM_NODE_SHARED_INFO
 {
-    gctBOOL                     tileStatusDisabled;
+    int                         tileStatusDisabled;
     gcsPOINT                    SrcOrigin;
     gcsPOINT                    DestOrigin;
     gcsSIZE                     RectSize;
@@ -378,7 +378,7 @@ gckOS_DumpBuffer(
     IN void *Buffer,
     IN unsigned int Size,
     IN gceDUMP_BUFFER Type,
-    IN gctBOOL CopyMessage
+    IN int CopyMessage
     );
 
 #define gcmkDUMPBUFFER          gckOS_DumpBuffer

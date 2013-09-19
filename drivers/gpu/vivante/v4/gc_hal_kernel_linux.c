@@ -231,7 +231,7 @@ gckKERNEL_UnmapMemory(
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL InUserSpace
+**      int InUserSpace
 **          gcvTRUE to map the memory into the user space.
 **
 **      u32 Address
@@ -247,7 +247,7 @@ gceSTATUS
 gckKERNEL_MapVideoMemoryEx(
     IN gckKERNEL Kernel,
     IN gceCORE Core,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN u32 Address,
     OUT void **Logical
     )
@@ -355,7 +355,7 @@ gceSTATUS
 gckKERNEL_Notify(
     IN gckKERNEL Kernel,
     IN gceNOTIFY Notification,
-    IN gctBOOL Data
+    IN int Data
     )
 {
     gceSTATUS status;

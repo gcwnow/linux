@@ -389,7 +389,7 @@ typedef struct _gcsHAL_INTERFACE
             /* Cache configuration. */
             /* Only gcvPOOL_CONTIGUOUS and gcvPOOL_VIRUTAL
             ** can be configured */
-            IN gctBOOL                  cacheable;
+            IN int                      cacheable;
 
             /* Hardware specific address. */
             OUT __u32                   address;
@@ -409,7 +409,7 @@ typedef struct _gcsHAL_INTERFACE
             IN gceSURF_TYPE             type;
 
             /* Flag to unlock surface asynchroneously. */
-            IN OUT gctBOOL              asynchroneous;
+            IN OUT int                  asynchroneous;
         }
         UnlockVideoMemory;
 
@@ -511,13 +511,13 @@ typedef struct _gcsHAL_INTERFACE
             IN OUT int                  id;
 
             /* Reset mode. */
-            IN gctBOOL                  manualReset;
+            IN int                      manualReset;
 
             /* Wait timedout. */
             IN __u32                    wait;
 
             /* State. */
-            IN gctBOOL                  state;
+            IN int                      state;
         }
         UserSignal;
 
@@ -607,7 +607,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_GET_PROFILE_SETTING
         {
             /* Enable profiling */
-            OUT gctBOOL             enable;
+            OUT int                 enable;
 
             /* The profile file name */
             OUT char                fileName[gcdMAX_PROFILE_FILE_NAME];
@@ -618,7 +618,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_SET_PROFILE_SETTING
         {
             /* Enable profiling */
-            IN gctBOOL              enable;
+            IN int                  enable;
 
             /* The profile file name */
             IN char                 fileName[gcdMAX_PROFILE_FILE_NAME];
@@ -657,7 +657,7 @@ typedef struct _gcsHAL_INTERFACE
             OUT gceCHIPPOWERSTATE       state;
 
             /* Idle query. */
-            OUT gctBOOL                 isIdle;
+            OUT int                     isIdle;
         }
         QueryPowerManagement;
 
@@ -673,7 +673,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_MAP_PHYSICAL
         {
             /* gcvTRUE to map, gcvFALSE to unmap. */
-            IN gctBOOL                  map;
+            IN int                      map;
 
             /* Physical address. */
             IN OUT gctPHYS_ADDR         physical;
@@ -684,10 +684,10 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_DEBUG
         {
             /* If gcvTRUE, set the debug information. */
-            IN gctBOOL                  set;
+            IN int                      set;
             IN __u32                    level;
             IN __u32                    zones;
-            IN gctBOOL                  enable;
+            IN int                      enable;
 
             IN gceDEBUG_MESSAGE_TYPE    type;
             IN __u32                    messageSize;
@@ -727,7 +727,7 @@ typedef struct _gcsHAL_INTERFACE
         {
             /* Set to gcvTRUE if you want to query a particular process ID.
             ** Set to gcvFALSE to query the last detached process. */
-            IN gctBOOL                  validProcessID;
+            IN int                      validProcessID;
 
             /* Process ID to query. */
             IN __u32                    processID;

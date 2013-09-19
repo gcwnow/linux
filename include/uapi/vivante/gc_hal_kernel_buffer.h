@@ -94,10 +94,10 @@ struct _gcoCMDBUF
     gcePIPE_SELECT              exitPipe;
 
     /* Feature usage flags. */
-    gctBOOL                     using2D;
-    gctBOOL                     using3D;
-    gctBOOL                     usingFilterBlit;
-    gctBOOL                     usingPalette;
+    int                         using2D;
+    int                         using3D;
+    int                         usingFilterBlit;
+    int                         usingPalette;
 
     /* Physical address of command buffer. */
     gctPHYS_ADDR                physical;

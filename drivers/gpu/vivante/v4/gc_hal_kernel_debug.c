@@ -621,7 +621,7 @@ _PrintBuffer(
     u32 *data;
     char buffer[768];
     unsigned int indent, len;
-    gctBOOL command;
+    int command;
 
     /* Append space for the prefix. */
 #if gcdHAVEPREFIX
@@ -1710,7 +1710,7 @@ _InitPrefixData(
 static void
 _Print(
     IN unsigned int ArgumentSize,
-    IN gctBOOL CopyMessage,
+    IN int CopyMessage,
     IN const char *Message,
     IN gctARGUMENTS Arguments
     )
@@ -1918,12 +1918,12 @@ gckOS_DumpBuffer(
     IN void *Buffer,
     IN unsigned int Size,
     IN gceDUMP_BUFFER Type,
-    IN gctBOOL CopyMessage
+    IN int CopyMessage
     )
 {
     u32 address;
     gcsBUFFERED_OUTPUT_PTR outputBuffer;
-    static gctBOOL userLocked;
+    static int userLocked;
     char *buffer = (char*)Buffer;
 
     gcmkDECLARE_LOCK(lockHandle);
@@ -2283,7 +2283,7 @@ gckOS_SetDebugLevel(
 **      u32 Zones
 **          Debug zones to enable or disable.
 **
-**      gctBOOL Enable
+**      int Enable
 **          Set to gcvTRUE to enable the zones (or the Zones with the current
 **          zones) or gcvFALSE to disable the specified Zones.
 **
@@ -2295,7 +2295,7 @@ gckOS_SetDebugLevel(
 void
 gckOS_SetDebugZones(
     IN u32 Zones,
-    IN gctBOOL Enable
+    IN int Enable
     )
 {
     if (Enable)

@@ -185,7 +185,7 @@ typedef struct _gcsSIGNAL
     struct completion obj;
 
     /* Manual reset flag. */
-    gctBOOL manualReset;
+    int manualReset;
 
     /* The reference counter. */
     atomic_t ref;
@@ -386,7 +386,7 @@ _DumpGPUState(
     };
 
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
     gckGALDEVICE device;
     gckKERNEL kernel;
     u32 idle, axi;
@@ -821,7 +821,7 @@ _NonContiguousToPhys(
 
 #if gcdUSE_NON_PAGED_MEMORY_CACHE
 
-static gctBOOL
+static int
 _AddNonPagedMemoryCache(
     gckOS Os,
 #ifndef NO_DMA_COHERENT
@@ -1822,7 +1822,7 @@ gckOS_UnmapMemoryEx(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctBOOL InUserSpace
+**      int InUserSpace
 **          gcvTRUE if the pages need to be mapped into user space.
 **
 **      size_t * Bytes
@@ -1844,7 +1844,7 @@ gckOS_UnmapMemoryEx(
 gceSTATUS
 gckOS_AllocateNonPagedMemory(
     IN gckOS Os,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT void **Logical
@@ -1860,7 +1860,7 @@ gckOS_AllocateNonPagedMemory(
     long size, order;
     void *vaddr;
 #endif
-    gctBOOL locked = gcvFALSE;
+    int locked = gcvFALSE;
     gceSTATUS status;
     long populate;
 
@@ -3608,7 +3608,7 @@ gckOS_GetTicks(
 **
 **  OUTPUT:
 **
-**      gctBOOL_PTR IsAfter
+**      int *IsAfter
 **          Pointer to a variable to result.
 **
 */
@@ -3616,7 +3616,7 @@ gceSTATUS
 gckOS_TicksAfter(
     IN u32 Time1,
     IN u32 Time2,
-    OUT gctBOOL_PTR IsAfter
+    OUT int *IsAfter
     )
 {
     gcmkHEADER();
@@ -3706,7 +3706,7 @@ gckOS_MemoryBarrier(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctBOOL Contiguous
+**      int Contiguous
 **          Need contiguous memory or not.
 **
 **      size_t Bytes
@@ -3721,7 +3721,7 @@ gckOS_MemoryBarrier(
 gceSTATUS
 gckOS_AllocatePagedMemoryEx(
     IN gckOS Os,
-    IN gctBOOL Contiguous,
+    IN int Contiguous,
     IN size_t Bytes,
     OUT gctPHYS_ADDR * Physical
     )
@@ -3730,7 +3730,7 @@ gckOS_AllocatePagedMemoryEx(
     int i;
     PLINUX_MDL mdl = NULL;
     size_t bytes;
-    gctBOOL locked = gcvFALSE;
+    int locked = gcvFALSE;
     gceSTATUS status;
 
     gcmkHEADER_ARG("Os=0x%X Contiguous=%d Bytes=%lu", Os, Contiguous, Bytes);
@@ -3964,7 +3964,7 @@ gckOS_FreePagedMemory(
 **      size_t Bytes
 **          Number of bytes of the allocation.
 **
-**      gctBOOL Cacheable
+**      int Cacheable
 **          Cache mode of mapping.
 **
 **  OUTPUT:
@@ -3982,7 +3982,7 @@ gckOS_LockPages(
     IN gckOS Os,
     IN gctPHYS_ADDR Physical,
     IN size_t Bytes,
-    IN gctBOOL Cacheable,
+    IN int Cacheable,
     OUT void **Logical,
     OUT size_t * PageCount
     )
@@ -4419,7 +4419,7 @@ gckOS_UnlockPages(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctBOOL InUserSpace
+**      int InUserSpace
 **          gcvTRUE if the pages need to be mapped into user space.
 **
 **      size_t * Bytes
@@ -4441,7 +4441,7 @@ gckOS_UnlockPages(
 gceSTATUS
 gckOS_AllocateContiguous(
     IN gckOS Os,
-    IN gctBOOL InUserSpace,
+    IN int InUserSpace,
     IN OUT size_t * Bytes,
     OUT gctPHYS_ADDR * Physical,
     OUT void **Logical
@@ -4702,7 +4702,7 @@ gckOS_UnmapUserPointer(
 **
 **  OUTPUT:
 **
-**      gctBOOL_PTR NeedCopy
+**      int *NeedCopy
 **          Pointer to a boolean receiving gcvTRUE if the memory needs a copy or
 **          gcvFALSE if the memory can be accessed or mapped dircetly.
 */
@@ -4710,7 +4710,7 @@ gceSTATUS
 gckOS_QueryNeedCopy(
     IN gckOS Os,
     IN u32 ProcessID,
-    OUT gctBOOL_PTR NeedCopy
+    OUT int *NeedCopy
     )
 {
     gcmkHEADER_ARG("Os=0x%X ProcessID=%d", Os, ProcessID);
@@ -6453,10 +6453,10 @@ static void galdevice_clk_disable(gckGALDEVICE device)
 **      gckOS Os
 **          Pointer to a gckOS object.
 **
-**      gctBOOL Clock
+**      int Clock
 **          gcvTRUE to turn on the clock, or gcvFALSE to turn off the clock.
 **
-**      gctBOOL Power
+**      int Power
 **          gcvTRUE to turn on the power, or gcvFALSE to turn off the power.
 **
 **  OUTPUT:
@@ -6466,8 +6466,8 @@ static void galdevice_clk_disable(gckGALDEVICE device)
 gceSTATUS
 gckOS_SetGPUPower(
     IN gckOS Os,
-    IN gctBOOL Clock,
-    IN gctBOOL Power
+    IN int Clock,
+    IN int Power
     )
 {
     gckGALDEVICE device = (gckGALDEVICE) Os->device;
@@ -6527,7 +6527,7 @@ gckOS_ProfileToMS(
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctBOOL ManualReset
+**      int ManualReset
 **          If set to gcvTRUE, gckOS_Signal with gcvFALSE must be called in
 **          order to set the signal to nonsignaled state.
 **          If set to gcvFALSE, the signal will automatically be set to
@@ -6541,7 +6541,7 @@ gckOS_ProfileToMS(
 gceSTATUS
 gckOS_CreateSignal(
     IN gckOS Os,
-    IN gctBOOL ManualReset,
+    IN int ManualReset,
     OUT gctSIGNAL * Signal
     )
 {
@@ -6640,7 +6640,7 @@ gckOS_UnmapSignal(
     int signalID;
     gcsSIGNAL_PTR signal;
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%X Signal=0x%X ", Os, Signal);
 
@@ -6715,7 +6715,7 @@ OnError:
 **      gctSIGNAL Signal
 **          Pointer to the gctSIGNAL.
 **
-**      gctBOOL State
+**      int State
 **          If gcvTRUE, the signal will be set to signaled state.
 **          If gcvFALSE, the signal will be set to nonsignaled state.
 **
@@ -6727,7 +6727,7 @@ gceSTATUS
 gckOS_Signal(
     IN gckOS Os,
     IN gctSIGNAL Signal,
-    IN gctBOOL State
+    IN int State
     )
 {
     gcsSIGNAL_PTR signal;
@@ -7019,7 +7019,7 @@ gckOS_MapSignal(
     int signalID;
     gcsSIGNAL_PTR signal;
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%X Signal=0x%X Process=0x%X", Os, Signal, Process);
 
@@ -7085,7 +7085,7 @@ OnError:
 **      gckOS Os
 **          Pointer to an gckOS object.
 **
-**      gctBOOL ManualReset
+**      int ManualReset
 **          If set to gcvTRUE, gckOS_Signal with gcvFALSE must be called in
 **          order to set the signal to nonsignaled state.
 **          If set to gcvFALSE, the signal will automatically be set to
@@ -7099,7 +7099,7 @@ OnError:
 gceSTATUS
 gckOS_CreateUserSignal(
     IN gckOS Os,
-    IN gctBOOL ManualReset,
+    IN int ManualReset,
     OUT int * SignalID
     )
 {
@@ -7108,7 +7108,7 @@ gckOS_CreateUserSignal(
     void ** table;
     int i;
     gceSTATUS status;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%0x ManualReset=%d", Os, ManualReset);
 
@@ -7232,7 +7232,7 @@ gckOS_DestroyUserSignal(
 {
     gceSTATUS status;
     gcsSIGNAL_PTR signal;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%X SignalID=%d", Os, SignalID);
 
@@ -7337,7 +7337,7 @@ gckOS_WaitUserSignal(
 {
     gceSTATUS status;
     gcsSIGNAL_PTR signal;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%X SignalID=%d Wait=%u", Os, SignalID, Wait);
 
@@ -7410,7 +7410,7 @@ OnError:
 **      int SignalID
 **          SignalID.
 **
-**      gctBOOL State
+**      int State
 **          If gcvTRUE, the signal will be set to signaled state.
 **          If gcvFALSE, the signal will be set to nonsignaled state.
 **
@@ -7422,12 +7422,12 @@ gceSTATUS
 gckOS_SignalUserSignal(
     IN gckOS Os,
     IN int SignalID,
-    IN gctBOOL State
+    IN int State
     )
 {
     gceSTATUS status;
     gcsSIGNAL_PTR signal;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     gcmkHEADER_ARG("Os=0x%X SignalID=%d State=%d", Os, SignalID, State);
 

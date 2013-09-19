@@ -421,7 +421,7 @@ _AllocateMemory(
     gckVIDMEM videoMemory;
     int loopCount;
     gcuVIDMEM_NODE_PTR node = NULL;
-    gctBOOL tileStatusInVirtual;
+    int tileStatusInVirtual;
 
     gcmkHEADER_ARG("Kernel=0x%x *Pool=%d Bytes=%lu Alignment=%lu Type=%d",
                    Kernel, *Pool, Bytes, Alignment, Type);
@@ -593,7 +593,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL FromUser
+**      int FromUser
 **          whether the call is from the user space.
 **
 **      gcsHAL_INTERFACE * Interface
@@ -610,14 +610,14 @@ OnError:
 gceSTATUS
 gckKERNEL_Dispatch(
     IN gckKERNEL Kernel,
-    IN gctBOOL FromUser,
+    IN int FromUser,
     IN OUT gcsHAL_INTERFACE * Interface
     )
 {
     gceSTATUS status = gcvSTATUS_OK;
     size_t bytes;
     gcuVIDMEM_NODE_PTR node;
-    gctBOOL locked = gcvFALSE;
+    int locked = gcvFALSE;
     gctPHYS_ADDR physical = NULL;
     u32 address;
     u32 processID;
@@ -625,7 +625,7 @@ gckKERNEL_Dispatch(
     gcskSECURE_CACHE_PTR cache;
     void *logical;
 #endif
-    gctBOOL asynchronous;
+    int asynchronous;
     void *paddr = NULL;
 #if !USE_NEW_LINUX_SIGNAL
     gctSIGNAL   signal;
@@ -1727,7 +1727,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL Attach
+**      int Attach
 **          gcvTRUE if a new process gets attached or gcFALSE when a process
 **          gets detatched.
 **
@@ -1738,7 +1738,7 @@ OnError:
 gceSTATUS
 gckKERNEL_AttachProcess(
     IN gckKERNEL Kernel,
-    IN gctBOOL Attach
+    IN int Attach
     )
 {
     gceSTATUS status;
@@ -1775,7 +1775,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL Attach
+**      int Attach
 **          gcvTRUE if a new process gets attached or gcFALSE when a process
 **          gets detatched.
 **
@@ -1789,7 +1789,7 @@ OnError:
 gceSTATUS
 gckKERNEL_AttachProcessEx(
     IN gckKERNEL Kernel,
-    IN gctBOOL Attach,
+    IN int Attach,
     IN u32 PID
     )
 {
@@ -1866,9 +1866,9 @@ gckKERNEL_MapLogicalToPhysical(
     )
 {
     gceSTATUS status;
-    static gctBOOL baseAddressValid = gcvFALSE;
+    static int baseAddressValid = gcvFALSE;
     static u32 baseAddress;
-    gctBOOL needBase;
+    int needBase;
     gcskLOGICAL_CACHE_PTR slot;
 
     gcmkHEADER_ARG("Kernel=0x%x Cache=0x%x *Data=0x%x",
@@ -2457,7 +2457,7 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL NeedCopy
+**      int NeedCopy
 **          The flag indicating whether or not the data should be copied.
 **
 **      void *StaticStorage
@@ -2478,7 +2478,7 @@ OnError:
 gceSTATUS
 gckKERNEL_OpenUserData(
     IN gckKERNEL Kernel,
-    IN gctBOOL NeedCopy,
+    IN int NeedCopy,
     IN void *StaticStorage,
     IN void *UserPointer,
     IN size_t Size,
@@ -2541,10 +2541,10 @@ OnError:
 **      gckKERNEL Kernel
 **          Pointer to an gckKERNEL object.
 **
-**      gctBOOL NeedCopy
+**      int NeedCopy
 **          The flag indicating whether or not the data should be copied.
 **
-**      gctBOOL FlushData
+**      int FlushData
 **          If gcvTRUE, the data is written back to the user.
 **
 **      void *UserPointer
@@ -2561,8 +2561,8 @@ OnError:
 gceSTATUS
 gckKERNEL_CloseUserData(
     IN gckKERNEL Kernel,
-    IN gctBOOL NeedCopy,
-    IN gctBOOL FlushData,
+    IN int NeedCopy,
+    IN int FlushData,
     IN void *UserPointer,
     IN size_t Size,
     OUT void **KernelPointer

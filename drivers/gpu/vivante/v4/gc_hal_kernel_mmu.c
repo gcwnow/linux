@@ -246,7 +246,7 @@ _FillFlatMapping(
     )
 {
     gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
+    int mutex = gcvFALSE;
     gcsMMU_STLB_PTR head = NULL, pre = NULL;
     u32 start = PhysBase & (~gcdMMU_PAGE_64K_MASK);
     u32 end = (PhysBase + Size - 1) & (~gcdMMU_PAGE_64K_MASK);
@@ -420,7 +420,7 @@ _SetupDynamicSpace(
     u32 physical;
     int numEntries;
     u32 *pageTable;
-    gctBOOL acquired = gcvFALSE;
+    int acquired = gcvFALSE;
 
     /* find the start of dynamic address space. */
     for (i = 0; i < gcdMMU_MTLB_ENTRY_NUM; i++)
@@ -878,10 +878,10 @@ gckMMU_AllocatePages(
     )
 {
     gceSTATUS status;
-    gctBOOL mutex = gcvFALSE;
+    int mutex = gcvFALSE;
     u32 index = 0, previous = ~0U, left;
     u32 *pageTable;
-    gctBOOL gotIt;
+    int gotIt;
     u32 address;
 
     gcmkHEADER_ARG("Mmu=0x%x PageCount=%lu", Mmu, PageCount);
