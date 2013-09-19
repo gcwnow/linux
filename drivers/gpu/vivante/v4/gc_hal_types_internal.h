@@ -32,11 +32,6 @@
 
 #define gcvINFINITE             ((u32) ~0U)
 
-typedef float                   gctFLOAT;
-typedef float *                 gctFLOAT_PTR;
-
-typedef void *                  gctFILE;
-
 /* Stringizing macro. */
 #define gcmSTRING(Value)        #Value
 
