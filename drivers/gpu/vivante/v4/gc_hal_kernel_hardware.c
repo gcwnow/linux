@@ -28,6 +28,8 @@
 #include "gc_hal_internal.h"
 #include "gc_hal_kernel.h"
 
+#include <linux/kernel.h>
+
 #define _GC_OBJ_ZONE    gcvZONE_HARDWARE
 
 /******************************************************************************\
@@ -264,7 +266,7 @@ _IdentifyHardware(
     }
 
     /* Get the number of pixel pipes. */
-    Identity->pixelPipes = gcmMAX(pixelPipes, 1);
+    Identity->pixelPipes = max(pixelPipes, 1u);
 
     /* Get the stream count. */
     Identity->streamCount = (streamCount != 0)

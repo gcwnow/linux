@@ -1660,12 +1660,12 @@ gckKERNEL_Dispatch(
                         {
                             /* Expand the stored rectangle to include newly locked rectangle */
                             dirtyX = (newSharedInfo.SrcOrigin.x < currentSharedInfo->SrcOrigin.x) ? newSharedInfo.SrcOrigin.x : currentSharedInfo->SrcOrigin.x;
-                            right = gcmMAX((currentSharedInfo->SrcOrigin.x + currentSharedInfo->RectSize.width), (newSharedInfo.SrcOrigin.x + newSharedInfo.RectSize.width));
+                            right = max(currentSharedInfo->SrcOrigin.x + currentSharedInfo->RectSize.width, newSharedInfo.SrcOrigin.x + newSharedInfo.RectSize.width);
                             currentSharedInfo->RectSize.width = right - dirtyX;
                             currentSharedInfo->SrcOrigin.x = dirtyX;
 
                             dirtyY = (newSharedInfo.SrcOrigin.y < currentSharedInfo->SrcOrigin.y) ? newSharedInfo.SrcOrigin.y : currentSharedInfo->SrcOrigin.y;
-                            bottom = gcmMAX((currentSharedInfo->SrcOrigin.y + currentSharedInfo->RectSize.height), (newSharedInfo.SrcOrigin.y + newSharedInfo.RectSize.height));
+                            bottom = max(currentSharedInfo->SrcOrigin.y + currentSharedInfo->RectSize.height, newSharedInfo.SrcOrigin.y + newSharedInfo.RectSize.height);
                             currentSharedInfo->RectSize.height = bottom - dirtyY;
                             currentSharedInfo->SrcOrigin.y = dirtyY;
                         }
