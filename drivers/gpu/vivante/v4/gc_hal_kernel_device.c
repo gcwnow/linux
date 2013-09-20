@@ -30,10 +30,6 @@
 
 #define _GC_OBJ_ZONE    gcvZONE_DEVICE
 
-#ifdef FLAREON
-    static struct dove_gpio_irq_handler gc500_handle;
-#endif
-
 #define gcmIS_CORE_PRESENT(Device, Core) (Device->irqLines[Core] > 0)
 
 /******************************************************************************\
@@ -254,22 +250,10 @@ gckGALDEVICE_Setup_ISR(
     }
 
     /* Hook up the isr based on the irq line. */
-#ifdef FLAREON
-    gc500_handle.dev_name  = "galcore interrupt service";
-    gc500_handle.dev_id    = Device;
-    gc500_handle.handler   = isrRoutine;
-    gc500_handle.intr_gen  = GPIO_INTR_LEVEL_TRIGGER;
-    gc500_handle.intr_trig = GPIO_TRIG_HIGH_LEVEL;
-
-    ret = dove_gpio_request(
-        DOVE_GPIO0_7, &gc500_handle
-        );
-#else
     ret = request_irq(
         Device->irqLines[gcvCORE_MAJOR], isrRoutine, IRQF_DISABLED,
         "galcore interrupt service", Device
         );
-#endif
 
     if (ret != 0)
     {
@@ -312,22 +296,10 @@ gckGALDEVICE_Setup_ISR_2D(
     }
 
     /* Hook up the isr based on the irq line. */
-#ifdef FLAREON
-    gc500_handle.dev_name  = "galcore interrupt service";
-    gc500_handle.dev_id    = Device;
-    gc500_handle.handler   = isrRoutine2D;
-    gc500_handle.intr_gen  = GPIO_INTR_LEVEL_TRIGGER;
-    gc500_handle.intr_trig = GPIO_TRIG_HIGH_LEVEL;
-
-    ret = dove_gpio_request(
-        DOVE_GPIO0_7, &gc500_handle
-        );
-#else
     ret = request_irq(
         Device->irqLines[gcvCORE_2D], isrRoutine2D, IRQF_DISABLED,
         "galcore interrupt service for 2D", Device
         );
-#endif
 
     if (ret != 0)
     {
@@ -383,13 +355,9 @@ gckGALDEVICE_Release_ISR(
     /* release the irq */
     if (Device->isrInitializeds[gcvCORE_MAJOR])
     {
-#ifdef FLAREON
-        dove_gpio_free(DOVE_GPIO0_7, "galcore interrupt service");
-#else
         free_irq(Device->irqLines[gcvCORE_MAJOR], Device);
-#endif
 
-	    Device->isrInitializeds[gcvCORE_MAJOR] = gcvFALSE;
+        Device->isrInitializeds[gcvCORE_MAJOR] = gcvFALSE;
     }
 
     gcmkFOOTER_NO();
@@ -408,13 +376,9 @@ gckGALDEVICE_Release_ISR_2D(
     /* release the irq */
     if (Device->isrInitializeds[gcvCORE_2D])
     {
-#ifdef FLAREON
-        dove_gpio_free(DOVE_GPIO0_7, "galcore interrupt service");
-#else
         free_irq(Device->irqLines[gcvCORE_2D], Device);
-#endif
 
-	    Device->isrInitializeds[gcvCORE_2D] = gcvFALSE;
+        Device->isrInitializeds[gcvCORE_2D] = gcvFALSE;
     }
 
     gcmkFOOTER_NO();
