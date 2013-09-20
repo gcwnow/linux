@@ -106,19 +106,6 @@
 #define _CLOSE_RANGE()                                                         \
     _TerminateStateBlock(Context, index)
 
-#define _ENABLE(reg, field)                                                    \
-    do                                                                         \
-    {                                                                          \
-        if (gcmVERIFYFIELDVALUE(data, reg, MASK_ ## field, ENABLED))           \
-        {                                                                      \
-            enable |= gcmFIELDMASK(reg, field);                                \
-        }                                                                      \
-    }                                                                          \
-    while (gcvFALSE)
-
-#define _BLOCK_COUNT(reg)                                                      \
-    ((reg ## _Count) >> (reg ## _BLK))
-
 
 /******************************************************************************\
 *********************** Support Functions and Definitions **********************
