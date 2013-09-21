@@ -139,21 +139,4 @@ typedef struct _gcsQUEUE
 }
 gcsQUEUE;
 
-/* Event queue. */
-struct _gcoQUEUE
-{
-    /* The object. */
-    gcsOBJECT                   object;
-
-    /* Pointer to current event queue. */
-    gcsQUEUE_PTR                head;
-    gcsQUEUE_PTR                tail;
-
-    /* List of free records. */
-    gcsQUEUE_PTR                freeList;
-    #define gcdIN_QUEUE_RECORD_LIMIT 16
-    /* Number of records currently in queue */
-    __u32                       recordCount;
-};
-
 #endif /* __gc_hal_kernel_buffer_h_ */
