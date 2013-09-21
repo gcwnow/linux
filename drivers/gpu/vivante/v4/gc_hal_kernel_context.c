@@ -1287,7 +1287,7 @@ gckCONTEXT_Destroy(
 **      u32 ProcessID
 **          Current process ID.
 **
-**      gcsSTATE_DELTA_PTR StateDelta
+**      struct _gcsSTATE_DELTA *StateDelta
 **          Pointer to the state delta.
 **
 **  OUTPUT:
@@ -1298,7 +1298,7 @@ gceSTATUS
 gckCONTEXT_Update(
     IN gckCONTEXT Context,
     IN u32 ProcessID,
-    IN gcsSTATE_DELTA_PTR StateDelta
+    IN struct _gcsSTATE_DELTA *StateDelta
     )
 {
 #if !VIVANTE_NO_3D
@@ -1308,11 +1308,11 @@ gckCONTEXT_Update(
     gcsCONTEXT_PTR buffer;
     gcsSTATE_MAP_PTR map;
     int needCopy = gcvFALSE;
-    gcsSTATE_DELTA_PTR nDelta;
-    gcsSTATE_DELTA_PTR uDelta = NULL;
-    gcsSTATE_DELTA_PTR kDelta = NULL;
-    gcsSTATE_DELTA_RECORD_PTR record;
-    gcsSTATE_DELTA_RECORD_PTR recordArray = NULL;
+    struct _gcsSTATE_DELTA *nDelta;
+    struct _gcsSTATE_DELTA *uDelta = NULL;
+    struct _gcsSTATE_DELTA *kDelta = NULL;
+    struct _gcsSTATE_DELTA_RECORD *record;
+    struct _gcsSTATE_DELTA_RECORD *recordArray = NULL;
     unsigned int elementCount;
     unsigned int address;
     u32 mask;

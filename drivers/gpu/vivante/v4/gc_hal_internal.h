@@ -1427,7 +1427,7 @@ gckHARDWARE_QueryMemory(
 gceSTATUS
 gckHARDWARE_QueryChipIdentity(
     IN gckHARDWARE Hardware,
-    OUT gcsHAL_QUERY_CHIP_IDENTITY_PTR Identity
+    OUT struct _gcsHAL_QUERY_CHIP_IDENTITY *Identity
     );
 
 /* Query the shader support. */
@@ -1543,7 +1543,7 @@ gckHARDWARE_QueryPowerManagementState(
 gceSTATUS
 gckHARDWARE_ProfileEngine2D(
     IN gckHARDWARE Hardware,
-    OUT gcs2D_PROFILE_PTR Profile
+    OUT struct _gcs2D_PROFILE *Profile
     );
 
 gceSTATUS
@@ -1699,7 +1699,7 @@ gckEVENT_Destroy(
 gceSTATUS
 gckEVENT_AddList(
     IN gckEVENT Event,
-    IN gcsHAL_INTERFACE_PTR Interface,
+    IN struct _gcsHAL_INTERFACE *Interface,
     IN gceKERNEL_WHERE FromWhere,
     IN int AllocateAllowed
     );
@@ -1729,14 +1729,14 @@ gckEVENT_Submit(
 gceSTATUS
 gckEVENT_Commit(
     IN gckEVENT Event,
-    IN gcsQUEUE_PTR Queue
+    IN struct _gcsQUEUE *Queue
     );
 
 /* Schedule a composition event. */
 gceSTATUS
 gckEVENT_Compose(
     IN gckEVENT Event,
-    IN gcsHAL_COMPOSE_PTR Info
+    IN struct _gcsHAL_COMPOSE *Info
     );
 
 /* Event callback routine. */
@@ -1809,8 +1809,8 @@ gckCOMMAND_Commit(
     IN gckCOMMAND Command,
     IN gckCONTEXT Context,
     IN gcoCMDBUF CommandBuffer,
-    IN gcsSTATE_DELTA_PTR StateDelta,
-    IN gcsQUEUE_PTR EventQueue,
+    IN struct _gcsSTATE_DELTA *StateDelta,
+    IN struct _gcsQUEUE *EventQueue,
     IN u32 ProcessID
     );
 

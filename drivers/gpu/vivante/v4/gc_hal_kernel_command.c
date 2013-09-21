@@ -972,7 +972,7 @@ OnError:
 **      gcoCMDBUF CommandBuffer
 **          Pointer to a gcoCMDBUF object.
 **
-**      gcsSTATE_DELTA_PTR StateDelta
+**      struct _gcsSTATE_DELTA *StateDelta
 **          Pointer to the state delta.
 **
 **      u32 ProcessID
@@ -987,8 +987,8 @@ gckCOMMAND_Commit(
     IN gckCOMMAND Command,
     IN gckCONTEXT Context,
     IN gcoCMDBUF CommandBuffer,
-    IN gcsSTATE_DELTA_PTR StateDelta,
-    IN gcsQUEUE_PTR EventQueue,
+    IN struct _gcsSTATE_DELTA *StateDelta,
+    IN struct _gcsQUEUE *EventQueue,
     IN u32 ProcessID
     )
 {
@@ -997,9 +997,9 @@ gckCOMMAND_Commit(
     int contextAcquired = gcvFALSE;
     gckHARDWARE hardware;
     int needCopy = gcvFALSE;
-    gcsQUEUE_PTR eventRecord = NULL;
+    struct _gcsQUEUE *eventRecord = NULL;
     gcsQUEUE _eventRecord;
-    gcsQUEUE_PTR nextEventRecord;
+    struct _gcsQUEUE *nextEventRecord;
     int commandBufferMapped = gcvFALSE;
     gcoCMDBUF commandBufferObject = NULL;
 

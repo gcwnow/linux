@@ -165,7 +165,6 @@ gcsKERNEL_SETTINGS;
 
 
 /* gcvHAL_QUERY_CHIP_IDENTITY */
-typedef struct _gcsHAL_QUERY_CHIP_IDENTITY * gcsHAL_QUERY_CHIP_IDENTITY_PTR;
 typedef struct _gcsHAL_QUERY_CHIP_IDENTITY
 {
 
@@ -224,7 +223,6 @@ typedef struct _gcsHAL_QUERY_CHIP_IDENTITY
 gcsHAL_QUERY_CHIP_IDENTITY;
 
 /* gcvHAL_COMPOSE. */
-typedef struct _gcsHAL_COMPOSE * gcsHAL_COMPOSE_PTR;
 typedef struct _gcsHAL_COMPOSE
 {
     /* Composition state buffer. */
@@ -445,7 +443,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_EVENT_COMMIT
         {
             /* Event queue. */
-            IN gcsQUEUE_PTR             queue;
+            IN struct _gcsQUEUE *       queue;
         }
         Event;
 
@@ -459,10 +457,10 @@ typedef struct _gcsHAL_INTERFACE
             IN gcoCMDBUF                commandBuffer;
 
             /* State delta buffer. */
-            gcsSTATE_DELTA_PTR          delta;
+            struct _gcsSTATE_DELTA *    delta;
 
             /* Event queue. */
-            IN gcsQUEUE_PTR             queue;
+            IN struct _gcsQUEUE *       queue;
         }
         Commit;
 
@@ -637,7 +635,7 @@ typedef struct _gcsHAL_INTERFACE
         struct _gcsHAL_PROFILE_REGISTERS_2D
         {
             /* Data read. */
-            OUT gcs2D_PROFILE_PTR       hwProfile2D;
+            OUT struct _gcs2D_PROFILE * hwProfile2D;
         }
         RegisterProfileData2D;
 #endif

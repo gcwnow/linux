@@ -66,7 +66,7 @@ typedef struct _gcsCONTEXT
     unsigned int                deltaCount;
 
     /* Pointer to the first delta to be applied. */
-    gcsSTATE_DELTA_PTR          delta;
+    struct _gcsSTATE_DELTA *    delta;
 
     /* Next context buffer. */
     gcsCONTEXT_PTR              next;
@@ -115,7 +115,7 @@ struct _gckCONTEXT
 
     /* A copy of the user record array. */
     unsigned int                recordArraySize;
-    gcsSTATE_DELTA_RECORD_PTR   recordArray;
+    struct _gcsSTATE_DELTA_RECORD *recordArray;
 
     /* Requested pipe select for context. */
     gcePIPE_SELECT              entryPipe;

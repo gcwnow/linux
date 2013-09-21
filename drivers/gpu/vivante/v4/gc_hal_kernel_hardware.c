@@ -46,7 +46,7 @@ static gceSTATUS
 _IdentifyHardware(
     IN gckOS Os,
     IN gceCORE Core,
-    OUT gcsHAL_QUERY_CHIP_IDENTITY_PTR Identity
+    OUT struct _gcsHAL_QUERY_CHIP_IDENTITY *Identity
     )
 {
     gceSTATUS status;
@@ -1000,14 +1000,14 @@ gckHARDWARE_QueryMemory(
 **
 **  OUTPUT:
 **
-**      gcsHAL_QUERY_CHIP_IDENTITY_PTR Identity
+**      struct _gcsHAL_QUERY_CHIP_IDENTITY *Identity
 **          Pointer to the identity structure.
 **
 */
 gceSTATUS
 gckHARDWARE_QueryChipIdentity(
     IN gckHARDWARE Hardware,
-    OUT gcsHAL_QUERY_CHIP_IDENTITY_PTR Identity
+    OUT struct _gcsHAL_QUERY_CHIP_IDENTITY *Identity
     )
 {
     u32 features;
@@ -4034,7 +4034,7 @@ OnError:
 **      gckHARDWARE Hardware
 **          Pointer to an gckHARDWARE object.
 **
-**      OPTIONAL gcs2D_PROFILE_PTR Profile
+**      OPTIONAL struct _gcs2D_PROFILE *Profile
 **          Pointer to a gcs2D_Profile structure.
 **
 **  OUTPUT:
@@ -4044,11 +4044,11 @@ OnError:
 gceSTATUS
 gckHARDWARE_ProfileEngine2D(
     IN gckHARDWARE Hardware,
-    OPTIONAL gcs2D_PROFILE_PTR Profile
+    OPTIONAL struct _gcs2D_PROFILE *Profile
     )
 {
     gceSTATUS status;
-    gcs2D_PROFILE_PTR profiler = Profile;
+    struct _gcs2D_PROFILE *profiler = Profile;
 
     gcmkHEADER_ARG("Hardware=0x%x", Hardware);
 

@@ -32,7 +32,6 @@
 #define gcdCONTEXT_BUFFER_COUNT 2
 
 /* State delta record. */
-typedef struct _gcsSTATE_DELTA_RECORD * gcsSTATE_DELTA_RECORD_PTR;
 typedef struct _gcsSTATE_DELTA_RECORD
 {
     /* State address. */
@@ -65,7 +64,7 @@ typedef struct _gcsSTATE_DELTA
     unsigned int                recordCount;
 
     /* Record array; holds all modified states. */
-    gcsSTATE_DELTA_RECORD_PTR   recordArray;
+    struct _gcsSTATE_DELTA_RECORD *recordArray;
 
     /* Map entry ID is used for map entry validation. If map entry ID does not
        match the main state delta ID, the entry and the corresponding state are
@@ -78,8 +77,8 @@ typedef struct _gcsSTATE_DELTA
     unsigned int *              mapEntryIndex;
 
     /* Previous and next state deltas. */
-    gcsSTATE_DELTA_PTR          prev;
-    gcsSTATE_DELTA_PTR          next;
+    struct _gcsSTATE_DELTA *    prev;
+    struct _gcsSTATE_DELTA *    next;
 }
 gcsSTATE_DELTA;
 
@@ -132,7 +131,7 @@ struct _gcoCMDBUF
 typedef struct _gcsQUEUE
 {
     /* Pointer to next gcsQUEUE structure. */
-    gcsQUEUE_PTR                next;
+    struct _gcsQUEUE *          next;
 
     /* Event information. */
     gcsHAL_INTERFACE            iface;

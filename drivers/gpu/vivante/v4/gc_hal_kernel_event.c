@@ -796,7 +796,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gcsHAL_INTERFACE_PTR Interface
+**      struct _gcsHAL_INTERFACE *Interface
 **          Pointer to the interface for the event to be added.
 **
 **      gceKERNEL_WHERE FromWhere
@@ -812,7 +812,7 @@ OnError:
 gceSTATUS
 gckEVENT_AddList(
     IN gckEVENT Event,
-    IN gcsHAL_INTERFACE_PTR Interface,
+    IN struct _gcsHAL_INTERFACE *Interface,
     IN gceKERNEL_WHERE FromWhere,
     IN int AllocateAllowed
     )
@@ -1210,7 +1210,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gcsQUEUE_PTR Queue
+**      struct _gcsQUEUE *Queue
 **          User event queue.
 **
 **  OUTPUT:
@@ -1220,11 +1220,11 @@ OnError:
 gceSTATUS
 gckEVENT_Commit(
     IN gckEVENT Event,
-    IN gcsQUEUE_PTR Queue
+    IN struct _gcsQUEUE *Queue
     )
 {
     gceSTATUS status;
-    gcsQUEUE_PTR record = NULL, next;
+    struct _gcsQUEUE *record = NULL, *next;
     u32 processID;
     int needCopy = gcvFALSE;
 
@@ -1322,7 +1322,7 @@ OnError:
 **      gckEVENT Event
 **          Pointer to an gckEVENT object.
 **
-**      gcsHAL_COMPOSE_PTR Info
+**      struct _gcsHAL_COMPOSE *Info
 **          Pointer to the composition structure.
 **
 **  OUTPUT:
@@ -1332,7 +1332,7 @@ OnError:
 gceSTATUS
 gckEVENT_Compose(
     IN gckEVENT Event,
-    IN gcsHAL_COMPOSE_PTR Info
+    IN struct _gcsHAL_COMPOSE *Info
     )
 {
     gceSTATUS status;

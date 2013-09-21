@@ -716,7 +716,7 @@ gceSTATUS
 gckCONTEXT_Update(
     IN gckCONTEXT Context,
     IN u32 ProcessID,
-    IN gcsSTATE_DELTA_PTR StateDelta
+    IN struct _gcsSTATE_DELTA *StateDelta
     );
 
 #endif /* __gc_hal_kernel_h_ */
