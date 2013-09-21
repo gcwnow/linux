@@ -25,15 +25,6 @@
 #define __gc_hal_options_h_
 
 /*
-    VIVANTE_NO_3D
-
-        This define disables support for 3D rendering.
-*/
-#ifndef VIVANTE_NO_3D
-#   define VIVANTE_NO_3D                        0
-#endif
-
-/*
     VIVANTE_PROFILER
 
         This define enables the profiler.

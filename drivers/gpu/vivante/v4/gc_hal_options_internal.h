@@ -24,6 +24,15 @@
 #include "gc_hal_options.h"
 
 /*
+    VIVANTE_NO_3D
+
+        This define disables support for 3D rendering.
+*/
+#ifndef VIVANTE_NO_3D
+#   define VIVANTE_NO_3D                        0
+#endif
+
+/*
     gcdPRINT_VERSION
 
         Print HAL version.
