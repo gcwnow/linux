@@ -37,13 +37,6 @@ typedef union  _gcuVIDMEM_NODE *        gcuVIDMEM_NODE_PTR;
 ********************************* Enumerations *********************************
 \******************************************************************************/
 
-typedef enum _gcePLS_VALUE
-{
-  gcePLS_VALUE_EGL_DISPLAY_INFO,
-  gcePLS_VALUE_EGL_SURFACE_INFO
-}
-gcePLS_VALUE;
-
 /* Video memory pool type. */
 typedef enum _gcePOOL
 {
@@ -61,80 +54,5 @@ typedef enum _gcePOOL
     gcvPOOL_NUMBER_OF_POOLS
 }
 gcePOOL;
-
-#if !VIVANTE_NO_3D
-/* Blending functions. */
-typedef enum _gceBLEND_FUNCTION
-{
-    gcvBLEND_ZERO,
-    gcvBLEND_ONE,
-    gcvBLEND_SOURCE_COLOR,
-    gcvBLEND_INV_SOURCE_COLOR,
-    gcvBLEND_SOURCE_ALPHA,
-    gcvBLEND_INV_SOURCE_ALPHA,
-    gcvBLEND_TARGET_COLOR,
-    gcvBLEND_INV_TARGET_COLOR,
-    gcvBLEND_TARGET_ALPHA,
-    gcvBLEND_INV_TARGET_ALPHA,
-    gcvBLEND_SOURCE_ALPHA_SATURATE,
-    gcvBLEND_CONST_COLOR,
-    gcvBLEND_INV_CONST_COLOR,
-    gcvBLEND_CONST_ALPHA,
-    gcvBLEND_INV_CONST_ALPHA,
-}
-gceBLEND_FUNCTION;
-
-/* Blending modes. */
-typedef enum _gceBLEND_MODE
-{
-    gcvBLEND_ADD,
-    gcvBLEND_SUBTRACT,
-    gcvBLEND_REVERSE_SUBTRACT,
-    gcvBLEND_MIN,
-    gcvBLEND_MAX,
-}
-gceBLEND_MODE;
-
-/* API flags. */
-typedef enum _gceAPI
-{
-    gcvAPI_D3D                  = 0x1,
-    gcvAPI_OPENGL               = 0x2,
-    gcvAPI_OPENVG               = 0x3,
-    gcvAPI_OPENCL               = 0x4,
-}
-gceAPI;
-
-/* Depth modes. */
-typedef enum _gceDEPTH_MODE
-{
-    gcvDEPTH_NONE,
-    gcvDEPTH_Z,
-    gcvDEPTH_W,
-}
-gceDEPTH_MODE;
-#endif /* VIVANTE_NO_3D */
-
-typedef enum _gceWHERE
-{
-    gcvWHERE_COMMAND,
-    gcvWHERE_RASTER,
-    gcvWHERE_PIXEL,
-}
-gceWHERE;
-
-typedef enum _gceHOW
-{
-    gcvHOW_SEMAPHORE            = 0x1,
-    gcvHOW_STALL                = 0x2,
-    gcvHOW_SEMAPHORE_STALL      = 0x3,
-}
-gceHOW;
-
-typedef enum _gceSignalHandlerType
-{
-    gcvHANDLE_SIGFPE_WHEN_SIGNAL_CODE_IS_0        = 0x1,
-}
-gceSignalHandlerType;
 
 #endif /* __gc_hal_base_h_ */
