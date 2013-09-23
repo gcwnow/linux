@@ -71,7 +71,6 @@ open:		tcsm_open,
 static struct wake_lock tcsm_wake_lock;
 #endif
 
-static struct tcsm_mmap param;
 static struct completion tcsm_comp;
 static struct tcsm_sem tcsm_sem;
 
@@ -88,18 +87,20 @@ static long tcsm_on(struct file_info *file_info)
 
 	tcsm_sem.owner_pid = current->pid;
 
-	if(INREG32(CPM_OPCR) & BIT31) {
+#if 0 /* For some reason turning this bit off again causes a page fault in the kernel */
+	if(INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
 		return -EBUSY;
 	}
-	SETREG32(CPM_OPCR, BIT31);
+#endif
+        SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dat = INREG32(CPM_CLKGR1);
 
 	dat &= ~(CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
 
 	OUTREG32(CPM_CLKGR1,dat);
-#if 0 /* =CLRREG32(CPM_LCR, LCR_PDAHB1), but enabled by default in pm.c right now */
-	cpm_power_ctrl(CPM_POWER_AHB1,CPM_POWER_ON);
+#if 0 /* enabled by default in pm.c right now */
+        CLRREG32(CPM_LCR, LCR_PDAHB1); /* enable power to AHB1 and VPU */
 #endif
 	SETREG32(CPM_CLKGR1,CLKGR1_ME); //no use me
 
@@ -112,7 +113,6 @@ static long tcsm_on(struct file_info *file_info)
 	enable_irq(IRQ_VPU);
 	file_info->is_on = 1;
 
-	//memcpy speed
 	dbg_tcsm("Tcsm[%d:%d] on\n", current->tgid, current->pid);
 	printk("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
 #if defined(ANDROID)
@@ -125,8 +125,8 @@ static long tcsm_off(struct file_info *file_info)
 {
 	unsigned int dat = 0;
 
-#if 0 /* =SETREG32(CPM_LCR, LCR_PDAHB1), but enabled by default in pm.c right now */
-	cpm_power_ctrl(CPM_POWER_AHB1,CPM_POWER_OFF);
+#if 0 /* enabled by default in pm.c right now */
+        SETREG32(CPM_LCR, LCR_PDAHB1);
 #endif
 
 	disable_irq_nosync(IRQ_VPU);
@@ -141,8 +141,9 @@ static long tcsm_off(struct file_info *file_info)
 			"andi  $2, $2, 0xbf \n\t"
 			"mtc0  $2, $16,  7  \n\t"
 			"nop                  \n\t");
-
-	CLRREG32(CPM_OPCR, BIT31);
+#if 0 /* For some reason turning this bit off here causes a pagefault in the kernel */
+	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
+#endif
 
 #if defined(ANDROID)
 	wake_unlock(&tcsm_wake_lock);
@@ -171,8 +172,8 @@ static int tcsm_release(struct inode *inode, struct file *filp)
 
 	dbg_tcsm("Tcsm[%d:%d] close\n", current->tgid, current->pid);
 	if (file_info->is_on) {
-		printk("Tcsm[%d:%d] Can not close tcsm without turning off tcsm\n", current->tgid, current->pid);
-		return -1;
+		printk("Tcsm[%d:%d] tcsm was closed without turning it off, forcing it off\n", current->tgid, current->pid);
+                tcsm_off(file_info);
 	}
 	kfree(file_info);
 	up(&tcsm_sem.sem);
@@ -208,18 +209,6 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			spin_lock_irqsave(&ioctl_lock, flags);
 		} else {
 			printk("Tcsm[%d:%d]: Please turn on tcsm before waiting completion.\n", current->tgid, current->pid);
-			ret = -1;
-		}
-		break;
-	case TCSM_TOCTL_SET_MMAP:
-		dbg_tcsm("Tcsm[%d:%d] ioctl:TCSM_TOCTL_SET_MMAP\n", current->tgid, current->pid);
-		if (file_info->is_on) {
-			spin_unlock_irqrestore(&ioctl_lock, flags);
-			if (copy_from_user(&param, (void *)arg, sizeof(param)))
-				ret = -1;
-			spin_lock_irqsave(&ioctl_lock, flags);
-		} else {
-			printk("Tcsm[%d:%d]: Please turn on tcsm before mapping.\n", current->tgid, current->pid);
 			ret = -1;
 		}
 		break;
@@ -268,11 +257,6 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			ret = -1;
 		}
 		break;
-/*	case TCSM_TOCTL_ON:
-		break;
-	case TCSM_TOCTL_OFF:
-		break;
-*/
 	default:
 		printk(KERN_ERR "%s:cmd(0x%x) error !!!",__func__,cmd);
 		ret = -1;
@@ -283,18 +267,6 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 static int tcsm_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	unsigned long off, start;
-	u32 len;
-
-	off = vma->vm_pgoff << PAGE_SHIFT;
-	start = param.start;
-	len = PAGE_ALIGN(start & ~PAGE_MASK) + param.len;
-	start &= PAGE_MASK;
-	if ((vma->vm_end - vma->vm_start + off) > len)
-		return -EINVAL;
-	off += start;
-	vma->vm_pgoff = off >> PAGE_SHIFT;
-
 	/* This is an IO map - tell maydump to skip this VMA */
 	vma->vm_flags |= VM_IO;
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);	// Uncacheable
@@ -302,7 +274,7 @@ static int tcsm_mmap(struct file *file, struct vm_area_struct *vma)
 	pgprot_val(vma->vm_page_prot) &= ~_CACHE_MASK;
 	pgprot_val(vma->vm_page_prot) |= _CACHE_UNCACHED;		/* Uncacheable */
 #endif
-	if (io_remap_pfn_range(vma,vma->vm_start, off >> PAGE_SHIFT,vma->vm_end - vma->vm_start,vma->vm_page_prot))
+	if (io_remap_pfn_range(vma,vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot))
 		return -EAGAIN;
 	return 0;
 }
@@ -341,7 +313,7 @@ static int __init tcsm_init(void)
 
 	tcsm_sem_init(&tcsm_sem);
 
-#if defined(CONFIG_SOC_JZ4770)
+#if defined(CONFIG_MACH_JZ4770)
 	init_completion(&tcsm_comp);
     request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"vpu",NULL);
     disable_irq_nosync(IRQ_VPU);
@@ -356,7 +328,7 @@ static void __exit tcsm_exit(void)
 #if defined(ANDROID)
 	wake_lock_destroy(&tcsm_wake_lock);
 #endif
-#if defined(CONFIG_SOC_JZ4770)
+#if defined(CONFIG_MACH_JZ4770)
 	free_irq(IRQ_VPU,NULL);
 #endif
 }

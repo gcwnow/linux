@@ -218,6 +218,10 @@
 #define CLKGR0_NEMC             BIT0
 
 /* Oscillator and power control register(OPCR) */
+#define OPCR_IDLE_DIS           BIT31
+#define OPCR_AHB1_ST            BIT30
+#define OPCR_AHB1_STP           BIT29
+#define OPCR_AHB1_ACK           BIT28
 #define OPCR_OTGPHY_ENABLE      BIT7    /* SPENDN bit */
 #define OPCR_GPSEN              BIT6
 #define OPCR_UHCPHY_DISABLE     BIT5    /* SPENDH bit */
