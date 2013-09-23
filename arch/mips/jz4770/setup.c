@@ -74,11 +74,14 @@ static void __init soc_cpm_setup(void)
 
 	/* Setup system clocks */
 	printk("CPU clock: %dMHz, System clock: %dMHz, "
-	       "Peripheral clock: %dMHz, Memory clock: %dMHz\n",
+	       "Peripheral clock: %dMHz, Memory clock: %dMHz, AUX clock %dMHz, AHB1 clock %dMHz, AHB2 clock %dMHz\n",
 	       (cpm_get_clock(CGU_CCLK) + 500000) / 1000000,
 	       (cpm_get_clock(CGU_HCLK) + 500000) / 1000000,
 	       (cpm_get_clock(CGU_PCLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_MCLK) + 500000) / 1000000);
+	       (cpm_get_clock(CGU_MCLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_C1CLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_H1CLK) + 500000) / 1000000,
+	       (cpm_get_clock(CGU_H2CLK) + 500000) / 1000000);
 }
 
 static void __init soc_harb_setup(void)
