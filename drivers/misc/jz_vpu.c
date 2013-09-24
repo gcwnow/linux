@@ -104,6 +104,8 @@ static long jz_vpu_on(struct file_info *file_info)
 #endif
 	SETREG32(CPM_CLKGR1,CLKGR1_ME); //no use me
 
+        /* Enable partial kernel mode. This allows user space access
+         * to the TCSM, cache instructions and VPU. */
 	__asm__ __volatile__ (
 			"mfc0  $2, $16,  7   \n\t"
 			"ori   $2, $2, 0x340 \n\t"
@@ -111,7 +113,6 @@ static long jz_vpu_on(struct file_info *file_info)
 			"mtc0  $2, $16,  7  \n\t"
 			"nop                  \n\t");
 	enable_irq(IRQ_VPU);
-	file_info->is_on = 1;
 
 	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
 	printk("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
@@ -136,6 +137,8 @@ static long jz_vpu_off(struct file_info *file_info)
 
 	OUTREG32(CPM_CLKGR1,dat);
 
+        /* Disable partial kernel mode. This disallows user space access
+         * to the TCSM, cache instructions and VPU. */
 	__asm__ __volatile__ (
 			"mfc0  $2, $16,  7   \n\t"
 			"andi  $2, $2, 0xbf \n\t"
@@ -148,7 +151,6 @@ static long jz_vpu_off(struct file_info *file_info)
 #if defined(ANDROID)
 	wake_unlock(&jz_vpu_wake_lock);
 #endif
-	file_info->is_on = 0;
 //	up(&jz_vpu_sem.sem);
 	jz_vpu_sem.owner_pid = 0;
 
@@ -159,11 +161,14 @@ static long jz_vpu_off(struct file_info *file_info)
 static int jz_vpu_open(struct inode *inode, struct file *filp)
 {
 	struct file_info *file_info;
+        int ret;
 
 	file_info = kzalloc(sizeof(struct file_info),GFP_KERNEL);
 	filp->private_data = file_info;
 	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
-	return 0;
+
+        ret = jz_vpu_on(file_info);
+	return ret;
 }
 
 static int jz_vpu_release(struct inode *inode, struct file *filp)
@@ -171,10 +176,7 @@ static int jz_vpu_release(struct inode *inode, struct file *filp)
 	struct file_info *file_info = filp->private_data;
 
 	dbg_jz_vpu("jz-vpu[%d:%d] close\n", current->tgid, current->pid);
-	if (file_info->is_on) {
-		printk("jz-vpu[%d:%d] vpu was closed without turning it off, forcing it off\n", current->tgid, current->pid);
-                jz_vpu_off(file_info);
-	}
+        jz_vpu_off(file_info);
 	kfree(file_info);
 	up(&jz_vpu_sem.sem);
 	return 0;
@@ -203,59 +205,9 @@ static long jz_vpu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case TCSM_TOCTL_WAIT_COMPLETE:
 		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_WAIT_COMPLETE\n", current->tgid, current->pid);
-		if (file_info->is_on) {
-			spin_unlock_irqrestore(&ioctl_lock, flags);
-			ret = wait_for_completion_interruptible_timeout(&jz_vpu_comp,msecs_to_jiffies(arg));
-			spin_lock_irqsave(&ioctl_lock, flags);
-		} else {
-			printk("jz-vpu[%d:%d]: Please turn on jz-vpu before waiting completion.\n", current->tgid, current->pid);
-			ret = -1;
-		}
-		break;
-	case TCSM_TOCTL_PREPARE_DIR:
-		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_PREPARE_DIR\n", current->tgid, current->pid);
-		if (jz_vpu_sem.owner_pid == current->pid) {
-			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on jz-vpu twice!\n", __FILE__, __func__, current->tgid, current->pid);
-			ret = -1;
-			break;
-		}
-
-		if (down_trylock(&jz_vpu_sem.sem)) {
-			dbg_jz_vpu("jz-vpu[%d:%d] Return Directly\n", current->tgid, current->pid);
-			ret = -1;
-		} else
-			ret = jz_vpu_on(file_info);
-		break;
-	case TCSM_TOCTL_PREPARE_BLOCK:
-		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_PREPARE_BLOCK\n", current->tgid, current->pid);
-		if (jz_vpu_sem.owner_pid == current->pid) {
-			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on jz-vpu twice!\n", __FILE__, __func__, current->tgid, current->pid);
-			ret = -1;
-			break;
-		}
-
-		if (down_trylock(&jz_vpu_sem.sem)) {
-			dbg_jz_vpu("jz-vpu[%d:%d] Block\n", current->tgid, current->pid);
-			spin_unlock_irqrestore(&ioctl_lock, flags);
-			if (down_interruptible(&jz_vpu_sem.sem) != 0) {
-				dbg_jz_vpu("jz-vpu[%d:%d] down error!\n", current->tgid, current->pid);
-				ret = -1;
-				return ret;
-			} else {
-				spin_lock_irqsave(&ioctl_lock, flags);
-				ret = jz_vpu_on(file_info);
-			}
-		} else
-			ret = jz_vpu_on(file_info);
-		break;
-	case TCSM_TOCTL_FLUSH_WORK:
-		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_FLUSH_WORK\n", current->tgid, current->pid);
-		if (file_info->is_on)
-			jz_vpu_off(file_info);
-		else {
-			printk("jz-vpu[%d:%d] Please turn on jz-vpu before flush work.\n", current->tgid, current->pid);
-			ret = -1;
-		}
+                spin_unlock_irqrestore(&ioctl_lock, flags);
+                ret = wait_for_completion_interruptible_timeout(&jz_vpu_comp,msecs_to_jiffies(arg));
+                spin_lock_irqsave(&ioctl_lock, flags);
 		break;
 	default:
 		printk(KERN_ERR "%s:cmd(0x%x) error !!!",__func__,cmd);

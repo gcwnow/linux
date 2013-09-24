@@ -4,11 +4,7 @@
 
 #define JZ_VPU_MINOR              242
 
-#define TCSM_TOCTL_SET_MMAP 		(0x99 + 0x1)
-#define TCSM_TOCTL_WAIT_COMPLETE 	(0x99 + 0x2)
-#define TCSM_TOCTL_PREPARE_DIR		(0x99 + 0x10)
-#define TCSM_TOCTL_PREPARE_BLOCK	(0x99 + 0x11)
-#define TCSM_TOCTL_FLUSH_WORK		(0x99 + 0x12)
+#define TCSM_TOCTL_WAIT_COMPLETE	(0x99 + 0x2)
 
 #if 1
 #define dbg_jz_vpu(x...) printk(x)
@@ -34,11 +30,9 @@ struct jz_vpu_sem {
 	enum jz_vpu_file_mode jz_vpu_file_mode_pre;
 	struct semaphore sem;
 	pid_t owner_pid;
-	unsigned char is_on;
 };
 
 struct file_info {
-	unsigned char is_on;
 	spinlock_t ioctl_lock;
 };
 #endif
