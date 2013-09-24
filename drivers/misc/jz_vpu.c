@@ -82,16 +82,16 @@ static void jz_vpu_sem_init(struct jz_vpu_sem *jz_vpu_sem)
 
 static long jz_vpu_on(struct file_info *file_info)
 {
+#ifdef JZ_VPU_DEBUG
 	struct pt_regs *info = task_pt_regs(current);
+#endif
 	unsigned int dat;
 
 	jz_vpu_sem.owner_pid = current->pid;
 
-#if 0 /* For some reason turning this bit off again causes a page fault in the kernel */
 	if(INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
 		return -EBUSY;
 	}
-#endif
         SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dat = INREG32(CPM_CLKGR1);
@@ -99,10 +99,12 @@ static long jz_vpu_on(struct file_info *file_info)
 	dat &= ~(CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
 
 	OUTREG32(CPM_CLKGR1,dat);
-#if 0 /* enabled by default in pm.c right now */
-        CLRREG32(CPM_LCR, LCR_PDAHB1); /* enable power to AHB1 and VPU */
-#endif
-	SETREG32(CPM_CLKGR1,CLKGR1_ME); //no use me
+
+	/* enable power to AHB1 (VPU), then wait for it to enable */
+	CLRREG32(CPM_LCR, LCR_PDAHB1);
+	while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
+
+	SETREG32(CPM_CLKGR1,CLKGR1_ME); /* no use for ME */
 
         /* Enable partial kernel mode. This allows user space access
          * to the TCSM, cache instructions and VPU. */
@@ -115,7 +117,7 @@ static long jz_vpu_on(struct file_info *file_info)
 	enable_irq(IRQ_VPU);
 
 	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
-	printk("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
+	dbg_jz_vpu("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
 #if defined(ANDROID)
 	wake_lock(&jz_vpu_wake_lock);
 #endif
@@ -126,15 +128,13 @@ static long jz_vpu_off(struct file_info *file_info)
 {
 	unsigned int dat = 0;
 
-#if 0 /* enabled by default in pm.c right now */
+        /* Power down AHB1 (VPU) */
         SETREG32(CPM_LCR, LCR_PDAHB1);
-#endif
+        while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
 	disable_irq_nosync(IRQ_VPU);
+
 	dat |= (CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
-
-	printk("dat = 0x%08x\n",dat);
-
 	OUTREG32(CPM_CLKGR1,dat);
 
         /* Disable partial kernel mode. This disallows user space access
@@ -144,9 +144,8 @@ static long jz_vpu_off(struct file_info *file_info)
 			"andi  $2, $2, 0xbf \n\t"
 			"mtc0  $2, $16,  7  \n\t"
 			"nop                  \n\t");
-#if 0 /* For some reason turning this bit off here causes a pagefault in the kernel */
-	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
-#endif
+
+        CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 #if defined(ANDROID)
 	wake_unlock(&jz_vpu_wake_lock);
@@ -237,14 +236,12 @@ static struct miscdevice jz_vpu_dev = {
  * Module init and exit
  */
 
-#if defined(CONFIG_MACH_JZ4770)
 static irqreturn_t vpu_interrupt(int irq, void *dev)
 {
 	CLRREG32(AUX_MIRQP, 0x1);
 	complete(&jz_vpu_comp);
 	return IRQ_HANDLED;
 }
-#endif
 
 static int __init jz_vpu_init(void)
 {
@@ -260,11 +257,10 @@ static int __init jz_vpu_init(void)
 
 	jz_vpu_sem_init(&jz_vpu_sem);
 
-#if defined(CONFIG_MACH_JZ4770)
 	init_completion(&jz_vpu_comp);
-    request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"jz-vpu",NULL);
-    disable_irq_nosync(IRQ_VPU);
-#endif
+	request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"jz-vpu",NULL);
+	disable_irq_nosync(IRQ_VPU);
+
 	printk("Virtual Driver of JZ VPU registered\n");
 	return 0;
 }
@@ -275,9 +271,7 @@ static void __exit jz_vpu_exit(void)
 #if defined(ANDROID)
 	wake_lock_destroy(&jz_vpu_wake_lock);
 #endif
-#if defined(CONFIG_MACH_JZ4770)
 	free_irq(IRQ_VPU,NULL);
-#endif
 }
 
 module_init(jz_vpu_init);

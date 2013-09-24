@@ -6,7 +6,7 @@
 
 #define TCSM_TOCTL_WAIT_COMPLETE	(0x99 + 0x2)
 
-#if 1
+#ifdef JZ_VPU_DEBUG
 #define dbg_jz_vpu(x...) printk(x)
 #else
 #define dbg_jz_vpu(x...)
