@@ -68,6 +68,10 @@ static void __init soc_cpm_setup(void)
 	/* CPU enters IDLE mode when executing 'wait' instruction */
 	CMSREG32(CPM_LCR, LCR_LPM_IDLE, LCR_LPM_MASK);
 
+	/* Disable AHB1 (VPU) power */
+	SETREG32(CPM_LCR, LCR_PDAHB1);
+	while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
+
 	/* Setup system clocks */
 	printk("CPU clock: %dMHz, System clock: %dMHz, "
 	       "Peripheral clock: %dMHz, Memory clock: %dMHz\n",
