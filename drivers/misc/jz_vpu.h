@@ -16,11 +16,6 @@
 #define dbg_jz_vpu(x...)
 #endif
 
-struct jz_vpu_mmap {
-	unsigned int start;
-	unsigned int len;
-};
-
 enum jz_vpu_file_mode {
 	UNOPENED = 0,
 	R_ONLY,
