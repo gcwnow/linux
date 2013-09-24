@@ -1,8 +1,8 @@
 
-#ifndef __JZ_TCSM_H
-#define __JZ_TCSM_H
+#ifndef __JZ_VPU_H
+#define __JZ_VPU_H
 
-#define TCSM_MINOR              242
+#define JZ_VPU_MINOR              242
 
 #define TCSM_TOCTL_SET_MMAP 		(0x99 + 0x1)
 #define TCSM_TOCTL_WAIT_COMPLETE 	(0x99 + 0x2)
@@ -11,32 +11,32 @@
 #define TCSM_TOCTL_FLUSH_WORK		(0x99 + 0x12)
 
 #if 1
-#define dbg_tcsm(x...) printk(x)
+#define dbg_jz_vpu(x...) printk(x)
 #else
-#define dbg_tcsm(x...)
+#define dbg_jz_vpu(x...)
 #endif
 
-struct tcsm_mmap {
+struct jz_vpu_mmap {
 	unsigned int start;
 	unsigned int len;
 };
 
-enum tcsm_file_mode {
+enum jz_vpu_file_mode {
 	UNOPENED = 0,
 	R_ONLY,
 	W_ONLY,
 	R_W
 };
 
-enum tcsm_file_cmd {
+enum jz_vpu_file_cmd {
 	CAN_OPEN = 0,
 	BLOCK,
 	RETURN_NOW
 };
 
-struct tcsm_sem {
-	enum tcsm_file_mode tcsm_file_mode_now;
-	enum tcsm_file_mode tcsm_file_mode_pre;
+struct jz_vpu_sem {
+	enum jz_vpu_file_mode jz_vpu_file_mode_now;
+	enum jz_vpu_file_mode jz_vpu_file_mode_pre;
 	struct semaphore sem;
 	pid_t owner_pid;
 	unsigned char is_on;

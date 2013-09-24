@@ -1,7 +1,7 @@
 /*
- * linux/drivers/misc/tcsm.c
+ * linux/drivers/misc/jz_vpu.c
  *
- * Virtual device driver with tricky appoach to manage TCSM
+ * Virtual device driver with tricky appoach to manage TCSM for JZ4770.
  *
  * Copyright (C) 2006  Ingenic Semiconductor Inc.
  *
@@ -43,7 +43,7 @@
 
 #include <linux/syscalls.h>
 
-#include "jz_tcsm.h"
+#include "jz_vpu.h"
 
 MODULE_LICENSE("GPL");
 
@@ -51,41 +51,41 @@ MODULE_LICENSE("GPL");
  * fops routines
  */
 
-static int tcsm_open(struct inode *inode, struct file *filp);
-static int tcsm_release(struct inode *inode, struct file *filp);
-static ssize_t tcsm_read(struct file *filp, char *buf, size_t size, loff_t *l);
-static ssize_t tcsm_write(struct file *filp, const char *buf, size_t size, loff_t *l);
-static long tcsm_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
-static int tcsm_mmap(struct file *file, struct vm_area_struct *vma);
-static struct file_operations tcsm_fops =
+static int jz_vpu_open(struct inode *inode, struct file *filp);
+static int jz_vpu_release(struct inode *inode, struct file *filp);
+static ssize_t jz_vpu_read(struct file *filp, char *buf, size_t size, loff_t *l);
+static ssize_t jz_vpu_write(struct file *filp, const char *buf, size_t size, loff_t *l);
+static long jz_vpu_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
+static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma);
+static struct file_operations jz_vpu_fops =
 {
-open:		tcsm_open,
-		release:	tcsm_release,
-		read:		tcsm_read,
-		write:		tcsm_write,
-		unlocked_ioctl:		tcsm_ioctl,
-		mmap:           tcsm_mmap,
+open:		jz_vpu_open,
+		release:	jz_vpu_release,
+		read:		jz_vpu_read,
+		write:		jz_vpu_write,
+		unlocked_ioctl:		jz_vpu_ioctl,
+		mmap:           jz_vpu_mmap,
 };
 
 #if defined(ANDROID)
-static struct wake_lock tcsm_wake_lock;
+static struct wake_lock jz_vpu_wake_lock;
 #endif
 
-static struct completion tcsm_comp;
-static struct tcsm_sem tcsm_sem;
+static struct completion jz_vpu_comp;
+static struct jz_vpu_sem jz_vpu_sem;
 
-static void tcsm_sem_init(struct tcsm_sem *tcsm_sem)
+static void jz_vpu_sem_init(struct jz_vpu_sem *jz_vpu_sem)
 {
-	sema_init(&(tcsm_sem->sem),1);
-	tcsm_sem->tcsm_file_mode_pre = R_W;
+	sema_init(&(jz_vpu_sem->sem),1);
+	jz_vpu_sem->jz_vpu_file_mode_pre = R_W;
 }
 
-static long tcsm_on(struct file_info *file_info)
+static long jz_vpu_on(struct file_info *file_info)
 {
 	struct pt_regs *info = task_pt_regs(current);
 	unsigned int dat;
 
-	tcsm_sem.owner_pid = current->pid;
+	jz_vpu_sem.owner_pid = current->pid;
 
 #if 0 /* For some reason turning this bit off again causes a page fault in the kernel */
 	if(INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
@@ -113,15 +113,15 @@ static long tcsm_on(struct file_info *file_info)
 	enable_irq(IRQ_VPU);
 	file_info->is_on = 1;
 
-	dbg_tcsm("Tcsm[%d:%d] on\n", current->tgid, current->pid);
+	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
 	printk("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
 #if defined(ANDROID)
-	wake_lock(&tcsm_wake_lock);
+	wake_lock(&jz_vpu_wake_lock);
 #endif
 	return 0;
 }
 
-static long tcsm_off(struct file_info *file_info)
+static long jz_vpu_off(struct file_info *file_info)
 {
 	unsigned int dat = 0;
 
@@ -146,53 +146,53 @@ static long tcsm_off(struct file_info *file_info)
 #endif
 
 #if defined(ANDROID)
-	wake_unlock(&tcsm_wake_lock);
+	wake_unlock(&jz_vpu_wake_lock);
 #endif
 	file_info->is_on = 0;
-//	up(&tcsm_sem.sem);
-	tcsm_sem.owner_pid = 0;
+//	up(&jz_vpu_sem.sem);
+	jz_vpu_sem.owner_pid = 0;
 
-	dbg_tcsm("Tcsm[%d:%d] off\n", current->tgid, current->pid);
+	dbg_jz_vpu("jz-vpu[%d:%d] off\n", current->tgid, current->pid);
 	return 0;
 }
 
-static int tcsm_open(struct inode *inode, struct file *filp)
+static int jz_vpu_open(struct inode *inode, struct file *filp)
 {
 	struct file_info *file_info;
 
 	file_info = kzalloc(sizeof(struct file_info),GFP_KERNEL);
 	filp->private_data = file_info;
-	dbg_tcsm("Tcsm[%d:%d] open\n", current->tgid, current->pid);
+	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
 	return 0;
 }
 
-static int tcsm_release(struct inode *inode, struct file *filp)
+static int jz_vpu_release(struct inode *inode, struct file *filp)
 {
 	struct file_info *file_info = filp->private_data;
 
-	dbg_tcsm("Tcsm[%d:%d] close\n", current->tgid, current->pid);
+	dbg_jz_vpu("jz-vpu[%d:%d] close\n", current->tgid, current->pid);
 	if (file_info->is_on) {
-		printk("Tcsm[%d:%d] tcsm was closed without turning it off, forcing it off\n", current->tgid, current->pid);
-                tcsm_off(file_info);
+		printk("jz-vpu[%d:%d] vpu was closed without turning it off, forcing it off\n", current->tgid, current->pid);
+                jz_vpu_off(file_info);
 	}
 	kfree(file_info);
-	up(&tcsm_sem.sem);
+	up(&jz_vpu_sem.sem);
 	return 0;
 }
 
-static ssize_t tcsm_read(struct file *filp, char *buf, size_t size, loff_t *l)
+static ssize_t jz_vpu_read(struct file *filp, char *buf, size_t size, loff_t *l)
 {
-	printk("tcsm: read is not implemented\n");
+	printk("jz-vpu: read is not implemented\n");
 	return -1;
 }
 
-static ssize_t tcsm_write(struct file *filp, const char *buf, size_t size, loff_t *l)
+static ssize_t jz_vpu_write(struct file *filp, const char *buf, size_t size, loff_t *l)
 {
-	printk("tcsm: write is not implemented\n");
+	printk("jz-vpu: write is not implemented\n");
 	return -1;
 }
 
-static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long jz_vpu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
 	struct file_info *file_info = filp->private_data;
@@ -202,58 +202,58 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	spin_lock_irqsave(&ioctl_lock, flags);
 	switch (cmd) {
 	case TCSM_TOCTL_WAIT_COMPLETE:
-		dbg_tcsm("Tcsm[%d:%d] ioctl:TCSM_TOCTL_WAIT_COMPLETE\n", current->tgid, current->pid);
+		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_WAIT_COMPLETE\n", current->tgid, current->pid);
 		if (file_info->is_on) {
 			spin_unlock_irqrestore(&ioctl_lock, flags);
-			ret = wait_for_completion_interruptible_timeout(&tcsm_comp,msecs_to_jiffies(arg));
+			ret = wait_for_completion_interruptible_timeout(&jz_vpu_comp,msecs_to_jiffies(arg));
 			spin_lock_irqsave(&ioctl_lock, flags);
 		} else {
-			printk("Tcsm[%d:%d]: Please turn on tcsm before waiting completion.\n", current->tgid, current->pid);
+			printk("jz-vpu[%d:%d]: Please turn on jz-vpu before waiting completion.\n", current->tgid, current->pid);
 			ret = -1;
 		}
 		break;
 	case TCSM_TOCTL_PREPARE_DIR:
-		dbg_tcsm("Tcsm[%d:%d] ioctl:TCSM_TOCTL_PREPARE_DIR\n", current->tgid, current->pid);
-		if (tcsm_sem.owner_pid == current->pid) {
-			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on tcsm twice!\n", __FILE__, __func__, current->tgid, current->pid);
+		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_PREPARE_DIR\n", current->tgid, current->pid);
+		if (jz_vpu_sem.owner_pid == current->pid) {
+			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on jz-vpu twice!\n", __FILE__, __func__, current->tgid, current->pid);
 			ret = -1;
 			break;
 		}
 
-		if (down_trylock(&tcsm_sem.sem)) {
-			dbg_tcsm("Tcsm[%d:%d] Return Directly\n", current->tgid, current->pid);
+		if (down_trylock(&jz_vpu_sem.sem)) {
+			dbg_jz_vpu("jz-vpu[%d:%d] Return Directly\n", current->tgid, current->pid);
 			ret = -1;
 		} else
-			ret = tcsm_on(file_info);
+			ret = jz_vpu_on(file_info);
 		break;
 	case TCSM_TOCTL_PREPARE_BLOCK:
-		dbg_tcsm("Tcsm[%d:%d] ioctl:TCSM_TOCTL_PREPARE_BLOCK\n", current->tgid, current->pid);
-		if (tcsm_sem.owner_pid == current->pid) {
-			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on tcsm twice!\n", __FILE__, __func__, current->tgid, current->pid);
+		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_PREPARE_BLOCK\n", current->tgid, current->pid);
+		if (jz_vpu_sem.owner_pid == current->pid) {
+			printk("In %s:%s-->pid[%d]:tid[%d] can't turn on jz-vpu twice!\n", __FILE__, __func__, current->tgid, current->pid);
 			ret = -1;
 			break;
 		}
 
-		if (down_trylock(&tcsm_sem.sem)) {
-			dbg_tcsm("Tcsm[%d:%d] Block\n", current->tgid, current->pid);
+		if (down_trylock(&jz_vpu_sem.sem)) {
+			dbg_jz_vpu("jz-vpu[%d:%d] Block\n", current->tgid, current->pid);
 			spin_unlock_irqrestore(&ioctl_lock, flags);
-			if (down_interruptible(&tcsm_sem.sem) != 0) {
-				dbg_tcsm("Tcsm[%d:%d] down error!\n", current->tgid, current->pid);
+			if (down_interruptible(&jz_vpu_sem.sem) != 0) {
+				dbg_jz_vpu("jz-vpu[%d:%d] down error!\n", current->tgid, current->pid);
 				ret = -1;
 				return ret;
 			} else {
 				spin_lock_irqsave(&ioctl_lock, flags);
-				ret = tcsm_on(file_info);
+				ret = jz_vpu_on(file_info);
 			}
 		} else
-			ret = tcsm_on(file_info);
+			ret = jz_vpu_on(file_info);
 		break;
 	case TCSM_TOCTL_FLUSH_WORK:
-		dbg_tcsm("Tcsm[%d:%d] ioctl:TCSM_TOCTL_FLUSH_WORK\n", current->tgid, current->pid);
+		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_FLUSH_WORK\n", current->tgid, current->pid);
 		if (file_info->is_on)
-			tcsm_off(file_info);
+			jz_vpu_off(file_info);
 		else {
-			printk("Tcsm[%d:%d] Please turn on tcsm before flush work.\n", current->tgid, current->pid);
+			printk("jz-vpu[%d:%d] Please turn on jz-vpu before flush work.\n", current->tgid, current->pid);
 			ret = -1;
 		}
 		break;
@@ -265,7 +265,7 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
-static int tcsm_mmap(struct file *file, struct vm_area_struct *vma)
+static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	vma->vm_flags |= VM_IO;
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);	/* Uncacheable */
@@ -274,10 +274,10 @@ static int tcsm_mmap(struct file *file, struct vm_area_struct *vma)
 	return 0;
 }
 
-static struct miscdevice tcsm_dev = {
-	TCSM_MINOR,
-	"tcsm",
-	&tcsm_fops
+static struct miscdevice jz_vpu_dev = {
+	JZ_VPU_MINOR,
+	"jz-vpu",
+	&jz_vpu_fops
 };
 
 
@@ -289,44 +289,44 @@ static struct miscdevice tcsm_dev = {
 static irqreturn_t vpu_interrupt(int irq, void *dev)
 {
 	CLRREG32(AUX_MIRQP, 0x1);
-	complete(&tcsm_comp);
+	complete(&jz_vpu_comp);
 	return IRQ_HANDLED;
 }
 #endif
 
-static int __init tcsm_init(void)
+static int __init jz_vpu_init(void)
 {
 	int ret;
 
-	ret = misc_register(&tcsm_dev);
+	ret = misc_register(&jz_vpu_dev);
 	if (ret < 0) {
 		return ret;
 	}
 #if defined(ANDROID)
-	wake_lock_init(&tcsm_wake_lock, WAKE_LOCK_SUSPEND, "tcsm");
+	wake_lock_init(&jz_vpu_wake_lock, WAKE_LOCK_SUSPEND, "jz-vpu");
 #endif
 
-	tcsm_sem_init(&tcsm_sem);
+	jz_vpu_sem_init(&jz_vpu_sem);
 
 #if defined(CONFIG_MACH_JZ4770)
-	init_completion(&tcsm_comp);
-    request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"vpu",NULL);
+	init_completion(&jz_vpu_comp);
+    request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"jz-vpu",NULL);
     disable_irq_nosync(IRQ_VPU);
 #endif
-	printk("Virtual Driver of JZ TCSM registered\n");
+	printk("Virtual Driver of JZ VPU registered\n");
 	return 0;
 }
 
-static void __exit tcsm_exit(void)
+static void __exit jz_vpu_exit(void)
 {
-	misc_deregister(&tcsm_dev);
+	misc_deregister(&jz_vpu_dev);
 #if defined(ANDROID)
-	wake_lock_destroy(&tcsm_wake_lock);
+	wake_lock_destroy(&jz_vpu_wake_lock);
 #endif
 #if defined(CONFIG_MACH_JZ4770)
 	free_irq(IRQ_VPU,NULL);
 #endif
 }
 
-module_init(tcsm_init);
-module_exit(tcsm_exit);
+module_init(jz_vpu_init);
+module_exit(jz_vpu_exit);
