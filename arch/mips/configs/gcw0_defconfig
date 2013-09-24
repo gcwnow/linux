@@ -186,3 +186,4 @@ CONFIG_CMDLINE="panic=5 console=ttyS2,57600 console=tty0 boot=/dev/mmcblk0p2 loo
 # CONFIG_CRYPTO_HW is not set
 CONFIG_FONTS=y
 CONFIG_FONT_6x10=y
+CONFIG_JZ_VPU=y
