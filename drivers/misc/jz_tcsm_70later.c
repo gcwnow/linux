@@ -267,13 +267,8 @@ static long tcsm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 static int tcsm_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	/* This is an IO map - tell maydump to skip this VMA */
 	vma->vm_flags |= VM_IO;
-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);	// Uncacheable
-#if  defined(CONFIG_CPU_MIPS32)
-	pgprot_val(vma->vm_page_prot) &= ~_CACHE_MASK;
-	pgprot_val(vma->vm_page_prot) |= _CACHE_UNCACHED;		/* Uncacheable */
-#endif
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);	/* Uncacheable */
 	if (io_remap_pfn_range(vma,vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot))
 		return -EAGAIN;
 	return 0;
