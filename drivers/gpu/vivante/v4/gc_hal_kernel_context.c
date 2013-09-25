@@ -27,7 +27,6 @@
 #include "gc_hal_internal.h"
 #include "gc_hal_kernel.h"
 #include "gc_hal_kernel_context.h"
-#include "gc_hal_kernel_buffer.h"
 
 /******************************************************************************\
 ******************************** Debugging Macro *******************************

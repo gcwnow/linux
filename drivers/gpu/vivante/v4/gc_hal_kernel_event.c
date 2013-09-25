@@ -18,14 +18,9 @@
 *
 *****************************************************************************/
 
-
-
-
 #include "gc_hal.h"
 #include "gc_hal_internal.h"
-#include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
-#include "gc_hal_kernel_buffer.h"
 
 #include <linux/bug.h>
 #include <linux/kernel.h>

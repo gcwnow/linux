@@ -28,7 +28,6 @@
 #endif
 
 #include "gc_hal_kernel_linux.h"
-#include "gc_hal_driver.h"
 
 #if USE_PLATFORM_DRIVER
 #   include <linux/platform_device.h>

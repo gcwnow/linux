@@ -21,7 +21,7 @@
 #ifndef __gc_hal_options_internal_h_
 #define __gc_hal_options_internal_h_
 
-#include "gc_hal_options.h"
+#include "gc_hal.h"
 
 /*
     VIVANTE_NO_3D

@@ -42,3 +42,6 @@ typedef struct
     void *out_buf;
     unsigned int out_buf_size;
 } vivante_ioctl_data_t;
+
+#include "gc_hal.h"
+

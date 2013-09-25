@@ -21,8 +21,7 @@
 #ifndef __gc_hal_base_internal_h_
 #define __gc_hal_base_internal_h_
 
-#include "gc_hal_enum.h"
-#include "gc_hal_types.h"
+#include "gc_hal.h"
 #include "gc_hal_types_internal.h"
 
 #include "gc_hal_version.h"

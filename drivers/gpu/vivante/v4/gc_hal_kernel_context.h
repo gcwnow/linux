@@ -21,7 +21,7 @@
 #ifndef __gc_hal_kernel_context_h_
 #define __gc_hal_kernel_context_h_
 
-#include "gc_hal_kernel_buffer.h"
+#include "gc_hal.h"
 
 typedef struct _gckEVENT *      gckEVENT;
 

@@ -18,12 +18,8 @@
 *
 *****************************************************************************/
 
-
-
-
 #include "gc_hal.h"
 #include "gc_hal_internal.h"
-#include "gc_hal_driver.h"
 #include "gc_hal_kernel.h"
 
 #define _GC_OBJ_ZONE    gcvZONE_MMU
