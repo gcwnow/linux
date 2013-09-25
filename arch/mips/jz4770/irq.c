@@ -37,6 +37,62 @@
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770intc.h>
 
+/*
+ * C0 irq type -- this handles only the VPU interrupt
+ */
+
+static int c0_irq_pending(void)
+{
+	unsigned long c0_pending = 0;
+	__asm__ __volatile__ (
+			"mfc0  %0, $13,  0   \n\t"
+			"nop                  \n\t"
+			:"=r"(c0_pending)
+			:);
+
+	return (c0_pending & 0x800) != 0;
+}
+
+static void enable_c0_irq(struct irq_data *data)
+{
+	unsigned long cpuflags;
+	local_irq_save(cpuflags);
+	write_c0_status(read_c0_status() | 0x800);
+	local_irq_restore(cpuflags);
+}
+
+static void disable_c0_irq(struct irq_data *data)
+{
+	unsigned long cpuflags;
+	local_irq_save(cpuflags);
+	write_c0_status(read_c0_status() & ~0x800);
+	local_irq_restore(cpuflags);
+}
+
+static void mask_and_ack_c0_irq(struct irq_data *data)
+{
+	disable_c0_irq(data);
+}
+
+static unsigned int startup_c0_irq(struct irq_data *data)
+{
+	enable_c0_irq(data);
+	return 0;
+}
+
+static void shutdown_c0_irq(struct irq_data *data)
+{
+	disable_c0_irq(data);
+}
+
+static struct irq_chip c0_irq_type = {
+	.name = "C0",
+	.irq_startup = startup_c0_irq,
+	.irq_shutdown = shutdown_c0_irq,
+	.irq_unmask = enable_c0_irq,
+	.irq_mask = disable_c0_irq,
+	.irq_ack = mask_and_ack_c0_irq,
+};
 
 /*
  * INTC irq type
@@ -166,6 +222,10 @@ void __init arch_init_irq(void)
 		disable_dma_irq(&irq_desc[i].irq_data);
 		irq_set_chip_and_handler(i, &dma_irq_type, handle_level_irq);
 	}
+
+	/* Set up C0 irq. */
+	disable_intc_irq(&irq_desc[IRQ_VPU].irq_data);
+	irq_set_chip_and_handler(IRQ_VPU, &c0_irq_type, handle_level_irq);
 }
 
 static int plat_real_irq(int irq)
@@ -205,6 +265,8 @@ asmlinkage void plat_irq_dispatch(void)
 		irq = ffs(intc_ipr0) - 1;
 	} else if (intc_ipr1) {
 		irq = ffs(intc_ipr1) - 1 + 32;
+	} else if (c0_irq_pending()) {
+		irq = IRQ_VPU;
 	} else {
 		spurious_interrupt();
 		return;
