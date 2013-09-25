@@ -30,6 +30,10 @@ typedef void *                  gctPHYS_ADDR;
 typedef void *                  gctHANDLE;
 typedef void *                  gctSIGNAL;
 
+/* Mark dummy fields, this can be defined to empty to remove unnecessary
+ * fields, but that will lose compatibilty with the blob */
+#define VIV_DUMMY(type, name) type name##_dummy;
+
 /* 2D Engine profile. */
 typedef struct _gcs2D_PROFILE
 {

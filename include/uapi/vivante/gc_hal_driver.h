@@ -253,11 +253,8 @@ typedef struct _gcsHAL_INTERFACE
     /* Status value. */
     gceSTATUS                   status;
 
-    /* Handle to this interface channel. */
-    gctHANDLE                   handle;
-
-    /* Pid of the client. */
-    __u32                       pid;
+    VIV_DUMMY(gctHANDLE, handle);
+    VIV_DUMMY(__u32, pid);
 
     /* Union of command structures. */
     union _u
@@ -345,7 +342,7 @@ typedef struct _gcsHAL_INTERFACE
         AllocateLinearVideoMemory;
 
         /* gcvHAL_ALLOCATE_VIDEO_MEMORY */
-        struct _gcsHAL_ALLOCATE_VIDEO_MEMORY
+        VIV_DUMMY(struct _gcsHAL_ALLOCATE_VIDEO_MEMORY
         {
             /* Width of rectangle to allocate. */
             IN OUT unsigned int         width;
@@ -367,8 +364,7 @@ typedef struct _gcsHAL_INTERFACE
 
             /* Allocated video memory. */
             OUT gcuVIDMEM_NODE_PTR      node;
-        }
-        AllocateVideoMemory;
+        }, AllocateVideoMemory);
 
         /* gcvHAL_FREE_VIDEO_MEMORY */
         struct _gcsHAL_FREE_VIDEO_MEMORY
@@ -602,26 +598,24 @@ typedef struct _gcsHAL_INTERFACE
 
 #if VIVANTE_PROFILER
         /* gcvHAL_GET_PROFILE_SETTING */
-        struct _gcsHAL_GET_PROFILE_SETTING
+        VIV_DUMMY(struct _gcsHAL_GET_PROFILE_SETTING
         {
             /* Enable profiling */
             OUT int                 enable;
 
             /* The profile file name */
             OUT char                fileName[gcdMAX_PROFILE_FILE_NAME];
-        }
-        GetProfileSetting;
+        }, GetProfileSetting);
 
         /* gcvHAL_SET_PROFILE_SETTING */
-        struct _gcsHAL_SET_PROFILE_SETTING
+        VIV_DUMMY(struct _gcsHAL_SET_PROFILE_SETTING
         {
             /* Enable profiling */
             IN int                  enable;
 
             /* The profile file name */
             IN char                 fileName[gcdMAX_PROFILE_FILE_NAME];
-        }
-        SetProfileSetting;
+        }, SetProfileSetting);
 
         /* gcvHAL_READ_ALL_PROFILE_REGISTERS */
         struct _gcsHAL_READ_ALL_PROFILE_REGISTERS
@@ -668,15 +662,14 @@ typedef struct _gcsHAL_INTERFACE
         QueryKernelSettings;
 
         /* gcvHAL_MAP_PHYSICAL */
-        struct _gcsHAL_MAP_PHYSICAL
+        VIV_DUMMY(struct _gcsHAL_MAP_PHYSICAL
         {
             /* gcvTRUE to map, gcvFALSE to unmap. */
             IN int                      map;
 
             /* Physical address. */
             IN OUT gctPHYS_ADDR         physical;
-        }
-        MapPhysical;
+        }, MapPhysical);
 
         /* gcvHAL_DEBUG */
         struct _gcsHAL_DEBUG

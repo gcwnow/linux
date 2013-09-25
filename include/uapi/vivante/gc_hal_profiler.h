@@ -22,17 +22,19 @@
 #ifndef __gc_hal_profiler_h_
 #define __gc_hal_profiler_h_
 
+#include "gc_hal_types.h"
+
 /* HW profile information. */
 typedef struct _gcsPROFILER_COUNTERS
 {
     /* HW static counters. */
-    __u32           gpuClock;
-    __u32           axiClock;
-    __u32           shaderClock;
+    VIV_DUMMY(__u32, gpuClock);
+    VIV_DUMMY(__u32, axiClock);
+    VIV_DUMMY(__u32, shaderClock);
 
     /* HW vairable counters. */
-    __u32           gpuClockStart;
-    __u32           gpuClockEnd;
+    VIV_DUMMY(__u32, gpuClockStart);
+    VIV_DUMMY(__u32, gpuClockEnd);
 
     /* HW vairable counters. */
     __u32           gpuCyclesCounter;

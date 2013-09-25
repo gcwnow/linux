@@ -66,15 +66,9 @@ typedef struct _gcsSTATE_DELTA
     /* Record array; holds all modified states. */
     struct _gcsSTATE_DELTA_RECORD *recordArray;
 
-    /* Map entry ID is used for map entry validation. If map entry ID does not
-       match the main state delta ID, the entry and the corresponding state are
-       considered not in use. */
-    unsigned int *              mapEntryID;
-    unsigned int                mapEntryIDSize;
-
-    /* If the map entry ID matches the main state delta ID, index points to
-       the state record in the record array. */
-    unsigned int *              mapEntryIndex;
+    VIV_DUMMY(unsigned int *, mapEntryID);
+    VIV_DUMMY(unsigned int  , mapEntryIDSize);
+    VIV_DUMMY(unsigned int *, mapEntryIndex);
 
     /* Previous and next state deltas. */
     struct _gcsSTATE_DELTA *    prev;
@@ -95,17 +89,17 @@ struct _gcoCMDBUF
     /* Feature usage flags. */
     int                         using2D;
     int                         using3D;
-    int                         usingFilterBlit;
-    int                         usingPalette;
+    VIV_DUMMY(int, usingFilterBlit);
+    VIV_DUMMY(int, usingPalette);
 
     /* Physical address of command buffer. */
-    gctPHYS_ADDR                physical;
+    VIV_DUMMY(gctPHYS_ADDR, physical);
 
     /* Logical address of command buffer. */
     void *                      logical;
 
     /* Number of bytes in command buffer. */
-    size_t                      bytes;
+    size_t                      bytes_dummy;
 
     /* Start offset into the command buffer. */
     __u32                       startOffset;
@@ -114,11 +108,9 @@ struct _gcoCMDBUF
     __u32                       offset;
 
     /* Number of free bytes in command buffer. */
-    size_t                      free;
-
-    /* Location of the last reserved area. */
-    void *                      lastReserve;
-    unsigned int                lastOffset;
+    VIV_DUMMY(size_t, free);
+    VIV_DUMMY(void *, lastReserve);
+    VIV_DUMMY(unsigned int, lastOffset);
 
 #if gcdSECURE_USER
     /* Hint array for the current command buffer. */
