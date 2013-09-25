@@ -79,12 +79,11 @@
 **
 **  ARGUMENTS:
 **
-**      reg     Name of register.
-**      field   Name of field within register.
+**      reg_field   Bit field.
 */
-#define gcmFIELDMASK(reg, field) \
+#define gcmFIELDMASK(reg_field) \
 ( \
-    __gcmALIGN(__gcmMASK(reg##_##field), reg##_##field) \
+    __gcmALIGN(__gcmMASK(reg_field), reg_field) \
 )
 
 /*******************************************************************************
@@ -96,16 +95,31 @@
 **  ARGUMENTS:
 **
 **      data    Data value.
-**      reg     Name of register.
-**      field   Name of field within register.
+**      reg_field  Bit field.
 **      value   Value for field.
 */
-#define gcmSETFIELD(data, reg, field, value) \
+#define gcmSETFIELD(data, reg_field, value) \
 ( \
     (((u32) (data)) \
-        & ~__gcmALIGN(__gcmMASK(reg##_##field), reg##_##field)) \
+        & ~__gcmALIGN(__gcmMASK(reg_field), reg_field)) \
         |  __gcmALIGN((u32) (value) \
-            & __gcmMASK(reg##_##field), reg##_##field) \
+            & __gcmMASK(reg_field), reg_field) \
+)
+
+/*******************************************************************************
+**
+**  gcmGETFIELD
+**
+**      Get the value of a field within specified data.
+**
+**  ARGUMENTS:
+**
+**      data    Data value.
+**      reg_field  Bit field.
+*/
+#define gcmGETFIELD(data, reg_field) \
+( \
+    ((((u32) (data)) >> __gcmSTART(reg_field)) & __gcmMASK(reg_field)) \
 )
 
 /*******************************************************************************
@@ -118,16 +132,15 @@
 **  ARGUMENTS:
 **
 **      data    Data value.
-**      reg     Name of register.
-**      field   Name of field within register.
+**      reg_field     Bit field.
 **      value   Name of the value within the field.
 */
-#define gcmVERIFYFIELDVALUE(data, reg, field, value) \
+#define gcmVERIFYFIELDVALUE(data, reg_field, value) \
 ( \
-    (((u32) (data)) >> __gcmSTART(reg##_##field) & \
-                             __gcmMASK(reg##_##field)) \
+    (((u32) (data)) >> __gcmSTART(reg_field) & \
+                             __gcmMASK(reg_field)) \
         == \
-    (reg##_##field##_##value & __gcmMASK(reg##_##field)) \
+    (value & __gcmMASK(reg_field)) \
 )
 
 /*******************************************************************************
