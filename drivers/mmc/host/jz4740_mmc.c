@@ -85,7 +85,10 @@
 
 
 #define JZ_MMC_CMDAT_IO_ABORT BIT(11)
+#define JZ_MMC_CMDAT_BUS_WIDTH (BIT(9) | BIT(10))
+#define JZ_MMC_CMDAT_BUS_WIDTH_1BIT 0
 #define JZ_MMC_CMDAT_BUS_WIDTH_4BIT BIT(10)
+#define JZ_MMC_CMDAT_BUS_WIDTH_8BIT (BIT(9) | BIT(10))
 #define JZ_MMC_CMDAT_DMA_EN BIT(8)
 #define JZ_MMC_CMDAT_INIT BIT(7)
 #define JZ_MMC_CMDAT_BUSY BIT(6)
@@ -889,10 +892,16 @@ static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch (ios->bus_width) {
 	case MMC_BUS_WIDTH_1:
-		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
+		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH;
+		host->cmdat |= JZ_MMC_CMDAT_BUS_WIDTH_1BIT;
 		break;
 	case MMC_BUS_WIDTH_4:
+		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH;
 		host->cmdat |= JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
+		break;
+	case MMC_BUS_WIDTH_8:
+		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH;
+		host->cmdat |= JZ_MMC_CMDAT_BUS_WIDTH_8BIT;
 		break;
 	default:
 		break;
@@ -960,6 +969,17 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 	ret = mmc_of_parse(mmc);
 	if (ret)
 		goto err_free_host;
+
+	/*
+	 * Check that the bus width specified in the device tree is supported.
+	 * 8 bit bus width is only supported from the 4750 onward.
+	 */
+	if (mmc->caps & MMC_CAP_8_BIT_DATA && host->version < JZ_MMC_JZ4750) {
+		dev_err(&pdev->dev, "8 bit bus width is unsupported\n");
+		ret = -EINVAL;
+		goto err_free_host;
+	}
+
 
 	mmc_regulator_get_supply(mmc);
 
