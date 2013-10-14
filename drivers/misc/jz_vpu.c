@@ -58,7 +58,7 @@ struct jz_vpu_mem {
 	unsigned long physical;
 	unsigned long kaddr;
 	size_t size;
-        struct list_head list;
+	struct list_head list;
 };
 
 /* Open VPU connection info */
@@ -68,7 +68,7 @@ struct file_info {
 	/* completion ioctl lock */
 	spinlock_t ioctl_lock;
 	/* memory allocations belonging to this VPU connection */
-        struct list_head mem_list;
+	struct list_head mem_list;
 };
 
 /*
@@ -100,31 +100,33 @@ static long jz_vpu_on(struct file_info *file_info)
 #endif
 	unsigned int dat;
 
-	if(INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
+	if (INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
 		/* VPU already turned on by another process */
 		return -EBUSY;
 	}
-        SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
+	SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dat = INREG32(CPM_CLKGR1);
 
 	dat &= ~(CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
 
-	OUTREG32(CPM_CLKGR1,dat);
+	OUTREG32(CPM_CLKGR1, dat);
 
 	/* enable power to AHB1 (VPU), then wait for it to enable */
 	CLRREG32(CPM_LCR, LCR_PDAHB1);
-	while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
+	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
-	SETREG32(CPM_CLKGR1,CLKGR1_ME); /* no use for ME */
+	SETREG32(CPM_CLKGR1, CLKGR1_ME); /* no use for ME */
 
-        /* Enable partial kernel mode. This allows user space access
-         * to the TCSM, cache instructions and VPU. */
+	/*
+	 * Enable partial kernel mode. This allows user space access
+	 * to the TCSM, cache instructions and VPU.
+	 */
 	__asm__ __volatile__ (
-			"mfc0  $2, $16,  7   \n\t"
-			"ori   $2, $2, 0x340 \n\t"
-			"andi  $2, $2, 0x3ff \n\t"
-			"mtc0  $2, $16,  7  \n\t"
+			"mfc0  $2, $16,  7    \n\t"
+			"ori   $2, $2, 0x340  \n\t"
+			"andi  $2, $2, 0x3ff  \n\t"
+			"mtc0  $2, $16,  7    \n\t"
 			"nop                  \n\t");
 	enable_irq(IRQ_VPU);
 
@@ -137,24 +139,26 @@ static long jz_vpu_off(struct file_info *file_info)
 {
 	unsigned int dat = 0;
 
-        /* Power down AHB1 (VPU) */
-        SETREG32(CPM_LCR, LCR_PDAHB1);
-        while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
+	/* Power down AHB1 (VPU) */
+	SETREG32(CPM_LCR, LCR_PDAHB1);
+	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
 	disable_irq_nosync(IRQ_VPU);
 
 	dat |= (CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
-	OUTREG32(CPM_CLKGR1,dat);
+	OUTREG32(CPM_CLKGR1, dat);
 
-        /* Disable partial kernel mode. This disallows user space access
-         * to the TCSM, cache instructions and VPU. */
+	/*
+	 * Disable partial kernel mode. This disallows user space access
+	 * to the TCSM, cache instructions and VPU.
+	 */
 	__asm__ __volatile__ (
 			"mfc0  $2, $16,  7   \n\t"
-			"andi  $2, $2, 0xbf \n\t"
-			"mtc0  $2, $16,  7  \n\t"
-			"nop                  \n\t");
+			"andi  $2, $2, 0xbf  \n\t"
+			"mtc0  $2, $16,  7   \n\t"
+			"nop                 \n\t");
 
-        CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
+	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dbg_jz_vpu("jz-vpu[%d:%d] off\n", current->tgid, current->pid);
 	return 0;
@@ -164,17 +168,16 @@ static long jz_vpu_off(struct file_info *file_info)
  * that can be mmapped. */
 static unsigned long jz_vpu_alloc_phys(struct file_info *file_info, size_t size, unsigned long *physical)
 {
-        struct jz_vpu_mem *mem;
+	struct jz_vpu_mem *mem;
 
 	mem = kmalloc(sizeof(struct jz_vpu_mem), GFP_KERNEL);
-	if(mem == NULL)
+	if (mem == NULL)
 		return -ENOMEM;
 	INIT_LIST_HEAD(&mem->list);
 
 	mem->size = size;
 	mem->page = alloc_pages(GFP_KERNEL | __GFP_NOWARN, get_order(mem->size));
-	if(mem->page == NULL)
-	{
+	if (mem->page == NULL) {
 		kfree(mem);
 		return -ENOMEM;
 	}
@@ -192,8 +195,9 @@ static unsigned long jz_vpu_alloc_phys(struct file_info *file_info, size_t size,
 /* Free one contiguous memory block by pointer */
 static int jz_vpu_free_mem(struct file_info *file_info, struct jz_vpu_mem *mem)
 {
-	printk(KERN_ERR "jz-vpu[%d:%d] free mem %p %08x size=%i\n", current->tgid, current->pid, 
-			mem, (unsigned int)mem->physical, (unsigned int)mem->size);
+	printk(KERN_ERR "jz-vpu[%d:%d] free mem %p %08x size=%i\n",
+			current->tgid, current->pid, mem,
+			(unsigned int)mem->physical, (unsigned int)mem->size);
 
 	down(&file_info->mutex);
 	list_del(&mem->list);
@@ -208,10 +212,8 @@ static int jz_vpu_free_mem(struct file_info *file_info, struct jz_vpu_mem *mem)
 static int jz_vpu_free_phys(struct file_info *file_info, unsigned long physical)
 {
 	struct jz_vpu_mem *mem;
-	list_for_each_entry(mem, &file_info->mem_list, list)
-	{
-		if(mem->physical == physical)
-		{
+	list_for_each_entry(mem, &file_info->mem_list, list) {
+		if (mem->physical == physical) {
 			jz_vpu_free_mem(file_info, mem);
 			return 0;
 		}
@@ -223,18 +225,16 @@ static int jz_vpu_free_phys(struct file_info *file_info, unsigned long physical)
 static int jz_vpu_open(struct inode *inode, struct file *filp)
 {
 	struct file_info *file_info;
-        int ret;
+	int ret;
 
-	file_info = kzalloc(sizeof(struct file_info),GFP_KERNEL);
+	file_info = kzalloc(sizeof(struct file_info), GFP_KERNEL);
 	filp->private_data = file_info;
 	INIT_LIST_HEAD(&file_info->mem_list);
 	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
 
-        ret = jz_vpu_on(file_info);
-	if(ret < 0)
-	{
+	ret = jz_vpu_on(file_info);
+	if (ret < 0)
 		kfree(file_info);
-	}
 	sema_init(&file_info->mutex, 1);
 	return ret;
 }
@@ -245,11 +245,10 @@ static int jz_vpu_release(struct inode *inode, struct file *filp)
 	struct jz_vpu_mem *mem, *next;
 
 	dbg_jz_vpu("jz-vpu[%d:%d] close\n", current->tgid, current->pid);
-        jz_vpu_off(file_info);
+	jz_vpu_off(file_info);
 
 	/* Free all contiguous memory blocks associated with this VPU connection */
-	list_for_each_entry_safe(mem, next, &file_info->mem_list, list)
-	{
+	list_for_each_entry_safe(mem, next, &file_info->mem_list, list) {
 		jz_vpu_free_mem(file_info, mem);
 	}
 
@@ -280,21 +279,22 @@ static long jz_vpu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case JZ_VPU_IOCTL_WAIT_COMPLETE:
 		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_WAIT_COMPLETE\n", current->tgid, current->pid);
-                spin_unlock_irqrestore(&ioctl_lock, flags);
-                ret = wait_for_completion_interruptible_timeout(&jz_vpu_comp,msecs_to_jiffies(arg));
-                spin_lock_irqsave(&ioctl_lock, flags);
+		spin_unlock_irqrestore(&ioctl_lock, flags);
+		ret = wait_for_completion_interruptible_timeout(
+				&jz_vpu_comp, msecs_to_jiffies(arg));
+		spin_lock_irqsave(&ioctl_lock, flags);
 		break;
 	case JZ_VPU_IOCTL_ALLOC: {
 		struct jz_vpu_alloc data;
 		copy_from_user(&data, (void*)arg, sizeof(struct jz_vpu_alloc));
-                ret = jz_vpu_alloc_phys(file_info, data.size, &data.physical);
+		ret = jz_vpu_alloc_phys(file_info, data.size, &data.physical);
 		copy_to_user((void*)arg, &data, sizeof(struct jz_vpu_alloc));
 		} break;
 	case JZ_VPU_IOCTL_FREE:
 		jz_vpu_free_phys(file_info, arg);
 		break;
 	default:
-		printk(KERN_ERR "%s:cmd(0x%x) error !!!",__func__,cmd);
+		printk(KERN_ERR "%s:cmd(0x%x) error !!!", __func__, cmd);
 		ret = -1;
 	}
 	spin_unlock_irqrestore(&ioctl_lock, flags);
@@ -305,8 +305,9 @@ static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	vma->vm_flags |= VM_IO;
 	/* XXX only set memory to non-cacheable and ioremap when mapping IO, not phys memory */
-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);	/* Uncacheable */
-	if (io_remap_pfn_range(vma,vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot))
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot); /* uncacheable */
+	if (io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+			       vma->vm_end - vma->vm_start, vma->vm_page_prot))
 		return -EAGAIN;
 	return 0;
 }
