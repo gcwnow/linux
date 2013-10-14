@@ -27,9 +27,6 @@
 #include <linux/fs.h>
 #include <linux/spinlock.h>
 #include <linux/list.h>
-#if defined(ANDROID)
-#include <linux/wakelock.h>
-#endif
 
 #include <asm/pgtable.h>
 #include <asm/mipsregs.h>
@@ -95,9 +92,6 @@ static struct file_operations jz_vpu_fops =
 	mmap:		jz_vpu_mmap,
 };
 
-#if defined(ANDROID)
-static struct wake_lock jz_vpu_wake_lock;
-#endif
 static struct completion jz_vpu_comp;
 
 static long jz_vpu_on(struct file_info *file_info)
@@ -137,9 +131,6 @@ static long jz_vpu_on(struct file_info *file_info)
 
 	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
 	dbg_jz_vpu("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
-#if defined(ANDROID)
-	wake_lock(&jz_vpu_wake_lock);
-#endif
 	return 0;
 }
 
@@ -166,9 +157,6 @@ static long jz_vpu_off(struct file_info *file_info)
 
         CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
-#if defined(ANDROID)
-	wake_unlock(&jz_vpu_wake_lock);
-#endif
 	dbg_jz_vpu("jz-vpu[%d:%d] off\n", current->tgid, current->pid);
 	return 0;
 }
@@ -350,9 +338,6 @@ static int __init jz_vpu_init(void)
 	if (ret < 0) {
 		return ret;
 	}
-#if defined(ANDROID)
-	wake_lock_init(&jz_vpu_wake_lock, WAKE_LOCK_SUSPEND, "jz-vpu");
-#endif
 
 	init_completion(&jz_vpu_comp);
 	request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"jz-vpu",NULL);
@@ -365,9 +350,6 @@ static int __init jz_vpu_init(void)
 static void __exit jz_vpu_exit(void)
 {
 	misc_deregister(&jz_vpu_dev);
-#if defined(ANDROID)
-	wake_lock_destroy(&jz_vpu_wake_lock);
-#endif
 	free_irq(IRQ_VPU,NULL);
 }
 
