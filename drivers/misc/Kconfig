@@ -531,8 +531,8 @@ config SRAM
 config JZ_VPU
 	bool "Ingenic VPU driver"
 	help
-	  Tighlyly-coupled shared memory (TCSM) driver for communication with the VPU
-          onboard the Ingenic JZ4770 SoC.
+	  Tightly-coupled shared memory (TCSM) driver for communication with
+	  the VPU onboard the Ingenic JZ4770 SoC.
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
