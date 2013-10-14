@@ -3057,7 +3057,8 @@ gckHARDWARE_SetFastClear(
         {
             /* Determine automatic value for compression. */
             Compression = Enable
-                        & gcmGETFIELD(Hardware->identity.chipFeatures, 5:5);
+                        && gcmGETFIELD(Hardware->identity.chipFeatures, 5:5)
+                        && !(Hardware->identity.chipModel == gcv860 && Hardware->identity.chipRevision == 0x4621);
         }
 
         /* Read AQMemoryDebug register. */
