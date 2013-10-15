@@ -327,3 +327,31 @@ struct platform_device jz4770_adc_device = {
 	.num_resources	= ARRAY_SIZE(jz_adc_resources),
 	.resource	= jz_adc_resources,
 };
+
+/* VPU */
+
+static struct resource jz_vpu_resources[] = {
+	{
+		.start	= JZ4770_AUX_BASE_ADDR,
+		.end	= JZ4770_AUX_BASE_ADDR + 0xFFFF,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		/* TCSM0 is 16K in size, other 48K is reserved. */
+		.start	= JZ4770_TCSM0_BASE_ADDR,
+		.end	= JZ4770_TCSM0_BASE_ADDR + 0xFFFF,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.start	= IRQ_VPU,
+		.end	= IRQ_VPU,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device jz4770_vpu_device = {
+	.name		= "jz-vpu",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(jz_vpu_resources),
+	.resource	= jz_vpu_resources,
+};
