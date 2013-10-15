@@ -82,14 +82,13 @@ static ssize_t jz_vpu_write(struct file *filp, const char *buf, size_t size, lof
 static long jz_vpu_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
 static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma);
 
-static struct file_operations jz_vpu_fops =
-{
-	open:		jz_vpu_open,
-	release:	jz_vpu_release,
-	read:		jz_vpu_read,
-	write:		jz_vpu_write,
-	unlocked_ioctl:		jz_vpu_ioctl,
-	mmap:		jz_vpu_mmap,
+static struct file_operations jz_vpu_fops = {
+	.open		= jz_vpu_open,
+	.release	= jz_vpu_release,
+	.read		= jz_vpu_read,
+	.write		= jz_vpu_write,
+	.unlocked_ioctl	= jz_vpu_ioctl,
+	.mmap		= jz_vpu_mmap,
 };
 
 static struct completion jz_vpu_comp;
