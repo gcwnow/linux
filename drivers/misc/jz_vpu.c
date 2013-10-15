@@ -334,14 +334,20 @@ static int __init jz_vpu_init(void)
 {
 	int ret;
 
-	ret = misc_register(&jz_vpu_dev);
+	init_completion(&jz_vpu_comp);
+	ret = request_irq(IRQ_VPU, vpu_interrupt, 0, "jz-vpu", NULL);
 	if (ret < 0) {
+		printk(KERN_ERR "Request for VPU IRQ failed: %d\n", ret);
 		return ret;
 	}
-
-	init_completion(&jz_vpu_comp);
-	request_irq(IRQ_VPU,vpu_interrupt,IRQF_DISABLED,"jz-vpu",NULL);
 	disable_irq_nosync(IRQ_VPU);
+
+	ret = misc_register(&jz_vpu_dev);
+	if (ret < 0) {
+		printk(KERN_ERR "Registration of VPU device failed: %d\n", ret);
+		free_irq(IRQ_VPU, NULL);
+		return ret;
+	}
 
 	printk("Virtual Driver of JZ VPU registered\n");
 	return 0;
@@ -350,7 +356,7 @@ static int __init jz_vpu_init(void)
 static void __exit jz_vpu_exit(void)
 {
 	misc_deregister(&jz_vpu_dev);
-	free_irq(IRQ_VPU,NULL);
+	free_irq(IRQ_VPU, NULL);
 }
 
 module_init(jz_vpu_init);
