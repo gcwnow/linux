@@ -228,14 +228,15 @@ static int jz_vpu_open(struct inode *inode, struct file *filp)
 	int ret;
 
 	file_info = kzalloc(sizeof(struct file_info), GFP_KERNEL);
-	filp->private_data = file_info;
 	INIT_LIST_HEAD(&file_info->mem_list);
+	sema_init(&file_info->mutex, 1);
 	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
 
 	ret = jz_vpu_on();
 	if (ret < 0)
 		kfree(file_info);
-	sema_init(&file_info->mutex, 1);
+	else
+		filp->private_data = file_info;
 	return ret;
 }
 
