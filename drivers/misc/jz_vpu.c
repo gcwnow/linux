@@ -93,7 +93,7 @@ static struct file_operations jz_vpu_fops = {
 
 static struct completion jz_vpu_comp;
 
-static long jz_vpu_on(struct file_info *file_info)
+static long jz_vpu_on(void)
 {
 #ifdef JZ_VPU_DEBUG
 	struct pt_regs *info = task_pt_regs(current);
@@ -135,7 +135,7 @@ static long jz_vpu_on(struct file_info *file_info)
 	return 0;
 }
 
-static long jz_vpu_off(struct file_info *file_info)
+static long jz_vpu_off(void)
 {
 	unsigned int dat = 0;
 
@@ -232,7 +232,7 @@ static int jz_vpu_open(struct inode *inode, struct file *filp)
 	INIT_LIST_HEAD(&file_info->mem_list);
 	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
 
-	ret = jz_vpu_on(file_info);
+	ret = jz_vpu_on();
 	if (ret < 0)
 		kfree(file_info);
 	sema_init(&file_info->mutex, 1);
@@ -245,7 +245,7 @@ static int jz_vpu_release(struct inode *inode, struct file *filp)
 	struct jz_vpu_mem *mem, *next;
 
 	dbg_jz_vpu("jz-vpu[%d:%d] close\n", current->tgid, current->pid);
-	jz_vpu_off(file_info);
+	jz_vpu_off();
 
 	/* Free all contiguous memory blocks associated with this VPU connection */
 	list_for_each_entry_safe(mem, next, &file_info->mem_list, list) {
