@@ -75,22 +75,6 @@ struct file_info {
  * fops routines
  */
 
-static int jz_vpu_open(struct inode *inode, struct file *filp);
-static int jz_vpu_release(struct inode *inode, struct file *filp);
-static ssize_t jz_vpu_read(struct file *filp, char *buf, size_t size, loff_t *l);
-static ssize_t jz_vpu_write(struct file *filp, const char *buf, size_t size, loff_t *l);
-static long jz_vpu_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
-static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma);
-
-static struct file_operations jz_vpu_fops = {
-	.open		= jz_vpu_open,
-	.release	= jz_vpu_release,
-	.read		= jz_vpu_read,
-	.write		= jz_vpu_write,
-	.unlocked_ioctl	= jz_vpu_ioctl,
-	.mmap		= jz_vpu_mmap,
-};
-
 static struct completion jz_vpu_comp;
 
 static long jz_vpu_on(void)
@@ -312,6 +296,15 @@ static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 		return -EAGAIN;
 	return 0;
 }
+
+static struct file_operations jz_vpu_fops = {
+	.open		= jz_vpu_open,
+	.release	= jz_vpu_release,
+	.read		= jz_vpu_read,
+	.write		= jz_vpu_write,
+	.unlocked_ioctl	= jz_vpu_ioctl,
+	.mmap		= jz_vpu_mmap,
+};
 
 static struct miscdevice jz_vpu_dev = {
 	MISC_DYNAMIC_MINOR,
