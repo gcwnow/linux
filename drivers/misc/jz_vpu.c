@@ -296,7 +296,7 @@ static long jz_vpu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	default:
 		printk(KERN_ERR "%s:cmd(0x%x) error !!!", __func__, cmd);
-		ret = -1;
+		ret = -ENOIOCTLCMD;
 	}
 	spin_unlock_irqrestore(&ioctl_lock, flags);
 	return ret;
