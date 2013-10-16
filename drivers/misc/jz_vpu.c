@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2006  Ingenic Semiconductor Inc.
  * Copyright (C) 2013  Wladimir J. van der Laan
+ * Copyright (C) 2013  Maarten ter Huurne <maarten@treewalker.org>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -27,6 +28,7 @@
 #include <linux/fs.h>
 #include <linux/spinlock.h>
 #include <linux/list.h>
+#include <linux/platform_device.h>
 
 #include <asm/pgtable.h>
 #include <asm/mipsregs.h>
@@ -46,12 +48,6 @@
 
 MODULE_LICENSE("GPL");
 
-#ifdef JZ_VPU_DEBUG
-#define dbg_jz_vpu(x...) printk(x)
-#else
-#define dbg_jz_vpu(x...)
-#endif
-
 /* Physical memory heap structure */
 struct jz_vpu_mem {
 	struct page *page;
@@ -61,29 +57,29 @@ struct jz_vpu_mem {
 	struct list_head list;
 };
 
-/* Open VPU connection info */
-struct file_info {
+/* Device data */
+struct jz_vpu {
 	/* mutex to protect structure */
 	struct semaphore mutex;
 	/* completion ioctl lock */
 	spinlock_t ioctl_lock;
 	/* memory allocations belonging to this VPU connection */
 	struct list_head mem_list;
+	/* completion of job signalled by VPU code raising IRQ */
+	struct completion completion;
+	/* IRQ number for VPU */
+	int irq;
 };
 
 /*
  * fops routines
  */
 
-static struct completion jz_vpu_comp;
-
 __BUILD_SET_C0(config7)
 
-static long jz_vpu_on(void)
+static int jz_vpu_on(struct device *dev)
 {
-#ifdef JZ_VPU_DEBUG
-	struct pt_regs *info = task_pt_regs(current);
-#endif
+	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 	unsigned int dat;
 
 	if (INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
@@ -110,22 +106,24 @@ static long jz_vpu_on(void)
 	 */
 	set_c0_config7(BIT(6));
 
-	enable_irq(IRQ_VPU);
+	enable_irq(vpu->irq);
 
-	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
-	dbg_jz_vpu("cp0 status=0x%08x\n", (unsigned int)info->cp0_status);
+	dev_dbg(dev, "enabled [%d:%d]\n", current->tgid, current->pid);
+	dev_dbg(dev, "cp0 status=0x%08x\n",
+		     (unsigned int)task_pt_regs(current)->cp0_status);
 	return 0;
 }
 
-static long jz_vpu_off(void)
+static void jz_vpu_off(struct device *dev)
 {
+	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 	unsigned int dat = 0;
 
 	/* Power down AHB1 (VPU) */
 	SETREG32(CPM_LCR, LCR_PDAHB1);
 	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
-	disable_irq_nosync(IRQ_VPU);
+	disable_irq_nosync(vpu->irq);
 
 	dat |= (CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
 	OUTREG32(CPM_CLKGR1, dat);
@@ -138,13 +136,12 @@ static long jz_vpu_off(void)
 
 	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
-	dbg_jz_vpu("jz-vpu[%d:%d] off\n", current->tgid, current->pid);
-	return 0;
+	dev_dbg(dev, "disabled [%d:%d]\n", current->tgid, current->pid);
 }
 
 /* Allocate a new contiguous memory block, return the physical address
  * that can be mmapped. */
-static unsigned long jz_vpu_alloc_phys(struct file_info *file_info, size_t size, unsigned long *physical)
+static unsigned long jz_vpu_alloc_phys(struct jz_vpu *vpu, size_t size, unsigned long *physical)
 {
 	struct jz_vpu_mem *mem;
 
@@ -162,24 +159,24 @@ static unsigned long jz_vpu_alloc_phys(struct file_info *file_info, size_t size,
 	mem->kaddr = (unsigned long)page_address(mem->page);
 	mem->physical = page_to_phys(mem->page);
 
-	down(&file_info->mutex);
-	list_add_tail(&mem->list, &file_info->mem_list);
-	up(&file_info->mutex);
+	down(&vpu->mutex);
+	list_add_tail(&mem->list, &vpu->mem_list);
+	up(&vpu->mutex);
 
 	*physical = mem->physical;
 	return 0;
 }
 
 /* Free one contiguous memory block by pointer */
-static int jz_vpu_free_mem(struct file_info *file_info, struct jz_vpu_mem *mem)
+static int jz_vpu_free_mem(struct jz_vpu *vpu, struct jz_vpu_mem *mem)
 {
 	printk(KERN_ERR "jz-vpu[%d:%d] free mem %p %08x size=%i\n",
 			current->tgid, current->pid, mem,
 			(unsigned int)mem->physical, (unsigned int)mem->size);
 
-	down(&file_info->mutex);
+	down(&vpu->mutex);
 	list_del(&mem->list);
-	up(&file_info->mutex);
+	up(&vpu->mutex);
 
 	free_pages(mem->kaddr, get_order(mem->size));
 	kfree(mem);
@@ -187,12 +184,12 @@ static int jz_vpu_free_mem(struct file_info *file_info, struct jz_vpu_mem *mem)
 }
 
 /* Free one contiguous memory block by physical address */
-static int jz_vpu_free_phys(struct file_info *file_info, unsigned long physical)
+static int jz_vpu_free_phys(struct jz_vpu *vpu, unsigned long physical)
 {
 	struct jz_vpu_mem *mem;
-	list_for_each_entry(mem, &file_info->mem_list, list) {
+	list_for_each_entry(mem, &vpu->mem_list, list) {
 		if (mem->physical == physical) {
-			jz_vpu_free_mem(file_info, mem);
+			jz_vpu_free_mem(vpu, mem);
 			return 0;
 		}
 	}
@@ -200,80 +197,77 @@ static int jz_vpu_free_phys(struct file_info *file_info, unsigned long physical)
 	return -ENOENT;
 }
 
-static int jz_vpu_open(struct inode *inode, struct file *filp)
+static int jz_vpu_open(struct inode *inode, struct file *file)
 {
-	struct file_info *file_info;
-	int ret;
+	struct miscdevice *misc = file->private_data;
+	struct device *dev = misc->this_device;
 
-	file_info = kzalloc(sizeof(struct file_info), GFP_KERNEL);
-	INIT_LIST_HEAD(&file_info->mem_list);
-	sema_init(&file_info->mutex, 1);
-	dbg_jz_vpu("jz-vpu[%d:%d] open\n", current->tgid, current->pid);
+	dev_dbg(dev, "open [%d:%d]\n", current->tgid, current->pid);
 
-	ret = jz_vpu_on();
-	if (ret < 0)
-		kfree(file_info);
-	else
-		filp->private_data = file_info;
-	return ret;
+	return jz_vpu_on(dev);
 }
 
-static int jz_vpu_release(struct inode *inode, struct file *filp)
+static int jz_vpu_release(struct inode *inode, struct file *file)
 {
-	struct file_info *file_info = filp->private_data;
+	struct miscdevice *misc = file->private_data;
+	struct device *dev = misc->this_device;
+	struct jz_vpu *vpu = dev_get_drvdata(misc->parent);
 	struct jz_vpu_mem *mem, *next;
 
-	dbg_jz_vpu("jz-vpu[%d:%d] close\n", current->tgid, current->pid);
-	jz_vpu_off();
+	dev_dbg(dev, "close [%d:%d]\n", current->tgid, current->pid);
+
+	jz_vpu_off(dev);
 
 	/* Free all contiguous memory blocks associated with this VPU connection */
-	list_for_each_entry_safe(mem, next, &file_info->mem_list, list) {
-		jz_vpu_free_mem(file_info, mem);
+	list_for_each_entry_safe(mem, next, &vpu->mem_list, list) {
+		jz_vpu_free_mem(vpu, mem);
 	}
 
-	kfree(file_info);
 	return 0;
 }
 
-static ssize_t jz_vpu_read(struct file *filp, char *buf, size_t size, loff_t *l)
+static ssize_t jz_vpu_read(struct file *file, char *buf, size_t size, loff_t *l)
 {
 	printk("jz-vpu: read is not implemented\n");
 	return -1;
 }
 
-static ssize_t jz_vpu_write(struct file *filp, const char *buf, size_t size, loff_t *l)
+static ssize_t jz_vpu_write(struct file *file, const char *buf, size_t size, loff_t *l)
 {
 	printk("jz-vpu: write is not implemented\n");
 	return -1;
 }
 
-static long jz_vpu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long jz_vpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	long ret = 0;
-	struct file_info *file_info = filp->private_data;
-	spinlock_t ioctl_lock = file_info->ioctl_lock;
+	struct miscdevice *misc = file->private_data;
+	struct device *dev = misc->this_device;
+	struct jz_vpu *vpu = dev_get_drvdata(misc->parent);
+	spinlock_t ioctl_lock = vpu->ioctl_lock;
 	unsigned long flags;
+	long ret = 0;
 
 	spin_lock_irqsave(&ioctl_lock, flags);
 	switch (cmd) {
 	case JZ_VPU_IOCTL_WAIT_COMPLETE:
-		dbg_jz_vpu("jz-vpu[%d:%d] ioctl:TCSM_TOCTL_WAIT_COMPLETE\n", current->tgid, current->pid);
+		dev_dbg(dev, "ioctl[%d:%d]: TCSM_TOCTL_WAIT_COMPLETE\n",
+			     current->tgid, current->pid);
 		spin_unlock_irqrestore(&ioctl_lock, flags);
 		ret = wait_for_completion_interruptible_timeout(
-				&jz_vpu_comp, msecs_to_jiffies(arg));
+				&vpu->completion, msecs_to_jiffies(arg));
 		spin_lock_irqsave(&ioctl_lock, flags);
 		break;
 	case JZ_VPU_IOCTL_ALLOC: {
 		struct jz_vpu_alloc data;
 		copy_from_user(&data, (void*)arg, sizeof(struct jz_vpu_alloc));
-		ret = jz_vpu_alloc_phys(file_info, data.size, &data.physical);
+		ret = jz_vpu_alloc_phys(vpu, data.size, &data.physical);
 		copy_to_user((void*)arg, &data, sizeof(struct jz_vpu_alloc));
 		} break;
 	case JZ_VPU_IOCTL_FREE:
-		jz_vpu_free_phys(file_info, arg);
+		jz_vpu_free_phys(vpu, arg);
 		break;
 	default:
-		printk(KERN_ERR "%s:cmd(0x%x) error !!!", __func__, cmd);
+		dev_dbg(dev, "%s:cmd(0x%x) error !!!\n", __func__, cmd);
 		ret = -ENOIOCTLCMD;
 	}
 	spin_unlock_irqrestore(&ioctl_lock, flags);
@@ -300,52 +294,98 @@ static struct file_operations jz_vpu_fops = {
 	.mmap		= jz_vpu_mmap,
 };
 
-static struct miscdevice jz_vpu_dev = {
+static struct miscdevice jz_vpu_misc = {
 	MISC_DYNAMIC_MINOR,
 	"jz-vpu",
 	&jz_vpu_fops
 };
 
-
-/*
- * Module init and exit
- */
-
-static irqreturn_t vpu_interrupt(int irq, void *dev)
+static irqreturn_t vpu_interrupt(int irq, void *data)
 {
+	struct jz_vpu *vpu = data;
+
 	CLRREG32(AUX_MIRQP, 0x1);
-	complete(&jz_vpu_comp);
+	complete(&vpu->completion);
+
 	return IRQ_HANDLED;
 }
 
-static int __init jz_vpu_init(void)
+static int jz_vpu_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
+	struct jz_vpu *vpu;
+	int irq;
 	int ret;
 
-	init_completion(&jz_vpu_comp);
-	ret = request_irq(IRQ_VPU, vpu_interrupt, 0, "jz-vpu", NULL);
+	vpu = devm_kzalloc(dev, sizeof(*vpu), GFP_KERNEL);
+	if (!vpu)
+		return -ENOMEM;
+	INIT_LIST_HEAD(&vpu->mem_list);
+	sema_init(&vpu->mutex, 1);
+	init_completion(&vpu->completion);
+
+	irq = platform_get_irq(pdev, 0);
+	if (irq < 0) {
+		dev_err(dev, "Failed to get platform IRQ: %d\n", irq);
+		return irq;
+	}
+	ret = devm_request_irq(dev, irq, vpu_interrupt, 0, "jz-vpu", vpu);
 	if (ret < 0) {
-		printk(KERN_ERR "Request for VPU IRQ failed: %d\n", ret);
+		dev_err(dev, "Failed to request IRQ: %d\n", ret);
 		return ret;
 	}
-	disable_irq_nosync(IRQ_VPU);
+	disable_irq_nosync(irq);
+	vpu->irq = irq;
 
-	ret = misc_register(&jz_vpu_dev);
+	ret = dev_set_drvdata(dev, vpu);
+	jz_vpu_misc.parent = dev;
+	ret = misc_register(&jz_vpu_misc);
 	if (ret < 0) {
-		printk(KERN_ERR "Registration of VPU device failed: %d\n", ret);
-		free_irq(IRQ_VPU, NULL);
+		dev_err(dev, "Failed to register misc device: %d\n", ret);
 		return ret;
 	}
+	jz_vpu_misc.this_device->parent = dev;
 
-	printk("Virtual Driver of JZ VPU registered\n");
+	dev_info(jz_vpu_misc.this_device, "Driver registered\n");
 	return 0;
 }
 
-static void __exit jz_vpu_exit(void)
+static int jz_vpu_remove(struct platform_device *pdev)
 {
-	misc_deregister(&jz_vpu_dev);
-	free_irq(IRQ_VPU, NULL);
+	misc_deregister(&jz_vpu_misc);
+
+	return 0;
 }
 
-module_init(jz_vpu_init);
-module_exit(jz_vpu_exit);
+#ifdef CONFIG_PM
+
+static int jz_vpu_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	/* TODO: Abort any computation in progress. */
+	return 0;
+}
+
+static int jz_vpu_resume(struct platform_device *pdev)
+{
+	return 0;
+}
+
+#else
+
+#define jz_vpu_suspend	NULL
+#define jz_vpu_resume	NULL
+
+#endif
+
+static struct platform_driver jz_vpu_driver = {
+	.probe		= jz_vpu_probe,
+	.remove		= jz_vpu_remove,
+	.suspend	= jz_vpu_suspend,
+	.resume		= jz_vpu_resume,
+	.driver		= {
+		.name	= "jz-vpu",
+		.owner	= THIS_MODULE,
+	},
+};
+
+module_platform_driver(jz_vpu_driver);
