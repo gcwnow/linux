@@ -8461,7 +8461,7 @@ static int rtw_mp_efuse_get(struct net_device *dev,
 	}
 	else if (strcmp(tmp[0], "realmap") == 0)
 	{
-		mapLen = EFUSE_MAP_SIZE;
+		mapLen = EFUSE_MAX_MAP_LEN;
 		if (rtw_efuse_map_read(padapter, 0, mapLen, pEfuseHal->fakeEfuseInitMap) == _FAIL)
 		{
 			DBG_871X("%s: read realmap Fail!!\n", __FUNCTION__);
@@ -8471,7 +8471,7 @@ static int rtw_mp_efuse_get(struct net_device *dev,
 
 //		DBG_871X("OFFSET\tVALUE(hex)\n");
 		sprintf(extra, "\n");
-		for (i = 0; i < EFUSE_MAP_SIZE; i += 16)
+		for (i = 0; i < EFUSE_MAX_MAP_LEN; i += 16)
 		{
 //			DBG_871X("0x%02x\t", i);
 			sprintf(extra, "%s0x%02x\t", extra, i);
@@ -8821,7 +8821,7 @@ static int rtw_mp_efuse_get(struct net_device *dev,
 	{
 //		DBG_871X("OFFSET\tVALUE(hex)\n");
 		sprintf(extra, "\n");
-		for (i=0; i<EFUSE_MAP_SIZE; i+=16)
+		for (i=0; i<EFUSE_MAX_MAP_LEN; i+=16)
 		{
 //			DBG_871X("\t0x%02x\t", i);
 			sprintf(extra, "%s0x%02x\t", extra, i);
