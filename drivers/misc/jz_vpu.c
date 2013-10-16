@@ -77,6 +77,8 @@ struct file_info {
 
 static struct completion jz_vpu_comp;
 
+__BUILD_SET_C0(config7)
+
 static long jz_vpu_on(void)
 {
 #ifdef JZ_VPU_DEBUG
@@ -106,12 +108,8 @@ static long jz_vpu_on(void)
 	 * Enable partial kernel mode. This allows user space access
 	 * to the TCSM, cache instructions and VPU.
 	 */
-	__asm__ __volatile__ (
-			"mfc0  $2, $16,  7    \n\t"
-			"ori   $2, $2, 0x340  \n\t"
-			"andi  $2, $2, 0x3ff  \n\t"
-			"mtc0  $2, $16,  7    \n\t"
-			"nop                  \n\t");
+	set_c0_config7(BIT(6));
+
 	enable_irq(IRQ_VPU);
 
 	dbg_jz_vpu("jz-vpu[%d:%d] on\n", current->tgid, current->pid);
@@ -136,11 +134,7 @@ static long jz_vpu_off(void)
 	 * Disable partial kernel mode. This disallows user space access
 	 * to the TCSM, cache instructions and VPU.
 	 */
-	__asm__ __volatile__ (
-			"mfc0  $2, $16,  7   \n\t"
-			"andi  $2, $2, 0xbf  \n\t"
-			"mtc0  $2, $16,  7   \n\t"
-			"nop                 \n\t");
+	clear_c0_config7(BIT(6));
 
 	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
