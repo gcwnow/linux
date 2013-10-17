@@ -2472,7 +2472,7 @@ gckKERNEL_OpenUserData(
     OUT void **KernelPointer
     )
 {
-    gceSTATUS status;
+    gceSTATUS status = gcvSTATUS_OK;
 
     gcmkHEADER_ARG(
         "Kernel=0x%08X NeedCopy=%d StaticStorage=0x%08X "
