@@ -208,7 +208,7 @@ int drv_open(
     data->device             = galDevice;
     data->mappedMemory       = NULL;
     data->contiguousLogical  = NULL;
-    gcmkONERROR(gckOS_GetProcessID(&data->pidOpen));
+    data->pidOpen            = task_tgid_vnr(current);
 
     /* Attached the process. */
     for (i = 0; i < gcdCORE_COUNT; i++)
@@ -336,7 +336,7 @@ int drv_release(
     {
         if (data->contiguousLogical != NULL)
         {
-            gcmkVERIFY_OK(gckOS_GetProcessID(&processID));
+	    processID = task_tgid_vnr(current);
             gcmkONERROR(gckOS_UnmapMemoryEx(
                 galDevice->os,
                 galDevice->contiguousPhysical,
@@ -361,7 +361,7 @@ int drv_release(
     }
 
     /* Clean user signals if exit unnormally. */
-    gcmkVERIFY_OK(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
     gcmkVERIFY_OK(gckOS_CleanProcessSignal(galDevice->os, (gctHANDLE)processID));
 
     /* A process gets detached. */

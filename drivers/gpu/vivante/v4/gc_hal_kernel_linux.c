@@ -295,8 +295,7 @@ gckKERNEL_MapVideoMemoryEx(
         }
         else
         {
-            int processID;
-            gckOS_GetProcessID(&processID);
+            int processID = task_tgid_vnr(current);
 
             mdl = (PLINUX_MDL) device->contiguousPhysical;
 

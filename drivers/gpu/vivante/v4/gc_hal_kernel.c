@@ -27,6 +27,7 @@
 
 #include <linux/bug.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
 
 #define _GC_OBJ_ZONE    gcvZONE_KERNEL
@@ -480,7 +481,7 @@ _AllocateMemory(
             /* Get pointer to gckVIDMEM object for pool. */
 #if gcdUSE_VIDMEM_PER_PID
             u32 pid;
-            gckOS_GetProcessID(&pid);
+            pid = task_tgid_vnr(current);
 
             status = gckKERNEL_GetVideoMemoryPoolPid(Kernel, pool, pid, &videoMemory);
             if (status == gcvSTATUS_NOT_FOUND)
@@ -647,7 +648,7 @@ gckKERNEL_Dispatch(
 #endif
 
     /* Get the current process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
 
 #if gcdSECURE_USER
     gcmkONERROR(gckKERNEL_GetProcessDBCache(Kernel, processID, &cache));
@@ -1749,7 +1750,7 @@ gckKERNEL_AttachProcess(
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
 
     /* Get current process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
 
     gcmkONERROR(gckKERNEL_AttachProcessEx(Kernel, Attach, processID));
 
@@ -2411,7 +2412,7 @@ gckKERNEL_Recovery(
 
 #if gcdSECURE_USER
     /* Flush the secure mapping cache. */
-    gcmkONERROR(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
     gcmkONERROR(gckKERNEL_GetProcessDBCache(Kernel, processID, &cache));
     gcmkONERROR(gckKERNEL_FlushTranslationCache(Kernel, cache, NULL, 0));
 #endif

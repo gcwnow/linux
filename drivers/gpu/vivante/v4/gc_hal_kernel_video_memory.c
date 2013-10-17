@@ -24,6 +24,7 @@
 
 #include <linux/bug.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
 
 #define _GC_OBJ_ZONE    gcvZONE_VIDMEM
@@ -245,7 +246,7 @@ gckVIDMEM_ConstructVirtual(
 
     node->Virtual.mutex         = NULL;
 
-    gcmkONERROR(gckOS_GetProcessID(&node->Virtual.processID));
+    node->Virtual.processID = task_tgid_vnr(current);
 
     node->Virtual.freed         = gcvFALSE;
 
@@ -418,7 +419,7 @@ gckVIDMEM_Construct(
     memory->threshold   = Threshold;
     memory->mutex       = NULL;
 #if gcdUSE_VIDMEM_PER_PID
-    gcmkONERROR(gckOS_GetProcessID(&memory->pid));
+    memory->pid         = task_tgid_vnr(current);
 #endif
 
     BaseAddress = 0;

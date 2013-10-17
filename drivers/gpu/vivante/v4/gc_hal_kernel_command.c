@@ -26,6 +26,8 @@
 #include "gc_hal_kernel.h"
 #include "gc_hal_kernel_context.h"
 
+#include <linux/sched.h>
+
 #define _GC_OBJ_ZONE            gcvZONE_COMMAND
 
 /* When enabled, extra messages needed by the dump parser are left out. */
@@ -423,11 +425,11 @@ gckCOMMAND_Construct(
     /* Create the commit atom. */
     gcmkONERROR(gckOS_AtomConstruct(os, &command->atomCommit));
 
-    /* Get the page size from teh OS. */
+    /* Get the page size from the OS. */
     gcmkONERROR(gckOS_GetPageSize(os, &command->pageSize));
 
     /* Get process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&command->kernelProcessID));
+    command->kernelProcessID = task_tgid_vnr(current);
 
     /* Set hardware to pipe 0. */
     command->pipeSelect = gcvPIPE_INVALID;

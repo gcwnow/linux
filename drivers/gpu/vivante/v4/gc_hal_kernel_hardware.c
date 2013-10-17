@@ -3383,8 +3383,8 @@ gckHARDWARE_SetPowerManagementState(
     }
 
     /* Get current process and thread IDs. */
-    gcmkONERROR(gckOS_GetProcessID(&process));
-    gcmkONERROR(gckOS_GetThreadID(&thread));
+    process = task_tgid_vnr(current);
+    thread = task_pid_vnr(current);
 
     if (broadcast)
     {

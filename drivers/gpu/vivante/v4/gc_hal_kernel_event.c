@@ -24,6 +24,7 @@
 
 #include <linux/bug.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
 
 #define _GC_OBJ_ZONE                    gcvZONE_EVENT
@@ -858,7 +859,7 @@ gckEVENT_AddList(
     gcmkONERROR(gckOS_MemCopy(&record->info, Interface, sizeof(record->info)));
 
     /* Get process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&record->processID));
+    record->processID = task_tgid_vnr(current);
 
     /* Acquire the mutex. */
     gcmkONERROR(gckOS_AcquireMutex(Event->os, Event->eventListMutex, gcvINFINITE));
@@ -1229,7 +1230,7 @@ gckEVENT_Commit(
     gcmkVERIFY_OBJECT(Event, gcvOBJ_EVENT);
 
     /* Get the current process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
 
     /* Query if we need to copy the client data. */
     gcmkONERROR(gckOS_QueryNeedCopy(Event->os, processID, &needCopy));
@@ -1347,7 +1348,7 @@ gckEVENT_Compose(
     gcmkONERROR(gckEVENT_GetEvent(Event, gcvTRUE, &id, gcvKERNEL_PIXEL));
 
     /* Get process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&processID));
+    processID = task_tgid_vnr(current);
 
     /* Allocate a record. */
     gcmkONERROR(gckEVENT_AllocateRecord(Event, gcvTRUE, &tempRecord));

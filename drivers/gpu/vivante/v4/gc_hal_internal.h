@@ -705,46 +705,6 @@ gckOS_ZeroMemory(
     IN size_t Bytes
     );
 
-/*******************************************************************************
-**
-**  gckOS_GetProcessID
-**
-**  Get current process ID.
-**
-**  INPUT:
-**
-**      Nothing.
-**
-**  OUTPUT:
-**
-**      u32 *ProcessID
-**          Pointer to the variable that receives the process ID.
-*/
-gceSTATUS
-gckOS_GetProcessID(
-    OUT u32 *ProcessID
-    );
-
-/*******************************************************************************
-**
-**  gckOS_GetThreadID
-**
-**  Get current thread ID.
-**
-**  INPUT:
-**
-**      Nothing.
-**
-**  OUTPUT:
-**
-**      u32 *ThreadID
-**          Pointer to the variable that receives the thread ID.
-*/
-gceSTATUS
-gckOS_GetThreadID(
-    OUT u32 *ThreadID
-    );
-
 /******************************************************************************\
 ********************************** Signal Object *********************************
 \******************************************************************************/

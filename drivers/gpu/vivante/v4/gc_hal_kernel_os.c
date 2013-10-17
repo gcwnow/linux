@@ -534,22 +534,6 @@ OnError:
     return status;
 }
 
-static int
-_GetProcessID(
-    void
-    )
-{
-    return task_tgid_vnr(current);
-}
-
-static int
-_GetThreadID(
-    void
-    )
-{
-    return task_pid_vnr(current);
-}
-
 static PLINUX_MDL
 _CreateMdl(
     IN int ProcessID
@@ -1083,7 +1067,7 @@ gckOS_Construct(
     os->mdlHead = os->mdlTail = NULL;
 
     /* Get the kernel process ID. */
-    gcmkONERROR(gckOS_GetProcessID(&os->kernelProcessID));
+    os->kernelProcessID = task_tgid_vnr(current);
 
     /*
      * Initialize the signal manager.
@@ -1532,11 +1516,11 @@ gckOS_MapMemory(
 
     MEMORY_LOCK(Os);
 
-    mdlMap = FindMdlMap(mdl, _GetProcessID());
+    mdlMap = FindMdlMap(mdl, task_tgid_vnr(current));
 
     if (mdlMap == NULL)
     {
-        mdlMap = _CreateMdlMap(mdl, _GetProcessID());
+        mdlMap = _CreateMdlMap(mdl, task_tgid_vnr(current));
 
         if (mdlMap == NULL)
         {
@@ -1708,7 +1692,7 @@ gckOS_UnmapMemory(
     gcmkVERIFY_ARGUMENT(Bytes > 0);
     gcmkVERIFY_ARGUMENT(Logical != NULL);
 
-    gckOS_UnmapMemoryEx(Os, Physical, Bytes, Logical, _GetProcessID());
+    gckOS_UnmapMemoryEx(Os, Physical, Bytes, Logical, task_tgid_vnr(current));
 
     /* Success. */
     gcmkFOOTER_NO();
@@ -1879,7 +1863,7 @@ gckOS_AllocateNonPagedMemory(
     numPages = GetPageCount(bytes, 0);
 
     /* Allocate mdl+vector structure */
-    mdl = _CreateMdl(_GetProcessID());
+    mdl = _CreateMdl(task_tgid_vnr(current));
     if (mdl == NULL)
     {
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
@@ -1963,7 +1947,7 @@ gckOS_AllocateNonPagedMemory(
 
     if (InUserSpace)
     {
-        mdlMap = _CreateMdlMap(mdl, _GetProcessID());
+        mdlMap = _CreateMdlMap(mdl, task_tgid_vnr(current));
 
         if (mdlMap == NULL)
         {
@@ -2697,7 +2681,7 @@ gckOS_GetPhysicalAddress(
     gcmkVERIFY_ARGUMENT(Address != NULL);
 
     /* Get current process ID. */
-    processID = _GetProcessID();
+    processID = task_tgid_vnr(current);
 
     /* Route through other function. */
     gcmkONERROR(
@@ -3745,7 +3729,7 @@ gckOS_AllocatePagedMemoryEx(
     MEMORY_LOCK(Os);
     locked = gcvTRUE;
 
-    mdl = _CreateMdl(_GetProcessID());
+    mdl = _CreateMdl(task_tgid_vnr(current));
     if (mdl == NULL)
     {
         gcmkONERROR(gcvSTATUS_OUT_OF_MEMORY);
@@ -3798,7 +3782,7 @@ gckOS_AllocatePagedMemoryEx(
         if (!PageHighMem(page) && page_to_phys(page))
         {
             gcmkVERIFY_OK(
-                gckOS_CacheFlush(Os, _GetProcessID(), NULL,
+                gckOS_CacheFlush(Os, task_tgid_vnr(current), NULL,
                                  (void *)page_to_phys(page),
                                  page_address(page),
                                  PAGE_SIZE));
@@ -4005,11 +3989,11 @@ gckOS_LockPages(
 
     MEMORY_LOCK(Os);
 
-    mdlMap = FindMdlMap(mdl, _GetProcessID());
+    mdlMap = FindMdlMap(mdl, task_tgid_vnr(current));
 
     if (mdlMap == NULL)
     {
-        mdlMap = _CreateMdlMap(mdl, _GetProcessID());
+        mdlMap = _CreateMdlMap(mdl, task_tgid_vnr(current));
 
         if (mdlMap == NULL)
         {
@@ -4309,7 +4293,7 @@ gckOS_MapPagesEx(
     /* Flush the mmu page table cache. */
     gcmkONERROR(gckOS_CacheClean(
         Os,
-        _GetProcessID(),
+        task_tgid_vnr(current),
         NULL,
         pageTablePhysical,
         PageTable,
@@ -4380,7 +4364,7 @@ gckOS_UnlockPages(
 
     while (mdlMap != NULL)
     {
-        if ((mdlMap->vmaAddr != NULL) && (_GetProcessID() == mdlMap->pid))
+        if ((mdlMap->vmaAddr != NULL) && (task_tgid_vnr(current) == mdlMap->pid))
         {
             /* Get the current pointer for the task with stored pid. */
             task = pid_task(find_vpid(mdlMap->pid), PIDTYPE_PID);
@@ -5130,7 +5114,7 @@ OnError:
             for (i = 0; i < pageCount; i++)
             {
                 /* Flush(clean) the data cache. */
-                gcmkONERROR(gckOS_CacheFlush(Os, _GetProcessID(), NULL,
+                gcmkONERROR(gckOS_CacheFlush(Os, task_tgid_vnr(current), NULL,
                                  (void *)page_to_phys(pages[i]),
                                  (void *)(memory & PAGE_MASK) + i*PAGE_SIZE,
                                  PAGE_SIZE));
@@ -5139,7 +5123,7 @@ OnError:
         else
         {
             /* Flush(clean) the data cache. */
-            gcmkONERROR(gckOS_CacheFlush(Os, _GetProcessID(), NULL,
+            gcmkONERROR(gckOS_CacheFlush(Os, task_tgid_vnr(current), NULL,
                              (void *)(physical & PAGE_MASK),
                              (void *)(memory & PAGE_MASK),
                              PAGE_SIZE * pageCount));
@@ -6352,66 +6336,6 @@ gckOS_DestroySemaphore(
     return gcvSTATUS_OK;
 }
 
-/*******************************************************************************
-**
-**  gckOS_GetProcessID
-**
-**  Get current process ID.
-**
-**  INPUT:
-**
-**      Nothing.
-**
-**  OUTPUT:
-**
-**      u32 *ProcessID
-**          Pointer to the variable that receives the process ID.
-*/
-gceSTATUS
-gckOS_GetProcessID(
-    OUT u32 *ProcessID
-    )
-{
-    /* Get process ID. */
-    if (ProcessID != NULL)
-    {
-        *ProcessID = _GetProcessID();
-    }
-
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-
-/*******************************************************************************
-**
-**  gckOS_GetThreadID
-**
-**  Get current thread ID.
-**
-**  INPUT:
-**
-**      Nothing.
-**
-**  OUTPUT:
-**
-**      u32 *ThreadID
-**          Pointer to the variable that receives the thread ID.
-*/
-gceSTATUS
-gckOS_GetThreadID(
-    OUT u32 *ThreadID
-    )
-{
-    /* Get thread ID. */
-    if (ThreadID != NULL)
-    {
-        *ThreadID = _GetThreadID();
-    }
-
-    /* Success. */
-    return gcvSTATUS_OK;
-}
-
 static void galdevice_clk_enable(gckGALDEVICE device)
 {
     struct clk *clk = device->clk;
@@ -7155,7 +7079,7 @@ gckOS_CreateUserSignal(
         gckOS_CreateSignal(Os, ManualReset, (gctSIGNAL *) &signal));
 
     /* Save the process ID. */
-    signal->process = (gctHANDLE) _GetProcessID();
+    signal->process = (gctHANDLE) task_tgid_vnr(current);
 
     table[currentID] = signal;
 
