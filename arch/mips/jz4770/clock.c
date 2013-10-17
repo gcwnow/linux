@@ -693,6 +693,20 @@ static struct clk jz_clk_simple_clks[] = {
 		.gate_bit = CLKGR0_AIC,
 		.ops = &jz_clk_simple_ops,
 	},
+	{
+		.name = "aux",
+		.parent = &jz_clk_main_clks[JZ_CLK_MAIN_C1CLK].clk,
+		.gate_register = CPM_CLKGR1_OFFSET,
+		.gate_bit = CLKGR1_AUX,
+		.ops = &jz_clk_simple_ops,
+	},
+	{
+		.name = "vpu",
+		.parent = &jz_clk_main_clks[JZ_CLK_MAIN_H1CLK].clk,
+		.gate_register = CPM_CLKGR1_OFFSET,
+		.gate_bit = CLKGR1_VPU,
+		.ops = &jz_clk_simple_ops,
+	},
 };
 
 int clk_enable(struct clk *clk)
