@@ -29,6 +29,7 @@
 #include <linux/spinlock.h>
 #include <linux/list.h>
 #include <linux/platform_device.h>
+#include <linux/clk.h>
 
 #include <asm/bitops.h>
 #include <asm/pgtable.h>
@@ -72,6 +73,10 @@ struct jz_vpu {
 	struct completion completion;
 	/* IRQ number for VPU */
 	int irq;
+	/* Clock for AUX (VPU's CPU core) */
+	struct clk *aux_clk;
+	/* Clock for other VPU components */
+	struct clk *vpu_clk;
 };
 
 /*
@@ -83,22 +88,16 @@ __BUILD_SET_C0(config7)
 static void jz_vpu_on(struct device *dev)
 {
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
-	unsigned int dat;
 
 	/* Do not stop CPUI clock when in idle mode. */
 	SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
-	dat = INREG32(CPM_CLKGR1);
-
-	dat &= ~(CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
-
-	OUTREG32(CPM_CLKGR1, dat);
+	clk_enable(vpu->aux_clk);
+	clk_enable(vpu->vpu_clk);
 
 	/* enable power to AHB1 (VPU), then wait for it to enable */
 	CLRREG32(CPM_LCR, LCR_PDAHB1);
 	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
-
-	SETREG32(CPM_CLKGR1, CLKGR1_ME); /* no use for ME */
 
 	/*
 	 * Enable partial kernel mode. This allows user space access
@@ -116,7 +115,6 @@ static void jz_vpu_on(struct device *dev)
 static void jz_vpu_off(struct device *dev)
 {
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
-	unsigned int dat = 0;
 
 	/* Power down AHB1 (VPU) */
 	SETREG32(CPM_LCR, LCR_PDAHB1);
@@ -124,8 +122,8 @@ static void jz_vpu_off(struct device *dev)
 
 	disable_irq_nosync(vpu->irq);
 
-	dat |= (CLKGR1_AUX | CLKGR1_VPU | CLKGR1_CABAC | CLKGR1_SRAM | CLKGR1_DCT | CLKGR1_DBLK | CLKGR1_MC | CLKGR1_ME);
-	OUTREG32(CPM_CLKGR1, dat);
+	clk_disable(vpu->aux_clk);
+	clk_disable(vpu->vpu_clk);
 
 	/*
 	 * Disable partial kernel mode. This disallows user space access
@@ -344,6 +342,19 @@ static int jz_vpu_probe(struct platform_device *pdev)
 	}
 	disable_irq_nosync(irq);
 	vpu->irq = irq;
+
+	vpu->aux_clk = devm_clk_get(&pdev->dev, "aux");
+	if (IS_ERR(vpu->aux_clk)) {
+		ret = PTR_ERR(vpu->aux_clk);
+		dev_err(dev, "Failed to get AUX clock: %d\n", ret);
+		return ret;
+	}
+	vpu->vpu_clk = devm_clk_get(&pdev->dev, "vpu");
+	if (IS_ERR(vpu->vpu_clk)) {
+		ret = PTR_ERR(vpu->vpu_clk);
+		dev_err(dev, "Failed to get VPU clock: %d\n", ret);
+		return ret;
+	}
 
 	ret = dev_set_drvdata(dev, vpu);
 	jz_vpu_misc.parent = dev;
