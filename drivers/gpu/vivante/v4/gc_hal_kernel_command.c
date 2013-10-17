@@ -211,7 +211,6 @@ _ProcessHints(
 {
     gceSTATUS status = gcvSTATUS_OK;
     gckKERNEL kernel;
-    int needCopy = gcvFALSE;
     gcskSECURE_CACHE_PTR cache;
     u8 *commandBufferLogical;
     u8 *hintedData;
@@ -243,11 +242,8 @@ _ProcessHints(
     /* Determine the number of records in the state array. */
     hintCount = CommandBuffer->hintArrayTail - CommandBuffer->hintArray;
 
-    /* Check wehther we need to copy the structures or not. */
-    gcmkONERROR(gckOS_QueryNeedCopy(Command->os, ProcessID, &needCopy));
-
     /* Get access to the state array. */
-    if (needCopy)
+    if (NO_USER_DIRECT_ACCESS_FROM_KERNEL)
     {
         unsigned int copySize;
 
@@ -309,7 +305,7 @@ _ProcessHints(
 
 OnError:
     /* Get access to the state array. */
-    if (!needCopy && (hintArray != NULL))
+    if (!NO_USER_DIRECT_ACCESS_FROM_KERNEL && (hintArray != NULL))
     {
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(
             Command->os,
@@ -996,7 +992,6 @@ gckCOMMAND_Commit(
     int commitEntered = gcvFALSE;
     int contextAcquired = gcvFALSE;
     gckHARDWARE hardware;
-    int needCopy = gcvFALSE;
     struct _gcsQUEUE *eventRecord = NULL;
     gcsQUEUE _eventRecord;
     struct _gcsQUEUE *nextEventRecord;
@@ -1072,9 +1067,6 @@ gckCOMMAND_Commit(
     /* Extract the gckHARDWARE and gckEVENT objects. */
     hardware = Command->kernel->hardware;
 
-    /* Check wehther we need to copy the structures or not. */
-    gcmkONERROR(gckOS_QueryNeedCopy(Command->os, ProcessID, &needCopy));
-
 #if gcdNULL_DRIVER
     /* Context switch required? */
     if ((Context != NULL) && (Command->currContext != Context))
@@ -1086,7 +1078,7 @@ gckCOMMAND_Commit(
 		Command->currContext = Context;
 	}
 #else
-    if (needCopy)
+    if (NO_USER_DIRECT_ACCESS_FROM_KERNEL)
     {
         commandBufferObject = &_commandBufferObject;
 
@@ -1917,7 +1909,7 @@ gckCOMMAND_Commit(
     /* Loop while there are records in the queue. */
     while (EventQueue != NULL)
     {
-        if (needCopy)
+        if (NO_USER_DIRECT_ACCESS_FROM_KERNEL)
         {
             /* Point to stack record. */
             eventRecord = &_eventRecord;
@@ -1947,7 +1939,7 @@ gckCOMMAND_Commit(
         /* Next record in the queue. */
         nextEventRecord = eventRecord->next;
 
-        if (!needCopy)
+        if (!NO_USER_DIRECT_ACCESS_FROM_KERNEL)
         {
             /* Unmap record from kernel memory. */
             gcmkONERROR(gckOS_UnmapUserPointer(
@@ -1988,7 +1980,7 @@ gckCOMMAND_Commit(
     return gcvSTATUS_OK;
 
 OnError:
-    if ((eventRecord != NULL) && !needCopy)
+    if ((eventRecord != NULL) && !NO_USER_DIRECT_ACCESS_FROM_KERNEL)
     {
         /* Roll back. */
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(

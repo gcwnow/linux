@@ -4634,53 +4634,6 @@ gckOS_UnmapUserPointer(
 
 /*******************************************************************************
 **
-**  gckOS_QueryNeedCopy
-**
-**  Query whether the memory can be accessed or mapped directly or it has to be
-**  copied.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      u32 ProcessID
-**          Process ID of the current process.
-**
-**  OUTPUT:
-**
-**      int *NeedCopy
-**          Pointer to a boolean receiving gcvTRUE if the memory needs a copy or
-**          gcvFALSE if the memory can be accessed or mapped dircetly.
-*/
-gceSTATUS
-gckOS_QueryNeedCopy(
-    IN gckOS Os,
-    IN u32 ProcessID,
-    OUT int *NeedCopy
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X ProcessID=%d", Os, ProcessID);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(NeedCopy != NULL);
-
-#if NO_USER_DIRECT_ACCESS_FROM_KERNEL
-    /* We need to copy data. */
-    *NeedCopy = gcvTRUE;
-#else
-    /* No need to copy data. */
-    *NeedCopy = gcvFALSE;
-#endif
-
-    /* Success. */
-    gcmkFOOTER_ARG("*NeedCopy=%d", *NeedCopy);
-    return gcvSTATUS_OK;
-}
-
-/*******************************************************************************
-**
 **  gckOS_WriteMemory
 **
 **  Write data to a memory.

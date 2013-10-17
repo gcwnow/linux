@@ -1306,7 +1306,6 @@ gckCONTEXT_Update(
     gckKERNEL kernel;
     gcsCONTEXT_PTR buffer;
     gcsSTATE_MAP_PTR map;
-    int needCopy = gcvFALSE;
     struct _gcsSTATE_DELTA *nDelta;
     struct _gcsSTATE_DELTA *uDelta = NULL;
     struct _gcsSTATE_DELTA *kDelta = NULL;
@@ -1334,11 +1333,8 @@ gckCONTEXT_Update(
     /* Get a shortcut to the kernel object. */
     kernel = Context->hardware->kernel;
 
-    /* Check wehther we need to copy the structures or not. */
-    gcmkONERROR(gckOS_QueryNeedCopy(Context->os, ProcessID, &needCopy));
-
     /* Allocate the copy buffer for the user record array. */
-    if (needCopy && (Context->recordArray == NULL))
+    if (NO_USER_DIRECT_ACCESS_FROM_KERNEL && (Context->recordArray == NULL))
     {
         /* Allocate the buffer. */
         gcmkONERROR(gckOS_Allocate(
@@ -1385,7 +1381,7 @@ gckCONTEXT_Update(
         {
             /* Get access to the state delta. */
             gcmkONERROR(gckKERNEL_OpenUserData(
-                kernel, needCopy,
+                kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
                 &_stateDelta,
                 uDelta, sizeof(gcsSTATE_DELTA),
                 (void **) &kDelta
@@ -1393,7 +1389,7 @@ gckCONTEXT_Update(
 
             /* Get access to the state records. */
             gcmkONERROR(gckKERNEL_OpenUserData(
-                kernel, needCopy,
+                kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
                 Context->recordArray,
                 kDelta->recordArray, Context->recordArraySize,
                 (void **) &recordArray
@@ -1508,7 +1504,7 @@ gckCONTEXT_Update(
 
             /* Get access to the state records. */
             gcmkONERROR(gckKERNEL_CloseUserData(
-                kernel, needCopy,
+                kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
                 gcvFALSE,
                 kDelta->recordArray, Context->recordArraySize,
                 (void **) &recordArray
@@ -1516,7 +1512,7 @@ gckCONTEXT_Update(
 
             /* Close access to the current state delta. */
             gcmkONERROR(gckKERNEL_CloseUserData(
-                kernel, needCopy,
+                kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
                 gcvTRUE,
                 uDelta, sizeof(gcsSTATE_DELTA),
                 (void **) &kDelta
@@ -1584,7 +1580,7 @@ gckCONTEXT_Update(
 
     /* Get access to the state delta. */
     gcmkONERROR(gckKERNEL_OpenUserData(
-        kernel, needCopy,
+        kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
         &_stateDelta,
         uDelta, sizeof(gcsSTATE_DELTA),
         (void **) &kDelta
@@ -1632,7 +1628,7 @@ gckCONTEXT_Update(
 
     /* Close access to the current state delta. */
     gcmkONERROR(gckKERNEL_CloseUserData(
-        kernel, needCopy,
+        kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
         gcvTRUE,
         uDelta, sizeof(gcsSTATE_DELTA),
         (void **) &kDelta
@@ -1655,7 +1651,7 @@ OnError:
 	if (kDelta != NULL)
 	{
         gcmkVERIFY_OK(gckKERNEL_CloseUserData(
-            kernel, needCopy,
+            kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
             gcvFALSE,
             kDelta->recordArray, Context->recordArraySize,
             (void **) &recordArray
@@ -1664,7 +1660,7 @@ OnError:
 
     /* Close access to the current state delta. */
     gcmkVERIFY_OK(gckKERNEL_CloseUserData(
-        kernel, needCopy,
+        kernel, NO_USER_DIRECT_ACCESS_FROM_KERNEL,
         gcvTRUE,
         uDelta, sizeof(gcsSTATE_DELTA),
         (void **) &kDelta

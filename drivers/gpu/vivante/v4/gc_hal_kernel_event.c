@@ -1222,7 +1222,6 @@ gckEVENT_Commit(
     gceSTATUS status;
     struct _gcsQUEUE *record = NULL, *next;
     u32 processID;
-    int needCopy = gcvFALSE;
 
     gcmkHEADER_ARG("Event=0x%x Queue=0x%x", Event, Queue);
 
@@ -1232,15 +1231,12 @@ gckEVENT_Commit(
     /* Get the current process ID. */
     processID = task_tgid_vnr(current);
 
-    /* Query if we need to copy the client data. */
-    gcmkONERROR(gckOS_QueryNeedCopy(Event->os, processID, &needCopy));
-
     /* Loop while there are records in the queue. */
     while (Queue != NULL)
     {
         gcsQUEUE queue;
 
-        if (needCopy)
+        if (NO_USER_DIRECT_ACCESS_FROM_KERNEL)
         {
             /* Point to stack record. */
             record = &queue;
@@ -1271,7 +1267,7 @@ gckEVENT_Commit(
         /* Next record in the queue. */
         next = record->next;
 
-        if (!needCopy)
+        if (!NO_USER_DIRECT_ACCESS_FROM_KERNEL)
         {
             /* Unmap record from kernel memory. */
             gcmkONERROR(
@@ -1293,7 +1289,7 @@ gckEVENT_Commit(
     return gcvSTATUS_OK;
 
 OnError:
-    if ((record != NULL) && !needCopy)
+    if ((record != NULL) && !NO_USER_DIRECT_ACCESS_FROM_KERNEL)
     {
         /* Roll back. */
         gcmkVERIFY_OK(gckOS_UnmapUserPointer(Event->os,
