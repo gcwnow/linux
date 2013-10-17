@@ -232,18 +232,6 @@ static int jz_vpu_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t jz_vpu_read(struct file *file, char *buf, size_t size, loff_t *l)
-{
-	printk("jz-vpu: read is not implemented\n");
-	return -1;
-}
-
-static ssize_t jz_vpu_write(struct file *file, const char *buf, size_t size, loff_t *l)
-{
-	printk("jz-vpu: write is not implemented\n");
-	return -1;
-}
-
 static long jz_vpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct miscdevice *misc = file->private_data;
@@ -294,8 +282,6 @@ static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 static struct file_operations jz_vpu_fops = {
 	.open		= jz_vpu_open,
 	.release	= jz_vpu_release,
-	.read		= jz_vpu_read,
-	.write		= jz_vpu_write,
 	.unlocked_ioctl	= jz_vpu_ioctl,
 	.mmap		= jz_vpu_mmap,
 };
