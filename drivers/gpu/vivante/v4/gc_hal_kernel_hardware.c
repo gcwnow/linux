@@ -5070,10 +5070,10 @@ gckHARDWARE_GetFrameInfo(
 #endif
 
     /* Copy to user. */
-    gcmkONERROR(gckOS_CopyToUserData(Hardware->os,
-                                     &info,
-                                     FrameInfo,
-                                     sizeof(info)));
+    if (copy_to_user(FrameInfo, &info, sizeof(info)) != 0)
+    {
+        gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+    }
 
     /* Success. */
     gcmkFOOTER_NO();

@@ -1456,13 +1456,10 @@ gckKERNEL_Dispatch(
             }
 
             /* fetch data */
-            gcmkONERROR(gckOS_CopyToUserData(
-                Kernel->os,
-                record.physical,
-                Interface->u.GetSharedInfo.data,
-                Interface->u.GetSharedInfo.size
-                ));
-
+            if (copy_to_user(Interface->u.GetSharedInfo.data, record.physical, Interface->u.GetSharedInfo.size) != 0)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
         }
 
         if ((node = Interface->u.GetSharedInfo.node) != NULL)
@@ -1481,12 +1478,10 @@ gckKERNEL_Dispatch(
                             data = &node->Virtual.sharedInfo;
                         }
 
-                         gcmkONERROR(gckOS_CopyToUserData(
-                             Kernel->os,
-                             data,
-                             Interface->u.GetSharedInfo.nodeData,
-                             sizeof(gcsVIDMEM_NODE_SHARED_INFO)
-                             ));
+                        if (copy_to_user(Interface->u.GetSharedInfo.nodeData, data, sizeof(gcsVIDMEM_NODE_SHARED_INFO)) != 0)
+                        {
+                            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                        }
                     }
                     break;
 
@@ -1519,12 +1514,10 @@ gckKERNEL_Dispatch(
                         alignedSharedInfo.SrcOrigin.y = gcmALIGN_BASE(storedSharedInfo->SrcOrigin.y, 4);
                         alignedSharedInfo.RectSize.height = gcmALIGN((storedSharedInfo->RectSize.height + (storedSharedInfo->SrcOrigin.y - alignedSharedInfo.SrcOrigin.y)), 4);
 
-                        gcmkONERROR(gckOS_CopyToUserData(
-                            Kernel->os,
-                            &alignedSharedInfo,
-                            Interface->u.GetSharedInfo.nodeData,
-                            sizeof(gcsVIDMEM_NODE_SHARED_INFO)
-                            ));
+                        if (copy_to_user(Interface->u.GetSharedInfo.nodeData, &alignedSharedInfo, sizeof(gcsVIDMEM_NODE_SHARED_INFO)) != 0)
+                        {
+                            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                        }
 
                         gcmkTRACE_ZONE(gcvLEVEL_VERBOSE, gcvZONE_KERNEL,
                                         "Node = %p, unaligned rectangle (l=%d, t=%d, w=%d, h=%d) aligned to (l=%d, t=%d, w=%d, h=%d)", node,
@@ -2587,9 +2580,10 @@ gckKERNEL_CloseUserData(
         {
             if (FlushData)
             {
-                gcmkONERROR(gckOS_CopyToUserData(
-                    Kernel->os, * KernelPointer, UserPointer, Size
-                    ));
+                if (copy_to_user(UserPointer, * KernelPointer, Size) != 0)
+                {
+                    gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                }
             }
         }
         else
