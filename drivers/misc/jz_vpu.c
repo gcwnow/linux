@@ -30,6 +30,7 @@
 #include <linux/list.h>
 #include <linux/platform_device.h>
 
+#include <asm/bitops.h>
 #include <asm/pgtable.h>
 #include <asm/mipsregs.h>
 #include <asm/mipsmtregs.h>
@@ -63,6 +64,8 @@ struct jz_vpu {
 	struct semaphore mutex;
 	/* completion ioctl lock */
 	spinlock_t ioctl_lock;
+	/* usage status bits */
+	volatile unsigned long in_use;
 	/* memory allocations belonging to this VPU connection */
 	struct list_head mem_list;
 	/* completion of job signalled by VPU code raising IRQ */
@@ -77,15 +80,12 @@ struct jz_vpu {
 
 __BUILD_SET_C0(config7)
 
-static int jz_vpu_on(struct device *dev)
+static void jz_vpu_on(struct device *dev)
 {
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 	unsigned int dat;
 
-	if (INREG32(CPM_OPCR) & OPCR_IDLE_DIS) {
-		/* VPU already turned on by another process */
-		return -EBUSY;
-	}
+	/* Do not stop CPUI clock when in idle mode. */
 	SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dat = INREG32(CPM_CLKGR1);
@@ -111,7 +111,6 @@ static int jz_vpu_on(struct device *dev)
 	dev_dbg(dev, "enabled [%d:%d]\n", current->tgid, current->pid);
 	dev_dbg(dev, "cp0 status=0x%08x\n",
 		     (unsigned int)task_pt_regs(current)->cp0_status);
-	return 0;
 }
 
 static void jz_vpu_off(struct device *dev)
@@ -201,10 +200,17 @@ static int jz_vpu_open(struct inode *inode, struct file *file)
 {
 	struct miscdevice *misc = file->private_data;
 	struct device *dev = misc->this_device;
+	struct jz_vpu *vpu = dev_get_drvdata(misc->parent);
 
 	dev_dbg(dev, "open [%d:%d]\n", current->tgid, current->pid);
 
-	return jz_vpu_on(dev);
+	/* Enforce exclusive VPU access. */
+	if (test_and_set_bit(0, &vpu->in_use))
+		return -EBUSY;
+
+	jz_vpu_on(dev);
+
+	return 0;
 }
 
 static int jz_vpu_release(struct inode *inode, struct file *file)
@@ -222,6 +228,8 @@ static int jz_vpu_release(struct inode *inode, struct file *file)
 	list_for_each_entry_safe(mem, next, &vpu->mem_list, list) {
 		jz_vpu_free_mem(vpu, mem);
 	}
+
+	clear_bit(0, &vpu->in_use);
 
 	return 0;
 }
