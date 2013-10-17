@@ -231,13 +231,6 @@ gckOS_FreeContiguous(
     IN size_t Bytes
     );
 
-/* Get the number fo bytes per page. */
-gceSTATUS
-gckOS_GetPageSize(
-    IN gckOS Os,
-    OUT size_t * PageSize
-    );
-
 /* Get the physical address of a corresponding logical address. */
 gceSTATUS
 gckOS_GetPhysicalAddress(

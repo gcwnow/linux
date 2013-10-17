@@ -355,6 +355,9 @@ OnError:
 ****************************** gckCOMMAND API Code ******************************
 \******************************************************************************/
 
+/* Size of kernel GPU command queue */
+#define COMMAND_QUEUE_SIZE (PAGE_SIZE)
+
 /*******************************************************************************
 **
 **  gckCOMMAND_Construct
@@ -425,10 +428,6 @@ gckCOMMAND_Construct(
     /* Create the commit atom. */
     gcmkONERROR(gckOS_AtomConstruct(os, &command->atomCommit));
 
-    /* Get the page size from the OS. */
-    gcmkONERROR(gckOS_GetPageSize(os, &command->pageSize));
-
-    /* Get process ID. */
     command->kernelProcessID = task_tgid_vnr(current);
 
     /* Set hardware to pipe 0. */
@@ -437,10 +436,11 @@ gckCOMMAND_Construct(
     /* Pre-allocate the command queues. */
     for (i = 0; i < gcdCOMMAND_QUEUES; ++i)
     {
+	size_t bytes = COMMAND_QUEUE_SIZE;
         gcmkONERROR(gckOS_AllocateNonPagedMemory(
             os,
             gcvFALSE,
-            &command->pageSize,
+            &bytes,
             &command->queues[i].physical,
             &command->queues[i].logical
             ));
@@ -515,7 +515,7 @@ OnError:
             {
                 gcmkVERIFY_OK(gckOS_FreeNonPagedMemory(
                     os,
-                    command->pageSize,
+                    COMMAND_QUEUE_SIZE,
                     command->queues[i].physical,
                     command->queues[i].logical
                     ));
@@ -570,7 +570,7 @@ gckCOMMAND_Destroy(
         gcmkASSERT(Command->queues[i].logical != NULL);
         gcmkVERIFY_OK(gckOS_FreeNonPagedMemory(
             Command->os,
-            Command->pageSize,
+            COMMAND_QUEUE_SIZE,
             Command->queues[i].physical,
             Command->queues[i].logical
             ));
@@ -804,7 +804,7 @@ gckCOMMAND_Start(
     Command->offset = 0;
 
     /* Set abvailable number of bytes for WAIT/LINK command sequence. */
-    waitLinkBytes = Command->pageSize;
+    waitLinkBytes = COMMAND_QUEUE_SIZE;
 
     /* Append WAIT/LINK. */
     gcmkONERROR(gckHARDWARE_WaitLink(
@@ -1723,7 +1723,7 @@ gckCOMMAND_Commit(
     offset = Command->offset;
 
     /* Compute number of bytes left in current kernel command queue. */
-    bytes = Command->pageSize - offset;
+    bytes = COMMAND_QUEUE_SIZE - offset;
 
     /* Query the size of WAIT/LINK command sequence. */
     gcmkONERROR(gckHARDWARE_WaitLink(
@@ -1745,7 +1745,7 @@ gckCOMMAND_Commit(
         offset = Command->offset;
 
         /* Recompute the number of bytes in the new kernel command queue. */
-        bytes = Command->pageSize - offset;
+        bytes = COMMAND_QUEUE_SIZE - offset;
         gcmkASSERT(bytes >= waitLinkBytes);
     }
 
@@ -2090,7 +2090,7 @@ gckCOMMAND_Reserve(
     requiredBytes += requestedAligned;
 
     /* Compute number of bytes available in command queue. */
-    bytes = Command->pageSize - Command->offset;
+    bytes = COMMAND_QUEUE_SIZE - Command->offset;
 
     /* Is there enough space in the current command queue? */
     if (bytes < requiredBytes)
@@ -2099,7 +2099,7 @@ gckCOMMAND_Reserve(
         gcmkONERROR(_NewQueue(Command));
 
         /* Recompute the number of bytes in the new kernel command queue. */
-        bytes = Command->pageSize - Command->offset;
+        bytes = COMMAND_QUEUE_SIZE - Command->offset;
 
         /* Still not enough space? */
         if (bytes < requiredBytes)
@@ -2178,7 +2178,7 @@ gckCOMMAND_Execute(
     waitLinkOffset = Command->offset + RequestedBytes;
 
     /* Compute number of bytes left in command queue. */
-    waitLinkBytes = Command->pageSize - waitLinkOffset;
+    waitLinkBytes = COMMAND_QUEUE_SIZE - waitLinkOffset;
 
     /* Compute the location if WAIT/LINK command sequence. */
     waitLinkPhysical = (u8 *) Command->physical + waitLinkOffset;

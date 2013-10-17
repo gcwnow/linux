@@ -2326,41 +2326,6 @@ gckOS_WriteRegisterEx(
     return gcvSTATUS_OK;
 }
 
-/*******************************************************************************
-**
-**  gckOS_GetPageSize
-**
-**  Get the system's page size.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**  OUTPUT:
-**
-**      size_t * PageSize
-**          Pointer to a variable that will receive the system's page size.
-*/
-gceSTATUS gckOS_GetPageSize(
-    IN gckOS Os,
-    OUT size_t * PageSize
-    )
-{
-    gcmkHEADER_ARG("Os=0x%X", Os);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(PageSize != NULL);
-
-    /* Return the page size. */
-    *PageSize = (size_t) PAGE_SIZE;
-
-    /* Success. */
-    gcmkFOOTER_ARG("*PageSize", *PageSize);
-    return gcvSTATUS_OK;
-}
-
 #if gcdSECURE_USER
 static gceSTATUS
 gckOS_AddMapping(

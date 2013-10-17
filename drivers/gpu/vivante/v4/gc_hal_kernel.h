@@ -325,9 +325,6 @@ struct _gckCOMMAND
     gckKERNEL                   kernel;
     gckOS                       os;
 
-    /* Number of bytes per page. */
-    size_t                      pageSize;
-
     /* Current pipe select. */
     gcePIPE_SELECT              pipeSelect;
 
