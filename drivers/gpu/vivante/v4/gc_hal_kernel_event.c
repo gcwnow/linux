@@ -25,7 +25,7 @@
 #include <linux/bug.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
-
+#include <asm/uaccess.h>
 
 #define _GC_OBJ_ZONE                    gcvZONE_EVENT
 
@@ -1246,10 +1246,10 @@ gckEVENT_Commit(
             record = &queue;
 
             /* Copy the data from the client. */
-            gcmkONERROR(gckOS_CopyFromUserData(Event->os,
-                                               record,
-                                               Queue,
-                                               sizeof(gcsQUEUE)));
+	    if (copy_from_user(record, Queue, sizeof(gcsQUEUE)) != 0)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
         }
         else
         {

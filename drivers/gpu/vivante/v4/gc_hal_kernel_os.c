@@ -4681,66 +4681,6 @@ gckOS_QueryNeedCopy(
 
 /*******************************************************************************
 **
-**  gckOS_CopyFromUserData
-**
-**  Copy data from user to kernel memory.
-**
-**  INPUT:
-**
-**      gckOS Os
-**          Pointer to an gckOS object.
-**
-**      void *KernelPointer
-**          Pointer to kernel memory.
-**
-**      void *Pointer
-**          Pointer to user memory.
-**
-**      size_t Size
-**          Number of bytes to copy.
-**
-**  OUTPUT:
-**
-**      Nothing.
-*/
-gceSTATUS
-gckOS_CopyFromUserData(
-    IN gckOS Os,
-    IN void *KernelPointer,
-    IN void *Pointer,
-    IN size_t Size
-    )
-{
-    gceSTATUS status;
-
-    gcmkHEADER_ARG("Os=0x%X KernelPointer=0x%X Pointer=0x%X Size=%lu",
-                   Os, KernelPointer, Pointer, Size);
-
-    /* Verify the arguments. */
-    gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
-    gcmkVERIFY_ARGUMENT(KernelPointer != NULL);
-    gcmkVERIFY_ARGUMENT(Pointer != NULL);
-    gcmkVERIFY_ARGUMENT(Size > 0);
-
-    /* Copy data from user. */
-    if (copy_from_user(KernelPointer, Pointer, Size) != 0)
-    {
-        /* Could not copy all the bytes. */
-        gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
-    }
-
-    /* Success. */
-    gcmkFOOTER_NO();
-    return gcvSTATUS_OK;
-
-OnError:
-    /* Return the status. */
-    gcmkFOOTER();
-    return status;
-}
-
-/*******************************************************************************
-**
 **  gckOS_CopyToUserData
 **
 **  Copy data from kernel to user memory.

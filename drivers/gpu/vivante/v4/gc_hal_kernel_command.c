@@ -27,6 +27,7 @@
 #include "gc_hal_kernel_context.h"
 
 #include <linux/sched.h>
+#include <asm/uaccess.h>
 
 #define _GC_OBJ_ZONE            gcvZONE_COMMAND
 
@@ -275,12 +276,10 @@ _ProcessHints(
         hintArray = Command->hintArray;
         copySize   = hintCount * sizeof(u32);
 
-        gcmkONERROR(gckOS_CopyFromUserData(
-            Command->os,
-            hintArray,
-            CommandBuffer->hintArray,
-            copySize
-            ));
+	if (copy_from_user(hintArray, CommandBuffer->hintArray, copySize) != 0)
+        {
+            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+        }
     }
     else
     {
@@ -1091,12 +1090,10 @@ gckCOMMAND_Commit(
     {
         commandBufferObject = &_commandBufferObject;
 
-        gcmkONERROR(gckOS_CopyFromUserData(
-            Command->os,
-            commandBufferObject,
-            CommandBuffer,
-            sizeof(struct _gcoCMDBUF)
-            ));
+	if (copy_from_user(commandBufferObject, CommandBuffer, sizeof(struct _gcoCMDBUF)) != 0)
+        {
+            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+        }
 
         gcmkVERIFY_OBJECT(commandBufferObject, gcvOBJ_COMMANDBUFFER);
     }
@@ -1926,9 +1923,10 @@ gckCOMMAND_Commit(
             eventRecord = &_eventRecord;
 
             /* Copy the data from the client. */
-            gcmkONERROR(gckOS_CopyFromUserData(
-                Command->os, eventRecord, EventQueue, sizeof(gcsQUEUE)
-                ));
+	    if (copy_from_user(eventRecord, EventQueue, sizeof(gcsQUEUE)) != 0)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
         }
         else
         {

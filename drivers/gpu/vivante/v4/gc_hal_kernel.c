@@ -28,7 +28,7 @@
 #include <linux/bug.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
-
+#include <asm/uaccess.h>
 
 #define _GC_OBJ_ZONE    gcvZONE_KERNEL
 
@@ -1586,12 +1586,10 @@ gckKERNEL_Dispatch(
                 data = record.physical;
             }
 
-            gcmkONERROR(gckOS_CopyFromUserData(
-                Kernel->os,
-                data,
-                Interface->u.SetSharedInfo.data,
-                Interface->u.SetSharedInfo.size
-                ));
+            if (copy_from_user(data, Interface->u.SetSharedInfo.data, Interface->u.SetSharedInfo.size) != 0)
+            {
+                gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+            }
         }
 
         if ((node = Interface->u.SetSharedInfo.node) != NULL)
@@ -1609,12 +1607,10 @@ gckKERNEL_Dispatch(
                             data = &node->Virtual.sharedInfo;
                         }
 
-                        gcmkONERROR(gckOS_CopyFromUserData(
-                            Kernel->os,
-                            data,
-                            Interface->u.SetSharedInfo.nodeData,
-                            sizeof(gcsVIDMEM_NODE_SHARED_INFO)
-                            ));
+                        if (copy_from_user(data, Interface->u.SetSharedInfo.nodeData, sizeof(gcsVIDMEM_NODE_SHARED_INFO)) != 0)
+                        {
+                            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                        }
                     }
                     break;
 
@@ -1625,12 +1621,10 @@ gckKERNEL_Dispatch(
                         int dirtyX, dirtyY, right, bottom;
 
                         /* Expand the dirty rectangle stored in the node to include the rectangle passed in. */
-                        gcmkONERROR(gckOS_CopyFromUserData(
-                            Kernel->os,
-                            &newSharedInfo,
-                            Interface->u.SetSharedInfo.nodeData,
-                            sizeof(gcsVIDMEM_NODE_SHARED_INFO)
-                            ));
+                        if (copy_from_user(&newSharedInfo, Interface->u.SetSharedInfo.nodeData, sizeof(gcsVIDMEM_NODE_SHARED_INFO)) != 0)
+                        {
+                            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+                        }
 
                         if (node->VidMem.memory->object.type == gcvOBJ_VIDMEM)
                         {
@@ -2503,9 +2497,10 @@ gckKERNEL_OpenUserData(
     if (NeedCopy)
     {
         /* Copy the user data to the static storage. */
-        gcmkONERROR(gckOS_CopyFromUserData(
-            Kernel->os, StaticStorage, UserPointer, Size
-            ));
+        if (copy_from_user(StaticStorage, UserPointer, Size) != 0)
+        {
+            gcmkONERROR(gcvSTATUS_OUT_OF_RESOURCES);
+        }
 
         /* Set the kernel pointer. */
         * KernelPointer = StaticStorage;
