@@ -107,8 +107,7 @@ static void jz_vpu_on(struct device *dev)
 
 	enable_irq(vpu->irq);
 
-	dev_dbg(dev, "enabled [%d:%d]\n", current->tgid, current->pid);
-	dev_dbg(dev, "cp0 status=0x%08x\n",
+	dev_dbg(dev, "VPU enabled, cp0 status=0x%08X\n",
 		     (unsigned int)task_pt_regs(current)->cp0_status);
 }
 
@@ -133,7 +132,7 @@ static void jz_vpu_off(struct device *dev)
 
 	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
-	dev_dbg(dev, "disabled [%d:%d]\n", current->tgid, current->pid);
+	dev_dbg(dev, "VPU disabled\n");
 }
 
 /* Allocate a new contiguous memory block, return the physical address
@@ -165,11 +164,11 @@ static unsigned long jz_vpu_alloc_phys(struct jz_vpu *vpu, size_t size, unsigned
 }
 
 /* Free one contiguous memory block by pointer */
-static int jz_vpu_free_mem(struct jz_vpu *vpu, struct jz_vpu_mem *mem)
+static int jz_vpu_free_mem(struct device *dev, struct jz_vpu *vpu,
+			   struct jz_vpu_mem *mem)
 {
-	printk(KERN_ERR "jz-vpu[%d:%d] free mem %p %08x size=%i\n",
-			current->tgid, current->pid, mem,
-			(unsigned int)mem->physical, (unsigned int)mem->size);
+	dev_dbg(dev, "Free mem %p 0x%08X size=%d\n",
+		     mem, (unsigned int)mem->physical, (unsigned int)mem->size);
 
 	down(&vpu->mutex);
 	list_del(&mem->list);
@@ -181,16 +180,18 @@ static int jz_vpu_free_mem(struct jz_vpu *vpu, struct jz_vpu_mem *mem)
 }
 
 /* Free one contiguous memory block by physical address */
-static int jz_vpu_free_phys(struct jz_vpu *vpu, unsigned long physical)
+static int jz_vpu_free_phys(struct device *dev, struct jz_vpu *vpu,
+			    unsigned long physical)
 {
 	struct jz_vpu_mem *mem;
 	list_for_each_entry(mem, &vpu->mem_list, list) {
 		if (mem->physical == physical) {
-			jz_vpu_free_mem(vpu, mem);
+			jz_vpu_free_mem(dev, vpu, mem);
 			return 0;
 		}
 	}
-	printk(KERN_ERR "jz-vpu[%d:%d] attempt to free non-allocated memory %08x\n", current->tgid, current->pid, (unsigned int)physical);
+	dev_err(dev, "Attempt to free non-allocated memory at 0x%08X\n",
+		     (unsigned int)physical);
 	return -ENOENT;
 }
 
@@ -200,7 +201,7 @@ static int jz_vpu_open(struct inode *inode, struct file *file)
 	struct device *dev = misc->this_device;
 	struct jz_vpu *vpu = dev_get_drvdata(misc->parent);
 
-	dev_dbg(dev, "open [%d:%d]\n", current->tgid, current->pid);
+	dev_dbg(dev, "Device node open\n");
 
 	/* Enforce exclusive VPU access. */
 	if (test_and_set_bit(0, &vpu->in_use))
@@ -218,14 +219,13 @@ static int jz_vpu_release(struct inode *inode, struct file *file)
 	struct jz_vpu *vpu = dev_get_drvdata(misc->parent);
 	struct jz_vpu_mem *mem, *next;
 
-	dev_dbg(dev, "close [%d:%d]\n", current->tgid, current->pid);
+	dev_dbg(dev, "Device node close\n");
 
 	jz_vpu_off(dev);
 
 	/* Free all contiguous memory blocks associated with this VPU connection */
-	list_for_each_entry_safe(mem, next, &vpu->mem_list, list) {
-		jz_vpu_free_mem(vpu, mem);
-	}
+	list_for_each_entry_safe(mem, next, &vpu->mem_list, list)
+		jz_vpu_free_mem(dev, vpu, mem);
 
 	clear_bit(0, &vpu->in_use);
 
@@ -244,8 +244,7 @@ static long jz_vpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	spin_lock_irqsave(&ioctl_lock, flags);
 	switch (cmd) {
 	case JZ_VPU_IOCTL_WAIT_COMPLETE:
-		dev_dbg(dev, "ioctl[%d:%d]: TCSM_TOCTL_WAIT_COMPLETE\n",
-			     current->tgid, current->pid);
+		dev_dbg(dev, "ioctl: TCSM_TOCTL_WAIT_COMPLETE\n");
 		spin_unlock_irqrestore(&ioctl_lock, flags);
 		ret = wait_for_completion_interruptible_timeout(
 				&vpu->completion, msecs_to_jiffies(arg));
@@ -258,10 +257,10 @@ static long jz_vpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		copy_to_user((void*)arg, &data, sizeof(struct jz_vpu_alloc));
 		} break;
 	case JZ_VPU_IOCTL_FREE:
-		jz_vpu_free_phys(vpu, arg);
+		jz_vpu_free_phys(dev, vpu, arg);
 		break;
 	default:
-		dev_dbg(dev, "%s:cmd(0x%x) error !!!\n", __func__, cmd);
+		dev_dbg(dev, "ioctl: unsupported cmd 0x%X\n", cmd);
 		ret = -ENOIOCTLCMD;
 	}
 	spin_unlock_irqrestore(&ioctl_lock, flags);
