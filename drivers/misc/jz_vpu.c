@@ -41,14 +41,23 @@
 #include <asm/uaccess.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770aux.h>
 #include <asm/mach-jz4770/irq.h>
 
 #include <linux/syscalls.h>
 
 #include <uapi/video/jz_vpu.h>
 
-MODULE_LICENSE("GPL");
+
+#define AUX_BASE 		(0xb32a0000)
+#define AUX_CTRL 		(AUX_BASE +0x0)
+#define AUX_SPINLK  		(AUX_BASE +0x4)
+#define AUX_SPIN1  		(AUX_BASE +0x8)
+#define AUX_SPIN2  		(AUX_BASE +0xc)
+#define AUX_MIRQP 		(AUX_BASE +0x10)
+#define AUX_MESG  		(AUX_BASE +0x14)
+#define CORE_MIRQP 		(AUX_BASE +0x18)
+#define CORE_MESG  		(AUX_BASE +0x1c)
+
 
 /* Physical memory heap structure */
 struct jz_vpu_mem {
@@ -393,3 +402,5 @@ static struct platform_driver jz_vpu_driver = {
 };
 
 module_platform_driver(jz_vpu_driver);
+
+MODULE_LICENSE("GPL");
