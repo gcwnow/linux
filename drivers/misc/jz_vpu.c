@@ -30,6 +30,7 @@
 #include <linux/list.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
+#include <linux/io.h>
 
 #include <asm/bitops.h>
 #include <asm/pgtable.h>
@@ -48,15 +49,14 @@
 #include <uapi/video/jz_vpu.h>
 
 
-#define AUX_BASE 		(0xb32a0000)
-#define AUX_CTRL 		(AUX_BASE +0x0)
-#define AUX_SPINLK  		(AUX_BASE +0x4)
-#define AUX_SPIN1  		(AUX_BASE +0x8)
-#define AUX_SPIN2  		(AUX_BASE +0xc)
-#define AUX_MIRQP 		(AUX_BASE +0x10)
-#define AUX_MESG  		(AUX_BASE +0x14)
-#define CORE_MIRQP 		(AUX_BASE +0x18)
-#define CORE_MESG  		(AUX_BASE +0x1c)
+#define AUX_CTRL 		0x00
+#define AUX_SPINLK  		0x04
+#define AUX_SPIN1  		0x08
+#define AUX_SPIN2  		0x0c
+#define AUX_MIRQP 		0x10
+#define AUX_MESG  		0x14
+#define CORE_MIRQP 		0x18
+#define CORE_MESG  		0x1c
 
 
 /* Physical memory heap structure */
@@ -86,6 +86,8 @@ struct jz_vpu {
 	struct clk *aux_clk;
 	/* Clock for other VPU components */
 	struct clk *vpu_clk;
+	/* Base address for AUX registers */
+	void __iomem *aux_base;
 };
 
 /*
@@ -304,7 +306,8 @@ static irqreturn_t vpu_interrupt(int irq, void *data)
 {
 	struct jz_vpu *vpu = data;
 
-	CLRREG32(AUX_MIRQP, 0x1);
+	writel(readl(vpu->aux_base + AUX_MIRQP) & ~BIT(0),
+	       vpu->aux_base + AUX_MIRQP);
 	complete(&vpu->completion);
 
 	return IRQ_HANDLED;
@@ -323,6 +326,19 @@ static int jz_vpu_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&vpu->mem_list);
 	sema_init(&vpu->mutex, 1);
 	init_completion(&vpu->completion);
+
+	vpu->aux_base = devm_ioremap_resource(dev,
+			platform_get_resource(pdev, IORESOURCE_MEM, 0));
+	if (IS_ERR(vpu->aux_base)) {
+		ret = PTR_ERR(vpu->aux_base);
+		dev_err(dev, "Failed to get and remap mmio region: %d\n", ret);
+		return ret;
+	}
+
+	/*
+	 * Note: TCSM0 is also declared as a platform resource, but we do not
+	 *       have any driver code yet that accesses it.
+	 */
 
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
