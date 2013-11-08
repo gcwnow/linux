@@ -906,16 +906,8 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 #endif
 		__cpu_name[cpu] = "Ingenic JZRISC";
 
-		if (__cpu_has_fpu()) {
-			unsigned int tmp, mask = 1 << 26;
-			c->options |= MIPS_CPU_FPU;
-			/* Set floating mode to 32*32bit mode */
-			tmp = read_c0_status();
-			tmp &= ~mask;
-			printk("Jz4760 Floating coprocessor work on %s mode\n",
-					(tmp & mask) ? "32*64bit" : "32*32bit");
-			write_c0_status(tmp);
-		}
+		if (__cpu_has_fpu())
+			c->options |= MIPS_CPU_FPU | MIPS_CPU_32FPR;
 		break;
 	default:
 		panic("Unknown Ingenic Processor ID!");
