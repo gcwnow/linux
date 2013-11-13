@@ -39,6 +39,8 @@ CONFIG_INET=y
 CONFIG_CFG80211=y
 CONFIG_CFG80211_INTERNAL_REGDB=y
 CONFIG_MAC80211=y
+CONFIG_RFKILL=y
+CONFIG_RFKILL_REGULATOR=y
 CONFIG_DEVTMPFS=y
 # CONFIG_STANDALONE is not set
 # CONFIG_PREVENT_FIRMWARE_BUILD is not set
@@ -180,7 +182,7 @@ CONFIG_NLS_UTF8=y
 # CONFIG_SCHED_DEBUG is not set
 # CONFIG_FTRACE is not set
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="panic=5 console=ttyS2,57600 console=tty0 boot=/dev/mmcblk0p2 loop0=/boot/rootfs.bin root=/dev/loop0"
+CONFIG_CMDLINE="panic=5 console=ttyS2,57600 console=tty0 boot=/dev/mmcblk0p2 loop0=/boot/rootfs.bin root=/dev/loop0 rfkill.default_state=0"
 # CONFIG_CRYPTO_ANSI_CPRNG is not set
 # CONFIG_CRYPTO_HW is not set
 CONFIG_FONTS=y
