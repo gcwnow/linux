@@ -40,6 +40,7 @@
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
+#include <linux/rfkill-regulator.h>
 #include <linux/usb/musb.h>
 #include <media/radio-rda5807.h>
 #include <sound/jz4770.h>
@@ -336,7 +337,7 @@ static struct platform_device gcw0_usb_charger_device = {
 /* USB 1.1 Host (OHCI) */
 
 static struct regulator_consumer_supply gcw0_internal_usb_regulator_consumer =
-	REGULATOR_SUPPLY("vbus", "jz4770-ohci");
+	REGULATOR_SUPPLY("vrfkill", "rfkill-regulator.0");
 
 static struct regulator_init_data gcw0_internal_usb_regulator_init_data = {
 	.num_consumer_supplies = 1,
@@ -559,6 +560,19 @@ static struct platform_device gcw0_led_device = {
 	},
 };
 
+static struct rfkill_regulator_platform_data gcw0_rfkill_pdata = {
+	.name = "gcw0-wifi",
+	.type = RFKILL_TYPE_WLAN,
+};
+
+static struct platform_device gcw0_rfkill_device = {
+	.name = "rfkill-regulator",
+	.id = 0,
+	.dev = {
+		.platform_data = &gcw0_rfkill_pdata,
+	},
+};
+
 
 /* Device registration */
 
@@ -594,6 +608,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
+	&gcw0_rfkill_device,
 };
 
 static int __init gcw0_init_platform_devices(void)
