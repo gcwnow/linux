@@ -8,8 +8,8 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef __ASM_MACH_JZ4770_LINKDEV_H__
-#define __ASM_MACH_JZ4770_LINKDEV_H__
+#ifndef __INCLUDE_LINUX_PLATFORM_DATA_LINKDEV_H__
+#define __INCLUDE_LINUX_PLATFORM_DATA_LINKDEV_H__
 
 struct linkdev_pdata_device_info {
 	const char *name; /* Name of the input device, e.g. gpio-keys */
@@ -36,7 +36,8 @@ struct linkdev_platform_data {
 	const struct linkdev_pdata_abs_map *abs_map;
 	unsigned int abs_map_size;
 
-	void *private;
+	/* Reserved for internal use */
+	void *__private;
 };
 
-#endif /* __ASM_MACH_JZ4770_LINKDEV_H__ */
+#endif /* __INCLUDE_LINUX_PLATFORM_DATA_LINKDEV_H__ */

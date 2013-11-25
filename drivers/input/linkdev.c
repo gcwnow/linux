@@ -1,5 +1,12 @@
 /*
- * Joystick device driver for the GCW Zero handheld gaming console.
+ * Input device merger interface.
+ *
+ * This driver is used to merge together two or more input devices,
+ * so that they appear unified to the userspace.
+ * It can be used, for instance, on a gaming device where the buttons
+ * are handled by the 'gpio-keys' driver  while the analog sticks are
+ * handled by another driver, to make the controls appear as an unique
+ * joystick device to the userspace.
  *
  * Copyright (c) 2013 Paul Cercueil <paul@crapouillou.net>
  *
@@ -19,10 +26,9 @@
 
 #include <linux/platform_data/linkdev.h>
 
-static bool map_as_keys = true;
-module_param(map_as_keys, bool, S_IRUSR | S_IWUSR);
-MODULE_PARM_DESC(map_as_keys,
-			"Map the buttons as keyboard keys instead of joystick buttons");
+static bool alt_key_map = true;
+module_param(alt_key_map, bool, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(alt_key_map, "Use the alternative key map");
 
 struct linkdev {
 	struct platform_device *pdev;
@@ -117,7 +123,7 @@ static void linkdev_events(struct input_handle *handle,
 		signed short code = vals->code,
 					 type = vals->type;
 
-		if (type == EV_KEY && map_as_keys)
+		if (type == EV_KEY && alt_key_map)
 			code = linkdev_get_button_code(linkdev, code);
 		else if (type == EV_ABS)
 			code = linkdev_get_axis(linkdev, idev, code);
@@ -279,7 +285,7 @@ static int linkdev_create_device(struct linkdev *linkdev)
 	}
 
 	linkdev->idev = idev;
-	idev->name = "linkdev-joystick";
+	idev->name = "linkdev-device";
 	idev->id.bustype = BUS_HOST;
 	idev->dev.parent = &pdev->dev;
 
@@ -296,7 +302,7 @@ static int linkdev_create_device(struct linkdev *linkdev)
 	return 0;
 }
 
-static int linkdev_joystick_probe(struct platform_device *pdev)
+static int linkdev_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct linkdev *linkdev;
@@ -307,7 +313,7 @@ static int linkdev_joystick_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
-	linkdev = pdata->private;
+	linkdev = pdata->__private;
 
 	if (!linkdev) {
 		struct input_handler *handler;
@@ -342,7 +348,7 @@ static int linkdev_joystick_probe(struct platform_device *pdev)
 		platform_set_drvdata(pdev, linkdev);
 
 		/* pdata->private survives the probe defer, that's why we use it here */
-		pdata->private = linkdev;
+		pdata->__private = linkdev;
 
 		dev_info(&pdev->dev, "linkdev handler successfully registered\n");
 	}
@@ -368,7 +374,7 @@ err_free_linkdev:
 	return ret;
 }
 
-static int linkdev_joystick_remove(struct platform_device *pdev)
+static int linkdev_remove(struct platform_device *pdev)
 {
 	struct linkdev *linkdev = platform_get_drvdata(pdev);
 
@@ -377,23 +383,23 @@ static int linkdev_joystick_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct platform_driver linkdev_joystick_driver = {
+static struct platform_driver linkdev_driver = {
 	.driver		= {
 		.name	= "linkdev",
 		.owner	= THIS_MODULE,
 	},
-	.probe		= linkdev_joystick_probe,
-	.remove		= linkdev_joystick_remove,
+	.probe		= linkdev_probe,
+	.remove		= linkdev_remove,
 };
 
 static int __init linkdev_init(void)
 {
-	return platform_driver_register(&linkdev_joystick_driver);
+	return platform_driver_register(&linkdev_driver);
 }
 
 static void __exit linkdev_exit(void)
 {
-	platform_driver_unregister(&linkdev_joystick_driver);
+	platform_driver_unregister(&linkdev_driver);
 }
 
 late_initcall(linkdev_init);
@@ -402,4 +408,4 @@ module_exit(linkdev_exit);
 MODULE_ALIAS("platform:linkdev");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Paul Cercueil <paul@crapouillou.net>");
-MODULE_DESCRIPTION("Joystick merger driver");
+MODULE_DESCRIPTION("Input device merger interface");
