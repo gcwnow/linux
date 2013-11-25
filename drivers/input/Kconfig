@@ -139,6 +139,12 @@ config INPUT_JOYDEV
 	  To compile this driver as a module, choose M here: the
 	  module will be called joydev.
 
+config INPUT_LINKDEV
+	tristate "Joystick merger interface"
+	help
+	  Say Y here if you want two or more joystick devices to be merged
+	  into one. NOTE: This requires platform data to be set accordingly.
+
 config INPUT_EVDEV
 	tristate "Event interface"
 	help
