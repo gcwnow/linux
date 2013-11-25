@@ -139,6 +139,17 @@ config INPUT_JOYDEV
 	  To compile this driver as a module, choose M here: the
 	  module will be called joydev.
 
+config INPUT_LINKDEV
+	tristate "Input device merger interface"
+	help
+	  Say Y here if you want two or more input devices to be merged into one.
+	  Platform data must be provided to specify which devices to merge.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called linkdev.
+
 config INPUT_EVDEV
 	tristate "Event interface"
 	help
