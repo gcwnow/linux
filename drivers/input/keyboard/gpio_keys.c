@@ -333,6 +333,8 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);
+		else
+			input_event(input, type, button->code, 0);
 	} else {
 		input_event(input, type, button->code, !!state);
 	}
