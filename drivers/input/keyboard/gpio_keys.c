@@ -510,6 +510,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 
 	input_set_capability(input, button->type ?: EV_KEY, button->code);
 
+	if (button->type == EV_ABS)
+		input_set_abs_params(input, button->code, -1, 1, 0, 0);
+
 	/*
 	 * Install custom action to cancel debounce timer and
 	 * workqueue item.
