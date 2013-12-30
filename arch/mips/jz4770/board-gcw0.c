@@ -35,6 +35,7 @@
 
 #include <linux/mmc/host.h>
 #include <linux/act8600_power.h>
+#include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
@@ -573,6 +574,123 @@ static struct platform_device gcw0_rfkill_device = {
 	},
 };
 
+static const struct linkdev_pdata_device_info gcw0_joystick_devices[] = {
+	{
+		.name = "analog joystick",
+	},
+	{
+		.name = "gpio-keys",
+	},
+};
+
+static const struct linkdev_pdata_key_map gcw0_key_map[] = {
+	{
+		.code = KEY_UP,
+		.event = {
+			.type = EV_ABS,
+			.code = ABS_HAT0Y,
+			.value = -1,
+		},
+	},
+	{
+		.code = KEY_DOWN,
+		.event = {
+			.type = EV_ABS,
+			.code = ABS_HAT0Y,
+			.value = 1,
+		}
+	},
+	{
+		.code = KEY_LEFT,
+		.event = {
+			.type = EV_ABS,
+			.code = ABS_HAT0X,
+			.value = -1,
+		},
+	},
+	{
+		.code = KEY_RIGHT,
+		.event = {
+			.type = EV_ABS,
+			.code = ABS_HAT0X,
+			.value = 1,
+		},
+	},
+	{
+		.code = KEY_LEFTCTRL,
+		.event.code = BTN_EAST,
+	},
+	{
+		.code = KEY_LEFTALT,
+		.event.code = BTN_SOUTH,
+	},
+	{
+		.code = KEY_LEFTSHIFT,
+		.event.code = BTN_WEST,
+	},
+	{
+		.code = KEY_SPACE,
+		.event.code = BTN_NORTH,
+	},
+	{
+		.code = KEY_ENTER,
+		.event.code = BTN_START,
+	},
+	{
+		.code = KEY_ESC,
+		.event.code = BTN_SELECT,
+	},
+	{
+		.code = KEY_TAB,
+		.event.code = BTN_THUMBL,
+	},
+	{
+		.code = KEY_BACKSPACE,
+		.event.code = BTN_THUMBR,
+	},
+};
+
+static const struct linkdev_pdata_abs_map gcw0_abs_map[] = {
+	{
+		.name = "analog joystick",
+		.axis = ABS_X,
+		.axis_dest = ABS_X,
+	},
+	{
+		.name = "analog joystick",
+		.axis = ABS_Y,
+		.axis_dest = ABS_Y,
+	},
+	{
+		.name = "gpio-keys",
+		.axis = ABS_HAT0X,
+		.axis_dest = ABS_HAT0X,
+	},
+	{
+		.name = "gpio-keys",
+		.axis = ABS_HAT0Y,
+		.axis_dest = ABS_HAT0Y,
+	},
+};
+
+static struct linkdev_platform_data gcw0_joystick_pdata = {
+	.devices = gcw0_joystick_devices,
+	.nb_devices = ARRAY_SIZE(gcw0_joystick_devices),
+	.key_map = gcw0_key_map,
+	.key_map_size = ARRAY_SIZE(gcw0_key_map),
+	.abs_map = gcw0_abs_map,
+	.abs_map_size = ARRAY_SIZE(gcw0_abs_map),
+};
+
+/* GCW0 Input driver */
+static struct platform_device gcw0_joystick_device = {
+	.name = "linkdev",
+	.id = -1,
+	.dev = {
+		.platform_data = &gcw0_joystick_pdata,
+	},
+};
+
 
 /* Device registration */
 
@@ -609,6 +727,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
 	&gcw0_rfkill_device,
+	&gcw0_joystick_device,
 };
 
 static int __init gcw0_init_platform_devices(void)
