@@ -39,7 +39,7 @@ struct linkdev {
 };
 
 static int linkdev_drop_other_handlers_from_idev(struct linkdev *linkdev,
-			struct input_dev *idev)
+			struct input_dev *idev, struct input_handler *handler)
 {
 	struct input_handle *cur, *next;
 	struct linkdev_platform_data *pdata = linkdev->pdata;
@@ -59,17 +59,24 @@ static int linkdev_drop_other_handlers_from_idev(struct linkdev *linkdev,
 		return -ENOENT;
 	}
 
-	if (!info->nb_handlers)
-		return 0;
-
 	list_for_each_entry_safe(cur, next, &idev->h_list, d_node) {
+		bool in_whitelist = false;
+
+		if (cur->handler == handler)
+			continue;
+
 		for (i = 0; i < info->nb_handlers; i++) {
-			if (!strcmp(info->handlers_blacklist[i], cur->handler->name)) {
-				dev_info(&idev->dev,
-							"Dropping handle \'%s\' from handler \'%s\'\n",
-							cur->name, cur->handler->name);
-				cur->handler->disconnect(cur);
+			if (!strcmp(info->handlers_whitelist[i], cur->handler->name)) {
+				in_whitelist = true;
+				break;
 			}
+		}
+
+		if (!in_whitelist) {
+			dev_info(&idev->dev,
+						"Dropping handle \'%s\' from handler \'%s\'\n",
+						cur->name, cur->handler->name);
+			cur->handler->disconnect(cur);
 		}
 	}
 
@@ -194,7 +201,7 @@ static int linkdev_connect(struct input_handler *handler,
 		goto err_unregister_handle;
 	}
 
-	ret = linkdev_drop_other_handlers_from_idev(linkdev, idev);
+	ret = linkdev_drop_other_handlers_from_idev(linkdev, idev, handler);
 	if (ret) {
 		dev_err(dev, "Unable to drop handlers of device %s\n", idev->name);
 		goto err_close_device;

@@ -13,7 +13,7 @@
 
 struct linkdev_pdata_device_info {
 	const char *name; /* Name of the input device, e.g. gpio-keys */
-	const char **handlers_blacklist;
+	const char **handlers_whitelist;
 	unsigned int nb_handlers;
 };
 
