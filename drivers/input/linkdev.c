@@ -26,7 +26,7 @@
 
 #include <linux/platform_data/linkdev.h>
 
-static bool alt_key_map = true;
+static bool alt_key_map = false;
 module_param(alt_key_map, bool, S_IRUSR | S_IWUSR);
 MODULE_PARM_DESC(alt_key_map, "Use the alternative key map");
 
