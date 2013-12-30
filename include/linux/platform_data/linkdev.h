@@ -19,7 +19,8 @@ struct linkdev_pdata_device_info {
 
 struct linkdev_pdata_abs_map {
 	const struct linkdev_pdata_device_info *device; /* input device of origin */
-	unsigned int axis; /* axis of the input device to map to */
+	short int axis; /* axis of the input device to map to */
+	short int axis_dest;
 };
 
 struct linkdev_platform_data {

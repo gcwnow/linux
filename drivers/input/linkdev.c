@@ -103,7 +103,7 @@ static short int linkdev_get_axis(struct linkdev *linkdev,
 		for (i = 0; i < pdata->abs_map_size; i++)
 		  if (!strcmp(pdata->abs_map[i].device->name, idev->name)
 					  && pdata->abs_map[i].axis == axis)
-			return (short int) i;
+			return pdata->abs_map[i].axis_dest;
 	}
 
 	return axis;
@@ -234,7 +234,7 @@ static void linkdev_set_bits(struct linkdev *linkdev)
 	const signed short (*map)[2] = pdata->key_map;
 	struct input_handle *cur, *next;
 	unsigned long tmp[BITS_TO_LONGS(KEY_CNT)];
-	unsigned int i, axis_nb = 0;
+	unsigned int i;
 
 	input_alloc_absinfo(idev);
 	memset(tmp, 0, sizeof(tmp));
@@ -243,21 +243,22 @@ static void linkdev_set_bits(struct linkdev *linkdev)
 		dev_dbg(&linkdev->pdev->dev, "Setting bits from device %s\n",
 					cur->dev->name);
 		for (i = 0; i < pdata->abs_map_size; i++) {
-			unsigned int axis = pdata->abs_map[i].axis;
+			short int axis, axis_dest;
 
 			if (strcmp(cur->dev->name, pdata->abs_map[i].device->name))
 				continue;
 
+			axis = pdata->abs_map[i].axis;
 			if (!test_bit(axis, cur->dev->absbit)) {
 				dev_err(&linkdev->pdev->dev, "Axis %i not found on device %s\n",
 							axis, cur->dev->name);
 				continue;
 			}
 
-			set_bit(axis_nb, idev->absbit);
-			memcpy(&idev->absinfo[axis_nb], &cur->dev->absinfo[axis],
+			axis_dest = pdata->abs_map[i].axis_dest;
+			set_bit(axis_dest, idev->absbit);
+			memcpy(&idev->absinfo[axis_dest], &cur->dev->absinfo[axis],
 						sizeof(struct input_absinfo));
-			axis_nb++;
 		}
 
 		for (i = 0; i < BITS_TO_LONGS(EV_CNT); i++)
