@@ -18,7 +18,7 @@ struct linkdev_pdata_device_info {
 };
 
 struct linkdev_pdata_abs_map {
-	const struct linkdev_pdata_device_info *device; /* input device of origin */
+	const char *name; /* Name of the input device, e.g. gpio-keys */
 	short int axis; /* axis of the input device to map to */
 	short int axis_dest;
 };

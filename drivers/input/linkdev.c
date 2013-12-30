@@ -113,7 +113,7 @@ static short int linkdev_get_axis(struct linkdev *linkdev,
 
 	if (pdata->abs_map_size) {
 		for (i = 0; i < pdata->abs_map_size; i++)
-		  if (!strcmp(pdata->abs_map[i].device->name, idev->name)
+		  if (!strcmp(pdata->abs_map[i].name, idev->name)
 					  && pdata->abs_map[i].axis == axis)
 			return pdata->abs_map[i].axis_dest;
 	}
@@ -249,7 +249,7 @@ static void linkdev_set_bits(struct linkdev *linkdev)
 		for (i = 0; i < pdata->abs_map_size; i++) {
 			short int axis, axis_dest;
 
-			if (strcmp(cur->dev->name, pdata->abs_map[i].device->name))
+			if (strcmp(cur->dev->name, pdata->abs_map[i].name))
 				continue;
 
 			axis = pdata->abs_map[i].axis;
