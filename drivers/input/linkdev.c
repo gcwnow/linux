@@ -83,21 +83,26 @@ static int linkdev_drop_other_handlers_from_idev(struct linkdev *linkdev,
 	return 0;
 }
 
-static signed short linkdev_get_button_code(struct linkdev *linkdev,
-			signed short code)
+static void linkdev_get_button(struct linkdev *linkdev,
+			unsigned int *type, unsigned int *code, int *value)
 {
 	unsigned int i;
 	struct linkdev_platform_data *pdata = linkdev->pdata;
 
 	for (i = 0; i < pdata->key_map_size; i++) {
-		if (pdata->key_map[i][0] == code) {
+		if (pdata->key_map[i].code == *code) {
+			const struct input_value *val = &pdata->key_map[i].event;
 			dev_dbg(&linkdev->pdev->dev, "Translating event code %hi to %hi",
-						code, pdata->key_map[i][1]);
-			return pdata->key_map[i][1];
+						*code, val->code);
+
+			if (val->type)
+				*type = val->type;
+			*code = val->code;
+			if (*type == EV_ABS && *value)
+				*value = val->value;
+			break;
 		}
 	}
-
-	return code;
 }
 
 static short int linkdev_get_axis(struct linkdev *linkdev,
@@ -116,9 +121,8 @@ static short int linkdev_get_axis(struct linkdev *linkdev,
 	return axis;
 }
 
-
-static void linkdev_events(struct input_handle *handle,
-			 const struct input_value *vals, unsigned int count)
+static void linkdev_event(struct input_handle *handle,
+			unsigned int type, unsigned int code, int value)
 {
 	struct linkdev *linkdev = handle->handler->private;
 	struct input_dev *idev = linkdev->idev;
@@ -126,27 +130,22 @@ static void linkdev_events(struct input_handle *handle,
 	if (!idev)
 		return;
 
-	while (count--) {
-		signed short code = vals->code,
-					 type = vals->type;
+	if (type == EV_KEY && alt_key_map)
+		linkdev_get_button(linkdev, &type, &code, &value);
+	else if (type == EV_ABS)
+		code = linkdev_get_axis(linkdev, idev, code);
 
-		if (type == EV_KEY && alt_key_map)
-			code = linkdev_get_button_code(linkdev, code);
-		else if (type == EV_ABS)
-			code = linkdev_get_axis(linkdev, idev, code);
-
-		dev_dbg(&linkdev->pdev->dev, "Injecting code %hi\n", code);
-		input_event(idev, type, code, vals->value);
-		vals++;
-	}
+	dev_dbg(&linkdev->pdev->dev, "Injecting code %hi\n", code);
+	input_event(idev, type, code, value);
 }
 
-static void linkdev_event(struct input_handle *handle,
-			unsigned int type, unsigned int code, int value)
+static void linkdev_events(struct input_handle *handle,
+			const struct input_value *vals, unsigned int count)
 {
-	struct input_value vals[] = { { type, code, value } };
-
-	linkdev_events(handle, vals, 1);
+	while (count--) {
+		linkdev_event(handle, vals->type, vals->code, vals->value);
+		vals++;
+	}
 }
 
 static bool linkdev_match(struct input_handler *handler, struct input_dev *idev)
@@ -238,13 +237,11 @@ static void linkdev_set_bits(struct linkdev *linkdev)
 {
 	struct linkdev_platform_data *pdata = linkdev->pdata;
 	struct input_dev *idev = linkdev->idev;
-	const signed short (*map)[2] = pdata->key_map;
+	const struct linkdev_pdata_key_map *key_map = pdata->key_map;
 	struct input_handle *cur, *next;
-	unsigned long tmp[BITS_TO_LONGS(KEY_CNT)];
 	unsigned int i;
 
 	input_alloc_absinfo(idev);
-	memset(tmp, 0, sizeof(tmp));
 
 	list_for_each_entry_safe(cur, next, &linkdev->handler.h_list, h_node) {
 		dev_dbg(&linkdev->pdev->dev, "Setting bits from device %s\n",
@@ -271,13 +268,15 @@ static void linkdev_set_bits(struct linkdev *linkdev)
 		for (i = 0; i < BITS_TO_LONGS(EV_CNT); i++)
 			idev->evbit[i] |= cur->dev->evbit[i];
 		for (i = 0; i < BITS_TO_LONGS(KEY_CNT); i++)
-			tmp[i] |= cur->dev->keybit[i];
+			idev->keybit[i] |= cur->dev->keybit[i];
 	}
 
-	for (i = 0; i < pdata->key_map_size; i++)
-		__set_bit(map[i][1], tmp);
-
-	memcpy(idev->keybit, tmp, sizeof(idev->keybit));
+	for (i = 0; i < pdata->key_map_size; i++) {
+		const struct input_value *ev = &key_map[i].event;
+		input_set_capability(idev, ev->type ?: EV_KEY, ev->code);
+		if (ev->type == EV_ABS)
+			input_set_abs_params(idev, ev->code, -1, 1, 0, 0);
+	}
 }
 
 static int linkdev_create_device(struct linkdev *linkdev)

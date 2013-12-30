@@ -23,6 +23,11 @@ struct linkdev_pdata_abs_map {
 	short int axis_dest;
 };
 
+struct linkdev_pdata_key_map {
+	signed short code;
+	struct input_value event;
+};
+
 struct linkdev_platform_data {
 	const struct linkdev_pdata_device_info *devices;
 	unsigned int nb_devices;
@@ -30,7 +35,7 @@ struct linkdev_platform_data {
 	/* Event translation map for keys.
 	 * key_map[0] events will be transformed into key_map[1].
 	 */
-	const signed short (*key_map)[2];
+	const struct linkdev_pdata_key_map *key_map;
 	unsigned int key_map_size;
 
 	/* Event translation map for joystick axis */
