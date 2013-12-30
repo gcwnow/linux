@@ -594,6 +594,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 	*bdata->code = button->code;
 	input_set_capability(input, button->type ?: EV_KEY, *bdata->code);
 
+	if (button->type == EV_ABS)
+		input_set_abs_params(input, button->code, -1, 1, 0, 0);
+
 	/*
 	 * Install custom action to cancel release timer and
 	 * workqueue item.
