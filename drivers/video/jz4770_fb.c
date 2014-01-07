@@ -220,7 +220,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 
 	fb_videomode_to_var(var, mode);
 	/* Reserve space for double buffering. */
-	var->yres_virtual = var->yres * 2;
+	var->yres_virtual = var->yres * 3;
 
 	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
 		var->bits_per_pixel = 32;
@@ -396,9 +396,9 @@ static unsigned int max_bytes_per_frame(struct list_head *modelist,
  */
 static int jz4760fb_map_smem(struct fb_info *fb)
 {
-	/* Compute space for max res at 32bpp, double buffered. */
+	/* Compute space for max res at 32bpp, triple buffered. */
 	const unsigned int size = PAGE_ALIGN(
-				max_bytes_per_frame(&fb->modelist, 32) * 2);
+				max_bytes_per_frame(&fb->modelist, 32) * 3);
 
 	void *page_virt;
 
