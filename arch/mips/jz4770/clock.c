@@ -176,6 +176,62 @@ static unsigned long jz_clk_pll1_get_rate(struct clk *clk)
 	return ((clk_get_rate(clk->parent) / n) * m) >> od;
 }
 
+#define FVCO_MIN  300*1000*1000	/* 300 MHz */
+#define FVCO_MAX  1000*1000*1000	/* 1 GHz */
+
+/* The frequency after the input divider must be between 10 and 50 MHz.
+The highest divider yields the best resolution. */
+#define INDIV(ext) (ext / 10000000)
+
+#define OUTDIV(f) \
+  (((f) >= FVCO_MIN) ? 1 : \
+   ((f) >= (FVCO_MIN / 2)) ? 2 : \
+   ((f) >= (FVCO_MIN / 4)) ? 4 : 8)
+
+#define RATE(f) \
+  ((f) < (FVCO_MIN / 8) ? FVCO_MIN : \
+	(((f) > FVCO_MAX) ? FVCO_MAX : (f)))
+
+#define FEEDBACK(f, ext) \
+  ((((RATE(f) * OUTDIV(f)) / 1000) * INDIV(ext)) / (ext / 1000))
+
+#define BS(f) ((f) > (FVCO_MAX / 2))
+
+static int jz_clk_pll1_set_rate(struct clk *clk, unsigned long rate)
+{
+	unsigned long parent_rate = clk_get_rate(clk->parent);
+	uint32_t val = ((FEEDBACK(rate, parent_rate) - 1) << CPPCR1_PLL1M_LSB) |
+			((INDIV(parent_rate) - 1) << CPPCR1_PLL1N_LSB) |
+			((OUTDIV(rate) - 1) << CPPCR1_PLL1OD_LSB);
+	if (BS(rate))
+		val |= CPPCR1_PLL1BS;
+
+	jz_clk_reg_write_mask(CPM_CPPCR1_OFFSET, val,
+				CPPCR1_PLL1M_MASK | CPPCR1_PLL1N_MASK |
+				CPPCR1_PLL1OD_MASK | CPPCR1_PLL1BS);
+	return 0;
+}
+
+static int jz_clk_pll1_enable(struct clk *clk)
+{
+	jz_clk_reg_set_bits(CPM_CPPCR1_OFFSET, CPPCR1_PLL1EN);
+
+	/* Wait for a stable output... */
+	while (!(jz_clk_reg_read(CPM_CPPCR1_OFFSET) & CPPCR1_PLL1S));
+	return 0;
+}
+
+static int jz_clk_pll1_disable(struct clk *clk)
+{
+	jz_clk_reg_clear_bits(CPM_CPPCR1_OFFSET, CPPCR1_PLL1EN);
+	return 0;
+}
+
+static int jz_clk_pll1_is_enabled(struct clk *clk)
+{
+	return !!(jz_clk_reg_read(CPM_CPPCR1_OFFSET) & CPPCR1_PLL1EN);
+}
+
 static const int jz_clk_main_divs[] = {1, 2, 3, 4, 6, 8, 12};
 
 static unsigned long jz_clk_main_round_rate(struct clk *clk, unsigned long rate)
@@ -298,6 +354,10 @@ static int jz_clk_pll1_set_parent(struct clk *clk, struct clk *parent)
 static struct clk_ops jz_clk_pll1_ops = {
 	.get_rate = jz_clk_pll1_get_rate,
 	.set_parent = jz_clk_pll1_set_parent,
+	.set_rate = jz_clk_pll1_set_rate,
+	.enable = jz_clk_pll1_enable,
+	.disable = jz_clk_pll1_disable,
+	.is_enabled = jz_clk_pll1_is_enabled,
 };
 
 static struct clk jz_clk_pll1 = {
@@ -825,62 +885,6 @@ static void __init clk_register_clks(void)
 		clk_add(&jz_clk_simple_clks[i]);
 }
 
-#define FVCO_MIN  300*1000*1000	/* 300 MHz */
-#define FVCO_MAX  1000*1000*1000	/* 1 GHz */
-
-/* The frequency after the input divider must be between 10 and 50 MHz.
-The highest divider yields the best resolution. */
-#define INDIV(ext) (ext / 10000000)
-
-#define OUTDIV(f) \
-  (((f) >= FVCO_MIN) ? 1 : \
-   ((f) >= (FVCO_MIN / 2)) ? 2 : \
-   ((f) >= (FVCO_MIN / 4)) ? 4 : 8)
-
-#define RATE(f) \
-  ((f) < (FVCO_MIN / 8) ? FVCO_MIN : \
-	(((f) > FVCO_MAX) ? FVCO_MAX : (f)))
-
-#define FEEDBACK(f, ext) \
-  ((((RATE(f) * OUTDIV(f)) / 1000) * INDIV(ext)) / (ext / 1000))
-
-#define BS(f) ((f) > (FVCO_MAX / 2))
-
-static int __init clk_init_pll1(unsigned long rate)
-{
-	uint32_t val, jz_clk_ext_rate = jz_clk_ext.rate;
-	int ret;
-
-	/* Disable PLL1 */
-	jz_clk_reg_clear_bits(CPM_CPPCR1_OFFSET, CPPCR1_PLL1EN);
-	while (!(jz_clk_reg_read(CPM_CPPCR1_OFFSET) & CPPCR1_PLL1OFF));
-
-	/* Select EXT as the source */
-	ret = jz_clk_pll1.ops->set_parent(&jz_clk_pll1, &jz_clk_ext.clk);
-	if (ret)
-		return ret;
-
-	val = CPPCR1_PLL1M_MASK | CPPCR1_PLL1N_MASK |
-			CPPCR1_PLL1OD_MASK | CPPCR1_PLL1BS;
-	jz_clk_reg_clear_bits(CPM_CPPCR1_OFFSET, val);
-
-	val = ((FEEDBACK(rate, jz_clk_ext_rate) - 1) << CPPCR1_PLL1M_LSB) |
-			((INDIV(jz_clk_ext_rate) - 1) << CPPCR1_PLL1N_LSB) |
-			((OUTDIV(rate) - 1) << CPPCR1_PLL1OD_LSB) |
-			CPPCR1_PLL1EN;
-	if (BS(rate))
-		val |= CPPCR1_PLL1BS;
-
-	/* Enable PLL1 */
-	jz_clk_reg_set_bits(CPM_CPPCR1_OFFSET, val);
-
-	/* Wait for a stable output... */
-	while (!(jz_clk_reg_read(CPM_CPPCR1_OFFSET) & CPPCR1_PLL1S));
-
-	/* We're done! */
-	return 0;
-}
-
 static int __init jz_clk_init(void)
 {
 	size_t i;
@@ -900,7 +904,8 @@ static int __init jz_clk_init(void)
 		clk->ops->set_parent(clk, &jz_clk_ext.clk);
 	}
 
-	clk_init_pll1(jz_clk_bdata.pll1_rate);
+	jz_clk_pll1.ops->set_rate(&jz_clk_pll1, jz_clk_bdata.pll1_rate);
+	jz_clk_pll1.ops->enable(&jz_clk_pll1);
 	printk("PLL0 rate: %lu\n", jz_clk_pll0.ops->get_rate(&jz_clk_pll0));
 	printk("PLL1 rate: %lu\n", jz_clk_pll1.ops->get_rate(&jz_clk_pll1));
 
