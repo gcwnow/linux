@@ -112,3 +112,6 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+# OpenDingux modules.squashfs file
+modules.squashfs
