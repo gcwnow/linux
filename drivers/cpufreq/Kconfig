@@ -238,6 +238,15 @@ endmenu
 menu "MIPS CPUFreq processor drivers"
 depends on MIPS
 
+config JZ4770_CPUFREQ
+	tristate "Ingenic JZ4770 CPUFreq Driver"
+	select CPU_FREQ_TABLE
+	help
+	  This option adds a CPUFreq driver for the JZ4770 processor
+	  from Ingenic.
+
+	  If in doubt, say N.
+
 config LOONGSON2_CPUFREQ
 	tristate "Loongson2 CPUFreq Driver"
 	select CPU_FREQ_TABLE
