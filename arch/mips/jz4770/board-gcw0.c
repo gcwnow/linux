@@ -674,6 +674,8 @@ static const struct linkdev_pdata_abs_map gcw0_abs_map[] = {
 };
 
 static struct linkdev_platform_data gcw0_joystick_pdata = {
+	/* This specific name informs SDL about the composition of the joystick */
+	.name = "linkdev device (Analog 2-axis 8-button 2-hat)",
 	.devices = gcw0_joystick_devices,
 	.nb_devices = ARRAY_SIZE(gcw0_joystick_devices),
 	.key_map = gcw0_key_map,
