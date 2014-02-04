@@ -284,6 +284,7 @@ static int linkdev_create_device(struct linkdev *linkdev)
 	int ret;
 	struct input_dev *idev;
 	struct platform_device *pdev = linkdev->pdev;
+	struct linkdev_platform_data *pdata = linkdev->pdata;
 
 	idev = input_allocate_device();
 	if (!idev) {
@@ -292,9 +293,12 @@ static int linkdev_create_device(struct linkdev *linkdev)
 	}
 
 	linkdev->idev = idev;
-	idev->name = "linkdev-device";
 	idev->id.bustype = BUS_HOST;
 	idev->dev.parent = &pdev->dev;
+	if (pdata->name)
+		idev->name = pdata->name;
+	else
+		idev->name = "linkdev-device";
 
 	linkdev_set_bits(linkdev);
 

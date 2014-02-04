@@ -42,6 +42,9 @@ struct linkdev_platform_data {
 	const struct linkdev_pdata_abs_map *abs_map;
 	unsigned int abs_map_size;
 
+	/* Name of the linkdev device (defaults to "linkdev-device" if NULL) */
+	const char *name;
+
 	/* Reserved for internal use */
 	void *__private;
 };
