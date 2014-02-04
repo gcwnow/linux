@@ -17,6 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/spinlock.h>
 #include <linux/io.h>
 #include <linux/module.h>
@@ -273,20 +274,27 @@ static unsigned long jz_clk_main_get_rate(struct clk *clk)
 static int jz_clk_main_set_rate(struct clk *clk, unsigned long rate)
 {
 	struct main_clk *mclk = (struct main_clk *)clk;
-	int i;
 	int div;
 	unsigned long parent_rate = jz_clk_pll0_get_rate(clk->parent);
+	unsigned long current_rate = jz_clk_main_get_rate(clk);
+
+	if (rate == current_rate)
+		return 0;
 
 	rate = jz_clk_main_round_rate(clk, rate);
 
 	div = parent_rate / rate;
 
-	i = (ffs(div) - 1) << 1;
-	if (i > 0 && !(div & BIT(i-1)))
-		i -= 1;
+	/* Wait here if previous dividers are still being applied */
+	while (!(jz_clk_reg_read(CPM_CPPSR_OFFSET) & CPPSR_FS))
+		msleep(1);
 
-	jz_clk_reg_write_mask(CPM_CPCCR_OFFSET, i << mclk->div_offset,
+	jz_clk_reg_clear_bits(CPM_CPPSR_OFFSET, CPPSR_FS);
+	jz_clk_reg_set_bits(CPM_CPPSR_OFFSET, CPPSR_FM);
+
+	jz_clk_reg_write_mask(CPM_CPCCR_OFFSET, (div - 1) << mclk->div_offset,
 				0xf << mclk->div_offset);
+
 	return 0;
 }
 
