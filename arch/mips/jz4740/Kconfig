@@ -21,8 +21,10 @@ config MACH_JZ4740
 
 config MACH_JZ4770
 	bool
+	select CPU_SUPPORTS_CPUFREQ
 	select JZSOC
 	select JZRISC
+	select MIPS_EXTERNAL_TIMER
 	select PINCTRL
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
