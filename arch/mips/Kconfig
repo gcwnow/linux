@@ -310,6 +310,8 @@ config MACH_JZ4770
 	select JZ4740_IRQC
 	select BUILTIN_DTB
 	select USE_OF
+	select CPU_SUPPORTS_CPUFREQ
+	select MIPS_EXTERNAL_TIMER
 
 config MACH_JZ4780
 	bool "Ingenic JZ4780 based machines"
