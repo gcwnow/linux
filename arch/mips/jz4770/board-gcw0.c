@@ -574,12 +574,18 @@ static struct platform_device gcw0_rfkill_device = {
 	},
 };
 
+static const char * gcw0_joystick_gpiokeys_whitelist[] = {
+	"evdev",
+};
+
 static const struct linkdev_pdata_device_info gcw0_joystick_devices[] = {
 	{
 		.name = "analog joystick",
 	},
 	{
 		.name = "gpio-keys",
+		.handlers_whitelist = gcw0_joystick_gpiokeys_whitelist,
+		.nb_handlers = ARRAY_SIZE(gcw0_joystick_gpiokeys_whitelist),
 	},
 };
 
