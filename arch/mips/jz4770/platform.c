@@ -355,3 +355,21 @@ struct platform_device jz4770_vpu_device = {
 	.num_resources	= ARRAY_SIZE(jz_vpu_resources),
 	.resource	= jz_vpu_resources,
 };
+
+/* Watchdog */
+static struct resource jz4770_wdt_resources[] = {
+	{
+		.start = JZ4770_WDT_BASE_ADDR,
+		/* The watchdog register space is 0x10, but the driver
+		 * expects the TCU registers to be available */
+		.end   = JZ4770_WDT_BASE_ADDR + 0x1000 - 1,
+		.flags = IORESOURCE_MEM,
+	},
+};
+
+struct platform_device jz4770_wdt_device = {
+	.name		= "jz4740-wdt",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(jz4770_wdt_resources),
+	.resource	= jz4770_wdt_resources,
+};
