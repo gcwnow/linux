@@ -6,4 +6,16 @@ cd "$DIR"
 rm -rf /tmp/modules_fs
 mkdir /tmp/modules_fs
 INSTALL_MOD_PATH=/tmp/modules_fs ARCH=mips make modules_install
+
+NAME=`ls -d /tmp/modules_fs/lib/modules/*`
+NAME=`basename "$NAME" -dirty`
+
+if [ -d  "/tmp/modules_fs/lib/modules/$NAME" ] ; then
+	ln -s "/tmp/modules_fs/lib/modules/$NAME" \
+		"/tmp/modules_fs/lib/modules/${NAME}-dirty"
+else
+	ln -s "/tmp/modules_fs/lib/modules/${NAME}-dirty" \
+		"/tmp/modules_fs/lib/modules/${NAME}"
+fi
+
 mksquashfs /tmp/modules_fs/lib/modules modules.squashfs -all-root -noappend -no-exports -no-xattrs
