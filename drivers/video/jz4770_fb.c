@@ -796,6 +796,12 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		"fb%d: %s frame buffer device, using %dK of video memory\n",
 		fb->node, fb->fix.id, fb->fix.smem_len>>10);
 
+	/* XXX(pcercuei): For some reason, this fixes the logo not being shown */
+	ctrl_disable(pdev);
+	ctrl_enable();
+
+	fb_prepare_logo(jzfb->fb, 0);
+	fb_show_logo(jzfb->fb, 0);
 	return 0;
 
 err_exit_panel:
