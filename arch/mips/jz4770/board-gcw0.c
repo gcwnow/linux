@@ -374,7 +374,7 @@ static struct platform_device gcw0_internal_usb_regulator_device = {
 
 static struct jz_otg_board_data gcw0_otg_board_data = {
 	.gpio_id_pin = GPIO_USB_OTG_ID_PIN,
-	.gpio_id_debounce_ms = 100,
+	.gpio_id_debounce_ms = 500,
 };
 
 
