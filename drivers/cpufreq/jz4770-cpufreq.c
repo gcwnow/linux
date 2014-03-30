@@ -124,7 +124,7 @@ static int jz4770_cpufreq_driver_init(struct cpufreq_policy *policy)
 	jz4770_freq_fill_table(policy);
 	clk_put(pll0);
 
-	policy->cpuinfo.transition_latency = 200000; /* in nanoseconds */
+	policy->cpuinfo.transition_latency = 400000; /* in nanoseconds */
 	policy->cur = jz4770_freq_get(policy->cpu);
 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
 	/* min and max are set by jz4770_freq_fill_table() */
