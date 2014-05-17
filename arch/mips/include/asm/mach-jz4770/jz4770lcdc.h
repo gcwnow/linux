@@ -13,185 +13,70 @@
 #include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
-
 #define	LCD_BASE	CKSEG1ADDR(JZ4770_LCD_BASE_ADDR)
-#define	SLCD_BASE	LCD_BASE
-
-
-/*************************************************************************
- * SLCD (Smart LCD Controller)
- *************************************************************************/
-
-#define SLCD_CFG	(SLCD_BASE + 0xA0)  /* SLCD Configure Register */
-#define SLCD_CTRL	(SLCD_BASE + 0xA4)  /* SLCD Control Register */
-#define SLCD_STATE	(SLCD_BASE + 0xA8)  /* SLCD Status Register */
-#define SLCD_DATA	(SLCD_BASE + 0xAC)  /* SLCD Data Register */
-
-#define REG_SLCD_CFG	REG32(SLCD_CFG)
-#define REG_SLCD_CTRL	REG8(SLCD_CTRL)
-#define REG_SLCD_STATE	REG8(SLCD_STATE)
-#define REG_SLCD_DATA	REG32(SLCD_DATA)
-
-/* SLCD Configure Register */
-#define SLCD_CFG_DWIDTH_BIT	10
-#define SLCD_CFG_DWIDTH_MASK	(0x7 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_18BIT	(0 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_16BIT	(1 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_8BIT_x3	(2 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_8BIT_x2	(3 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_8BIT_x1	(4 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_24BIT	(5 << SLCD_CFG_DWIDTH_BIT)
-  #define SLCD_CFG_DWIDTH_9BIT_x2	(7 << SLCD_CFG_DWIDTH_BIT)
-#define SLCD_CFG_CWIDTH_BIT	(8)
-#define SLCD_CFG_CWIDTH_MASK	(0x7 << SLCD_CFG_CWIDTH_BIT)
-#define SLCD_CFG_CWIDTH_16BIT	(0 << SLCD_CFG_CWIDTH_BIT)
-#define SLCD_CFG_CWIDTH_8BIT	(1 << SLCD_CFG_CWIDTH_BIT)
-#define SLCD_CFG_CWIDTH_18BIT	(2 << SLCD_CFG_CWIDTH_BIT)
-#define SLCD_CFG_CWIDTH_24BIT	(3 << SLCD_CFG_CWIDTH_BIT)
-#define SLCD_CFG_CS_ACTIVE_LOW	(0 << 4)
-#define SLCD_CFG_CS_ACTIVE_HIGH	(1 << 4)
-#define SLCD_CFG_RS_CMD_LOW	(0 << 3)
-#define SLCD_CFG_RS_CMD_HIGH	(1 << 3)
-#define SLCD_CFG_CLK_ACTIVE_FALLING	(0 << 1)
-#define SLCD_CFG_CLK_ACTIVE_RISING	(1 << 1)
-#define SLCD_CFG_TYPE_PARALLEL	(0 << 0)
-#define SLCD_CFG_TYPE_SERIAL	(1 << 0)
-
-/* SLCD Control Register */
-#define SLCD_CTRL_DMA_MODE	(1 << 2)
-#define SLCD_CTRL_DMA_START	(1 << 1)
-#define SLCD_CTRL_DMA_EN	(1 << 0)
-
-/* SLCD Status Register */
-#define SLCD_STATE_BUSY		(1 << 0)
-
-/* SLCD Data Register */
-#define SLCD_DATA_RS_DATA	(0 << 31)
-#define SLCD_DATA_RS_COMMAND	(1 << 31)
 
 /*************************************************************************
  * LCD (LCD Controller)
  *************************************************************************/
-#define LCD_CFG		(LCD_BASE + 0x00) /* LCD Configure Register */
-#define LCD_CTRL	(LCD_BASE + 0x30) /* LCD Control Register */
-#define LCD_STATE	(LCD_BASE + 0x34) /* LCD Status Register */
+#define LCD_CFG		0x00 /* LCD Configure Register */
+#define LCD_CTRL	0x30 /* LCD Control Register */
+#define LCD_STATE	0x34 /* LCD Status Register */
 
-#define LCD_OSDC	(LCD_BASE + 0x100) /* LCD OSD Configure Register */
-#define LCD_OSDCTRL	(LCD_BASE + 0x104) /* LCD OSD Control Register */
-#define LCD_OSDS	(LCD_BASE + 0x108) /* LCD OSD Status Register */
-#define LCD_BGC		(LCD_BASE + 0x10C) /* LCD Background Color Register */
-#define LCD_KEY0	(LCD_BASE + 0x110) /* LCD Foreground Color Key Register 0 */
-#define LCD_KEY1	(LCD_BASE + 0x114) /* LCD Foreground Color Key Register 1 */
-#define LCD_ALPHA	(LCD_BASE + 0x118) /* LCD ALPHA Register */
-#define LCD_IPUR	(LCD_BASE + 0x11C) /* LCD IPU Restart Register */
+#define LCD_OSDC	0x100 /* LCD OSD Configure Register */
+#define LCD_OSDCTRL	0x104 /* LCD OSD Control Register */
+#define LCD_OSDS	0x108 /* LCD OSD Status Register */
+#define LCD_BGC		0x10C /* LCD Background Color Register */
+#define LCD_KEY0	0x110 /* LCD Foreground Color Key Register 0 */
+#define LCD_KEY1	0x114 /* LCD Foreground Color Key Register 1 */
+#define LCD_ALPHA	0x118 /* LCD ALPHA Register */
+#define LCD_IPUR	0x11C /* LCD IPU Restart Register */
 
-#define LCD_VAT		(LCD_BASE + 0x0c) /* Virtual Area Setting Register */
-#define LCD_DAH		(LCD_BASE + 0x10) /* Display Area Horizontal Start/End Point */
-#define LCD_DAV		(LCD_BASE + 0x14) /* Display Area Vertical Start/End Point */
-#define LCD_XYP0	(LCD_BASE + 0x120) /* Foreground 0 XY Position Register */
-#define LCD_XYP1	(LCD_BASE + 0x124) /* Foreground 1 XY Position Register */
-#define LCD_XYP0_PART2	(LCD_BASE + 0x1F0) /* Foreground 0 PART2 XY Position Register */
-#define LCD_SIZE0	(LCD_BASE + 0x128) /* Foreground 0 Size Register */
-#define LCD_SIZE1	(LCD_BASE + 0x12C) /* Foreground 1 Size Register */
-#define LCD_SIZE0_PART2	(LCD_BASE + 0x1F4) /*Foreground 0 PART2 Size Register */
-#define LCD_RGBC	(LCD_BASE + 0x90) /* RGB Controll Register */
+#define LCD_VAT		0x0c /* Virtual Area Setting Register */
+#define LCD_DAH		0x10 /* Display Area Horizontal Start/End Point */
+#define LCD_DAV		0x14 /* Display Area Vertical Start/End Point */
+#define LCD_XYP0	0x120 /* Foreground 0 XY Position Register */
+#define LCD_XYP1	0x124 /* Foreground 1 XY Position Register */
+#define LCD_XYP0_PART2	0x1F0 /* Foreground 0 PART2 XY Position Register */
+#define LCD_SIZE0	0x128 /* Foreground 0 Size Register */
+#define LCD_SIZE1	0x12C /* Foreground 1 Size Register */
+#define LCD_SIZE0_PART2	0x1F4 /*Foreground 0 PART2 Size Register */
+#define LCD_RGBC	0x90 /* RGB Controll Register */
 
-#define LCD_VSYNC	(LCD_BASE + 0x04) /* Vertical Synchronize Register */
-#define LCD_HSYNC	(LCD_BASE + 0x08) /* Horizontal Synchronize Register */
-#define LCD_PS		(LCD_BASE + 0x18) /* PS Signal Setting */
-#define LCD_CLS		(LCD_BASE + 0x1c) /* CLS Signal Setting */
-#define LCD_SPL		(LCD_BASE + 0x20) /* SPL Signal Setting */
-#define LCD_REV		(LCD_BASE + 0x24) /* REV Signal Setting */
-#define LCD_IID		(LCD_BASE + 0x38) /* Interrupt ID Register */
-#define LCD_DA0		(LCD_BASE + 0x40) /* Descriptor Address Register 0 */
-#define LCD_SA0		(LCD_BASE + 0x44) /* Source Address Register 0 */
-#define LCD_FID0	(LCD_BASE + 0x48) /* Frame ID Register 0 */
-#define LCD_CMD0	(LCD_BASE + 0x4c) /* DMA Command Register 0 */
-#define LCD_OFFS0	(LCD_BASE + 0x60) /* DMA Offsize Register 0 */
-#define LCD_PW0		(LCD_BASE + 0x64) /* DMA Page Width Register 0 */
-#define LCD_CNUM0	(LCD_BASE + 0x68) /* DMA Command Counter Register 0 */
-#define LCD_DESSIZE0	(LCD_BASE + 0x6C) /* Foreground Size in Descriptor 0 Register*/
+#define LCD_VSYNC	0x04 /* Vertical Synchronize Register */
+#define LCD_HSYNC	0x08 /* Horizontal Synchronize Register */
+#define LCD_PS		0x18 /* PS Signal Setting */
+#define LCD_CLS		0x1c /* CLS Signal Setting */
+#define LCD_SPL		0x20 /* SPL Signal Setting */
+#define LCD_REV		0x24 /* REV Signal Setting */
+#define LCD_IID		0x38 /* Interrupt ID Register */
+#define LCD_DA0		0x40 /* Descriptor Address Register 0 */
+#define LCD_SA0		0x44 /* Source Address Register 0 */
+#define LCD_FID0	0x48 /* Frame ID Register 0 */
+#define LCD_CMD0	0x4c /* DMA Command Register 0 */
+#define LCD_OFFS0	0x60 /* DMA Offsize Register 0 */
+#define LCD_PW0		0x64 /* DMA Page Width Register 0 */
+#define LCD_CNUM0	0x68 /* DMA Command Counter Register 0 */
+#define LCD_DESSIZE0	0x6C /* Foreground Size in Descriptor 0 Register*/
 
-#define LCD_DA0_PART2	(LCD_BASE + 0x1C0) /* Descriptor Address Register PART2 */
-#define LCD_SA0_PART2	(LCD_BASE + 0x1C4) /* Source Address Register PART2 */
-#define LCD_FID0_PART2	(LCD_BASE + 0x1C8) /* Frame ID Register PART2 */
-#define LCD_CMD0_PART2	(LCD_BASE + 0x1CC) /* DMA Command Register PART2 */
-#define LCD_OFFS0_PART2	(LCD_BASE + 0x1E0) /* DMA Offsize Register PART2 */
-#define LCD_PW0_PART2	(LCD_BASE + 0x1E4) /* DMA Command Counter Register PART2 */
-#define LCD_CNUM0_PART2	(LCD_BASE + 0x1E8) /* Foreground Size in Descriptor PART2 Register */
-#define LCD_DESSIZE0_PART2	(LCD_BASE + 0x1EC) /*  */
+#define LCD_DA0_PART2	0x1C0 /* Descriptor Address Register PART2 */
+#define LCD_SA0_PART2	0x1C4 /* Source Address Register PART2 */
+#define LCD_FID0_PART2	0x1C8 /* Frame ID Register PART2 */
+#define LCD_CMD0_PART2	0x1CC /* DMA Command Register PART2 */
+#define LCD_OFFS0_PART2	0x1E0 /* DMA Offsize Register PART2 */
+#define LCD_PW0_PART2	0x1E4 /* DMA Command Counter Register PART2 */
+#define LCD_CNUM0_PART2	0x1E8 /* Foreground Size in Descriptor PART2 Register */
+#define LCD_DESSIZE0_PART2	0x1EC /*  */
 
-#define LCD_DA1		(LCD_BASE + 0x50) /* Descriptor Address Register 1 */
-#define LCD_SA1		(LCD_BASE + 0x54) /* Source Address Register 1 */
-#define LCD_FID1	(LCD_BASE + 0x58) /* Frame ID Register 1 */
-#define LCD_CMD1	(LCD_BASE + 0x5c) /* DMA Command Register 1 */
-#define LCD_OFFS1	(LCD_BASE + 0x70) /* DMA Offsize Register 1 */
-#define LCD_PW1		(LCD_BASE + 0x74) /* DMA Page Width Register 1 */
-#define LCD_CNUM1	(LCD_BASE + 0x78) /* DMA Command Counter Register 1 */
-#define LCD_DESSIZE1	(LCD_BASE + 0x7C) /* Foreground Size in Descriptor 1 Register*/
-#define LCD_PCFG        (LCD_BASE + 0xB0)
+#define LCD_DA1		0x50 /* Descriptor Address Register 1 */
+#define LCD_SA1		0x54 /* Source Address Register 1 */
+#define LCD_FID1	0x58 /* Frame ID Register 1 */
+#define LCD_CMD1	0x5c /* DMA Command Register 1 */
+#define LCD_OFFS1	0x70 /* DMA Offsize Register 1 */
+#define LCD_PW1		0x74 /* DMA Page Width Register 1 */
+#define LCD_CNUM1	0x78 /* DMA Command Counter Register 1 */
+#define LCD_DESSIZE1	0x7C /* Foreground Size in Descriptor 1 Register*/
+#define LCD_PCFG        0xB0
 
-#define REG_LCD_CFG	REG32(LCD_CFG)
-#define REG_LCD_CTRL	REG32(LCD_CTRL)
-#define REG_LCD_STATE	REG32(LCD_STATE)
-
-#define REG_LCD_OSDC	REG16(LCD_OSDC)
-#define REG_LCD_OSDCTRL	REG16(LCD_OSDCTRL)
-#define REG_LCD_OSDS	REG16(LCD_OSDS)
-#define REG_LCD_BGC	REG32(LCD_BGC)
-#define REG_LCD_KEY0	REG32(LCD_KEY0)
-#define REG_LCD_KEY1	REG32(LCD_KEY1)
-#define REG_LCD_ALPHA	REG8(LCD_ALPHA)
-#define REG_LCD_IPUR	REG32(LCD_IPUR)
-
-#define REG_LCD_VAT	REG32(LCD_VAT)
-#define REG_LCD_DAH	REG32(LCD_DAH)
-#define REG_LCD_DAV	REG32(LCD_DAV)
-
-#define REG_LCD_XYP0		REG32(LCD_XYP0)
-#define REG_LCD_XYP0_PART2	REG32(LCD_XYP0_PART2)
-#define REG_LCD_XYP1		REG32(LCD_XYP1)
-#define REG_LCD_SIZE0		REG32(LCD_SIZE0)
-#define REG_LCD_SIZE0_PART2	REG32(LCD_SIZE0_PART2)
-#define REG_LCD_SIZE1	REG32(LCD_SIZE1)
-
-#define REG_LCD_RGBC	REG16(LCD_RGBC)
-
-#define REG_LCD_VSYNC	REG32(LCD_VSYNC)
-#define REG_LCD_HSYNC	REG32(LCD_HSYNC)
-#define REG_LCD_PS	REG32(LCD_PS)
-#define REG_LCD_CLS	REG32(LCD_CLS)
-#define REG_LCD_SPL	REG32(LCD_SPL)
-#define REG_LCD_REV	REG32(LCD_REV)
-#define REG_LCD_IID	REG32(LCD_IID)
-#define REG_LCD_DA0	REG32(LCD_DA0)
-#define REG_LCD_SA0	REG32(LCD_SA0)
-#define REG_LCD_FID0	REG32(LCD_FID0)
-#define REG_LCD_CMD0	REG32(LCD_CMD0)
-
-#define REG_LCD_OFFS0	REG32(LCD_OFFS0)
-#define REG_LCD_PW0	REG32(LCD_PW0)
-#define REG_LCD_CNUM0	REG32(LCD_CNUM0)
-#define REG_LCD_DESSIZE0	REG32(LCD_DESSIZE0)
-
-#define REG_LCD_DA0_PART2	REG32(LCD_DA0_PART2)
-#define REG_LCD_SA0_PART2	REG32(LCD_SA0_PART2)
-#define REG_LCD_FID0_PART2	REG32(LCD_FID0_PART2)
-#define REG_LCD_CMD0_PART2	REG32(LCD_CMD0_PART2)
-#define REG_LCD_OFFS0_PART2	REG32(LCD_OFFS0_PART2)
-#define REG_LCD_PW0_PART2	REG32(LCD_PW0_PART2)
-#define REG_LCD_CNUM0_PART2	REG32(LCD_CNUM0_PART2)
-#define REG_LCD_DESSIZE0_PART2	REG32(LCD_DESSIZE0_PART2)
-
-#define REG_LCD_DA1	REG32(LCD_DA1)
-#define REG_LCD_SA1	REG32(LCD_SA1)
-#define REG_LCD_FID1	REG32(LCD_FID1)
-#define REG_LCD_CMD1	REG32(LCD_CMD1)
-#define REG_LCD_OFFS1	REG32(LCD_OFFS1)
-#define REG_LCD_PW1	REG32(LCD_PW1)
-#define REG_LCD_CNUM1	REG32(LCD_CNUM1)
-#define REG_LCD_DESSIZE1	REG32(LCD_DESSIZE1)
-#define REG_LCD_PCFG            REG32(LCD_PCFG)
 
 /* LCD Configure Register */
 #define LCD_CFG_LCDPIN_BIT	31  /* LCD pins selection */
@@ -470,408 +355,5 @@
 #define LCD_DESSIZE_HEIGHT_MASK	(0xffff << LCD_DESSIZE_HEIGHT_BIT)
 #define LCD_DESSIZE_WIDTH_BIT	0  /* width of foreground 1 */
 #define LCD_DESSIZE_WIDTH_MASK	(0xffff << LCD_DESSIZE_WIDTH_BIT)
-
-
-#ifndef __MIPS_ASSEMBLER
-
-/*************************************************************************
- * SLCD (Smart LCD Controller)
- *************************************************************************/
-#define __slcd_set_data_18bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_18BIT )
-#define __slcd_set_data_16bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_16BIT )
-#define __slcd_set_data_8bit_x3() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_8BIT_x3 )
-#define __slcd_set_data_8bit_x2() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_8BIT_x2 )
-#define __slcd_set_data_8bit_x1() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_8BIT_x1 )
-#define __slcd_set_data_24bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_24BIT )
-#define __slcd_set_data_9bit_x2() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_DWIDTH_MASK) | SLCD_CFG_DWIDTH_9BIT_x2 )
-
-#define __slcd_set_cmd_16bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_CWIDTH_MASK) | SLCD_CFG_CWIDTH_16BIT )
-#define __slcd_set_cmd_8bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_CWIDTH_MASK) | SLCD_CFG_CWIDTH_8BIT )
-#define __slcd_set_cmd_18bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_CWIDTH_MASK) | SLCD_CFG_CWIDTH_18BIT )
-#define __slcd_set_cmd_24bit() \
-  ( REG_SLCD_CFG = (REG_SLCD_CFG & ~SLCD_CFG_CWIDTH_MASK) | SLCD_CFG_CWIDTH_24BIT )
-
-#define __slcd_set_cs_high()        ( REG_SLCD_CFG |= SLCD_CFG_CS_ACTIVE_HIGH )
-#define __slcd_set_cs_low()         ( REG_SLCD_CFG &= ~SLCD_CFG_CS_ACTIVE_HIGH )
-
-#define __slcd_set_rs_high()        ( REG_SLCD_CFG |= SLCD_CFG_RS_CMD_HIGH )
-#define __slcd_set_rs_low()         ( REG_SLCD_CFG &= ~SLCD_CFG_RS_CMD_HIGH )
-
-#define __slcd_set_clk_falling()    ( REG_SLCD_CFG &= ~SLCD_CFG_CLK_ACTIVE_RISING )
-#define __slcd_set_clk_rising()     ( REG_SLCD_CFG |= SLCD_CFG_CLK_ACTIVE_RISING )
-
-#define __slcd_set_parallel_type()  ( REG_SLCD_CFG &= ~SLCD_CFG_TYPE_SERIAL )
-#define __slcd_set_serial_type()    ( REG_SLCD_CFG |= SLCD_CFG_TYPE_SERIAL )
-
-/* SLCD Control Register */
-#define __slcd_enable_dma()         ( REG_SLCD_CTRL |= SLCD_CTRL_DMA_EN )
-#define __slcd_disable_dma()        ( REG_SLCD_CTRL &= ~SLCD_CTRL_DMA_EN )
-
-/* SLCD Status Register */
-#define __slcd_is_busy()            ( REG_SLCD_STATE & SLCD_STATE_BUSY )
-
-/* SLCD Data Register */
-#define __slcd_set_cmd_rs()         ( REG_SLCD_DATA |= SLCD_DATA_RS_COMMAND)
-#define __slcd_set_data_rs()        ( REG_SLCD_DATA &= ~SLCD_DATA_RS_COMMAND)
-
-
-/***************************************************************************
- * LCD
- ***************************************************************************/
-
-/***************************************************************************
- * LCD
- ***************************************************************************/
-#define __lcd_as_smart_lcd() 		( REG_LCD_CFG |= ( LCD_CFG_LCDPIN_SLCD | LCD_CFG_MODE_SLCD))
-#define __lcd_as_general_lcd() 		( REG_LCD_CFG &= ~( LCD_CFG_LCDPIN_SLCD | LCD_CFG_MODE_SLCD))
-
-#define __lcd_enable_tvepeh() 		( REG_LCD_CFG |= LCD_CFG_TVEPEH )
-#define __lcd_disable_tvepeh() 		( REG_LCD_CFG &= ~LCD_CFG_TVEPEH )
-
-#define __lcd_enable_fuhold() 		( REG_LCD_CFG |= LCD_CFG_FUHOLD )
-#define __lcd_disable_fuhold() 		( REG_LCD_CFG &= ~LCD_CFG_FUHOLD )
-
-#define __lcd_des_8word() 		( REG_LCD_CFG |= LCD_CFG_NEWDES )
-#define __lcd_des_4word() 		( REG_LCD_CFG &= ~LCD_CFG_NEWDES )
-
-#define __lcd_enable_bypass_pal() 	( REG_LCD_CFG |= LCD_CFG_PALBP )
-#define __lcd_disable_bypass_pal() 	( REG_LCD_CFG &= ~LCD_CFG_PALBP )
-
-#define __lcd_set_lcdpnl_term()		( REG_LCD_CFG |= LCD_CFG_TVEN )
-#define __lcd_set_tv_term()		( REG_LCD_CFG &= ~LCD_CFG_TVEN )
-
-#define __lcd_enable_auto_recover() 	( REG_LCD_CFG |= LCD_CFG_RECOVER )
-#define __lcd_disable_auto_recover() 	( REG_LCD_CFG &= ~LCD_CFG_RECOVER )
-
-#define __lcd_enable_dither() 	        ( REG_LCD_CFG |= LCD_CFG_DITHER )
-#define __lcd_disable_dither() 	        ( REG_LCD_CFG &= ~LCD_CFG_DITHER )
-
-#define __lcd_disable_ps_mode()	        ( REG_LCD_CFG |= LCD_CFG_PSM )
-#define __lcd_enable_ps_mode()	        ( REG_LCD_CFG &= ~LCD_CFG_PSM )
-
-#define __lcd_disable_cls_mode() 	( REG_LCD_CFG |= LCD_CFG_CLSM )
-#define __lcd_enable_cls_mode()	        ( REG_LCD_CFG &= ~LCD_CFG_CLSM )
-
-#define __lcd_disable_spl_mode() 	( REG_LCD_CFG |= LCD_CFG_SPLM )
-#define __lcd_enable_spl_mode()	        ( REG_LCD_CFG &= ~LCD_CFG_SPLM )
-
-#define __lcd_disable_rev_mode() 	( REG_LCD_CFG |= LCD_CFG_REVM )
-#define __lcd_enable_rev_mode()	        ( REG_LCD_CFG &= ~LCD_CFG_REVM )
-
-#define __lcd_disable_hsync_mode() 	( REG_LCD_CFG |= LCD_CFG_HSYNM )
-#define __lcd_enable_hsync_mode()	( REG_LCD_CFG &= ~LCD_CFG_HSYNM )
-
-#define __lcd_disable_pclk_mode() 	( REG_LCD_CFG |= LCD_CFG_PCLKM )
-#define __lcd_enable_pclk_mode()	( REG_LCD_CFG &= ~LCD_CFG_PCLKM )
-
-#define __lcd_normal_outdata()          ( REG_LCD_CFG &= ~LCD_CFG_INVDAT )
-#define __lcd_inverse_outdata()         ( REG_LCD_CFG |= LCD_CFG_INVDAT )
-
-#define __lcd_sync_input()              ( REG_LCD_CFG |= LCD_CFG_SYNDIR_IN )
-#define __lcd_sync_output()             ( REG_LCD_CFG &= ~LCD_CFG_SYNDIR_IN )
-
-#define __lcd_hsync_active_high()       ( REG_LCD_CFG &= ~LCD_CFG_HSP )
-#define __lcd_hsync_active_low()        ( REG_LCD_CFG |= LCD_CFG_HSP )
-
-#define __lcd_pclk_rising()             ( REG_LCD_CFG &= ~LCD_CFG_PCP )
-#define __lcd_pclk_falling()            ( REG_LCD_CFG |= LCD_CFG_PCP )
-
-#define __lcd_de_active_high()          ( REG_LCD_CFG &= ~LCD_CFG_DEP )
-#define __lcd_de_active_low()           ( REG_LCD_CFG |= LCD_CFG_DEP )
-
-#define __lcd_vsync_rising()            ( REG_LCD_CFG &= ~LCD_CFG_VSP )
-#define __lcd_vsync_falling()           ( REG_LCD_CFG |= LCD_CFG_VSP )
-
-#define __lcd_set_16_tftpnl() \
-  ( REG_LCD_CFG = (REG_LCD_CFG & ~LCD_CFG_MODE_TFT_MASK) | LCD_CFG_MODE_TFT_16BIT )
-
-#define __lcd_set_18_tftpnl() \
-  ( REG_LCD_CFG = (REG_LCD_CFG & ~LCD_CFG_MODE_TFT_MASK) | LCD_CFG_MODE_TFT_18BIT )
-
-#define __lcd_set_24_tftpnl()		( REG_LCD_CFG |= LCD_CFG_MODE_TFT_24BIT )
-
-/*
- * n=1,2,4,8 for single mono-STN
- * n=4,8 for dual mono-STN
- */
-#define __lcd_set_panel_datawidth(n) 		\
-do { 						\
-	REG_LCD_CFG &= ~LCD_CFG_PDW_MASK; 	\
-	REG_LCD_CFG |= LCD_CFG_PDW_n##;		\
-} while (0)
-
-/* m = LCD_CFG_MODE_GENERUIC_TFT_xxx */
-#define __lcd_set_panel_mode(m) 		\
-do {						\
-	REG_LCD_CFG &= ~LCD_CFG_MODE_MASK;	\
-	REG_LCD_CFG |= (m);			\
-} while(0)
-
-/* n=4,8,16 */
-#define __lcd_set_burst_length(n) 		\
-do {						\
-	REG_LCD_CTRL &= ~LCD_CTRL_BST_MASK;	\
-	REG_LCD_CTRL |= LCD_CTRL_BST_n##;	\
-} while (0)
-
-#define __lcd_select_rgb565()		( REG_LCD_CTRL &= ~LCD_CTRL_RGB555 )
-#define __lcd_select_rgb555()		( REG_LCD_CTRL |= LCD_CTRL_RGB555 )
-
-#define __lcd_set_ofup()		( REG_LCD_CTRL |= LCD_CTRL_OFUP )
-#define __lcd_clr_ofup()		( REG_LCD_CTRL &= ~LCD_CTRL_OFUP )
-
-/* n=2,4,16 */
-#define __lcd_set_stn_frc(n) 			\
-do {						\
-	REG_LCD_CTRL &= ~LCD_CTRL_FRC_MASK;	\
-	REG_LCD_CTRL |= LCD_CTRL_FRC_n##;	\
-} while (0)
-
-#define __lcd_enable_eof_intr()		( REG_LCD_CTRL |= LCD_CTRL_EOFM )
-#define __lcd_disable_eof_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_EOFM )
-
-#define __lcd_enable_sof_intr()		( REG_LCD_CTRL |= LCD_CTRL_SOFM )
-#define __lcd_disable_sof_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_SOFM )
-
-#define __lcd_enable_ofu_intr()		( REG_LCD_CTRL |= LCD_CTRL_OFUM )
-#define __lcd_disable_ofu_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_OFUM )
-
-#define __lcd_enable_ifu0_intr()	( REG_LCD_CTRL |= LCD_CTRL_IFUM0 )
-#define __lcd_disable_ifu0_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_IFUM0 )
-
-#define __lcd_enable_ifu1_intr()	( REG_LCD_CTRL |= LCD_CTRL_IFUM1 )
-#define __lcd_disable_ifu1_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_IFUM1 )
-
-#define __lcd_enable_ldd_intr()		( REG_LCD_CTRL |= LCD_CTRL_LDDM )
-#define __lcd_disable_ldd_intr()	( REG_LCD_CTRL &= ~LCD_CTRL_LDDM )
-
-#define __lcd_enable_qd_intr()		( REG_LCD_CTRL |= LCD_CTRL_QDM )
-#define __lcd_disable_qd_intr()		( REG_LCD_CTRL &= ~LCD_CTRL_QDM )
-
-#define __lcd_reverse_byte_endian()	( REG_LCD_CTRL |= LCD_CTRL_BEDN )
-#define __lcd_normal_byte_endian()	( REG_LCD_CTRL &= ~LCD_CTRL_BEDN )
-
-#define __lcd_pixel_endian_little()	( REG_LCD_CTRL |= LCD_CTRL_PEDN )
-#define __lcd_pixel_endian_big()	( REG_LCD_CTRL &= ~LCD_CTRL_PEDN )
-
-#define __lcd_set_dis()			( REG_LCD_CTRL |= LCD_CTRL_DIS )
-#define __lcd_clr_dis()			( REG_LCD_CTRL &= ~LCD_CTRL_DIS )
-
-#define __lcd_set_ena()			( REG_LCD_CTRL |= LCD_CTRL_ENA )
-#define __lcd_clr_ena()			( REG_LCD_CTRL &= ~LCD_CTRL_ENA )
-
-/* n=1,2,4,8,16 */
-#define __lcd_set_bpp(n) \
-  ( REG_LCD_CTRL = (REG_LCD_CTRL & ~LCD_CTRL_BPP_MASK) | LCD_CTRL_BPP_##n )
-
-/* LCD status register indication */
-
-#define __lcd_quick_disable_done()	( REG_LCD_STATE & LCD_STATE_QD )
-#define __lcd_disable_done()		( REG_LCD_STATE & LCD_STATE_LDD )
-#define __lcd_infifo0_underrun()	( REG_LCD_STATE & LCD_STATE_IFU0 )
-#define __lcd_infifo1_underrun()	( REG_LCD_STATE & LCD_STATE_IFU1 )
-#define __lcd_outfifo_underrun()	( REG_LCD_STATE & LCD_STATE_OFU )
-#define __lcd_start_of_frame()		( REG_LCD_STATE & LCD_STATE_SOF )
-#define __lcd_end_of_frame()		( REG_LCD_STATE & LCD_STATE_EOF )
-
-#define __lcd_clr_outfifounderrun()	( REG_LCD_STATE &= ~LCD_STATE_OFU )
-#define __lcd_clr_sof()			( REG_LCD_STATE &= ~LCD_STATE_SOF )
-#define __lcd_clr_eof()			( REG_LCD_STATE &= ~LCD_STATE_EOF )
-
-/* OSD functions */
-#define __lcd_enable_osd() 	(REG_LCD_OSDC |= LCD_OSDC_OSDEN)
-#define __lcd_enable_f0() 	(REG_LCD_OSDC |= LCD_OSDC_F0EN)
-#define __lcd_enable_f1()	(REG_LCD_OSDC |= LCD_OSDC_F1EN)
-#define __lcd_enable_alpha() 	(REG_LCD_OSDC |= LCD_OSDC_ALPHAEN)
-#define __lcd_enable_alphamd()	(REG_LCD_OSDC |= LCD_OSDC_ALPHAMD)
-
-#define __lcd_disable_osd()	(REG_LCD_OSDC &= ~LCD_OSDC_OSDEN)
-#define __lcd_disable_f0() 	(REG_LCD_OSDC &= ~LCD_OSDC_F0EN)
-#define __lcd_disable_f1() 	(REG_LCD_OSDC &= ~LCD_OSDC_F1EN)
-#define __lcd_disable_alpha()	(REG_LCD_OSDC &= ~LCD_OSDC_ALPHAEN)
-#define __lcd_disable_alphamd()	(REG_LCD_OSDC &= ~LCD_OSDC_ALPHAMD)
-
-/* OSD Controll Register */
-#define __lcd_fg1_use_ipu() 		(REG_LCD_OSDCTRL |= LCD_OSDCTRL_IPU)
-#define __lcd_fg1_use_dma_chan1() 	(REG_LCD_OSDCTRL &= ~LCD_OSDCTRL_IPU)
-#define __lcd_fg1_unuse_ipu() 		__lcd_fg1_use_dma_chan1()
-#define __lcd_osd_rgb555_mode()         ( REG_LCD_OSDCTRL |= LCD_OSDCTRL_RGB555 )
-#define __lcd_osd_rgb565_mode()         ( REG_LCD_OSDCTRL &= ~LCD_OSDCTRL_RGB555 )
-#define __lcd_osd_change_size()         ( REG_LCD_OSDCTRL |= LCD_OSDCTRL_CHANGES )
-#define __lcd_osd_bpp_15_16() \
-  ( REG_LCD_OSDCTRL = (REG_LCD_OSDCTRL & ~LCD_OSDCTRL_OSDBPP_MASK) | LCD_OSDCTRL_OSDBPP_15_16 )
-#define __lcd_osd_bpp_18_24() \
-  ( REG_LCD_OSDCTRL = (REG_LCD_OSDCTRL & ~LCD_OSDCTRL_OSDBPP_MASK) | LCD_OSDCTRL_OSDBPP_18_24 )
-
-/* OSD State Register */
-#define __lcd_start_of_fg1()		( REG_LCD_OSDS & LCD_OSDS_SOF1 )
-#define __lcd_end_of_fg1()		( REG_LCD_OSDS & LCD_OSDS_EOF1 )
-#define __lcd_start_of_fg0()		( REG_LCD_OSDS & LCD_OSDS_SOF0 )
-#define __lcd_end_of_fg0()		( REG_LCD_OSDS & LCD_OSDS_EOF0 )
-#define __lcd_change_is_rdy()		( REG_LCD_OSDS & LCD_OSDS_READY )
-
-/* Foreground Color Key Register 0,1(foreground 0, foreground 1) */
-#define __lcd_enable_colorkey0()	(REG_LCD_KEY0 |= LCD_KEY_KEYEN)
-#define __lcd_enable_colorkey1()	(REG_LCD_KEY1 |= LCD_KEY_KEYEN)
-#define __lcd_enable_colorkey0_md() 	(REG_LCD_KEY0 |= LCD_KEY_KEYMD)
-#define __lcd_enable_colorkey1_md() 	(REG_LCD_KEY1 |= LCD_KEY_KEYMD)
-#define __lcd_set_colorkey0(key) 	(REG_LCD_KEY0 = (REG_LCD_KEY0&~0xFFFFFF)|(key))
-#define __lcd_set_colorkey1(key) 	(REG_LCD_KEY1 = (REG_LCD_KEY1&~0xFFFFFF)|(key))
-
-#define __lcd_disable_colorkey0() 	(REG_LCD_KEY0 &= ~LCD_KEY_KEYEN)
-#define __lcd_disable_colorkey1() 	(REG_LCD_KEY1 &= ~LCD_KEY_KEYEN)
-#define __lcd_disable_colorkey0_md() 	(REG_LCD_KEY0 &= ~LCD_KEY_KEYMD)
-#define __lcd_disable_colorkey1_md() 	(REG_LCD_KEY1 &= ~LCD_KEY_KEYMD)
-
-/* IPU Restart Register */
-#define __lcd_enable_ipu_restart() 	(REG_LCD_IPUR |= LCD_IPUR_IPUREN)
-#define __lcd_disable_ipu_restart() 	(REG_LCD_IPUR &= ~LCD_IPUR_IPUREN)
-#define __lcd_set_ipu_restart_triger(n)	(REG_LCD_IPUR = (REG_LCD_IPUR&(~0xFFFFFF))|(n))
-
-/* RGB Control Register */
-#define __lcd_enable_rgb_dummy() 	(REG_LCD_RGBC |= LCD_RGBC_RGBDM)
-#define __lcd_disable_rgb_dummy() 	(REG_LCD_RGBC &= ~LCD_RGBC_RGBDM)
-
-#define __lcd_dummy_rgb() 	(REG_LCD_RGBC |= LCD_RGBC_DMM)
-#define __lcd_rgb_dummy() 	(REG_LCD_RGBC &= ~LCD_RGBC_DMM)
-
-#define __lcd_rgb2ycc() 	(REG_LCD_RGBC |= LCD_RGBC_YCC)
-#define __lcd_notrgb2ycc() 	(REG_LCD_RGBC &= ~LCD_RGBC_YCC)
-
-#define __lcd_odd_mode_rgb() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_RGB )
-#define __lcd_odd_mode_rbg() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_RBG )
-#define __lcd_odd_mode_grb() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_GRB)
-
-#define __lcd_odd_mode_gbr() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_GBR)
-#define __lcd_odd_mode_brg() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_BRG)
-#define __lcd_odd_mode_bgr() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_ODDRGB_MASK) | LCD_RGBC_ODD_BGR)
-
-#define __lcd_even_mode_rgb() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_RGB )
-#define __lcd_even_mode_rbg() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_RBG )
-#define __lcd_even_mode_grb() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_GRB)
-
-#define __lcd_even_mode_gbr() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_GBR)
-#define __lcd_even_mode_brg() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_BRG)
-#define __lcd_even_mode_bgr() \
-  ( REG_LCD_RGBC = (REG_LCD_RGBC & ~LCD_RGBC_EVENRGB_MASK) | LCD_RGBC_EVEN_BGR)
-
-/* Vertical Synchronize Register */
-#define __lcd_vsync_get_vps() \
-  ( (REG_LCD_VSYNC & LCD_VSYNC_VPS_MASK) >> LCD_VSYNC_VPS_BIT )
-
-#define __lcd_vsync_get_vpe() \
-  ( (REG_LCD_VSYNC & LCD_VSYNC_VPE_MASK) >> LCD_VSYNC_VPE_BIT )
-#define __lcd_vsync_set_vpe(n) 				\
-do {							\
-	REG_LCD_VSYNC &= ~LCD_VSYNC_VPE_MASK;		\
-	REG_LCD_VSYNC |= (n) << LCD_VSYNC_VPE_BIT;	\
-} while (0)
-
-#define __lcd_hsync_get_hps() \
-  ( (REG_LCD_HSYNC & LCD_HSYNC_HPS_MASK) >> LCD_HSYNC_HPS_BIT )
-#define __lcd_hsync_set_hps(n) 				\
-do {							\
-	REG_LCD_HSYNC &= ~LCD_HSYNC_HPS_MASK;		\
-	REG_LCD_HSYNC |= (n) << LCD_HSYNC_HPS_BIT;	\
-} while (0)
-
-#define __lcd_hsync_get_hpe() \
-  ( (REG_LCD_HSYNC & LCD_HSYNC_HPE_MASK) >> LCD_VSYNC_HPE_BIT )
-#define __lcd_hsync_set_hpe(n) 				\
-do {							\
-	REG_LCD_HSYNC &= ~LCD_HSYNC_HPE_MASK;		\
-	REG_LCD_HSYNC |= (n) << LCD_HSYNC_HPE_BIT;	\
-} while (0)
-
-#define __lcd_vat_get_ht() \
-  ( (REG_LCD_VAT & LCD_VAT_HT_MASK) >> LCD_VAT_HT_BIT )
-#define __lcd_vat_set_ht(n) 				\
-do {							\
-	REG_LCD_VAT &= ~LCD_VAT_HT_MASK;		\
-	REG_LCD_VAT |= (n) << LCD_VAT_HT_BIT;		\
-} while (0)
-
-#define __lcd_vat_get_vt() \
-  ( (REG_LCD_VAT & LCD_VAT_VT_MASK) >> LCD_VAT_VT_BIT )
-#define __lcd_vat_set_vt(n) 				\
-do {							\
-	REG_LCD_VAT &= ~LCD_VAT_VT_MASK;		\
-	REG_LCD_VAT |= (n) << LCD_VAT_VT_BIT;		\
-} while (0)
-
-#define __lcd_dah_get_hds() \
-  ( (REG_LCD_DAH & LCD_DAH_HDS_MASK) >> LCD_DAH_HDS_BIT )
-#define __lcd_dah_set_hds(n) 				\
-do {							\
-	REG_LCD_DAH &= ~LCD_DAH_HDS_MASK;		\
-	REG_LCD_DAH |= (n) << LCD_DAH_HDS_BIT;		\
-} while (0)
-
-#define __lcd_dah_get_hde() \
-  ( (REG_LCD_DAH & LCD_DAH_HDE_MASK) >> LCD_DAH_HDE_BIT )
-#define __lcd_dah_set_hde(n) 				\
-do {							\
-	REG_LCD_DAH &= ~LCD_DAH_HDE_MASK;		\
-	REG_LCD_DAH |= (n) << LCD_DAH_HDE_BIT;		\
-} while (0)
-
-#define __lcd_dav_get_vds() \
-  ( (REG_LCD_DAV & LCD_DAV_VDS_MASK) >> LCD_DAV_VDS_BIT )
-#define __lcd_dav_set_vds(n) 				\
-do {							\
-	REG_LCD_DAV &= ~LCD_DAV_VDS_MASK;		\
-	REG_LCD_DAV |= (n) << LCD_DAV_VDS_BIT;		\
-} while (0)
-
-#define __lcd_dav_get_vde() \
-  ( (REG_LCD_DAV & LCD_DAV_VDE_MASK) >> LCD_DAV_VDE_BIT )
-#define __lcd_dav_set_vde(n) 				\
-do {							\
-	REG_LCD_DAV &= ~LCD_DAV_VDE_MASK;		\
-	REG_LCD_DAV |= (n) << LCD_DAV_VDE_BIT;		\
-} while (0)
-
-/* DMA Command Register */
-#define __lcd_cmd0_set_sofint()		( REG_LCD_CMD0 |= LCD_CMD_SOFINT )
-#define __lcd_cmd0_clr_sofint()		( REG_LCD_CMD0 &= ~LCD_CMD_SOFINT )
-#define __lcd_cmd1_set_sofint()		( REG_LCD_CMD1 |= LCD_CMD_SOFINT )
-#define __lcd_cmd1_clr_sofint()		( REG_LCD_CMD1 &= ~LCD_CMD_SOFINT )
-
-#define __lcd_cmd0_set_eofint()		( REG_LCD_CMD0 |= LCD_CMD_EOFINT )
-#define __lcd_cmd0_clr_eofint()		( REG_LCD_CMD0 &= ~LCD_CMD_EOFINT )
-#define __lcd_cmd1_set_eofint()		( REG_LCD_CMD1 |= LCD_CMD_EOFINT )
-#define __lcd_cmd1_clr_eofint()		( REG_LCD_CMD1 &= ~LCD_CMD_EOFINT )
-
-#define __lcd_cmd0_set_pal()		( REG_LCD_CMD0 |= LCD_CMD_PAL )
-#define __lcd_cmd0_clr_pal()		( REG_LCD_CMD0 &= ~LCD_CMD_PAL )
-
-#define __lcd_cmd0_get_len() \
-  ( (REG_LCD_CMD0 & LCD_CMD_LEN_MASK) >> LCD_CMD_LEN_BIT )
-#define __lcd_cmd1_get_len() \
-  ( (REG_LCD_CMD1 & LCD_CMD_LEN_MASK) >> LCD_CMD_LEN_BIT )
-
-
-#endif /* __MIPS_ASSEMBLER */
 
 #endif /* __JZ4770LCDC_H__ */

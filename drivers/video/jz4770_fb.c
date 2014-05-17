@@ -114,33 +114,41 @@ struct jzfb {
 	 * panning instead.
 	 */
 	unsigned int delay_flush;
+
+	void __iomem *base;
 };
 
 static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16),
 								  dma1_desc1 __aligned(16);
 static void *lcd_frame1;
 
-static void ctrl_enable(void)
+static void ctrl_enable(struct jzfb *jzfb)
 {
-	__lcd_clr_dis();
-	__lcd_set_ena();
+	u32 val = readl(jzfb->base + LCD_CTRL);
+	val = (val & ~LCD_CTRL_DIS) | LCD_CTRL_ENA;
+	writel(val, jzfb->base + LCD_CTRL);
 }
 
-static void ctrl_disable(struct platform_device *pdev)
+static void ctrl_disable(struct jzfb *jzfb)
 {
-	int cnt;
+	unsigned int cnt;
+	u32 val;
 
 	/* Use regular disable: finishes current frame, then stops. */
-	__lcd_set_dis();
+	val = readl(jzfb->base + LCD_CTRL) | LCD_CTRL_DIS;
+	writel(val, jzfb->base + LCD_CTRL);
 
 	/* Wait 20 ms for frame to end (at 60 Hz, one frame is 17 ms). */
-	for (cnt = 20; cnt > 0 && !__lcd_disable_done(); cnt -= 4)
+	for (cnt = 20; cnt; cnt -= 4) {
+		if (readl(jzfb->base + LCD_STATE) & LCD_STATE_LDD)
+			break;
 		msleep(4);
-	if (cnt <= 0)
-		dev_err(&pdev->dev, "LCD disable timeout! REG_LCD_STATE=0x%08xx\n",
-		       REG_LCD_STATE);
+	}
+	if (!cnt)
+		dev_err(&jzfb->pdev->dev, "LCD disable timeout!\n");
 
-	REG_LCD_STATE &= ~LCD_STATE_LDD;
+	val = readl(jzfb->base + LCD_STATE);
+	writel(val & ~LCD_STATE_LDD, jzfb->base + LCD_STATE);
 }
 
 static int jz4760fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
@@ -267,13 +275,12 @@ static void jzfb_update_frame_address(struct jzfb *jzfb)
 static void jzfb_lcdc_enable(struct jzfb *jzfb)
 {
 	clk_enable(jzfb->lpclk);
-
 	jzfb_update_frame_address(jzfb);
 
-	REG_LCD_DA1 = virt_to_phys(&dma1_desc1);
+	writel(virt_to_phys(&dma1_desc1), jzfb->base + LCD_DA1);
 	jzfb->delay_flush = 0;
 
-	REG_LCD_STATE = 0; /* clear lcdc status */
+	writel(0, jzfb->base + LCD_STATE); /* Clear LCDC status */
 
 	/*
 	 * Enabling the LCDC too soon after the clock will hang the system.
@@ -281,12 +288,12 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	 */
 	udelay(1);
 
-	ctrl_enable();
+	ctrl_enable(jzfb);
 }
 
 static void jzfb_lcdc_disable(struct jzfb *jzfb)
 {
-	ctrl_disable(jzfb->pdev);
+	ctrl_disable(jzfb);
 
 	clk_disable(jzfb->lpclk);
 }
@@ -471,8 +478,8 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 			const struct jz4760lcd_panel_t *panel)
 {
 	unsigned int bpp = jzfb->bpp;
-	unsigned int osdctrl = 0;
-	unsigned int cfg = panel->cfg;
+	u32 cfg = panel->cfg;
+	u16 osdctrl = 0;
 
 	if (bpp == 16) {
 		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16;
@@ -485,32 +492,39 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 
 	cfg |= LCD_CFG_NEWDES; /* use 8words descriptor always */
 
-	REG_LCD_CFG = cfg; /* LCDC Configure Register */
+	writel(cfg, jzfb->base + LCD_CFG); /* LCDC Configure Register */
 
 	/* 16 words burst, enable output FIFO underrun IRQ, 18/24 bpp on fg0. */
-	REG_LCD_CTRL = LCD_CTRL_OFUM | LCD_CTRL_BST_16 | LCD_CTRL_BPP_18_24;
+	writel(LCD_CTRL_OFUM | LCD_CTRL_BST_16 | LCD_CTRL_BPP_18_24,
+			jzfb->base + LCD_CTRL);
 
-	__lcd_vat_set_ht(panel->blw + panel->w + panel->elw);
-	__lcd_vat_set_vt(panel->bfw + panel->h + panel->efw);
-	__lcd_dah_set_hds(panel->blw);
-	__lcd_dah_set_hde(panel->blw + panel->w);
-	__lcd_dav_set_vds(panel->bfw - 1);
-	__lcd_dav_set_vde(panel->bfw + panel->h);
-	__lcd_hsync_set_hps(0);
-	__lcd_hsync_set_hpe(panel->hsw);
-	__lcd_vsync_set_vpe(panel->vsw);
+	writel((panel->blw + panel->w + panel->elw) << LCD_VAT_HT_BIT |
+			(panel->bfw + panel->h + panel->efw) << LCD_VAT_VT_BIT,
+		jzfb->base + LCD_VAT);
+	writel(panel->blw << LCD_DAH_HDS_BIT |
+			(panel->blw + panel->w) << LCD_DAH_HDE_BIT,
+			jzfb->base + LCD_DAH);
+	writel((panel->bfw - 1) << LCD_DAV_VDS_BIT |
+			(panel->bfw + panel->h) << LCD_DAV_VDE_BIT,
+			jzfb->base + LCD_DAV);
 
-	REG_LCD_OSDC = LCD_OSDC_F1EN | LCD_OSDC_OSDEN |
-		       LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1;
-	REG_LCD_OSDCTRL = osdctrl;
+	writel(panel->hsw << LCD_HSYNC_HPE_BIT, jzfb->base + LCD_HSYNC);
+	writel(panel->vsw << LCD_VSYNC_VPE_BIT, jzfb->base + LCD_VSYNC);
+
+	/* Enable foreground 1, OSD mode,
+	 * start-of-frame and end-of-frame interrupts */
+	writew(LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1,
+			jzfb->base + LCD_OSDC);
+	writew(osdctrl, jzfb->base + LCD_OSDCTRL);
 
 	/* yellow background helps debugging */
-	REG_LCD_BGC = 0x00FFFF00;
+	writel(0x00FFFF00, jzfb->base + LCD_BGC);
 }
 
 
-static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel,
-				       const struct fb_var_screeninfo *var)
+static void jz4760fb_foreground_resize(struct jzfb *jzfb,
+		const struct jz4760lcd_panel_t *panel,
+		const struct fb_var_screeninfo *var)
 {
 	int fg1_words_per_line = words_per_line(var->xres, var->bits_per_pixel);
 	int fg1_words_per_frame = fg1_words_per_line * var->yres;
@@ -533,7 +547,7 @@ static void jz4760fb_foreground_resize(const struct jz4760lcd_panel_t *panel,
 	ypos = (panel->h - var->yres) / 2;
 	if (ypos < 0) ypos = 0;
 
-	REG_LCD_XYP1 = ypos << 16 | xpos;
+	writel(ypos << 16 | xpos, jzfb->base + LCD_XYP1);
 
 	/* wait change ready??? */
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
@@ -572,13 +586,13 @@ static int jz4760fb_set_par(struct fb_info *info)
 	struct jzfb *jzfb = info->par;
 
 	if (jzfb->is_enabled)
-		ctrl_disable(jzfb->pdev);
+		ctrl_disable(jzfb);
 	else
 		clk_enable(jzfb->lpclk);
 
 	jzfb->bpp = var->bits_per_pixel;
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
-	jz4760fb_foreground_resize(jz_panel, var);
+	jz4760fb_foreground_resize(jzfb, jz_panel, var);
 
 	clk_disable(jzfb->lpclk);
 
@@ -621,11 +635,12 @@ static struct fb_ops jz4760fb_ops = {
 
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 {
-	unsigned int state;
 	static int irqcnt = 0;
 	struct jzfb *jzfb = dev_id;
+	u32 state;
+	u16 osds;
 
-	state = REG_LCD_STATE;
+	state = readl(jzfb->base + LCD_STATE);
 	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
 
 	if (state & LCD_STATE_SOF) /* Start of frame */
@@ -647,17 +662,18 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	if (state & LCD_STATE_OFU) { /* Out fifo underrun */
 		state &= ~LCD_STATE_OFU;
 		if ( irqcnt++ > 100 ) {
-			__lcd_disable_ofu_intr();
+			u32 val = readl(jzfb->base + LCD_CTRL) & ~LCD_CTRL_OFUM;
+			writel(val, jzfb->base + LCD_CTRL);
 			pr_debug("disable Out FiFo underrun irq.\n");
 		}
 		pr_warn("%s, Out FiFo underrun.\n", __FUNCTION__);
 	}
 
-	REG_LCD_STATE = state;
+	writel(state, jzfb->base + LCD_STATE);
 
-	state = REG_LCD_OSDS;
+	osds = readl(jzfb->base + LCD_OSDS);
 
-	if (state & LCD_OSDS_SOF1) {
+	if (osds & LCD_OSDS_SOF1) {
 		if (jzfb->delay_flush == 0) {
 			struct fb_info *fb = jzfb->fb;
 			dma_cache_wback_inv((unsigned long)(lcd_frame1 +
@@ -666,17 +682,19 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 		} else {
 			jzfb->delay_flush--;
 		}
-		REG_LCD_OSDS &= ~LCD_OSDS_SOF1;
+		osds &= ~LCD_OSDS_SOF1;
 	}
 
-	if (state & LCD_OSDS_EOF1) {
+	if (osds & LCD_OSDS_EOF1) {
 		jzfb_update_frame_address(jzfb);
 
 		jzfb->vsync_count++;
 		wake_up_interruptible_all(&jzfb->wait_vsync);
 
-		REG_LCD_OSDS &= ~LCD_OSDS_EOF1;
+		osds &= ~LCD_OSDS_EOF1;
 	}
+
+	writel(osds, jzfb->base + LCD_OSDS);
 
 	return IRQ_HANDLED;
 }
@@ -697,6 +715,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	struct jzfb_platform_data *pdata = pdev->dev.platform_data;
 	struct jzfb *jzfb;
 	struct fb_info *fb;
+	struct resource *res;
 	int ret;
 
 	if (!pdata) {
@@ -711,6 +730,15 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	}
 
 	jzfb = fb->par;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	jzfb->base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(jzfb->base)) {
+		dev_err(&pdev->dev, "Failed to request registers\n");
+		ret = PTR_ERR(jzfb->base);
+		goto err_release_fb;
+	}
+
 	jzfb->pdev = pdev;
 	jzfb->pdata = pdata;
 	jzfb->bpp = 32;
@@ -797,8 +825,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		fb->node, fb->fix.id, fb->fix.smem_len>>10);
 
 	/* XXX(pcercuei): For some reason, this fixes the logo not being shown */
-	ctrl_disable(pdev);
-	ctrl_enable();
+	ctrl_disable(jzfb);
+	ctrl_enable(jzfb);
 
 	fb_prepare_logo(jzfb->fb, 0);
 	fb_show_logo(jzfb->fb, 0);
@@ -808,6 +836,7 @@ err_exit_panel:
 	jzfb->pdata->panel_ops->exit(jzfb->panel);
 failed:
 	jz4760fb_unmap_smem(fb);
+err_release_fb:
 	framebuffer_release(fb);
 	return ret;
 }
