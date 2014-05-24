@@ -339,4 +339,13 @@ config JOYSTICK_JZ_SADC
 	  To compile this driver as a module, choose M here: the module will
 	  be called jz-sadc.
 
+config JOYSTICK_MXC6225
+	tristate "MXC6225 Thermal Accelerometer"
+	depends on MFD_JZ4770_ADC
+	help
+	  Say Y here if you have want to enable support for the MXC6225 chip.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called mxc6225.
+
 endif
