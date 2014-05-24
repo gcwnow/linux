@@ -951,15 +951,14 @@ static int i2c_jz_remove(struct platform_device *pdev)
 {
 	struct jz_i2c *i2c = platform_get_drvdata(pdev);
 	struct i2c_adapter *adapter = &i2c->adap;
-	int rc;
 
-	rc = i2c_del_adapter(adapter);
+	i2c_del_adapter(adapter);
 	platform_set_drvdata(pdev, NULL);
 	if (rx_dma_info[i2c->id].chan >= 0)
 		jz_free_dma(rx_dma_info[i2c->id].chan);
 	if (tx_dma_info[i2c->id].chan >= 0)
 		jz_free_dma(tx_dma_info[i2c->id].chan);
-	return rc;
+	return 0;
 }
 
 static struct platform_driver i2c_jz_driver = {
