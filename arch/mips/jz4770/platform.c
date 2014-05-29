@@ -55,6 +55,11 @@ static struct resource jz_lcd_resources[] = {
 		.end            = JZ4770_LCD_BASE_ADDR + 0x13F,
 		.flags          = IORESOURCE_MEM,
 	},
+	[1] = {
+		.start          = JZ4770_IPU_BASE_ADDR,
+		.end            = JZ4770_IPU_BASE_ADDR + 0x9B,
+		.flags          = IORESOURCE_MEM,
+	},
 	{
 		.name           = "tve",
 		.start          = JZ4770_LCD_BASE_ADDR + 0x140,
