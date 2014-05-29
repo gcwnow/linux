@@ -2,6 +2,7 @@
  * jz4770_fb.c -- Ingenic Jz4770 LCD frame buffer device
  *
  * Copyright (C) 2012, Maarten ter Huurne <maarten@treewalker.org>
+ * Copyright (C) 2014, Paul Cercueil <paul@crapouillou.net>
  *
  * Based on the JZ4760 frame buffer driver:
  * Copyright (C) 2005-2008, Ingenic Semiconductor Inc.
@@ -45,23 +46,12 @@
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
+#include <asm/mach-jz4770/ipu.h>
 
 #include <video/jzpanel.h>
 
 #include "console/fbcon.h"
 
-
-/* use new descriptor(8 words) */
-struct jz4760_lcd_dma_desc {
-	unsigned int next_desc; 	/* LCDDAx */
-	unsigned int databuf;   	/* LCDSAx */
-	unsigned int frame_id;  	/* LCDFIDx */
-	unsigned int cmd; 		/* LCDCMDx */
-	unsigned int offsize;       	/* Stride Offsize(in word) */
-	unsigned int page_width; 	/* Stride Pagewidth(in word) */
-	unsigned int cmd_num; 		/* Command Number(for SLCD) */
-	unsigned int desc_size; 	/* Foreground Size */
-};
 
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
@@ -84,7 +74,7 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
 	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
-	320, 240, 60, 50, 1, 10, 70, 5, 5,
+	320, 240, 60, 50, 1, 10, 70, 4, 6,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
@@ -104,7 +94,7 @@ struct jzfb {
 	uint32_t vsync_count;
 	wait_queue_head_t wait_vsync;
 
-	struct clk *lpclk;
+	struct clk *lpclk, *ipuclk;
 
 	struct mutex lock;
 	bool is_enabled;
@@ -116,10 +106,9 @@ struct jzfb {
 	unsigned int delay_flush;
 
 	void __iomem *base;
+	void __iomem *ipu_base;
 };
 
-static struct jz4760_lcd_dma_desc dma1_desc0 __aligned(16),
-								  dma1_desc1 __aligned(16);
 static void *lcd_frame1;
 
 static void ctrl_enable(struct jzfb *jzfb)
@@ -227,7 +216,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	dev_dbg(&jzfb->pdev->dev, "Found working mode: %s\n", mode->name);
 
 	fb_videomode_to_var(var, mode);
-	/* Reserve space for double buffering. */
+	/* Reserve space for triple buffering. */
 	var->yres_virtual = var->yres * 3;
 
 	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
@@ -264,12 +253,8 @@ static int jzfb_wait_for_vsync(struct jzfb *jzfb)
 
 static void jzfb_update_frame_address(struct jzfb *jzfb)
 {
-	unsigned int addr = (unsigned int) virt_to_phys(lcd_frame1)
-			    + jzfb->pan_offset;
-	if (dma1_desc0.databuf != addr) {
-		dma1_desc0.databuf = addr;
-		dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
-	}
+	writel((u32) jzfb->fb->fix.smem_start + jzfb->pan_offset,
+			jzfb->ipu_base + IPU_Y_ADDR);
 }
 
 static void jzfb_lcdc_enable(struct jzfb *jzfb)
@@ -277,9 +262,7 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	clk_enable(jzfb->lpclk);
 	jzfb_update_frame_address(jzfb);
 
-	writel(virt_to_phys(&dma1_desc1), jzfb->base + LCD_DA1);
 	jzfb->delay_flush = 0;
-
 	writel(0, jzfb->base + LCD_STATE); /* Clear LCDC status */
 
 	/*
@@ -291,11 +274,93 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	ctrl_enable(jzfb);
 }
 
-static void jzfb_lcdc_disable(struct jzfb *jzfb)
+static void jzfb_ipu_enable(struct jzfb *jzfb)
 {
-	ctrl_disable(jzfb);
+	u32 ctrl;
 
-	clk_disable(jzfb->lpclk);
+	clk_enable(jzfb->ipuclk);
+
+	/* Clear the status register and enable the chip */
+	writel(0, jzfb->ipu_base + IPU_STATUS);
+
+	ctrl = readl(jzfb->ipu_base + IPU_CTRL);
+	writel(ctrl | IPU_CTRL_CHIP_EN | IPU_CTRL_RUN,
+			jzfb->ipu_base + IPU_CTRL);
+}
+
+static void jzfb_ipu_disable(struct jzfb *jzfb)
+{
+	unsigned int timeout = 1000;
+	u32 ctrl = readl(jzfb->ipu_base + IPU_CTRL);
+
+	if (ctrl & IPU_CTRL_CHIP_EN) {
+		writel(ctrl | IPU_CTRL_STOP, jzfb->ipu_base + IPU_CTRL);
+		do {
+			u32 status = readl(jzfb->ipu_base + IPU_STATUS);
+			if (status & IPU_STATUS_OUT_END)
+				break;
+			msleep(1);
+		} while (--timeout);
+
+		if (!timeout)
+			dev_err(&jzfb->pdev->dev,
+					"Timeout while disabling IPU\n");
+	}
+
+	writel(ctrl & ~IPU_CTRL_CHIP_EN, jzfb->ipu_base + IPU_CTRL);
+}
+
+static void jzfb_ipu_configure(struct jzfb *jzfb,
+		const struct jz4760lcd_panel_t *panel)
+{
+	struct fb_info *fb = jzfb->fb;
+	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
+
+	/* Enable the chip, reset all the registers */
+	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
+	ctrl = IPU_CTRL_CHIP_EN | IPU_CTRL_LCDC_SEL | IPU_CTRL_FM_IRQ_EN;
+
+	/* TODO(pcercuei): Calculate coef_index and handle scaling */
+	if (fb->var.xres != panel->w) {
+		ctrl |= IPU_CTRL_HRSZ_EN;
+	}
+	if (fb->var.yres != panel->h) {
+		ctrl |= IPU_CTRL_VRSZ_EN;
+	}
+	if (fb->fix.type == FB_TYPE_PACKED_PIXELS)
+		ctrl |= IPU_CTRL_SPKG_SEL;
+	writel(ctrl, jzfb->ipu_base + IPU_CTRL);
+
+	switch (jzfb->bpp) {
+	case 16:
+		format |= 3 << IPU_D_FMT_IN_FMT_BIT;
+		break;
+	case 32:
+	default:
+		format |= 2 << IPU_D_FMT_IN_FMT_BIT;
+		break;
+	}
+	writel(format, jzfb->ipu_base + IPU_D_FMT);
+
+	/* Set the output height/width */
+	size = (panel->w * 4) << IPU_OUT_GS_W_BIT
+		| (panel->h + 1) << IPU_OUT_GS_H_BIT;
+	writel(size, jzfb->ipu_base + IPU_OUT_GS);
+
+	/* Set the input height/width */
+	size = fb->fix.line_length << IPU_IN_GS_W_BIT
+		| (fb->var.yres + 1) << IPU_IN_GS_H_BIT;
+	writel(size, jzfb->ipu_base + IPU_IN_GS);
+
+	/* Set the input/output stride */
+	writel(fb->fix.line_length, jzfb->ipu_base + IPU_Y_STRIDE);
+	writel(4 * panel->w, jzfb->ipu_base + IPU_OUT_STRIDE);
+
+	/* Set the input address */
+	writel((u32) fb->fix.smem_start, jzfb->ipu_base + IPU_Y_ADDR);
+
+	/* Set the LUT index register */
+	writel(coef_index, jzfb->ipu_base + IPU_RSZ_COEF_INDEX);
 }
 
 static void jzfb_power_up(struct jzfb *jzfb)
@@ -305,11 +370,16 @@ static void jzfb_power_up(struct jzfb *jzfb)
 	jzfb->pdata->panel_ops->enable(jzfb->panel);
 
 	jzfb_lcdc_enable(jzfb);
+	jzfb_ipu_enable(jzfb);
 }
 
 static void jzfb_power_down(struct jzfb *jzfb)
 {
-	jzfb_lcdc_disable(jzfb);
+	ctrl_disable(jzfb);
+	clk_disable(jzfb->lpclk);
+
+	jzfb_ipu_disable(jzfb);
+	clk_disable(jzfb->ipuclk);
 
 	jzfb->pdata->panel_ops->disable(jzfb->panel);
 
@@ -449,55 +519,18 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 	}
 }
 
-/* initial dma descriptors */
-static void jz4760fb_descriptor_init(unsigned int bpp)
-{
-	/* DMA1 Descriptor0 */
-	dma1_desc0.next_desc = (unsigned int) virt_to_phys(&dma1_desc1);
-	dma1_desc0.databuf = virt_to_phys(lcd_frame1);
-	dma1_desc0.cmd = LCD_CMD_SOFINT | LCD_CMD_EOFINT;
-
-	/*
-	 * DMA1 Descriptor1
-	 * This is a single invisible line that we place just before the start
-	 * of the frame, to force Descriptor0 to be loaded at the last possible
-	 * moment, to make sure any panning changes (for double buffering) will
-	 * take effect in the next frame rather than the one after that.
-	 */
-	dma1_desc1.next_desc = (unsigned int) virt_to_phys(&dma1_desc0);
-	dma1_desc1.databuf = virt_to_phys(lcd_frame1);
-
-	dma1_desc0.offsize = dma1_desc1.offsize = 0;
-	dma1_desc0.page_width = dma1_desc1.page_width = 0;
-
-	dma_cache_wback_inv((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
-	dma_cache_wback_inv((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
-}
-
 static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 			const struct jz4760lcd_panel_t *panel)
 {
-	unsigned int bpp = jzfb->bpp;
-	u32 cfg = panel->cfg;
-	u16 osdctrl = 0;
+	/* Configure LCDC */
+	writel(panel->cfg, jzfb->base + LCD_CFG);
 
-	if (bpp == 16) {
-		osdctrl |= LCD_OSDCTRL_OSDBPP_15_16;
-	} else {
-		if (WARN_ON(bpp != 32))
-			bpp = 32;
+	/* Enable IPU auto-restart */
+	writel(LCD_IPUR_IPUREN |
+			(panel->blw + panel->w + panel->elw) * panel->vsw / 3,
+			jzfb->base + LCD_IPUR);
 
-		osdctrl |= LCD_OSDCTRL_OSDBPP_18_24;
-	}
-
-	cfg |= LCD_CFG_NEWDES; /* use 8words descriptor always */
-
-	writel(cfg, jzfb->base + LCD_CFG); /* LCDC Configure Register */
-
-	/* 16 words burst, enable output FIFO underrun IRQ, 18/24 bpp on fg0. */
-	writel(LCD_CTRL_OFUM | LCD_CTRL_BST_16 | LCD_CTRL_BPP_18_24,
-			jzfb->base + LCD_CTRL);
-
+	/* Set HT / VT / HDS / HDE / VDS / VDE / HPE / VPE */
 	writel((panel->blw + panel->w + panel->elw) << LCD_VAT_HT_BIT |
 			(panel->bfw + panel->h + panel->efw) << LCD_VAT_VT_BIT,
 		jzfb->base + LCD_VAT);
@@ -507,15 +540,15 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	writel((panel->bfw - 1) << LCD_DAV_VDS_BIT |
 			(panel->bfw + panel->h) << LCD_DAV_VDE_BIT,
 			jzfb->base + LCD_DAV);
-
 	writel(panel->hsw << LCD_HSYNC_HPE_BIT, jzfb->base + LCD_HSYNC);
 	writel(panel->vsw << LCD_VSYNC_VPE_BIT, jzfb->base + LCD_VSYNC);
 
-	/* Enable foreground 1, OSD mode,
-	 * start-of-frame and end-of-frame interrupts */
-	writew(LCD_OSDC_F1EN | LCD_OSDC_OSDEN | LCD_OSDC_SOFM1 | LCD_OSDC_EOFM1,
-			jzfb->base + LCD_OSDC);
-	writew(osdctrl, jzfb->base + LCD_OSDCTRL);
+	/* Enable foreground 1, OSD mode */
+	writew(LCD_OSDC_F1EN | LCD_OSDC_OSDEN, jzfb->base + LCD_OSDC);
+
+	/* Enable IPU, 18/24 bpp output */
+	writew(LCD_OSDCTRL_IPU | LCD_OSDCTRL_OSDBPP_18_24,
+			jzfb->base + LCD_OSDCTRL);
 
 	/* yellow background helps debugging */
 	writel(0x00FFFF00, jzfb->base + LCD_BGC);
@@ -526,8 +559,6 @@ static void jz4760fb_foreground_resize(struct jzfb *jzfb,
 		const struct jz4760lcd_panel_t *panel,
 		const struct fb_var_screeninfo *var)
 {
-	int fg1_words_per_line = words_per_line(var->xres, var->bits_per_pixel);
-	int fg1_words_per_frame = fg1_words_per_line * var->yres;
 	int xpos, ypos;
 
 	/*
@@ -549,16 +580,10 @@ static void jz4760fb_foreground_resize(struct jzfb *jzfb,
 
 	writel(ypos << 16 | xpos, jzfb->base + LCD_XYP1);
 
+	writel((panel->h + 1) << 16 | panel->w, jzfb->base + LCD_SIZE1);
+
 	/* wait change ready??? */
 //		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
-
-	dma1_desc0.cmd = (dma1_desc0.cmd & 0xff000000) | fg1_words_per_frame;
-	dma1_desc1.cmd = (dma1_desc1.cmd & 0xff000000) | fg1_words_per_line;
-	dma1_desc0.desc_size = dma1_desc1.desc_size =
-				(var->yres + 1) << 16 | var->xres;
-
-	dma_cache_wback((unsigned int) &dma1_desc0, sizeof(dma1_desc0));
-	dma_cache_wback((unsigned int) &dma1_desc1, sizeof(dma1_desc1));
 }
 
 static void jzfb_change_clock(struct jzfb *jzfb,
@@ -585,25 +610,44 @@ static int jz4760fb_set_par(struct fb_info *info)
 	struct fb_fix_screeninfo *fix = &info->fix;
 	struct jzfb *jzfb = info->par;
 
-	if (jzfb->is_enabled)
+	if (jzfb->is_enabled) {
 		ctrl_disable(jzfb);
-	else
+		jzfb_ipu_disable(jzfb);
+	} else {
 		clk_enable(jzfb->lpclk);
+		clk_enable(jzfb->ipuclk);
+	}
 
 	jzfb->bpp = var->bits_per_pixel;
+	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
+
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
 	jz4760fb_foreground_resize(jzfb, jz_panel, var);
+	jzfb_ipu_configure(jzfb, jz_panel);
 
-	clk_disable(jzfb->lpclk);
-
-	jzfb_change_clock(jzfb, jz_panel);
-
-	if (jzfb->is_enabled)
+	if (jzfb->is_enabled) {
+		jzfb_ipu_enable(jzfb);
 		jzfb_lcdc_enable(jzfb);
+	} else {
+		clk_disable(jzfb->lpclk);
+		clk_disable(jzfb->ipuclk);
+	}
 
 	fix->visual = FB_VISUAL_TRUECOLOR;
-	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
 	return 0;
+}
+
+static void jzfb_ipu_reset(struct jzfb *jzfb)
+{
+	ctrl_disable(jzfb);
+	clk_enable(jzfb->ipuclk);
+	jzfb_ipu_disable(jzfb);
+	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
+
+	jz4760fb_set_panel_mode(jzfb, jz_panel);
+	jzfb_ipu_configure(jzfb, jz_panel);
+	jzfb_ipu_enable(jzfb);
+	ctrl_enable(jzfb);
 }
 
 static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
@@ -635,67 +679,22 @@ static struct fb_ops jz4760fb_ops = {
 
 static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 {
-	static int irqcnt = 0;
 	struct jzfb *jzfb = dev_id;
-	u32 state;
-	u16 osds;
 
-	state = readl(jzfb->base + LCD_STATE);
-	pr_debug("In the lcd interrupt handler, state=0x%x\n", state);
-
-	if (state & LCD_STATE_SOF) /* Start of frame */
-		state &= ~LCD_STATE_SOF;
-
-	if (state & LCD_STATE_EOF) /* End of frame */
-		state &= ~LCD_STATE_EOF;
-
-	if (state & LCD_STATE_IFU0) {
-		pr_warn("%s, InFiFo0 underrun\n", __FUNCTION__);
-		state &= ~LCD_STATE_IFU0;
+	if (jzfb->delay_flush == 0) {
+		struct fb_info *fb = jzfb->fb;
+		dma_cache_wback_inv((unsigned long)(lcd_frame1 +
+					jzfb->pan_offset),
+				fb->fix.line_length * fb->var.yres);
+	} else {
+		jzfb->delay_flush--;
 	}
 
-	if (state & LCD_STATE_IFU1) {
-		pr_warn("%s, InFiFo1 underrun\n", __FUNCTION__);
-		state &= ~LCD_STATE_IFU1;
-	}
+	jzfb_update_frame_address(jzfb);
+	jzfb->vsync_count++;
+	wake_up_interruptible_all(&jzfb->wait_vsync);
 
-	if (state & LCD_STATE_OFU) { /* Out fifo underrun */
-		state &= ~LCD_STATE_OFU;
-		if ( irqcnt++ > 100 ) {
-			u32 val = readl(jzfb->base + LCD_CTRL) & ~LCD_CTRL_OFUM;
-			writel(val, jzfb->base + LCD_CTRL);
-			pr_debug("disable Out FiFo underrun irq.\n");
-		}
-		pr_warn("%s, Out FiFo underrun.\n", __FUNCTION__);
-	}
-
-	writel(state, jzfb->base + LCD_STATE);
-
-	osds = readl(jzfb->base + LCD_OSDS);
-
-	if (osds & LCD_OSDS_SOF1) {
-		if (jzfb->delay_flush == 0) {
-			struct fb_info *fb = jzfb->fb;
-			dma_cache_wback_inv((unsigned long)(lcd_frame1 +
-							    jzfb->pan_offset),
-					fb->fix.line_length * fb->var.yres);
-		} else {
-			jzfb->delay_flush--;
-		}
-		osds &= ~LCD_OSDS_SOF1;
-	}
-
-	if (osds & LCD_OSDS_EOF1) {
-		jzfb_update_frame_address(jzfb);
-
-		jzfb->vsync_count++;
-		wake_up_interruptible_all(&jzfb->wait_vsync);
-
-		osds &= ~LCD_OSDS_EOF1;
-	}
-
-	writel(osds, jzfb->base + LCD_OSDS);
-
+	writel(0, jzfb->ipu_base + IPU_STATUS);
 	return IRQ_HANDLED;
 }
 
@@ -734,8 +733,16 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	jzfb->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(jzfb->base)) {
-		dev_err(&pdev->dev, "Failed to request registers\n");
+		dev_err(&pdev->dev, "Failed to request LCD registers\n");
 		ret = PTR_ERR(jzfb->base);
+		goto err_release_fb;
+	}
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	jzfb->ipu_base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(jzfb->ipu_base)) {
+		dev_err(&pdev->dev, "Failed to request IPU registers\n");
+		ret = PTR_ERR(jzfb->ipu_base);
 		goto err_release_fb;
 	}
 
@@ -752,6 +759,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->fix.ypanstep	= 1;
 	fb->fix.ywrapstep	= 0;
 	fb->fix.accel	= FB_ACCEL_NONE;
+	fb->fix.visual = FB_VISUAL_TRUECOLOR;
 
 	fb->var.nonstd	= 0;
 	fb->var.activate	= FB_ACTIVATE_NOW;
@@ -783,8 +791,15 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
-	if (request_irq(IRQ_LCD, jz4760fb_interrupt_handler, 0,
-				"lcd", jzfb)) {
+	jzfb->ipuclk = devm_clk_get(&pdev->dev, "ipu");
+	if (IS_ERR(jzfb->ipuclk)) {
+		ret = PTR_ERR(jzfb->ipuclk);
+		dev_err(&pdev->dev, "Failed to get ipu clock: %d\n", ret);
+		goto failed;
+	}
+
+	if (request_irq(IRQ_IPU, jz4760fb_interrupt_handler, 0,
+				"ipu", jzfb)) {
 		dev_err(&pdev->dev, "Failed to request IRQ.\n");
 		ret = -EBUSY;
 		goto failed;
@@ -800,8 +815,13 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	 * video in your boot loader, you'll have to update this driver.
 	 */
 
-	jz4760fb_descriptor_init(jzfb->bpp);
-	jz4760fb_set_par(fb);
+	jzfb_change_clock(jzfb, jz_panel);
+	clk_enable(jzfb->lpclk);
+
+	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
+	jz4760fb_foreground_resize(jzfb, jz_panel, &fb->var);
+
+	jzfb->delay_flush = 0;
 
 	// TODO: Panels should be proper modules that register themselves.
 	//       They should be switchable via sysfs.
@@ -812,7 +832,9 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed;
 
-	jzfb_power_up(jzfb);
+	jzfb->pdata->panel_ops->enable(jzfb->panel);
+
+	jzfb_ipu_reset(jzfb);
 	jzfb->is_enabled = true;
 
 	ret = register_framebuffer(fb);
@@ -823,10 +845,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev,
 		"fb%d: %s frame buffer device, using %dK of video memory\n",
 		fb->node, fb->fix.id, fb->fix.smem_len>>10);
-
-	/* XXX(pcercuei): For some reason, this fixes the logo not being shown */
-	ctrl_disable(jzfb);
-	ctrl_enable(jzfb);
 
 	fb_prepare_logo(jzfb->fb, 0);
 	fb_show_logo(jzfb->fb, 0);
