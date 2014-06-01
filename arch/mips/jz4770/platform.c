@@ -295,9 +295,24 @@ struct platform_device jz4770_pwm_device = {
 
 /* RTC */
 
+static struct resource jz_rtc_resources[] = {
+	{
+		.start	= JZ4770_RTC_BASE_ADDR,
+		.end	= JZ4770_RTC_BASE_ADDR + 0x40 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.start	= IRQ_RTC,
+		.end	= IRQ_RTC,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
 struct platform_device jz4770_rtc_device = {
 	.name		= "jz4770-rtc",
 	.id		= -1,
+	.num_resources	= ARRAY_SIZE(jz_rtc_resources),
+	.resource	= jz_rtc_resources,
 };
 
 /* ADC controller */
