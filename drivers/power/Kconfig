@@ -260,7 +260,7 @@ config BATTERY_JZ4770
 	  Say Y to enable support for the battery on Ingenic JZ4770 based
 	  boards.
 
-	  This driver can be build as a module. If so, the module will be
+	  This driver can be built as a module. If so, the module will be
 	  called jz4770-battery.
 
 config BATTERY_INTEL_MID
