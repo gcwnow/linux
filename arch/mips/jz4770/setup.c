@@ -47,11 +47,6 @@
 #include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770uart.h>
 
-#ifdef CONFIG_PM
-#include <asm/suspend.h>
-#include "pm.h"
-#endif
-
 #ifdef CONFIG_PC_KEYB
 #include <asm/keyboard.h>
 #endif
@@ -188,10 +183,6 @@ void __init plat_mem_setup(void)
 
 	jz_soc_setup();
 	jz_serial_setup();
-
-#ifdef CONFIG_PM
-	jz_pm_init();
-#endif
 }
 
 /*

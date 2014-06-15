@@ -12,7 +12,7 @@ obj-$(CONFIG_JZ4770_GCW0)	+= board-gcw0.o
 
 # PM support
 
-obj-$(CONFIG_PM)		+= pm.o sleep.o
+obj-$(CONFIG_PM)		+= pm.o
 
 # CPU Frequency scaling support
 

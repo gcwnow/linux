@@ -865,6 +865,14 @@ void clk_put(struct clk *clk)
 }
 EXPORT_SYMBOL_GPL(clk_put);
 
+void jz4770_toggle_sleep_mode(bool enable_sleep)
+{
+	if (enable_sleep)
+		jz_clk_reg_set_bits(CPM_LCR_OFFSET, LCR_LPM_SLEEP);
+	else
+		jz_clk_reg_clear_bits(CPM_LCR_OFFSET, LCR_LPM_SLEEP);
+}
+
 static inline void clk_add(struct clk *clk)
 {
 	list_add_tail(&clk->list, &jz_clk_list);

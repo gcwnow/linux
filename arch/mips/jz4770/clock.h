@@ -55,5 +55,6 @@ struct clk {
 #define JZ_CLK_NOT_GATED ((uint32_t)-1)
 
 int clk_is_enabled(struct clk *clk);
+void jz4770_toggle_sleep_mode(bool enable_sleep);
 
 #endif
