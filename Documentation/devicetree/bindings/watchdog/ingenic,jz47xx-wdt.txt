@@ -1,0 +1,17 @@
+Ingenic Watchdog Timer (WDT) Controller for JZ47XX
+
+Required properties:
+compatible: "ingenic,jz4780-watchdog" or "ingenic,jz4740-watchdog"
+reg: Register address and length for watchdog registers
+clocks: phandle to rtcclk
+clock-names: must be "rtc"
+
+Examples:
+
+watchdog: jz47xx-watchdog@0x10002000 {
+	compatible = "ingenic,jz4780-watchdog";
+	reg = <0x10002000 0x100>;
+
+	clocks = <&rtclk>;
+	clock-names = "rtc";
+};
