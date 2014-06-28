@@ -36,6 +36,7 @@
 #include <linux/mmc/host.h>
 #include <linux/act8600_power.h>
 #include <linux/platform_data/linkdev.h>
+#include <linux/platform_data/mxc6225.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
@@ -389,7 +390,10 @@ static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
 };
 
 static struct i2c_board_info gcw0_i2c1_devs[] __initdata = {
-	/* the g-sensor is on this bus, but we don't have a driver for it */
+	{
+		.type		= "mxc6225",
+		.addr		= MXC6225_I2C_ADDR,
+	},
 };
 
 static struct i2c_board_info gcw0_i2c2_devs[] __initdata = {
