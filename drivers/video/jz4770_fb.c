@@ -853,13 +853,12 @@ static int jz4760_fb_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-
-static int jz4760_fb_suspend(struct platform_device *pdev, pm_message_t state)
+#ifdef CONFIG_PM_SLEEP
+static int jz4760_fb_suspend(struct device *dev)
 {
-	struct jzfb *jzfb = platform_get_drvdata(pdev);
+	struct jzfb *jzfb = dev_get_drvdata(dev);
 
-	dev_dbg(&pdev->dev, "Suspending\n");
+	dev_dbg(dev, "Suspending\n");
 
 	if (jzfb->is_enabled)
 		jzfb_power_down(jzfb);
@@ -867,31 +866,28 @@ static int jz4760_fb_suspend(struct platform_device *pdev, pm_message_t state)
 	return 0;
 }
 
-static int jz4760_fb_resume(struct platform_device *pdev)
+static int jz4760_fb_resume(struct device *dev)
 {
-	struct jzfb *jzfb = platform_get_drvdata(pdev);
+	struct jzfb *jzfb = dev_get_drvdata(dev);
 
-	dev_dbg(&pdev->dev, "Resuming\n");
+	dev_dbg(dev, "Resuming\n");
 
 	if (jzfb->is_enabled)
 		jzfb_power_up(jzfb);
 
 	return 0;
 }
+#endif /* CONFIG_PM_SLEEP */
 
-#else
-#define jz4760_fb_suspend	NULL
-#define jz4760_fb_resume	NULL
-#endif /* CONFIG_PM */
+static SIMPLE_DEV_PM_OPS(jz4760_fb_pm_ops, jz4760_fb_suspend, jz4760_fb_resume);
 
 static struct platform_driver jz4760_fb_driver = {
 	.probe	= jz4760_fb_probe,
 	.remove = jz4760_fb_remove,
-	.suspend = jz4760_fb_suspend,
-	.resume = jz4760_fb_resume,
 	.driver = {
-		.name = "jz-lcd",
+		.name  = "jz-lcd",
 		.owner = THIS_MODULE,
+		.pm    = &jz4760_fb_pm_ops,
 	},
 };
 
