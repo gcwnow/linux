@@ -266,7 +266,7 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_SLEEP
 static int jz4740_rtc_suspend(struct device *dev)
 {
 	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
@@ -284,23 +284,17 @@ static int jz4740_rtc_resume(struct device *dev)
 		disable_irq_wake(rtc->irq);
 	return 0;
 }
+#endif  /* CONFIG_PM_SLEEP */
 
-static const struct dev_pm_ops jz4740_pm_ops = {
-	.suspend = jz4740_rtc_suspend,
-	.resume  = jz4740_rtc_resume,
-};
-#define JZ4740_RTC_PM_OPS (&jz4740_pm_ops)
-
-#else
-#define JZ4740_RTC_PM_OPS NULL
-#endif  /* CONFIG_PM */
+static SIMPLE_DEV_PM_OPS(jz4740_rtc_pm_ops,
+		jz4740_rtc_suspend, jz4740_rtc_resume);
 
 static struct platform_driver jz4740_rtc_driver = {
 	.probe	 = jz4740_rtc_probe,
 	.driver	 = {
 		.name  = "jz4740-rtc",
 		.owner = THIS_MODULE,
-		.pm    = JZ4740_RTC_PM_OPS,
+		.pm    = &jz4740_rtc_pm_ops,
 	},
 };
 
