@@ -66,9 +66,6 @@ void jz_power_off(void)
 	/* Set reset pin low-level assertion time after wakeup: must  > 60ms */
 	rtc_write_reg(RTC_HRCR, HRCR_WAIT_TIME(60));
 
-	/* Scratch pad register to be reserved */
-	rtc_write_reg(RTC_HSPR, HSPR_RTCV);
-
 	/* clear wakeup status register */
 	rtc_write_reg(RTC_HWRSR, 0x0);
 
