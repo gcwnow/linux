@@ -19,6 +19,7 @@
 #include <asm/types.h>
 #include <linux/act8600_power.h>
 #include <linux/slab.h>
+#include <linux/compiler.h>
 
 #if 0
 #define dprintk(x...) printk(x)
@@ -37,7 +38,7 @@ struct act8600_device {
 
 struct act8600_device *act8600 = NULL;
 
-static int act8600_write_reg(u8 reg, u8 val)
+static int __must_check act8600_write_reg(u8 reg, u8 val)
 {
 	char msg[2];
 
@@ -53,7 +54,7 @@ static int act8600_write_reg(u8 reg, u8 val)
 	return i2c_master_send(act8600->client, msg, 2);
 }
 
-static int act8600_read_reg(u8 reg, u8 *val)
+static int __must_check act8600_read_reg(u8 reg, u8 *val)
 {
 	int ret;
 
@@ -84,13 +85,18 @@ static const u8 act8600_on_regs[] = {
 int act8600_output_enable(int outnum, bool enable)
 {
 	u8 reg, value;
+	int ret;
 
 	if (outnum < 1 || outnum > 8)
 		return -EINVAL;
 	reg = act8600_on_regs[outnum - 1];
 
 	/* write ON bit */
-	act8600_read_reg(reg, &value);
+	ret = act8600_read_reg(reg, &value);
+	if (ret < 0) {
+		__WARN();
+		return ret;
+	}
 	value = (value & ~(1 << 7)) | ((u8)enable << 7);
 	return act8600_write_reg(reg, value);
 }
@@ -138,7 +144,7 @@ EXPORT_SYMBOL_GPL(act8600_set_power_mode);
 
 static int act8600_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {
-	int i;
+	int i, ret;
 	struct act8600_platform_pdata_t *pdata = i2c->dev.platform_data;
 
 	act8600 = kzalloc(sizeof(struct act8600_device), GFP_KERNEL);
@@ -158,11 +164,16 @@ static int act8600_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 
 	/* MtH: The bits changed by these writes are undocumented. */
-#if 1
-	act8600_write_reg(0x91, 0xd0);
-	act8600_write_reg(0x90, 0x17);
-	act8600_write_reg(0x91, 0xc0);
-#endif
+	ret = act8600_write_reg(0x91, 0xd0);
+	if (ret < 0)
+		__WARN();
+	ret = act8600_write_reg(0x90, 0x17);
+	if (ret < 0)
+		__WARN();
+	ret = act8600_write_reg(0x91, 0xc0);
+	if (ret < 0)
+		__WARN();
+
 	return 0;
 }
 
