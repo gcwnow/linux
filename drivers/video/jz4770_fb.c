@@ -80,7 +80,7 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
 	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
-	320, 240, 60, 50, 1, 10, 70, 4, 6,
+	320, 240, 60, 50, 1, 10, 70, 5, 5,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
@@ -465,7 +465,7 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 
 	/* Set the input height/width/stride */
 	size = fb->fix.line_length << IPU_IN_GS_W_BIT
-		| (fb->var.yres + 1) << IPU_IN_GS_H_BIT;
+		| fb->var.yres << IPU_IN_GS_H_BIT;
 	writel(size, jzfb->ipu_base + IPU_IN_GS);
 	writel(fb->fix.line_length, jzfb->ipu_base + IPU_Y_STRIDE);
 
@@ -688,7 +688,7 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	writel(panel->blw << LCD_DAH_HDS_BIT |
 			(panel->blw + panel->w) << LCD_DAH_HDE_BIT,
 			jzfb->base + LCD_DAH);
-	writel((panel->bfw - 1) << LCD_DAV_VDS_BIT |
+	writel(panel->bfw << LCD_DAV_VDS_BIT |
 			(panel->bfw + panel->h) << LCD_DAV_VDE_BIT,
 			jzfb->base + LCD_DAV);
 	writel(panel->hsw << LCD_HSYNC_HPE_BIT, jzfb->base + LCD_HSYNC);
