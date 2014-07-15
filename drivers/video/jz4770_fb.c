@@ -55,6 +55,10 @@
 #define MAX_XRES 640
 #define MAX_YRES 480
 
+static bool keep_aspect_ratio = true;
+module_param(keep_aspect_ratio, bool, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(keep_aspect_ratio, "Keep aspect ratio");
+
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
 	unsigned int w;		/* Panel Width(in pixel) */
@@ -305,6 +309,26 @@ static void jzfb_lcdc_enable(struct jzfb *jzfb)
 	ctrl_enable(jzfb);
 }
 
+static void jzfb_foreground_resize(struct jzfb *jzfb,
+		unsigned int xpos, unsigned int ypos,
+		unsigned int width, unsigned int height)
+{
+	/*
+	 * NOTE:
+	 * Foreground change sequence:
+	 * 	1. Change Position Registers -> LCD_OSDCTL.Change;
+	 * 	2. LCD_OSDCTRL.Change -> descripter->Size
+	 * Foreground, only one of the following can be change at one time:
+	 * 	1. F0 size;
+	 *	2. F0 position
+	 * 	3. F1 size
+	 *	4. F1 position
+	 */
+
+	writel((ypos << 16) | xpos, jzfb->base + LCD_XYP1);
+	writel((height << 16) | width, jzfb->base + LCD_SIZE1);
+}
+
 static void jzfb_ipu_enable(struct jzfb *jzfb)
 {
 	u32 ctrl;
@@ -408,6 +432,9 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 {
 	struct fb_info *fb = jzfb->fb;
 	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
+	unsigned int outputW = panel->w * 4,
+		     outputH = panel->h,
+		     xpos = 0, ypos = 0;
 
 	/* Enable the chip, reset all the registers */
 	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
@@ -423,19 +450,11 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	}
 	writel(format, jzfb->ipu_base + IPU_D_FMT);
 
-	/* Set the output height/width */
-	size = (panel->w * 4) << IPU_OUT_GS_W_BIT
-		| (panel->h + 1) << IPU_OUT_GS_H_BIT;
-	writel(size, jzfb->ipu_base + IPU_OUT_GS);
-
-	/* Set the input height/width */
+	/* Set the input height/width/stride */
 	size = fb->fix.line_length << IPU_IN_GS_W_BIT
 		| (fb->var.yres + 1) << IPU_IN_GS_H_BIT;
 	writel(size, jzfb->ipu_base + IPU_IN_GS);
-
-	/* Set the input/output stride */
 	writel(fb->fix.line_length, jzfb->ipu_base + IPU_Y_STRIDE);
-	writel(4 * panel->w, jzfb->ipu_base + IPU_OUT_STRIDE);
 
 	/* Set the input address */
 	writel((u32) fb->fix.smem_start, jzfb->ipu_base + IPU_Y_ADDR);
@@ -444,24 +463,39 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	if (fb->fix.type == FB_TYPE_PACKED_PIXELS)
 		ctrl |= IPU_CTRL_SPKG_SEL;
 
-	if (fb->var.xres != panel->w) {
-		unsigned int num = panel->w, denom = fb->var.xres;
-		BUG_ON(reduce_fraction(&num, &denom) < 0);
+	if (fb->var.xres != panel->w || fb->var.yres != panel->h) {
+		unsigned int numW = panel->w, denomW = fb->var.xres,
+			     numH = panel->h, denomH = fb->var.yres;
 
-		coef_index |= (num - 1) << 16;
-		ctrl |= IPU_CTRL_HRSZ_EN;
+		BUG_ON(reduce_fraction(&numW, &denomW) < 0);
+		BUG_ON(reduce_fraction(&numH, &denomH) < 0);
 
-		set_coefs(jzfb, IPU_HRSZ_COEF_LUT, num, denom);
-	}
+		if (keep_aspect_ratio) {
+			unsigned int ratioW = (UINT_MAX >> 6) * numW / denomW,
+				     ratioH = (UINT_MAX >> 6) * numH / denomH;
+			if (ratioW < ratioH) {
+				numH = numW;
+				denomH = denomW;
+			} else {
+				numW = numH;
+				denomW = denomH;
+			}
+		}
 
-	if (fb->var.yres != panel->h) {
-		unsigned int num = panel->h, denom = fb->var.yres;
-		BUG_ON(reduce_fraction(&num, &denom) < 0);
+		if (numW != 1 || denomW != 1) {
+			set_coefs(jzfb, IPU_HRSZ_COEF_LUT, numW, denomW);
+			coef_index |= ((numW - 1) << 16);
+			ctrl |= IPU_CTRL_HRSZ_EN;
+		}
 
-		coef_index |= num - 1;
-		ctrl |= IPU_CTRL_VRSZ_EN;
+		if (numH != 1 || denomH != 1) {
+			set_coefs(jzfb, IPU_VRSZ_COEF_LUT, numH, denomH);
+			coef_index |= numH - 1;
+			ctrl |= IPU_CTRL_VRSZ_EN;
+		}
 
-		set_coefs(jzfb, IPU_VRSZ_COEF_LUT, num, denom);
+		outputH = fb->var.yres * numH / denomH;
+		outputW = fb->fix.line_length * numW / denomW;
 	}
 
 	writel(ctrl, jzfb->ipu_base + IPU_CTRL);
@@ -469,8 +503,20 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	/* Set the LUT index register */
 	writel(coef_index, jzfb->ipu_base + IPU_RSZ_COEF_INDEX);
 
+	/* Set the output height/width/stride */
+	size = outputW << IPU_OUT_GS_W_BIT
+		| outputH << IPU_OUT_GS_H_BIT;
+	writel(size, jzfb->ipu_base + IPU_OUT_GS);
+	writel(outputW, jzfb->ipu_base + IPU_OUT_STRIDE);
+
+	/* Resize Foreground1 to the output size of the IPU */
+	outputW /= 4;
+	xpos = (panel->w - outputW) / 2;
+	ypos = (panel->h - outputH) / 2;
+	jzfb_foreground_resize(jzfb, xpos, ypos, outputW, outputH);
+
 	dev_dbg(&jzfb->pdev->dev, "Scaling %ux%u to %ux%u\n",
-			fb->var.xres, fb->var.yres, panel->w, panel->h);
+			fb->var.xres, fb->var.yres, outputW, outputH);
 }
 
 static void jzfb_power_up(struct jzfb *jzfb)
@@ -642,32 +688,8 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	writew(LCD_OSDCTRL_IPU | LCD_OSDCTRL_OSDBPP_18_24,
 			jzfb->base + LCD_OSDCTRL);
 
-	/* yellow background helps debugging */
-	writel(0x00FFFF00, jzfb->base + LCD_BGC);
-}
-
-
-static void jz4760fb_foreground_resize(struct jzfb *jzfb,
-		const struct jz4760lcd_panel_t *panel,
-		const struct fb_var_screeninfo *var)
-{
-	/*
-	 * NOTE:
-	 * Foreground change sequence:
-	 * 	1. Change Position Registers -> LCD_OSDCTL.Change;
-	 * 	2. LCD_OSDCTRL.Change -> descripter->Size
-	 * Foreground, only one of the following can be change at one time:
-	 * 	1. F0 size;
-	 *	2. F0 position
-	 * 	3. F1 size
-	 *	4. F1 position
-	 */
-
-	writel(0, jzfb->base + LCD_XYP1);
-	writel((panel->h + 1) << 16 | panel->w, jzfb->base + LCD_SIZE1);
-
-	/* wait change ready??? */
-//		while ( REG_LCD_OSDS & LCD_OSDS_READY )	/* fix in the future, Wolfgang, 06-20-2008 */
+	/* Set a black background */
+	writel(0, jzfb->base + LCD_BGC);
 }
 
 static void jzfb_change_clock(struct jzfb *jzfb,
@@ -707,7 +729,6 @@ static int jz4760fb_set_par(struct fb_info *info)
 	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
 
 	jz4760fb_set_panel_mode(jzfb, jz_panel);
-	jz4760fb_foreground_resize(jzfb, jz_panel, var);
 	jzfb_ipu_configure(jzfb, jz_panel);
 
 	/* Clear the framebuffer to avoid artifacts */
@@ -917,7 +938,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	clk_enable(jzfb->lpclk);
 
 	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
-	jz4760fb_foreground_resize(jzfb, jz_panel, &fb->var);
 
 	jzfb->delay_flush = 0;
 
