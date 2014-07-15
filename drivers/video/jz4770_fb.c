@@ -370,9 +370,6 @@ static void set_downscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 {
 	unsigned int i, weight_num = denom, weight_denom = num * 2;
 
-	/* Start programmation of the LUT */
-	writel(1, jzfb->ipu_base + reg);
-
 	for (i = 0; i < num; i++) {
 		unsigned int weight, offset;
 		u32 value;
@@ -400,9 +397,6 @@ static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 {
 	unsigned int i, weight_num = 0, weight_denom = num;
 
-	/* Start programmation of the LUT */
-	writel(1, jzfb->ipu_base + reg);
-
 	for (i = 0; i < num; i++) {
 		unsigned int weight = 512 - 512 * weight_num / weight_denom;
 		u32 offset = 0, value;
@@ -418,11 +412,30 @@ static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 	}
 }
 
+static void set_upscale_nearest_neighbour_coefs(struct jzfb *jzfb,
+			unsigned int reg, unsigned int num)
+{
+	unsigned int i, weight_num = 1, weight_denom = num;
+
+	for (i = 0; i < num; i++, weight_num++) {
+		u32 value, offset = weight_num / weight_denom;
+		weight_num %= weight_denom;
+
+		value = (512 << 6) | (offset << 1);
+		writel(value, jzfb->ipu_base + reg);
+	}
+}
+
 static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
+	/* Start programmation of the LUT */
+	writel(1, jzfb->ipu_base + reg);
+
 	if (denom > num)
 		set_downscale_bilinear_coefs(jzfb, reg, num, denom);
+	else if (denom == 1)
+		set_upscale_nearest_neighbour_coefs(jzfb, reg, num);
 	else
 		set_upscale_bilinear_coefs(jzfb, reg, num, denom);
 }
