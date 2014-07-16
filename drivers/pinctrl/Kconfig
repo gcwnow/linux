@@ -205,6 +205,7 @@ config PINCTRL_PALMAS
 
 source "drivers/pinctrl/berlin/Kconfig"
 source "drivers/pinctrl/freescale/Kconfig"
+source "drivers/pinctrl/ingenic/Kconfig"
 source "drivers/pinctrl/mvebu/Kconfig"
 source "drivers/pinctrl/nomadik/Kconfig"
 source "drivers/pinctrl/qcom/Kconfig"

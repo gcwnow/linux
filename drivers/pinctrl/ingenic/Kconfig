@@ -1,0 +1,4 @@
+config PINCTRL_JZ4770
+	bool "Ingenic JZ4770 pinctrl driver"
+	select PINMUX
+	select GENERIC_PINCONF

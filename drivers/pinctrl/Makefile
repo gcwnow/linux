@@ -39,6 +39,7 @@ obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
 
 obj-$(CONFIG_ARCH_BERLIN)	+= berlin/
 obj-y				+= freescale/
+obj-y				+= ingenic/
 obj-$(CONFIG_PLAT_ORION)        += mvebu/
 obj-y				+= nomadik/
 obj-$(CONFIG_ARCH_QCOM)		+= qcom/
