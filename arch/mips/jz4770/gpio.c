@@ -25,6 +25,7 @@
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
 #include <linux/export.h>
+#include <linux/pinctrl/consumer.h>
 
 #include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
@@ -99,31 +100,21 @@ static int jz4770_gpiolib_get(struct gpio_chip *chip, unsigned offset)
 
 static int jz4770_gpiolib_input(struct gpio_chip *chip, unsigned offset)
 {
-	unsigned long flags;
-	unsigned int n = 0;
-
-	n = chip->base +offset;
-	local_irq_save(flags);
-	__gpio_as_input(n);
-	local_irq_restore(flags);
-	return 0;
+	return pinctrl_gpio_direction_input(chip->base + offset);
 }
 
 static int jz4770_gpiolib_output(struct gpio_chip *chip,
 					unsigned offset, int value)
 {
-	unsigned long flags;
-	unsigned int n = 0;
+	int ret = pinctrl_gpio_direction_output(chip->base + offset);
+	if (!ret) {
+		if (value)
+			__gpio_set_pin(chip->base + offset);
+		else
+			__gpio_clear_pin(chip->base + offset);
+	}
 
-	n = chip->base +offset;
-	local_irq_save(flags);
-	__gpio_as_output(n);
-	if( value )
-		__gpio_set_pin(n);
-	else
-		__gpio_clear_pin(n);
-	local_irq_restore(flags);
-	return 0;
+	return ret;
 }
 
 void jz_gpio_enable_pullup(unsigned gpio)
@@ -152,12 +143,12 @@ EXPORT_SYMBOL_GPL(irq_to_gpio);
 
 static int jz4770_gpio_request(struct gpio_chip *chip, unsigned offset)
 {
-	return 0;
+	return pinctrl_request_gpio(chip->base + offset);
 }
 
 static void jz4770_gpio_free(struct gpio_chip *chip, unsigned offset)
 {
-	return;
+	pinctrl_free_gpio(chip->base + offset);
 }
 
 #define IRQ_TO_BIT(irq) BIT(irq_to_gpio(irq) & 0x1f)
@@ -440,6 +431,9 @@ static void jz4770_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int id)
 		IRQ_GC_INIT_NESTED_LOCK, 0, IRQ_NOPROBE | IRQ_LEVEL);
 
 	gpiochip_add(&chip->gpio_chip);
+
+	gpiochip_add_pin_range(&chip->gpio_chip, "jz4770-pinctrl",
+			0, chip->gpio_chip.base, chip->gpio_chip.ngpio);
 }
 
 static __init int jz4770_gpiolib_init(void)
