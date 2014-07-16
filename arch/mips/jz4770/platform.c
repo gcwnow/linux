@@ -22,6 +22,21 @@
 #include <asm/mach-jz4770/irq.h>
 #include <asm/mach-jz4770/platform.h>
 
+/* Pin controller */
+static struct resource jz_pinctrl_resources[] = {
+	{
+		.start		= JZ4770_GPIO_BASE_ADDR,
+		.end		= JZ4770_GPIO_BASE_ADDR + 0x5AB,
+		.flags		= IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device jz4770_pinctrl_device = {
+	.name	= "jz4770-pinctrl",
+	.id	= -1,
+	.resource	= jz_pinctrl_resources,
+	.num_resources	= ARRAY_SIZE(jz_pinctrl_resources),
+};
 
 /* OHCI (USB full speed host controller) */
 static struct resource jz_usb_ohci_resources[] = {
@@ -393,3 +408,15 @@ struct platform_device jz4770_wdt_device = {
 	.num_resources	= ARRAY_SIZE(jz4770_wdt_resources),
 	.resource	= jz4770_wdt_resources,
 };
+
+static struct platform_device *jz_platform_devices[] __initdata = {
+	&jz4770_pinctrl_device,
+};
+
+int __init jz4770_init_platform_devices(void)
+{
+	return platform_add_devices(jz_platform_devices,
+				    ARRAY_SIZE(jz_platform_devices));
+}
+
+postcore_initcall(jz4770_init_platform_devices);
