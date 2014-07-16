@@ -249,6 +249,7 @@ config MACH_JZ4770
 	select JZRISC
 	select CPU_SUPPORTS_CPUFREQ
 	select MIPS_EXTERNAL_TIMER
+	select PINCTRL
 
 config LANTIQ
 	bool "Lantiq based platforms"
