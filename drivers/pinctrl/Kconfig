@@ -120,6 +120,11 @@ config PINCTRL_IMX6SL
 	help
 	  Say Y here to enable the imx6sl pinctrl driver
 
+config PINCTRL_JZ4770
+	bool "Ingenic JZ4770 pinctl driver"
+	select PINMUX
+	select GENERIC_PINCONF
+
 config PINCTRL_VF610
 	bool "Freescale Vybrid VF610 pinctrl driver"
 	depends on OF
