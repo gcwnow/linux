@@ -470,6 +470,18 @@ config INPUT_PWM_BEEPER
 	  To compile this driver as a module, choose M here: the module will be
 	  called pwm-beeper.
 
+config INPUT_PWM_HAPTIC
+	tristate "PWM haptic support"
+	depends on HAVE_PWM || PWM
+	select INPUT_FF_MEMLESS
+	help
+	  Say Y here to get support for PWM based haptic devices.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the module will be
+	  called pwm-haptic.
+
 config INPUT_GPIO_ROTARY_ENCODER
 	tristate "Rotary encoders connected to GPIO pins"
 	depends on GPIOLIB
