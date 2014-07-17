@@ -37,6 +37,7 @@
 #include <linux/act8600_power.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
+#include <linux/platform_data/pwm-haptic.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
@@ -704,6 +705,22 @@ static struct platform_device gcw0_joystick_device = {
 	},
 };
 
+static struct pwm_haptic_platform_data gcw0_haptic_pdata = {
+	.pwm_id = 4,
+	.polarity = PWM_POLARITY_NORMAL,
+	.pwm_period_ns = 2000000,
+};
+
+
+/* Rumble device */
+static struct platform_device gcw0_haptic_device = {
+	.name = "pwm-haptic",
+	.id = -1,
+	.dev = {
+		.platform_data = &gcw0_haptic_pdata,
+	},
+};
+
 
 /* Device registration */
 
@@ -742,6 +759,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_rfkill_device,
 	&gcw0_joystick_device,
 	&jz4770_wdt_device,
+	&gcw0_haptic_device,
 };
 
 static int __init gcw0_init_platform_devices(void)
