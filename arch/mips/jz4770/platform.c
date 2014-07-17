@@ -396,9 +396,7 @@ struct platform_device jz4770_vpu_device = {
 static struct resource jz4770_wdt_resources[] = {
 	{
 		.start = JZ4770_WDT_BASE_ADDR,
-		/* The watchdog register space is 0x10, but the driver
-		 * expects the TCU registers to be available */
-		.end   = JZ4770_WDT_BASE_ADDR + 0x1000 - 1,
+		.end   = JZ4770_WDT_BASE_ADDR + 0xC - 1,
 		.flags = IORESOURCE_MEM,
 	},
 };
