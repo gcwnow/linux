@@ -5,9 +5,11 @@
 #define __LINUX_PWM_BACKLIGHT_H
 
 #include <linux/backlight.h>
+#include <linux/pwm.h>
 
 struct platform_pwm_backlight_data {
 	int pwm_id;
+	enum pwm_polarity polarity;
 	unsigned int max_brightness;
 	unsigned int dft_brightness;
 	unsigned int lth_brightness;
