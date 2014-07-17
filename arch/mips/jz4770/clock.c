@@ -31,7 +31,16 @@
 
 #define JZ_CLK_DIVIDED_NO_EXT ((uint32_t)-1)
 
-static void __iomem *jz_clock_base;
+#define TCU_TSR_OFFSET  0x0C /* Timer stop (r) */
+#define TCU_TSSR_OFFSET 0x1C /* Timer stop set (w) */
+#define TCU_TSCR_OFFSET 0x2C /* Timer stop clear (w) */
+#define TCU_TCSR_OFFSET(timer) (0x3C + (timer) * 0x10) /* Timer Control reg. */
+
+#define WDT_TCSR_OFFSET 0xC
+#define OST_OSTCSR_OFFSET 0xEC
+
+static void __iomem *jz_clock_base, __iomem *tcu_base,
+	    __iomem *wdt_tcsr, __iomem *ost_tcsr;
 static spinlock_t jz_clock_lock;
 static LIST_HEAD(jz_clk_list);
 
@@ -51,6 +60,12 @@ struct divided_clk {
 struct static_clk {
 	struct clk clk;
 	unsigned long rate;
+};
+
+struct tcu_clk {
+	struct clk clk;
+	void * __iomem *base_ptr;
+	unsigned int reg;
 };
 
 static uint32_t jz_clk_reg_read(int reg)
@@ -777,6 +792,142 @@ static struct clk jz_clk_simple_clks[] = {
 	},
 };
 
+static int jz_clk_tcu_set_parent(struct clk *clk, struct clk *parent)
+{
+	struct tcu_clk *tclk = (struct tcu_clk *) clk;
+	u16 val = readw(*tclk->base_ptr + tclk->reg) & ~0x7;
+
+	if (parent == &jz_clk_ext.clk)
+		val |= BIT(2);
+	else if (parent == &jz_clk_rtc.clk)
+		val |= BIT(1);
+	else if (parent == &jz_clk_main_clks[JZ_CLK_MAIN_PCLK].clk)
+		val |= BIT(0);
+	else
+		return -EINVAL;
+
+	clk->parent = parent;
+	writew(val, *tclk->base_ptr + tclk->reg);
+	return 0;
+}
+
+static unsigned long jz_clk_tcu_get_rate(struct clk *clk)
+{
+	struct tcu_clk *tclk = (struct tcu_clk *) clk;
+	unsigned long parent_rate = clk_get_rate(clk->parent);
+	u16 val = (readw(*tclk->base_ptr + tclk->reg) >> 3) & 0x7;
+
+	return parent_rate >> (val * 2);
+}
+
+static unsigned long jz_clk_tcu_round_rate(struct clk *clk, unsigned long rate)
+{
+	unsigned long parent_rate = clk_get_rate(clk->parent);
+	unsigned int i;
+
+	for (i = 5; i && (rate > (parent_rate >> (i * 2))); i--);
+	return parent_rate >> (i * 2);
+}
+
+static int jz_clk_tcu_set_rate(struct clk *clk, unsigned long rate)
+{
+	struct tcu_clk *tclk = (struct tcu_clk *) clk;
+	unsigned long parent_rate = clk_get_rate(clk->parent);
+	u16 val = readw(*tclk->base_ptr + tclk->reg) & ~0x38;
+
+	rate = jz_clk_tcu_round_rate(clk, rate);
+
+	val |= (ffs(parent_rate / rate) / 2) << 3;
+	writew(val, *tclk->base_ptr + tclk->reg);
+	return 0;
+}
+
+static int jz_clk_tcu_enable(struct clk *clk)
+{
+	writel(clk->gate_bit, tcu_base + TCU_TSCR_OFFSET);
+	return 0;
+}
+
+static int jz_clk_tcu_disable(struct clk *clk)
+{
+	writel(clk->gate_bit, tcu_base + TCU_TSSR_OFFSET);
+	return 0;
+}
+
+static int jz_clk_tcu_is_enabled(struct clk *clk)
+{
+	if (clk->gate_bit == JZ_CLK_NOT_GATED)
+		return 1;
+
+	return !(readl(tcu_base + clk->gate_register) & clk->gate_bit);
+}
+
+static const struct clk_ops jz_clk_tcu_ops = {
+	.set_parent = jz_clk_tcu_set_parent,
+	.round_rate = jz_clk_tcu_round_rate,
+	.get_rate = jz_clk_tcu_get_rate,
+	.set_rate = jz_clk_tcu_set_rate,
+	.enable = jz_clk_tcu_enable,
+	.disable = jz_clk_tcu_disable,
+	.is_enabled = jz_clk_tcu_is_enabled,
+};
+
+enum {
+	JZ_CLK_WDT,
+	JZ_CLK_OST,
+	JZ_CLK_TCU_TIMER0,
+	JZ_CLK_TCU_TIMER1,
+	JZ_CLK_TCU_TIMER2,
+	JZ_CLK_TCU_TIMER3,
+	JZ_CLK_TCU_TIMER4,
+	JZ_CLK_TCU_TIMER5,
+	JZ_CLK_TCU_TIMER6,
+	JZ_CLK_TCU_TIMER7,
+};
+
+static struct tcu_clk jz_clk_tcu_clks[] = {
+	[JZ_CLK_WDT] = {
+		.clk = {
+			.name = "wdt",
+			.gate_bit = BIT(16),
+			.gate_register = TCU_TSR_OFFSET,
+			.ops = &jz_clk_tcu_ops,
+		},
+		.base_ptr = &wdt_tcsr,
+		.reg = 0,
+	},
+	[JZ_CLK_OST] = {
+		.clk = {
+			.name = "ost",
+			.gate_bit = BIT(15),
+			.gate_register = TCU_TSR_OFFSET,
+			.ops = &jz_clk_tcu_ops,
+		},
+		.base_ptr = &ost_tcsr,
+		.reg = 0,
+	},
+#define _TIMER(x) \
+	[JZ_CLK_TCU_TIMER##x] = { \
+	.clk = { \
+		.name = "timer" #x, \
+		.gate_bit = BIT(x), \
+		.gate_register = TCU_TSR_OFFSET, \
+		.ops = &jz_clk_tcu_ops, \
+	}, \
+	.base_ptr = &tcu_base, \
+	.reg = TCU_TCSR_OFFSET(x), \
+}
+	_TIMER(0),
+	_TIMER(1),
+	_TIMER(2),
+	_TIMER(3),
+	_TIMER(4),
+	_TIMER(5),
+	_TIMER(6),
+	_TIMER(7),
+#undef _TIMER
+};
+
 int clk_enable(struct clk *clk)
 {
 	if (!clk->ops->enable)
@@ -828,6 +979,12 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	return -EINVAL;
 }
 EXPORT_SYMBOL_GPL(clk_round_rate);
+
+struct clk *clk_get_parent(struct clk *clk)
+{
+	return clk->parent;
+}
+EXPORT_SYMBOL_GPL(clk_get_parent);
 
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
@@ -899,6 +1056,9 @@ static void __init clk_register_clks(void)
 
 	for (i = 0; i < ARRAY_SIZE(jz_clk_simple_clks); ++i)
 		clk_add(&jz_clk_simple_clks[i]);
+
+	for (i = 0; i < ARRAY_SIZE(jz_clk_tcu_clks); ++i)
+		clk_add(&jz_clk_tcu_clks[i].clk);
 }
 
 static int __init jz_clk_init(void)
@@ -907,6 +1067,18 @@ static int __init jz_clk_init(void)
 
 	jz_clock_base = ioremap_nocache(JZ4770_CPM_BASE_ADDR, 0x100);
 	if (!jz_clock_base)
+		return -EBUSY;
+
+	tcu_base = ioremap_nocache(JZ4770_TCU_BASE_ADDR, 0x100);
+	if (!tcu_base)
+		return -EBUSY;
+
+	wdt_tcsr = ioremap_nocache(JZ4770_WDT_BASE_ADDR + WDT_TCSR_OFFSET, 2);
+	if (!wdt_tcsr)
+		return -EBUSY;
+
+	ost_tcsr = ioremap_nocache(JZ4770_OST_BASE_ADDR + OST_OSTCSR_OFFSET, 2);
+	if (!ost_tcsr)
 		return -EBUSY;
 
 	spin_lock_init(&jz_clock_lock);
@@ -918,6 +1090,15 @@ static int __init jz_clk_init(void)
 	for (i = 0; i < ARRAY_SIZE(jz_clk_divided_clks_ext); ++i) {
 		struct clk *clk = &jz_clk_divided_clks_ext[i].clk;
 		clk->ops->set_parent(clk, &jz_clk_ext.clk);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(jz_clk_tcu_clks); i++) {
+		struct clk *clk = &jz_clk_tcu_clks[i].clk;
+
+		if (i == JZ_CLK_WDT)
+			clk->ops->set_parent(clk, &jz_clk_rtc.clk);
+		else
+			clk->ops->set_parent(clk, &jz_clk_ext.clk);
 	}
 
 	jz_clk_pll1.ops->set_rate(&jz_clk_pll1, jz_clk_bdata.pll1_rate);
