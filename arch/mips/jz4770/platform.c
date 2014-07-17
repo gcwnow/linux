@@ -309,9 +309,19 @@ struct platform_device jz4770_i2c2_device = {
 
 /* PWM */
 
+static struct resource jz_pwm_resources[] = {
+	{
+		.start	= JZ4770_TCU_BASE_ADDR,
+		.end	= JZ4770_TCU_BASE_ADDR + 0x4B,
+		.flags	= IORESOURCE_MEM,
+	},
+};
+
 struct platform_device jz4770_pwm_device = {
 	.name = "jz4770-pwm",
 	.id   = -1,
+	.resource	= jz_pwm_resources,
+	.num_resources	= ARRAY_SIZE(jz_pwm_resources),
 };
 
 /* RTC */
