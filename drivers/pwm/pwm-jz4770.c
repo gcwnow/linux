@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
- *  Copyright (C) 2012, Paul Cercueil <paul@crapouillou.net>
+ *  Copyright (C) 2014, Paul Cercueil <paul@crapouillou.net>
  *  JZ4770 platform PWM support
  *
  *  This program is free software; you can redistribute it and/or modify it
@@ -21,13 +21,30 @@
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
 
-#include <asm/mach-jz4770/jz4770gpio.h>
-#include <asm/mach-jz4770/jz4770tcu.h>
-
 #define NUM_PWM 8
+
+#define TCU_TSR_OFFSET	0x0C /* Timer Stop register */
+#define TCU_TSSR_OFFSET	0x1C
+#define TCU_TSCR_OFFSET	0x2C
+
+#define TCU_TER_OFFSET	0x00 /* Timer Counter Enable register */
+#define TCU_TESR_OFFSET	0x04
+#define TCU_TECR_OFFSET	0x08
+
+#define TCU_TDFR_OFFSET(pwm)	(0x30 + (pwm) * 0x10) /* Timer Data Full reg */
+#define TCU_TDHR_OFFSET(pwm)	(0x34 + (pwm) * 0x10) /* Timer Data Half reg */
+#define TCU_TCNT_OFFSET(pwm)	(0x38 + (pwm) * 0x10) /* Timer Counter reg */
+#define TCU_TCSR_OFFSET(pwm)	(0x3C + (pwm) * 0x10) /* Timer Control reg */
+
+#define TCU_TCSR_PWM_SD		BIT(9)  /* 0: Shutdown abruptly 1: gracefully */
+#define TCU_TCSR_PWM_INITL_HIGH	BIT(8)  /* Sets the initial output level */
+#define TCU_TCSR_PWM_EN		BIT(7)  /* PWM pin output enable */
+#define TCU_TCSR_PRESCALE_MASK	0x0038
+#define TCU_TCSR_PRESCALE_SHIFT	3
 
 struct jz4770_pwm_chip {
 	struct pwm_chip chip;
+	void __iomem *base;
 	struct clk *clk;
 };
 
@@ -38,38 +55,64 @@ static inline struct jz4770_pwm_chip *to_jz4770(struct pwm_chip *chip)
 
 static int jz4770_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	__tcu_start_timer_clock(pwm->hwpwm);
+	struct jz4770_pwm_chip *jz = to_jz4770(chip);
+
+	/* Start clock */
+	writel(BIT(pwm->hwpwm), jz->base + TCU_TSCR_OFFSET);
 	return 0;
 }
 
 static void jz4770_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	__tcu_stop_timer_clock(pwm->hwpwm);
+	struct jz4770_pwm_chip *jz = to_jz4770(chip);
+
+	/* Stop clock */
+	writel(BIT(pwm->hwpwm), jz->base + TCU_TSSR_OFFSET);
 }
 
 static int jz4770_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	__tcu_enable_pwm_output(pwm->hwpwm);
-	__tcu_start_counter(pwm->hwpwm);
+	struct jz4770_pwm_chip *jz = to_jz4770(chip);
+	u16 reg;
+
+	/* Enable PWM output */
+	reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	writew(reg | TCU_TCSR_PWM_EN, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+
+	/* Start counter */
+	writew(BIT(pwm->hwpwm), jz->base + TCU_TESR_OFFSET);
 	return 0;
 }
 
 static void jz4770_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	__tcu_stop_counter(pwm->hwpwm);
-	__tcu_disable_pwm_output(pwm->hwpwm);
+	struct jz4770_pwm_chip *jz = to_jz4770(chip);
+	u16 reg;
+
+	/* Stop counter */
+	writew(BIT(pwm->hwpwm), jz->base + TCU_TECR_OFFSET);
+
+	/* Disable PWM output */
+	reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	writew(reg & ~TCU_TCSR_PWM_EN, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+}
+
+static bool tcu_counter_enabled(struct jz4770_pwm_chip *jz, unsigned int pwm)
+{
+	return readw(jz->base + TCU_TER_OFFSET) & BIT(pwm);
 }
 
 static int jz4770_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 			     int duty_ns, int period_ns)
 {
-	struct jz4770_pwm_chip *jz4770 = to_jz4770(pwm->chip);
+	struct jz4770_pwm_chip *jz = to_jz4770(pwm->chip);
 	unsigned long long tmp;
 	unsigned long period, duty;
 	unsigned int prescaler = 0;
 	bool is_enabled;
+	u16 reg;
 
-	tmp = (unsigned long long)clk_get_rate(jz4770->clk) * period_ns;
+	tmp = (unsigned long long) clk_get_rate(jz->clk) * period_ns;
 	do_div(tmp, 1000000000);
 	period = tmp;
 
@@ -88,17 +131,25 @@ static int jz4770_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	if (duty >= period)
 		duty = period - 1;
 
-	is_enabled = __tcu_counter_enabled(pwm->hwpwm);
+	is_enabled = tcu_counter_enabled(jz, pwm->hwpwm);
 	if (is_enabled)
 		jz4770_pwm_disable(chip, pwm);
 
-	__tcu_init_pwm_output_high(pwm->hwpwm);
-	__tcu_set_count(pwm->hwpwm, 0);
-	__tcu_set_half_data(pwm->hwpwm, duty);
-	__tcu_set_full_data(pwm->hwpwm, period);
-	__tcu_select_extalclk(pwm->hwpwm);
-	__tcu_select_clk_div(pwm->hwpwm, prescaler);
-	__tcu_set_pwm_output_shutdown_abrupt(pwm->hwpwm);
+	/* Set initial output high, abrupt shutdown, clock divider */
+	reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	reg &= ~TCU_TCSR_PRESCALE_MASK;
+	reg |= TCU_TCSR_PWM_INITL_HIGH | TCU_TCSR_PWM_SD |
+		(prescaler << TCU_TCSR_PRESCALE_SHIFT);
+	writew(reg, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+
+	/* Reset counter to 0 */
+	writew(0, jz->base + TCU_TCNT_OFFSET(pwm->hwpwm));
+
+	/* Set duty */
+	writew(duty, jz->base + TCU_TDHR_OFFSET(pwm->hwpwm));
+
+	/* Set period */
+	writew(period, jz->base + TCU_TDFR_OFFSET(pwm->hwpwm));
 
 	if (is_enabled)
 		jz4770_pwm_enable(chip, pwm);
@@ -118,11 +169,17 @@ static const struct pwm_ops jz4770_pwm_ops = {
 static int jz4770_pwm_probe(struct platform_device *pdev)
 {
 	struct jz4770_pwm_chip *jz4770;
+	struct resource *res;
 	int ret;
 
 	jz4770 = devm_kzalloc(&pdev->dev, sizeof(*jz4770), GFP_KERNEL);
 	if (!jz4770)
 		return -ENOMEM;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	jz4770->base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(jz4770->base))
+		return PTR_ERR(jz4770->base);
 
 	jz4770->clk = clk_get(NULL, "ext");
 	if (IS_ERR(jz4770->clk))
