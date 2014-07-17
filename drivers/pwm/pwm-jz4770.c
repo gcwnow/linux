@@ -16,7 +16,6 @@
 
 #include <linux/clk.h>
 #include <linux/err.h>
-#include <linux/gpio.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -26,17 +25,6 @@
 #include <asm/mach-jz4770/jz4770tcu.h>
 
 #define NUM_PWM 8
-
-static const unsigned int jz4770_pwm_gpio_list[NUM_PWM] = {
-	GPE(0),
-	GPE(1),
-	GPE(2),
-	GPE(3),
-	GPE(4),
-	GPE(5),
-	GPD(10),
-	GPD(11),
-};
 
 struct jz4770_pwm_chip {
 	struct pwm_chip chip;
@@ -50,30 +38,13 @@ static inline struct jz4770_pwm_chip *to_jz4770(struct pwm_chip *chip)
 
 static int jz4770_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	unsigned int gpio = jz4770_pwm_gpio_list[pwm->hwpwm];
-	int ret;
-
-	ret = gpio_request(gpio, pwm->label);
-	if (ret) {
-		dev_err(chip->dev, "Failed to request GPIO#%u for PWM: %d\n",
-			gpio, ret);
-		return ret;
-	}
-
-	__gpio_as_func0(gpio);
-
 	__tcu_start_timer_clock(pwm->hwpwm);
-
 	return 0;
 }
 
 static void jz4770_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 {
-	unsigned int gpio = jz4770_pwm_gpio_list[pwm->hwpwm];
-
 	__tcu_stop_timer_clock(pwm->hwpwm);
-	__gpio_as_input(gpio);
-	gpio_free(gpio);
 }
 
 static int jz4770_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
