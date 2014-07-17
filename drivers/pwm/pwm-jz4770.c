@@ -135,11 +135,10 @@ static int jz4770_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	if (is_enabled)
 		jz4770_pwm_disable(chip, pwm);
 
-	/* Set initial output high, abrupt shutdown, clock divider */
+	/* Set abrupt shutdown, clock divider */
 	reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
 	reg &= ~TCU_TCSR_PRESCALE_MASK;
-	reg |= TCU_TCSR_PWM_INITL_HIGH | TCU_TCSR_PWM_SD |
-		(prescaler << TCU_TCSR_PRESCALE_SHIFT);
+	reg |= TCU_TCSR_PWM_SD | (prescaler << TCU_TCSR_PRESCALE_SHIFT);
 	writew(reg, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
 
 	/* Reset counter to 0 */
@@ -157,10 +156,30 @@ static int jz4770_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	return 0;
 }
 
+static int jz4770_pwm_set_polarity(struct pwm_chip *chip,
+		struct pwm_device *pwm, enum pwm_polarity polarity)
+{
+	struct jz4770_pwm_chip *jz = to_jz4770(chip);
+	u16 reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+
+	switch (polarity) {
+	case PWM_POLARITY_NORMAL:
+		reg &= ~TCU_TCSR_PWM_INITL_HIGH;
+		break;
+	case PWM_POLARITY_INVERSED:
+		reg |= TCU_TCSR_PWM_INITL_HIGH;
+		break;
+	}
+
+	writew(reg, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	return 0;
+}
+
 static const struct pwm_ops jz4770_pwm_ops = {
 	.request = jz4770_pwm_request,
 	.free = jz4770_pwm_free,
 	.config = jz4770_pwm_config,
+	.set_polarity = jz4770_pwm_set_polarity,
 	.enable = jz4770_pwm_enable,
 	.disable = jz4770_pwm_disable,
 	.owner = THIS_MODULE,
