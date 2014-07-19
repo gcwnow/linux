@@ -28,6 +28,7 @@
 #include <linux/fb.h>
 #include <linux/init.h>
 #include <linux/dma-mapping.h>
+#include <linux/platform_data/jz4770_fb.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>
 #include <linux/clk.h>
@@ -41,7 +42,6 @@
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 
-#include <asm/mach-jz4770/jz4770_fb.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>

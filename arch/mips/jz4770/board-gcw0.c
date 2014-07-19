@@ -35,6 +35,7 @@
 
 #include <linux/mmc/host.h>
 #include <linux/act8600_power.h>
+#include <linux/platform_data/jz4770_fb.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
 #include <linux/platform_data/pwm-haptic.h>
@@ -52,7 +53,6 @@
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/gpio.h>
-#include <asm/mach-jz4770/jz4770_fb.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/mmc.h>

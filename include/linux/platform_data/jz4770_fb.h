@@ -8,12 +8,12 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef __ASM_MACH_JZ4770_JZ4770_FB_H__
-#define __ASM_MACH_JZ4770_JZ4770_FB_H__
+#ifndef __PLATFORM_DATA_JZ4770_FB_H__
+#define __PLATFORM_DATA_JZ4770_FB_H__
 
 struct jzfb_platform_data {
 	struct panel_ops *panel_ops;
 	void *panel_pdata;
 };
 
-#endif /* __ASM_MACH_JZ4770_JZ4770_FB_H__ */
+#endif /* __PLATFORM_DATA_JZ4770_FB_H__ */
