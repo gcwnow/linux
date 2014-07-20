@@ -59,6 +59,10 @@ static bool keep_aspect_ratio = true;
 module_param(keep_aspect_ratio, bool, S_IRUSR | S_IWUSR);
 MODULE_PARM_DESC(keep_aspect_ratio, "Keep aspect ratio");
 
+static bool allow_downscaling = false;
+module_param(allow_downscaling, bool, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(allow_downscaling, "Allow downscaling");
+
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
 	unsigned int w;		/* Panel Width(in pixel) */
@@ -231,6 +235,13 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		var->xres = 4;
 	if (var->yres < 4)
 		var->yres = 4;
+
+	if (!allow_downscaling) {
+		if (var->xres > jz_panel->w)
+			var->xres = jz_panel->w;
+		if (var->yres > jz_panel->h)
+			var->yres = jz_panel->h;
+	}
 
 	/* Adjust the input size until we find a valid configuration */
 	for (num = jz_panel->w, denom = var->xres; var->xres <= MAX_XRES &&
