@@ -445,7 +445,7 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 {
 	struct fb_info *fb = jzfb->fb;
 	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
-	unsigned int outputW = panel->w * 4,
+	unsigned int outputW = panel->w,
 		     outputH = panel->h,
 		     xpos = 0, ypos = 0;
 
@@ -508,7 +508,7 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 		}
 
 		outputH = fb->var.yres * numH / denomH;
-		outputW = fb->fix.line_length * numW / denomW;
+		outputW = fb->var.xres * numW / denomW;
 	}
 
 	writel(ctrl, jzfb->ipu_base + IPU_CTRL);
@@ -517,13 +517,12 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	writel(coef_index, jzfb->ipu_base + IPU_RSZ_COEF_INDEX);
 
 	/* Set the output height/width/stride */
-	size = outputW << IPU_OUT_GS_W_BIT
+	size = (outputW * 4) << IPU_OUT_GS_W_BIT
 		| outputH << IPU_OUT_GS_H_BIT;
 	writel(size, jzfb->ipu_base + IPU_OUT_GS);
-	writel(outputW, jzfb->ipu_base + IPU_OUT_STRIDE);
+	writel(outputW * 4, jzfb->ipu_base + IPU_OUT_STRIDE);
 
 	/* Resize Foreground1 to the output size of the IPU */
-	outputW /= 4;
 	xpos = (panel->w - outputW) / 2;
 	ypos = (panel->h - outputH) / 2;
 	jzfb_foreground_resize(jzfb, xpos, ypos, outputW, outputH);
