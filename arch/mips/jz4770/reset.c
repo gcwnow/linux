@@ -29,10 +29,10 @@
 void jz_restart(char *command)
 {
 	printk("Restarting after 4 ms\n");
+	REG_TCU_TSCR = TCU_TSCR_WDTSC; /* enable wdt clock */
 	REG_WDT_TCSR = WDT_TCSR_PRESCALE4 | WDT_TCSR_EXT_EN;
 	REG_WDT_TCNT = 0;
 	REG_WDT_TDR = JZ_EXTAL/1000;   /* reset after 4ms */
-	REG_TCU_TSCR = TCU_TSCR_WDTSC; /* enable wdt clock */
 	REG_WDT_TCER = WDT_TCER_TCEN;  /* wdt start */
 	while (1);
 }
