@@ -62,4 +62,11 @@ int act8600_output_enable(int outnum, bool enable);
  */
 int act8600_set_power_mode(enum act8600_power_mode mode);
 
+/**
+ * act8600_get_battery_state - get current battery state.
+ *
+ * @returns the battery state as POWER_SUPPLY_STATUS_*
+ */
+int act8600_get_battery_state(void);
+
 #endif  /* __ACT8600_POWER_H__ */

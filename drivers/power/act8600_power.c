@@ -27,7 +27,14 @@
 #define dprintk(x...)
 #endif
 
-#define ACT8600_Q_REG	0xb0
+/* OTG */
+#define ACT8600_Q_REG  0xb0
+
+#define REG_APCH 0xAA
+#define REG_APCH_CHG_ACIN BIT(7)
+#define REG_APCH_CHG_USB  BIT(6)
+#define REG_APCH_CSTATE_0 BIT(5)
+#define REG_APCH_CSTATE_1 BIT(4)
 
 extern void i2c_jz_setclk(struct i2c_client *client,unsigned long i2cclk);
 
@@ -176,6 +183,29 @@ static int act8600_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 
 	return 0;
 }
+
+int act8600_get_battery_state(void)
+{
+	u8 status = 0, state0, state1;
+
+	if ( act8600_read_reg(REG_APCH, &status) < 0) {
+		__WARN();
+		return POWER_SUPPLY_STATUS_UNKNOWN;
+	}
+
+	state0 = status & REG_APCH_CSTATE_0;
+	state1 = status & REG_APCH_CSTATE_1;
+
+	if (state0 && !state1)
+		return POWER_SUPPLY_STATUS_CHARGING;
+	else if (!state0 && state1)
+		return POWER_SUPPLY_STATUS_NOT_CHARGING;
+	else if (!state0 && !state1)
+		return POWER_SUPPLY_STATUS_DISCHARGING;
+	else
+		return POWER_SUPPLY_STATUS_UNKNOWN;
+}
+EXPORT_SYMBOL_GPL(act8600_get_battery_state);
 
 static int act8600_remove(struct i2c_client *client)
 {
