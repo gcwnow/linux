@@ -187,6 +187,12 @@ static int mxc6225_probe(struct i2c_client *client,
 	struct input_dev *input_dev;
 	int error, fuzz, flat, poll_interval;
 
+	if (!i2c_check_functionality(client->adapter,
+				     I2C_FUNC_SMBUS_BYTE_DATA)) {
+		dev_err(&client->dev, "Incapable I2C adapter\n");
+		return -ENODEV;
+	}
+
 	/* Disable the chip by default, to save power */
 	error = mxc6225_disable(client);
 	if (error < 0) {
