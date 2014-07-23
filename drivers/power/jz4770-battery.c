@@ -30,6 +30,7 @@
 #include <linux/power/jz4770-battery.h>
 #include <linux/jz4770-adc.h>
 
+#include <linux/act8600_power.h>
 
 struct jz_battery {
 	struct jz_battery_platform_data *pdata;
@@ -195,20 +196,12 @@ static void jz_battery_update(struct jz_battery *jz_battery)
 	int status;
 	long voltage;
 	bool has_changed = false;
-	int is_charging;
 
-	if (gpio_is_valid(jz_battery->pdata->gpio_charge)) {
-		is_charging = gpio_get_value(jz_battery->pdata->gpio_charge);
-		is_charging ^= jz_battery->pdata->gpio_charge_active_low;
-		if (is_charging)
-			status = POWER_SUPPLY_STATUS_CHARGING;
-		else
-			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+	status = act8600_get_battery_state();
 
-		if (status != jz_battery->status) {
-			jz_battery->status = status;
-			has_changed = true;
-		}
+	if (status != jz_battery->status) {
+		jz_battery->status = status;
+		has_changed = true;
 	}
 
 	voltage = jz_battery_read_voltage(jz_battery);
