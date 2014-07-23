@@ -119,8 +119,14 @@ static void mxc6225_poll(struct input_polled_dev *input)
 	bool new_x = false, new_y = false;
 	s8 x, y;
 
-	x = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
-	y = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_YOUT);
+	if (i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA)) {
+		s32 xy = i2c_smbus_read_word_data(client, MXC6225_REG_XOUT);
+		x = (s8)xy;
+		y = (s8)(xy >> 8);
+	} else {
+		x = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
+		y = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_YOUT);
+	}
 
 	dev_dbg(&input->input->dev, "Polled values: %hhi %hhi\n", x, y);
 
