@@ -28,7 +28,7 @@
 #define MXC6225_REG_XOUT	0x0
 #define MXC6225_REG_YOUT	0x1
 #define MXC6225_REG_STATUS	0x2
-#define MXC6225_REG_DETECTION	0x3
+#define MXC6225_REG_DETECTION	0x4
 
 #define MXC6225_STATUS_OR_0DEGREES	0x00
 #define MXC6225_STATUS_OR_90DEGREES	0x01
@@ -87,16 +87,13 @@ struct mxc6225_device {
 
 static void mxc6225_disable(struct i2c_client *client)
 {
-	s8 val = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_DETECTION);
 	i2c_smbus_write_byte_data(client, MXC6225_REG_DETECTION,
-			val | MXC6225_DETECTION_PD);
+					  MXC6225_DETECTION_PD);
 }
 
 static void mxc6225_enable(struct i2c_client *client)
 {
-	s8 val = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_DETECTION);
-	i2c_smbus_write_byte_data(client, MXC6225_REG_DETECTION,
-			val & ~MXC6225_DETECTION_PD);
+	i2c_smbus_write_byte_data(client, MXC6225_REG_DETECTION, 0);
 }
 
 static void mxc6225_open(struct input_polled_dev *input)
