@@ -85,15 +85,23 @@ struct mxc6225_device {
 	s8 last_x, last_y;
 };
 
-static void mxc6225_disable(struct i2c_client *client)
+static int mxc6225_write_detection(struct i2c_client *client, u8 data)
 {
-	i2c_smbus_write_byte_data(client, MXC6225_REG_DETECTION,
-					  MXC6225_DETECTION_PD);
+	s32 ret = i2c_smbus_write_byte_data(client,
+					    MXC6225_REG_DETECTION, data);
+	if (ret < 0)
+		dev_warn(&client->dev, "I2C write failed: %d\n", ret);
+	return ret;
 }
 
-static void mxc6225_enable(struct i2c_client *client)
+static int mxc6225_enable(struct i2c_client *client)
 {
-	i2c_smbus_write_byte_data(client, MXC6225_REG_DETECTION, 0);
+	return mxc6225_write_detection(client, 0);
+}
+
+static int mxc6225_disable(struct i2c_client *client)
+{
+	return mxc6225_write_detection(client, MXC6225_DETECTION_PD);
 }
 
 static void mxc6225_open(struct input_polled_dev *input)
@@ -118,14 +126,23 @@ static void mxc6225_poll(struct input_polled_dev *input)
 	struct i2c_client *client = mxc->i2c_client;
 	bool new_x = false, new_y = false;
 	s8 x, y;
+	s32 data = 0;
 
 	if (i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA)) {
-		s32 xy = i2c_smbus_read_word_data(client, MXC6225_REG_XOUT);
-		x = (s8)xy;
-		y = (s8)(xy >> 8);
+		s32 data = i2c_smbus_read_word_data(client, MXC6225_REG_XOUT);
+		if (data < 0)
+			goto read_fail;
+		x = (s8)data;
+		y = (s8)(data >> 8);
 	} else {
-		x = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
-		y = (s8) i2c_smbus_read_byte_data(client, MXC6225_REG_YOUT);
+		s32 data = i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
+		if (data < 0)
+			goto read_fail;
+		x = (s8)data;
+		data = i2c_smbus_read_byte_data(client, MXC6225_REG_YOUT);
+		if (data < 0)
+			goto read_fail;
+		y = (s8)data;
 	}
 
 	dev_dbg(&input->input->dev, "Polled values: %hhi %hhi\n", x, y);
@@ -154,6 +171,11 @@ static void mxc6225_poll(struct input_polled_dev *input)
 
 	if (new_x || new_y)
 		input_sync(input->input);
+
+	return;
+
+read_fail:
+	dev_warn(&client->dev, "I2C read failed: %d\n", data);
 }
 
 static int mxc6225_probe(struct i2c_client *client,
@@ -164,6 +186,13 @@ static int mxc6225_probe(struct i2c_client *client,
 	struct input_polled_dev *poll_dev;
 	struct input_dev *input_dev;
 	int error, fuzz, flat, poll_interval;
+
+	/* Disable the chip by default, to save power */
+	error = mxc6225_disable(client);
+	if (error < 0) {
+		dev_err(&client->dev, "Write failed; assuming no device\n");
+		return -ENODEV;
+	}
 
 	pdata = dev_get_platdata(&client->dev);
 	if (pdata) {
@@ -207,9 +236,6 @@ static int mxc6225_probe(struct i2c_client *client,
 		MXC6225_MIN_AXIS, MXC6225_MAX_AXIS, fuzz, flat);
 	input_set_abs_params(input_dev, ABS_Y,
 		MXC6225_MIN_AXIS, MXC6225_MAX_AXIS, fuzz, flat);
-
-	/* Disable the chip by default, to save power */
-	mxc6225_disable(client);
 
 	error = input_register_polled_device(poll_dev);
 	if (error) {
