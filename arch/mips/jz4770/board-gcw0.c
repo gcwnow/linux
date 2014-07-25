@@ -389,11 +389,9 @@ static struct jz_otg_board_data gcw0_otg_board_data = {
 #if defined(CONFIG_I2C_JZ4770)
 #define I2C0_USE_HW	1
 #define I2C1_USE_HW	1
-#define I2C2_USE_HW	1
 #else
 #define I2C0_USE_HW	0
 #define I2C1_USE_HW	0
-#define I2C2_USE_HW	0
 #endif
 
 static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
@@ -409,9 +407,6 @@ static struct i2c_board_info gcw0_i2c1_devs[] __initdata = {
 		.type		= "mxc6225",
 		.addr		= MXC6225_I2C_ADDR,
 	},
-};
-
-static struct i2c_board_info gcw0_i2c2_devs[] __initdata = {
 };
 
 static struct i2c_board_info gcw0_i2c3_devs[] __initdata = {
@@ -433,10 +428,6 @@ static struct i2c_jz4770_platform_data gcw0_i2c0_platform_data __initdata = {
 };
 
 static struct i2c_jz4770_platform_data gcw0_i2c1_platform_data __initdata = {
-	.use_dma		= false,
-};
-
-static struct i2c_jz4770_platform_data gcw0_i2c2_platform_data __initdata = {
 	.use_dma		= false,
 };
 
@@ -471,24 +462,6 @@ static struct platform_device gcw0_i2c1_gpio_device = {
 	.id			= 1,
 	.dev			= {
 		.platform_data = &gcw0_i2c1_gpio_data,
-	},
-};
-
-#endif
-
-#if I2C2_USE_HW == 0
-
-static struct i2c_gpio_platform_data gcw0_i2c2_gpio_data = {
-	.sda_pin		= JZ_GPIO_PORTF(16),
-	.scl_pin		= JZ_GPIO_PORTF(17),
-	.udelay			= 2, /* 250 kHz */
-};
-
-static struct platform_device gcw0_i2c2_gpio_device = {
-	.name			= "i2c-gpio",
-	.id			= 2,
-	.dev			= {
-		.platform_data = &gcw0_i2c2_gpio_data,
 	},
 };
 
@@ -761,17 +734,11 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 #if I2C1_USE_HW == 1
 	&jz4770_i2c1_device,
 #endif
-#if I2C2_USE_HW == 1
-	&jz4770_i2c2_device,
-#endif
 #if I2C0_USE_HW == 0
 	&gcw0_i2c0_gpio_device,
 #endif
 #if I2C1_USE_HW == 0
 	&gcw0_i2c1_gpio_device,
-#endif
-#if I2C2_USE_HW == 0
-	&gcw0_i2c2_gpio_device,
 #endif
 	&gcw0_i2c3_gpio_device,
 	&gcw0_i2c4_gpio_device,
@@ -813,11 +780,9 @@ static void __init board_i2c_init(void)
 {
 	jz4770_i2c0_device.dev.platform_data = &gcw0_i2c0_platform_data;
 	jz4770_i2c1_device.dev.platform_data = &gcw0_i2c1_platform_data;
-	jz4770_i2c2_device.dev.platform_data = &gcw0_i2c2_platform_data;
 
 	i2c_register_board_info(0, gcw0_i2c0_devs, ARRAY_SIZE(gcw0_i2c0_devs));
 	i2c_register_board_info(1, gcw0_i2c1_devs, ARRAY_SIZE(gcw0_i2c1_devs));
-	i2c_register_board_info(2, gcw0_i2c2_devs, ARRAY_SIZE(gcw0_i2c2_devs));
 	i2c_register_board_info(3, gcw0_i2c3_devs, ARRAY_SIZE(gcw0_i2c3_devs));
 	i2c_register_board_info(4, gcw0_i2c4_devs, ARRAY_SIZE(gcw0_i2c4_devs));
 }
