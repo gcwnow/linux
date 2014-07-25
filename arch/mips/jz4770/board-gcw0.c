@@ -382,6 +382,20 @@ static struct jz_otg_board_data gcw0_otg_board_data = {
 
 /* I2C devices */
 
+/*
+ * Select which I2C busses use a hardware adapter (i2c-jz4770) and which use
+ * a software adapter (i2c-gpio).
+ */
+#if defined(CONFIG_I2C_JZ4770)
+#define I2C0_USE_HW	1
+#define I2C1_USE_HW	1
+#define I2C2_USE_HW	1
+#else
+#define I2C0_USE_HW	0
+#define I2C1_USE_HW	0
+#define I2C2_USE_HW	0
+#endif
+
 static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
 	{
 		.type		= "radio-rda5807",
@@ -426,7 +440,7 @@ static struct i2c_jz4770_platform_data gcw0_i2c2_platform_data __initdata = {
 	.use_dma		= false,
 };
 
-#if !defined(CONFIG_I2C_JZ4770)
+#if I2C0_USE_HW == 0
 
 static struct i2c_gpio_platform_data gcw0_i2c0_gpio_data = {
 	.sda_pin		= JZ_GPIO_PORTD(30),
@@ -442,6 +456,10 @@ static struct platform_device gcw0_i2c0_gpio_device = {
 	},
 };
 
+#endif
+
+#if I2C1_USE_HW == 0
+
 static struct i2c_gpio_platform_data gcw0_i2c1_gpio_data = {
 	.sda_pin		= JZ_GPIO_PORTE(30),
 	.scl_pin		= JZ_GPIO_PORTE(31),
@@ -455,6 +473,10 @@ static struct platform_device gcw0_i2c1_gpio_device = {
 		.platform_data = &gcw0_i2c1_gpio_data,
 	},
 };
+
+#endif
+
+#if I2C2_USE_HW == 0
 
 static struct i2c_gpio_platform_data gcw0_i2c2_gpio_data = {
 	.sda_pin		= JZ_GPIO_PORTF(16),
@@ -733,13 +755,22 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
 	&jz4770_icdc_device,
-#if defined(CONFIG_I2C_JZ4770)
+#if I2C0_USE_HW == 1
 	&jz4770_i2c0_device,
+#endif
+#if I2C1_USE_HW == 1
 	&jz4770_i2c1_device,
+#endif
+#if I2C2_USE_HW == 1
 	&jz4770_i2c2_device,
-#else
+#endif
+#if I2C0_USE_HW == 0
 	&gcw0_i2c0_gpio_device,
+#endif
+#if I2C1_USE_HW == 0
 	&gcw0_i2c1_gpio_device,
+#endif
+#if I2C2_USE_HW == 0
 	&gcw0_i2c2_gpio_device,
 #endif
 	&gcw0_i2c3_gpio_device,
