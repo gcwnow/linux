@@ -40,6 +40,7 @@
 #include <linux/platform_data/mxc6225.h>
 #include <linux/platform_data/pwm-haptic.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
+#include <linux/pinctrl/machine.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
@@ -799,10 +800,37 @@ static void __init board_gpio_setup(void)
 	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
 }
 
+static struct pinctrl_map pin_map[] __initdata = {
+#if I2C0_USE_HW == 1
+	PIN_MAP_MUX_GROUP("i2c-jz4770.0", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "i2c0"),
+#endif
+#if I2C1_USE_HW == 1
+	PIN_MAP_MUX_GROUP("i2c-jz4770.1", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "i2c1"),
+#endif
+	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "msc0"),
+	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "msc1"),
+	/* pwm1: LCD backlight */
+	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "pwm1"),
+	/* pwm4: rumble motor */
+	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", NULL, "pwm4"),
+};
+
+static void __init board_init_pins(void)
+{
+	pinctrl_register_mappings(pin_map, ARRAY_SIZE(pin_map));
+}
+
 static int __init gcw0_board_setup(void)
 {
 	printk(KERN_INFO "GCW Zero JZ4770 setup\n");
 
+	board_init_pins();
 	board_gpio_setup();
 	board_i2c_init();
 
