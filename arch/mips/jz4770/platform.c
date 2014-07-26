@@ -15,7 +15,6 @@
 #include <linux/init.h>
 #include <linux/resource.h>
 
-#include <linux/pinctrl/machine.h>
 #include <linux/usb/musb.h>
 
 #include <asm/mach-jz4770/base.h>
@@ -428,26 +427,3 @@ static int __init jz4770_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 postcore_initcall(jz4770_init_platform_devices);
-
-static struct pinctrl_map pin_map[] __initdata = {
-	PIN_MAP_MUX_GROUP("i2c-jz4770.0", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "i2c0"),
-	PIN_MAP_MUX_GROUP("i2c-jz4770.1", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "i2c1"),
-	PIN_MAP_MUX_GROUP("i2c-jz4770.2", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "i2c2"),
-	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "msc0"),
-	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "msc1"),
-	PIN_MAP_MUX_GROUP("jz-msc.2", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "msc2"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm0"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm1"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm2"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm3"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm4"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm5"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm6"),
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT, "jz4770-pinctrl", NULL, "pwm7"),
-};
-
-static int __init jz4770_init_pins(void)
-{
-	return pinctrl_register_mappings(pin_map, ARRAY_SIZE(pin_map));
-}
-arch_initcall(jz4770_init_pins);
