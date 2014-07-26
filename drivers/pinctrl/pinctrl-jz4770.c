@@ -24,8 +24,8 @@
 
 #define PORTS		6
 #define PINS		32
-#define PORT(x)		(x / PINS)
-#define PORT_PIN(x)	(x % PINS)
+#define PORT(x)		((x) / PINS)
+#define PORT_PIN(x)	((x) % PINS)
 
 #define GPA(x)		((x) + 32 * 0)
 #define GPB(x)		((x) + 32 * 1)
@@ -34,25 +34,25 @@
 #define GPE(x)		((x) + 32 * 4)
 #define GPF(x)		((x) + 32 * 5)
 
-#define INT_OFFSET(port)	(port * 0x100 + 0x10)
-#define INT_SET_OFFSET(port)	(port * 0x100 + 0x14)
-#define INT_CLR_OFFSET(port)	(port * 0x100 + 0x18)
+#define INT_OFFSET(port)	((port) * 0x100 + 0x10)
+#define INT_SET_OFFSET(port)	((port) * 0x100 + 0x14)
+#define INT_CLR_OFFSET(port)	((port) * 0x100 + 0x18)
 
-#define MASK_OFFSET(port)	(port * 0x100 + 0x20)
-#define MASK_SET_OFFSET(port)	(port * 0x100 + 0x24)
-#define MASK_CLR_OFFSET(port)	(port * 0x100 + 0x28)
+#define MASK_OFFSET(port)	((port) * 0x100 + 0x20)
+#define MASK_SET_OFFSET(port)	((port) * 0x100 + 0x24)
+#define MASK_CLR_OFFSET(port)	((port) * 0x100 + 0x28)
 
-#define PAT1_OFFSET(port)	(port * 0x100 + 0x30)
-#define PAT1_SET_OFFSET(port)	(port * 0x100 + 0x34)
-#define PAT1_CLR_OFFSET(port)	(port * 0x100 + 0x38)
+#define PAT1_OFFSET(port)	((port) * 0x100 + 0x30)
+#define PAT1_SET_OFFSET(port)	((port) * 0x100 + 0x34)
+#define PAT1_CLR_OFFSET(port)	((port) * 0x100 + 0x38)
 
-#define PAT0_OFFSET(port)	(port * 0x100 + 0x40)
-#define PAT0_SET_OFFSET(port)	(port * 0x100 + 0x44)
-#define PAT0_CLR_OFFSET(port)	(port * 0x100 + 0x48)
+#define PAT0_OFFSET(port)	((port) * 0x100 + 0x40)
+#define PAT0_SET_OFFSET(port)	((port) * 0x100 + 0x44)
+#define PAT0_CLR_OFFSET(port)	((port) * 0x100 + 0x48)
 
-#define PULL_OFFSET(port)	(port * 0x100 + 0x70)
-#define PULL_SET_OFFSET(port)	(port * 0x100 + 0x74)
-#define PULL_CLR_OFFSET(port)	(port * 0x100 + 0x78)
+#define PULL_OFFSET(port)	((port) * 0x100 + 0x70)
+#define PULL_SET_OFFSET(port)	((port) * 0x100 + 0x74)
+#define PULL_CLR_OFFSET(port)	((port) * 0x100 + 0x78)
 
 struct jz_pinctrl {
 	struct device *dev;
