@@ -506,14 +506,11 @@ static void jz_set_function(struct pinctrl_dev *pctldev,
 static int jz_enable(struct pinctrl_dev *pctrldev,
 		unsigned int func, unsigned int group)
 {
-	unsigned int i, j;
+	const struct jz_pin_group *pin_group = &jz_pin_groups[group];
+	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(jz_pin_groups); i++) {
-		const struct jz_pin_group *group = &jz_pin_groups[i];
-
-		for (j = 0; j < group->num_pins; j++)
-			jz_set_function(pctrldev, group->pins[j], group->func);
-	}
+	for (i = 0; i < pin_group->num_pins; i++)
+		jz_set_function(pctrldev, pin_group->pins[i], pin_group->func);
 
 	return 0;
 }
@@ -521,11 +518,11 @@ static int jz_enable(struct pinctrl_dev *pctrldev,
 static void jz_disable(struct pinctrl_dev *pctldev,
 		unsigned int func, unsigned int group)
 {
-	unsigned int i, j;
+	const struct jz_pin_group *pin_group = &jz_pin_groups[group];
+	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(jz_pin_groups); i++)
-		for (j = 0; j < jz_pin_groups[i].num_pins; j++)
-			jz_set_gpio_input(pctldev, jz_pin_groups[i].pins[j]);
+	for (i = 0; i < pin_group->num_pins; i++)
+		jz_set_gpio_input(pctldev, pin_group->pins[i]);
 }
 
 static int jz_pmux_gpio_set_direction(struct pinctrl_dev *pctldev,
