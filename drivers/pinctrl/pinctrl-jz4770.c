@@ -64,8 +64,8 @@ struct jz_pinctrl {
 struct jz_pin_group {
 	const char *name;
 	const unsigned int *pins;
+	const u8 *sels;
 	unsigned int num_pins;
-	unsigned int func;
 };
 
 struct jz_pmux_func {
@@ -286,35 +286,62 @@ static const unsigned int jz_pulldown_pins[] = {
 	GPF(17), GPF(19), GPF(20), GPF(22),
 };
 
-static const unsigned int msc0_0_pins[] = { GPA(20), };
-static const unsigned int msc0_1_pins[] = {
-	GPA(18), GPA(19), GPA(21), GPA(22), GPA(23),
+static const unsigned int msc0_4bit_pins[] = {
+	GPA(18), GPA(19), GPA(20), GPA(21), GPA(22), GPA(23),
+};
+static const u8           msc0_4bit_sels[] = {
+	1,       1,       0,       1,       1,       1,
 };
 
-static const unsigned int msc1_pins[] = {
+static const unsigned int msc1_4bit_pins[] = {
 	GPD(20), GPD(21), GPD(22), GPD(23), GPD(24), GPD(25),
 };
-
-static const unsigned int msc2_pins[] = {
-	GPB(20), GPB(21), GPB(28), GPB(29), GPB(30), GPB(31),
+static const u8           msc1_4bit_sels[] = {
+	0,       0,       0,       0,       0,       0,
 };
 
-static const unsigned int msc0_8bit_pins[] = {
+static const unsigned int msc2_4bit_pins[] = {
+	GPB(20), GPB(21), GPB(28), GPB(29), GPB(30), GPB(31),
+};
+static const u8           msc2_4bit_sels[] = {
+	0,       0,       0,       0,       0,       0,
+};
+
+static const unsigned int msc_8bit_pins[] = {
 	GPE(20), GPE(21), GPE(22), GPE(23), GPE(24),
 	GPE(25), GPE(26), GPE(27), GPE(28), GPE(29),
 };
-#define msc1_8bit_pins msc0_8bit_pins
-#define msc2_8bit_pins msc0_8bit_pins
+static const u8           msc0_8bit_sels[] = {
+	0,       0,       0,       0,       0,
+	0,       0,       0,       0,       0,
+};
+static const u8           msc1_8bit_sels[] = {
+	1,       1,       1,       1,       1,
+	1,       1,       1,       1,       1,
+};
+static const u8           msc2_8bit_sels[] = {
+	2,       2,       2,       2,       2,
+	2,       2,       2,       2,       2,
+};
+#define msc0_8bit_pins msc_8bit_pins
+#define msc1_8bit_pins msc_8bit_pins
+#define msc2_8bit_pins msc_8bit_pins
 
-static const unsigned int uart0_pins[] = { GPF(0),  GPF(1),  GPF(2),  GPF(3)  };
-static const unsigned int uart1_pins[] = { GPD(26), GPD(27), GPD(28), GPD(29) };
-static const unsigned int uart2_pins[] = { GPC(28), GPC(29), GPC(30), GPC(31) };
-static const unsigned int uart3_0_pins[] = { GPD(12), GPE(8), GPE(9), };
-static const unsigned int uart3_1_pins[] = { GPE(5), };
+static const unsigned int uart0_pins[] = { GPF( 0), GPF( 1), GPF( 2), GPF( 3), };
+static const u8           uart0_sels[] = { 0,       0,       0,       0,       };
+static const unsigned int uart1_pins[] = { GPD(26), GPD(27), GPD(28), GPD(29), };
+static const u8           uart1_sels[] = { 0,       0,       0,       0,       };
+static const unsigned int uart2_pins[] = { GPC(28), GPC(29), GPC(30), GPC(31), };
+static const u8           uart2_sels[] = { 0,       0,       0,       0,       };
+static const unsigned int uart3_pins[] = { GPD(12), GPE( 5), GPE( 8), GPE( 9), };
+static const u8           uart3_sels[] = { 0,       1,       0,       0,       };
 
 static const unsigned int i2c0_pins[] = { GPD(30), GPD(31), };
+static const u8           i2c0_sels[] = { 0,       0,       };
 static const unsigned int i2c1_pins[] = { GPE(30), GPE(31), };
+static const u8           i2c1_sels[] = { 0,       0,       };
 static const unsigned int i2c2_pins[] = { GPF(16), GPF(17), };
+static const u8           i2c2_sels[] = { 2,       2,       };
 
 static const unsigned int pwm0_pins[] = { GPE(0),  };
 static const unsigned int pwm1_pins[] = { GPE(1),  };
@@ -324,37 +351,44 @@ static const unsigned int pwm4_pins[] = { GPE(4),  };
 static const unsigned int pwm5_pins[] = { GPE(5),  };
 static const unsigned int pwm6_pins[] = { GPD(10), };
 static const unsigned int pwm7_pins[] = { GPD(11), };
+static const u8           pwm_sels[]  = { 0,       };
+#define pwm0_sels pwm_sels
+#define pwm1_sels pwm_sels
+#define pwm2_sels pwm_sels
+#define pwm3_sels pwm_sels
+#define pwm4_sels pwm_sels
+#define pwm5_sels pwm_sels
+#define pwm6_sels pwm_sels
+#define pwm7_sels pwm_sels
 
 static const struct jz_pin_group jz_pin_groups[] = {
-#define JZ_GROUP(group, _func) { \
+#define JZ_GROUP(group) { \
 	.name = #group, \
 	.pins = group##_pins, \
+	.sels = group##_sels, \
 	.num_pins = ARRAY_SIZE(group##_pins), \
-	.func = _func, \
 }
-	JZ_GROUP(msc0_0, 0),
-	JZ_GROUP(msc0_1, 1),
-	JZ_GROUP(msc1, 0),
-	JZ_GROUP(msc2, 0),
-	JZ_GROUP(msc0_8bit, 0),
-	JZ_GROUP(msc1_8bit, 1),
-	JZ_GROUP(msc2_8bit, 2),
-	JZ_GROUP(uart0, 0),
-	JZ_GROUP(uart1, 0),
-	JZ_GROUP(uart2, 0),
-	JZ_GROUP(uart3_0, 0),
-	JZ_GROUP(uart3_1, 1),
-	JZ_GROUP(i2c0, 0),
-	JZ_GROUP(i2c1, 0),
-	JZ_GROUP(i2c2, 2),
-	JZ_GROUP(pwm0, 0),
-	JZ_GROUP(pwm1, 0),
-	JZ_GROUP(pwm2, 0),
-	JZ_GROUP(pwm3, 0),
-	JZ_GROUP(pwm4, 0),
-	JZ_GROUP(pwm5, 0),
-	JZ_GROUP(pwm6, 0),
-	JZ_GROUP(pwm7, 0),
+	JZ_GROUP(msc0_4bit),
+	JZ_GROUP(msc1_4bit),
+	JZ_GROUP(msc2_4bit),
+	JZ_GROUP(msc0_8bit),
+	JZ_GROUP(msc1_8bit),
+	JZ_GROUP(msc2_8bit),
+	JZ_GROUP(uart0),
+	JZ_GROUP(uart1),
+	JZ_GROUP(uart2),
+	JZ_GROUP(uart3),
+	JZ_GROUP(i2c0),
+	JZ_GROUP(i2c1),
+	JZ_GROUP(i2c2),
+	JZ_GROUP(pwm0),
+	JZ_GROUP(pwm1),
+	JZ_GROUP(pwm2),
+	JZ_GROUP(pwm3),
+	JZ_GROUP(pwm4),
+	JZ_GROUP(pwm5),
+	JZ_GROUP(pwm6),
+	JZ_GROUP(pwm7),
 #undef JZ_GROUP
 };
 
@@ -384,16 +418,13 @@ static const struct pinctrl_ops jz_pctrl_ops = {
 	.get_group_pins = jz_get_group_pins,
 };
 
-static const char * const msc0_groups[] = { "msc0_0", "msc0_1", };
-static const char * const msc1_groups[] = { "msc1", };
-static const char * const msc2_groups[] = { "msc2", };
-static const char * const msc0_8bit_groups[] = { "msc0_8bit", };
-static const char * const msc1_8bit_groups[] = { "msc1_8bit", };
-static const char * const msc2_8bit_groups[] = { "msc2_8bit", };
+static const char * const msc0_groups[] = { "msc0_4bit", "msc0_8bit", };
+static const char * const msc1_groups[] = { "msc1_4bit", "msc1_8bit", };
+static const char * const msc2_groups[] = { "msc2_4bit", "msc2_8bit", };
 static const char * const uart0_groups[] = { "uart0", };
 static const char * const uart1_groups[] = { "uart1", };
 static const char * const uart2_groups[] = { "uart2", };
-static const char * const uart3_groups[] = { "uart3_0", "uart3_1", };
+static const char * const uart3_groups[] = { "uart3", };
 static const char * const i2c0_groups[] = { "i2c0", };
 static const char * const i2c1_groups[] = { "i2c1", };
 static const char * const i2c2_groups[] = { "i2c2", };
@@ -415,9 +446,6 @@ static const struct jz_pmux_func jz_functions[] = {
 	JZ_GROUP(msc0),
 	JZ_GROUP(msc1),
 	JZ_GROUP(msc2),
-	JZ_GROUP(msc0_8bit),
-	JZ_GROUP(msc1_8bit),
-	JZ_GROUP(msc2_8bit),
 	JZ_GROUP(uart0),
 	JZ_GROUP(uart1),
 	JZ_GROUP(uart2),
@@ -510,7 +538,8 @@ static int jz_enable(struct pinctrl_dev *pctrldev,
 	unsigned int i;
 
 	for (i = 0; i < pin_group->num_pins; i++)
-		jz_set_function(pctrldev, pin_group->pins[i], pin_group->func);
+		jz_set_function(pctrldev, pin_group->pins[i],
+					  pin_group->sels[i]);
 
 	return 0;
 }
