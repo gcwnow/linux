@@ -821,6 +821,8 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "jz4770-pinctrl", NULL, "pwm4"),
 	PIN_MAP_MUX_GROUP("musb-jz.0", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", NULL, "otg"),
+	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_DEFAULT,
+			  "jz4770-pinctrl", "lcd_rgb888", "lcd"),
 };
 
 static void __init board_init_pins(void)
