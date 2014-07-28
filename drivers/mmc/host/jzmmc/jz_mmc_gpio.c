@@ -15,7 +15,6 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
-#include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/mmc.h>
 
 #include "include/chip-msc.h"
@@ -27,79 +26,10 @@
 static int jz_mmc_request_card_gpios(struct platform_device *pdev,
 				     struct jz_mmc_host *host)
 {
-	struct device *dev = &pdev->dev;
-	struct jz_mmc_platform_data *pdata = dev->platform_data;
-	const char *name = dev_name(dev);
-	int port;
-	unsigned int mask;
-	unsigned int i;
-
-	/* Determine which pins to use. */
-	if (pdata->use_shared_8bit_pins) {
-		/* GPE20-29 */
-		port = 4;
-		mask = BIT(29) | BIT(28) | ((BIT(pdata->bus_width) - 1) << 20);
-	} else {
-		/* Use private pins for this MSC. */
-		if (pdata->bus_width == 8) {
-			dev_err(dev, "8-bit bus must use shared pins\n");
-			return -EINVAL;
-		}
-		if (host->pdev_id == 0) {
-			/* GPA18-23 */
-			port = 0;
-			mask = pdata->bus_width == 4 ? 0x00FC0000 : 0x001C0000;
-		} else if (host->pdev_id == 1) {
-			/* GPD20-25 */
-			port = 3;
-			mask = pdata->bus_width == 4 ? 0x03F00000 : 0x03100000;
-		} else if (host->pdev_id == 2) {
-			/* GPB20-21, 28-31 */
-			port = 1;
-			mask = pdata->bus_width == 4 ? 0xF0300000 : 0x30100000;
-		} else {
-			BUG();
-		}
-	}
-
-	/* Request pins. */
-	for (i = 0; i < 32; i++) {
-		if (mask & BIT(i)) {
-			unsigned int pin = port * 32 + i;
-			int ret = devm_gpio_request(dev, pin, name);
-			if (ret) {
-				dev_err(dev,
-					"Failed to request gpio pin %d: %d\n",
-					pin, ret);
-				return ret;
-			}
-		}
-	}
-
-	/* Select GPIO function for each pin. */
-	if (pdata->use_shared_8bit_pins) {
-		REG_GPIO_PXINTC (4) = mask;
-		REG_GPIO_PXMASKC(4) = mask;
-		if (host->pdev_id == 1)
-			REG_GPIO_PXPAT0S(4) = mask;
-		else
-			REG_GPIO_PXPAT0C(4) = mask;
-		if (host->pdev_id == 2)
-			REG_GPIO_PXPAT1S(4) = mask;
-		else
-			REG_GPIO_PXPAT1C(4) = mask;
-	} else {
-		REG_GPIO_PXINTC (port) = mask;
-		REG_GPIO_PXMASKC(port) = mask;
-		if (host->pdev_id == 0) {
-			REG_GPIO_PXPAT0S(port) = mask & ~BIT(20);
-			REG_GPIO_PXPAT0C(port) = mask & BIT(20);
-		} else {
-			REG_GPIO_PXPAT0C(port) = mask;
-		}
-		REG_GPIO_PXPAT1C(port) = mask;
-	}
-
+	/*
+	 * We rely on the board setting a static pinmux mapping to match its
+	 * platform data.
+	 */
 	return 0;
 }
 
