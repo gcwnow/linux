@@ -364,6 +364,22 @@ static const u8           pwm_sels[]  = { 0,       };
 static const unsigned int otg_pins[] = { GPE(10), };
 static const u8           otg_sels[] = { 0,       };
 
+static const unsigned int lcd_pins[] = {
+	/* PCLK, DE, HSYNC, VSYNC */
+	GPC( 8), GPC( 9), GPC(18), GPC(19),
+	/* B0..B4 */
+	GPC( 0), GPC( 1), GPC( 2), GPC( 3), GPC( 4),
+	/* G0..G5 */
+	GPC(10), GPC(11), GPC(12), GPC(13), GPC(14), GPC(15),
+	/* R0..R4 */
+	GPC(20), GPC(21), GPC(22), GPC(23), GPC(24),
+	/* 18 bpp: B5, R5 */
+	GPC( 5), GPC(25),
+	/* 24 bpp: B6/7, G6/7, R6/7 */
+	GPC( 6), GPC( 7), GPC(16), GPC(17), GPC(26), GPC(27),
+};
+static const u8 lcd_sels[ARRAY_SIZE(lcd_pins)] = { 0 };
+
 static const struct jz_pin_group jz_pin_groups[] = {
 #define JZ_GROUP(group) { \
 	.name = #group, \
@@ -393,6 +409,9 @@ static const struct jz_pin_group jz_pin_groups[] = {
 	JZ_GROUP(pwm6),
 	JZ_GROUP(pwm7),
 	JZ_GROUP(otg),
+	{ "lcd_rgb565", lcd_pins, lcd_sels, 4 + 16 },
+	{ "lcd_rgb666", lcd_pins, lcd_sels, 4 + 18 },
+	{ "lcd_rgb888", lcd_pins, lcd_sels, 4 + 24 },
 #undef JZ_GROUP
 };
 
@@ -441,6 +460,9 @@ static const char * const pwm5_groups[] = { "pwm5", };
 static const char * const pwm6_groups[] = { "pwm6", };
 static const char * const pwm7_groups[] = { "pwm7", };
 static const char * const otg_groups[] = { "otg", };
+static const char * const lcd_groups[] = {
+	"lcd_rgb888", "lcd_rgb666", "lcd_rgb565",
+};
 
 static const struct jz_pmux_func jz_functions[] = {
 #define JZ_GROUP(group) { \
@@ -467,6 +489,7 @@ static const struct jz_pmux_func jz_functions[] = {
 	JZ_GROUP(pwm6),
 	JZ_GROUP(pwm7),
 	JZ_GROUP(otg),
+	JZ_GROUP(lcd),
 #undef JZ_GROUP
 };
 
