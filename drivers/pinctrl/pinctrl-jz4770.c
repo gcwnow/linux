@@ -509,7 +509,7 @@ static void jz_set_gpio_output(struct pinctrl_dev *pctldev, unsigned int pin)
 }
 
 static void jz_set_function(struct pinctrl_dev *pctldev,
-		unsigned int pin, unsigned int func)
+		unsigned int pin, u8 sel)
 {
 	struct jz_pinctrl *jz = pinctrl_dev_get_drvdata(pctldev);
 	const unsigned int bit = BIT(PORT_PIN(pin)), port = PORT(pin);
@@ -519,11 +519,11 @@ static void jz_set_function(struct pinctrl_dev *pctldev,
 
 	writel(bit, jz->base + INT_CLR_OFFSET(port));
 	writel(bit, jz->base + MASK_CLR_OFFSET(port));
-	if (func & 1)
+	if (sel & BIT(0))
 		writel(bit, jz->base + PAT0_SET_OFFSET(port));
 	else
 		writel(bit, jz->base + PAT0_CLR_OFFSET(port));
-	if (func > 1)
+	if (sel & BIT(1))
 		writel(bit, jz->base + PAT1_SET_OFFSET(port));
 	else
 		writel(bit, jz->base + PAT1_CLR_OFFSET(port));
@@ -710,7 +710,7 @@ static struct pinctrl_desc jz_desc = {
 	.pins    = jz_pins,
 	.npins   = ARRAY_SIZE(jz_pins),
 	.pctlops = &jz_pctrl_ops,
-	.pmxops = &jz_pmux_ops,
+	.pmxops  = &jz_pmux_ops,
 	.confops = &jz_pconf_ops,
 	.owner   = THIS_MODULE,
 };
