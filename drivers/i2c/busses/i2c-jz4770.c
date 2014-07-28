@@ -29,7 +29,6 @@
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770i2c.h>
 
 #include "i2c-jz4770.h"
@@ -911,10 +910,6 @@ static int i2c_jz_probe(struct platform_device *pdev)
 	i2c->adap.algo_data	= i2c;
 	i2c->adap.dev.parent	= &pdev->dev;
 
-	if (i2c->id == 2)
-		__gpio_as_i2c2();
-	else
-		__gpio_as_i2c(i2c->id);
 	i2c_init_as_master(i2c->id, 0xff);
 
 	i2c->irq = platform_get_irq(pdev, 0);
