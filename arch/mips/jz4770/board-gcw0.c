@@ -810,9 +810,9 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "jz4770-pinctrl", NULL, "i2c1"),
 #endif
 	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", NULL, "msc0"),
+			  "jz4770-pinctrl", "msc0_4bit", "msc0"),
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", NULL, "msc1"),
+			  "jz4770-pinctrl", "msc1_4bit", "msc1"),
 	/* pwm1: LCD backlight */
 	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", NULL, "pwm1"),
