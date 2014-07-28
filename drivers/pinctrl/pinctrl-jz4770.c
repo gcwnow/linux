@@ -361,6 +361,9 @@ static const u8           pwm_sels[]  = { 0,       };
 #define pwm6_sels pwm_sels
 #define pwm7_sels pwm_sels
 
+static const unsigned int otg_pins[] = { GPE(10), };
+static const u8           otg_sels[] = { 0,       };
+
 static const struct jz_pin_group jz_pin_groups[] = {
 #define JZ_GROUP(group) { \
 	.name = #group, \
@@ -389,6 +392,7 @@ static const struct jz_pin_group jz_pin_groups[] = {
 	JZ_GROUP(pwm5),
 	JZ_GROUP(pwm6),
 	JZ_GROUP(pwm7),
+	JZ_GROUP(otg),
 #undef JZ_GROUP
 };
 
@@ -436,6 +440,7 @@ static const char * const pwm4_groups[] = { "pwm4", };
 static const char * const pwm5_groups[] = { "pwm5", };
 static const char * const pwm6_groups[] = { "pwm6", };
 static const char * const pwm7_groups[] = { "pwm7", };
+static const char * const otg_groups[] = { "otg", };
 
 static const struct jz_pmux_func jz_functions[] = {
 #define JZ_GROUP(group) { \
@@ -461,6 +466,7 @@ static const struct jz_pmux_func jz_functions[] = {
 	JZ_GROUP(pwm5),
 	JZ_GROUP(pwm6),
 	JZ_GROUP(pwm7),
+	JZ_GROUP(otg),
 #undef JZ_GROUP
 };
 
