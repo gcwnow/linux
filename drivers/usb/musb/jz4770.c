@@ -22,7 +22,6 @@
 #include <linux/act8600_power.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 
 #include "musb_core.h"
 
@@ -74,8 +73,6 @@ static inline void jz_musb_set_device_only_mode(void)
 static inline void jz_musb_set_normal_mode(void)
 {
 	printk(KERN_INFO "jz4760: Normal mode.\n");
-
-	__gpio_as_otg_drvvbus();
 
 	/* OTG Mode. */
 	REG_CPM_USBPCR |= USBPCR_USB_MODE;
