@@ -43,7 +43,6 @@
 #include <asm/processor.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/ipu.h>
@@ -544,8 +543,6 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 
 static void jzfb_power_up(struct jzfb *jzfb)
 {
-	// TODO: Configure GPIO pins via pinctrl.
-
 	jzfb->pdata->panel_ops->enable(jzfb->panel);
 
 	jzfb_lcdc_enable(jzfb);
@@ -561,8 +558,6 @@ static void jzfb_power_down(struct jzfb *jzfb)
 	clk_disable(jzfb->ipuclk);
 
 	jzfb->pdata->panel_ops->disable(jzfb->panel);
-
-	// TODO: Configure GPIO pins via pinctrl.
 }
 
 /*
@@ -837,17 +832,6 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static void gpio_init(void)
-{
-	/* gpio init __gpio_as_lcd */
-	if (jz_panel->cfg & LCD_CFG_MODE_TFT_16BIT)
-		__gpio_as_lcd_16bit();
-	else if (jz_panel->cfg & LCD_CFG_MODE_TFT_24BIT)
-		__gpio_as_lcd_24bit();
-	else
-		__gpio_as_lcd_18bit();
-}
-
 static int jz4760_fb_probe(struct platform_device *pdev)
 {
 	struct jzfb_platform_data *pdata = pdev->dev.platform_data;
@@ -918,8 +902,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 	fb->pseudo_palette	= jzfb->pseudo_palette;
 	INIT_LIST_HEAD(&fb->modelist);
-
-	gpio_init();
 
 	ret = jz4760fb_map_smem(fb);
 	if (ret)
