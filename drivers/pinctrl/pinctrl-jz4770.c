@@ -412,6 +412,7 @@ static const struct jz_pin_group jz_pin_groups[] = {
 	{ "lcd_rgb565", lcd_pins, lcd_sels, 4 + 16 },
 	{ "lcd_rgb666", lcd_pins, lcd_sels, 4 + 18 },
 	{ "lcd_rgb888", lcd_pins, lcd_sels, 4 + 24 },
+	{ "no_pins", NULL, NULL, 0 },
 #undef JZ_GROUP
 };
 
@@ -461,7 +462,7 @@ static const char * const pwm6_groups[] = { "pwm6", };
 static const char * const pwm7_groups[] = { "pwm7", };
 static const char * const otg_groups[] = { "otg", };
 static const char * const lcd_groups[] = {
-	"lcd_rgb888", "lcd_rgb666", "lcd_rgb565",
+	"lcd_rgb888", "lcd_rgb666", "lcd_rgb565", "no_pins"
 };
 
 static const struct jz_pmux_func jz_functions[] = {
