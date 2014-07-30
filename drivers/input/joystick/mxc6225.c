@@ -129,13 +129,13 @@ static void mxc6225_poll(struct input_polled_dev *input)
 	s32 data = 0;
 
 	if (i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA)) {
-		s32 data = i2c_smbus_read_word_data(client, MXC6225_REG_XOUT);
+		data = i2c_smbus_read_word_data(client, MXC6225_REG_XOUT);
 		if (data < 0)
 			goto read_fail;
 		x = (s8)data;
 		y = (s8)(data >> 8);
 	} else {
-		s32 data = i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
+		data = i2c_smbus_read_byte_data(client, MXC6225_REG_XOUT);
 		if (data < 0)
 			goto read_fail;
 		x = (s8)data;
