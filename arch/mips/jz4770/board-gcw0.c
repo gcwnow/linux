@@ -403,6 +403,8 @@ static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
 	},
 };
 
+/* We don't have a use for the INT pin yet. */
+#define GPIO_MXC6225_INT	JZ_GPIO_PORTF(13)
 static struct i2c_board_info gcw0_i2c1_devs[] __initdata = {
 	{
 		.type		= "mxc6225",
@@ -798,6 +800,9 @@ static void __init board_gpio_setup(void)
 
 	/* USB power source present (high active) */
 	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
+
+	/* MXC6225 data sheet says INT should not be pulled up or down */
+	jz_gpio_disable_pullup(GPIO_MXC6225_INT);
 }
 
 static struct pinctrl_map pin_map[] __initdata = {
