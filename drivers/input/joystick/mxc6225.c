@@ -28,6 +28,7 @@
 #define MXC6225_REG_XOUT	0x0
 #define MXC6225_REG_YOUT	0x1
 #define MXC6225_REG_STATUS	0x2
+#define MXC6225_REG_RANGE	0x3
 #define MXC6225_REG_DETECTION	0x4
 
 #define MXC6225_STATUS_OR_0DEGREES	0x00
@@ -47,6 +48,19 @@
 #define MXC6225_STATUS_SH_SHAKE_RIGHT	0x40
 
 #define MXC6225_STATUS_INT		0x80
+
+/*
+ * NOTE: The range register is not documented in any datasheet,
+ * it has been reverse-engineered; some other bits might be worthwile.
+ *
+ * Also, the mxc6225 does not seem to be able to measure beyond
+ * -90°/+90°, so the 360° mode will only return at most -64/+63
+ * in each direction.
+ */
+#define MXC6225_RANGE_360_DEGREES	0x00
+#define MXC6225_RANGE_180_DEGREES	0x02
+#define MXC6225_RANGE_120_DEGREES	0x20
+#define MXC6225_RANGE_90_DEGREES	0x22
 
 #define MXC6225_DETECTION_ORC_16	0x00
 #define MXC6225_DETECTION_ORC_32	0x01
@@ -242,6 +256,10 @@ static int mxc6225_probe(struct i2c_client *client,
 		MXC6225_MIN_AXIS, MXC6225_MAX_AXIS, fuzz, flat);
 	input_set_abs_params(input_dev, ABS_Y,
 		MXC6225_MIN_AXIS, MXC6225_MAX_AXIS, fuzz, flat);
+
+	/* Use a 180° range by default */
+	i2c_smbus_write_byte_data(client, MXC6225_REG_RANGE,
+			MXC6225_RANGE_180_DEGREES);
 
 	error = input_register_polled_device(poll_dev);
 	if (error) {
