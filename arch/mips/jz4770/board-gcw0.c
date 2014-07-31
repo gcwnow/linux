@@ -834,6 +834,7 @@ static struct pinctrl_map pin_map[] __initdata = {
 
 static struct pwm_lookup pwm_lookup[] = {
 	PWM_LOOKUP("jz4770-pwm", 1, "pwm-backlight", NULL),
+	PWM_LOOKUP("jz4770-pwm", 4, "pwm-haptic", NULL),
 };
 
 static void __init board_init_pins(void)
