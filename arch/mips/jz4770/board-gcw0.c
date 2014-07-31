@@ -26,6 +26,7 @@
 #include <linux/gpio_keys.h>
 #include <linux/leds.h>
 #include <linux/platform_device.h>
+#include <linux/pwm.h>
 #include <linux/pwm_backlight.h>
 
 #include <asm/cpu.h>
@@ -502,7 +503,6 @@ static struct platform_device gcw0_i2c4_gpio_device = {
 /* LCD backlight */
 
 static struct platform_pwm_backlight_data gcw0_backlight_pdata = {
-	.pwm_id = 1,
 	.polarity = PWM_POLARITY_INVERSED,
 	.max_brightness = 255,
 	.dft_brightness = 145,
@@ -832,9 +832,15 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "jz4770-pinctrl", "no_pins", "lcd"),
 };
 
+static struct pwm_lookup pwm_lookup[] = {
+	PWM_LOOKUP("jz4770-pwm", 1, "pwm-backlight", NULL),
+};
+
 static void __init board_init_pins(void)
 {
 	pinctrl_register_mappings(pin_map, ARRAY_SIZE(pin_map));
+
+	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
 }
 
 static int __init gcw0_board_setup(void)
