@@ -127,7 +127,7 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	haptic->pwm = pwm_request(pdata->pwm_id, "pwm-haptic");
+	haptic->pwm = devm_pwm_get(&pdev->dev, NULL);
 	if (IS_ERR(haptic->pwm)) {
 		dev_err(&pdev->dev, "Unable to request PWM\n");
 		return PTR_ERR(haptic->pwm);
@@ -150,7 +150,7 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 	ret = input_ff_create_memless(idev, NULL, pwm_haptic_play);
 	if (ret < 0) {
 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
-		goto err_free_pwm;
+		goto err_free_input;
 	}
 
 	ret = input_register_device(idev);
@@ -161,8 +161,6 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 
 	return 0;
 
-err_free_pwm:
-	pwm_free(haptic->pwm);
 err_free_input:
 	input_ff_destroy(haptic->input_dev);
 	return ret;
