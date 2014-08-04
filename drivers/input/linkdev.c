@@ -337,7 +337,6 @@ static int linkdev_probe(struct platform_device *pdev)
 
 		linkdev->pdata = pdata;
 		linkdev->pdev = pdev;
-		platform_set_drvdata(pdev, linkdev);
 
 		handler = &linkdev->handler;
 		handler->event		= linkdev_event;
@@ -356,8 +355,6 @@ static int linkdev_probe(struct platform_device *pdev)
 			goto err_free_linkdev;
 		}
 
-		platform_set_drvdata(pdev, linkdev);
-
 		/* pdata->private survives the probe defer, that's why we use it here */
 		pdata->__private = linkdev;
 
@@ -369,6 +366,8 @@ static int linkdev_probe(struct platform_device *pdev)
 	 * we defer the probe until all the devices are connected. */
 	if (linkdev->nb_connected < pdata->nb_devices)
 		return -EPROBE_DEFER;
+
+	platform_set_drvdata(pdev, linkdev);
 
 	ret = linkdev_create_device(linkdev);
 	if (ret) {
