@@ -27,8 +27,6 @@
 #include <linux/platform_data/linkdev.h>
 
 static bool alt_key_map = false;
-module_param(alt_key_map, bool, S_IRUSR | S_IWUSR);
-MODULE_PARM_DESC(alt_key_map, "Use the alternative key map");
 
 struct linkdev {
 	struct platform_device *pdev;
@@ -313,6 +311,40 @@ static int linkdev_create_device(struct linkdev *linkdev)
 	return 0;
 }
 
+static ssize_t alt_key_map_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%c\n", alt_key_map ? 'Y' : 'N');
+}
+
+static ssize_t alt_key_map_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct linkdev *linkdev = dev_get_drvdata(dev);
+	struct input_dev *idev = linkdev->idev;
+	bool new_value = false;
+	unsigned int i, j;
+
+	if (strtobool(buf, &new_value) < 0)
+		return -EINVAL;
+
+	/* When switching between the regular and the alternative key maps,
+	 * it is required that the input device does not report any of its keys
+	 * as pressed, otherwise the input handlers get confused. To avoid that,
+	 * we send a "key released" event for each of the keys we support, even
+	 * if the key isn't pressed in the first place. */
+	for (i = 0; i < BITS_TO_LONGS(KEY_CNT); i++)
+		for (j = 0; j < sizeof(long) * 8; j++)
+			if (idev->keybit[i] & BIT(j))
+				input_event(idev, EV_KEY,
+						i * sizeof(long) * 8 + j, 0);
+
+	alt_key_map = new_value;
+	return count;
+}
+
+static DEVICE_ATTR_RW(alt_key_map);
+
 static int linkdev_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -369,14 +401,22 @@ static int linkdev_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, linkdev);
 
+	ret = device_create_file(&pdev->dev, &dev_attr_alt_key_map);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %d\n", ret);
+		goto err_unregister_handler;
+	}
+
 	ret = linkdev_create_device(linkdev);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to create input device: %d\n", ret);
-		goto err_unregister_handler;
+		goto err_remove_file;
 	}
 
 	return 0;
 
+err_remove_file:
+	device_remove_file(&pdev->dev, &dev_attr_alt_key_map);
 err_unregister_handler:
 	input_unregister_handler(&linkdev->handler);
 err_free_linkdev:
@@ -388,6 +428,7 @@ static int linkdev_remove(struct platform_device *pdev)
 {
 	struct linkdev *linkdev = platform_get_drvdata(pdev);
 
+	device_remove_file(&pdev->dev, &dev_attr_alt_key_map);
 	input_unregister_handler(&linkdev->handler);
 	input_unregister_device(linkdev->idev);
 	return 0;
