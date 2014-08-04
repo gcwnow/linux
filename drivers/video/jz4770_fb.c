@@ -55,14 +55,6 @@
 #define MAX_XRES 640
 #define MAX_YRES 480
 
-static bool keep_aspect_ratio = true;
-module_param(keep_aspect_ratio, bool, S_IRUSR | S_IWUSR);
-MODULE_PARM_DESC(keep_aspect_ratio, "Keep aspect ratio");
-
-static bool allow_downscaling = false;
-module_param(allow_downscaling, bool, S_IRUSR | S_IWUSR);
-MODULE_PARM_DESC(allow_downscaling, "Allow downscaling");
-
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
 	unsigned int w;		/* Panel Width(in pixel) */
@@ -125,6 +117,9 @@ struct jzfb {
 };
 
 static void *lcd_frame1;
+
+static bool keep_aspect_ratio = true;
+static bool allow_downscaling = false;
 
 static void ctrl_enable(struct jzfb *jzfb)
 {
@@ -454,6 +449,12 @@ static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 		set_upscale_bilinear_coefs(jzfb, reg, num, denom);
 }
 
+static inline bool scaling_required(struct jzfb *jzfb)
+{
+	struct fb_var_screeninfo *var = &jzfb->fb->var;
+	return var->xres != jz_panel->w || var->yres != jz_panel->h;
+}
+
 static void jzfb_ipu_configure(struct jzfb *jzfb,
 		const struct jz4760lcd_panel_t *panel)
 {
@@ -490,7 +491,7 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	if (fb->fix.type == FB_TYPE_PACKED_PIXELS)
 		ctrl |= IPU_CTRL_SPKG_SEL;
 
-	if (fb->var.xres != panel->w || fb->var.yres != panel->h) {
+	if (scaling_required(jzfb)) {
 		unsigned int numW = panel->w, denomW = fb->var.xres,
 			     numH = panel->h, denomH = fb->var.yres;
 
@@ -842,6 +843,37 @@ static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static ssize_t keep_aspect_ratio_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%c\n", keep_aspect_ratio ? 'Y' : 'N');
+}
+
+static ssize_t keep_aspect_ratio_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct jzfb *jzfb = dev_get_drvdata(dev);
+	bool new_value = false;
+
+	if (strtobool(buf, &new_value) < 0)
+		return -EINVAL;
+
+	keep_aspect_ratio = new_value;
+
+	if (jzfb->is_enabled && scaling_required(jzfb)) {
+		ctrl_disable(jzfb);
+		jzfb_ipu_disable(jzfb);
+		jzfb_ipu_configure(jzfb, jz_panel);
+		jzfb_ipu_enable(jzfb);
+		jzfb_lcdc_enable(jzfb);
+	}
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(keep_aspect_ratio);
+static DEVICE_BOOL_ATTR(allow_downscaling, 0644, allow_downscaling);
+
 static int jz4760_fb_probe(struct platform_device *pdev)
 {
 	struct jzfb_platform_data *pdata = pdev->dev.platform_data;
@@ -993,10 +1025,22 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	jzfb_ipu_reset(jzfb);
 	jzfb->is_enabled = true;
 
+	ret = device_create_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
+		goto err_exit_panel;
+	}
+
+	ret = device_create_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
+		goto err_remove_keep_aspect_ratio_file;
+	}
+
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
-		goto err_exit_panel;
+		goto err_remove_allow_downscaling_file;
 	}
 	dev_info(&pdev->dev,
 		"fb%d: %s frame buffer device, using %dK of video memory\n",
@@ -1006,6 +1050,10 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb_show_logo(jzfb->fb, 0);
 	return 0;
 
+err_remove_allow_downscaling_file:
+	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
+err_remove_keep_aspect_ratio_file:
+	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 err_exit_panel:
 	jzfb->pdata->panel_ops->exit(jzfb->panel);
 failed:
@@ -1018,6 +1066,9 @@ err_release_fb:
 static int jz4760_fb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
+
+	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
+	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 
 	if (jzfb->is_enabled)
 		jzfb_power_down(jzfb);
