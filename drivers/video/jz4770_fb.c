@@ -377,24 +377,22 @@ static void jzfb_ipu_disable(struct jzfb *jzfb)
 static void set_downscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
-	unsigned int i, weight_num = denom, weight_denom = num * 2;
+	unsigned int i, weight_num = denom;
 
 	for (i = 0; i < num; i++) {
 		unsigned int weight, offset;
 		u32 value;
 
-		weight_num = weight_denom / 2 +
-			(weight_num - weight_denom / 2) % weight_denom;
+		weight_num = num + (weight_num - num) % (num * 2);
 
 		/*
 		 * Here, "input pixel 1.0" means half of 0 and half of 1;
 		 * "input pixel 0.5" means all of 0; and
 		 * "input pixel 1.49" means almost all of 1.
 		 */
-		weight = 512 -
-			512 * (weight_num - weight_denom / 2) / weight_denom;
+		weight = 512 - 512 * (weight_num - num) / (num * 2);
 		weight_num += denom * 2;
-		offset = (weight_num - weight_denom / 2) / weight_denom;
+		offset = (weight_num - num) / (num * 2);
 
 		value = ((weight & 0x7FF) << 6) | (offset << 1);
 		writel(value, jzfb->ipu_base + reg);
@@ -404,15 +402,15 @@ static void set_downscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
-	unsigned int i, weight_num = 0, weight_denom = num;
+	unsigned int i, weight_num = 0;
 
 	for (i = 0; i < num; i++) {
-		unsigned int weight = 512 - 512 * weight_num / weight_denom;
+		unsigned int weight = 512 - 512 * weight_num / num;
 		u32 offset = 0, value;
 
 		weight_num += denom;
-		if (weight_num >= weight_denom) {
-			weight_num -= weight_denom;
+		if (weight_num >= num) {
+			weight_num -= num;
 			offset = 1;
 		}
 
@@ -424,11 +422,11 @@ static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 static void set_upscale_nearest_neighbour_coefs(struct jzfb *jzfb,
 			unsigned int reg, unsigned int num)
 {
-	unsigned int i, weight_num = 1, weight_denom = num;
+	unsigned int i, weight_num = 1;
 
 	for (i = 0; i < num; i++, weight_num++) {
-		u32 value, offset = weight_num / weight_denom;
-		weight_num %= weight_denom;
+		u32 value, offset = weight_num / num;
+		weight_num %= num;
 
 		value = (512 << 6) | (offset << 1);
 		writel(value, jzfb->ipu_base + reg);
