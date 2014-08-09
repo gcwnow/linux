@@ -26,6 +26,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/fb.h>
+#include <linux/gcd.h>
 #include <linux/init.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_data/jz4770_fb.h>
@@ -205,19 +206,13 @@ static int jz4760fb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
 
 static int reduce_fraction(unsigned int *num, unsigned int *denom)
 {
-	unsigned int a = *num, b = *denom, tmp;
+	unsigned long d = gcd(*num, *denom);
 
-	/* Calculate the greatest common denominator */
-	while (a > 0) {
-		tmp = a;
-		a = b % a;
-		b = tmp;
-	}
-	if (*num / b > 31 || *denom / b > 31)
+	if (*num > 32 * d)
 		return -EINVAL;
 
-	*num /= b;
-	*denom /= b;
+	*num /= d;
+	*denom /= d;
 	return 0;
 }
 
