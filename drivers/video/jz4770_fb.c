@@ -517,6 +517,17 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 
 		outputH = fb->var.yres * numH / denomH;
 		outputW = fb->var.xres * numW / denomW;
+
+		/*
+		 * If we are upscaling horizontally, the last columns of pixels
+		 * shall be hidden, as they usually contain garbage: the last
+		 * resizing coefficients, when applied to the last column of the
+		 * input frame, instruct the IPU to blend the pixels with the
+		 * ones that correspond to the next column, that is to say the
+		 * leftmost column of pixels of the input frame.
+		 */
+		if (numW > denomW && denomW != 1)
+			outputW -= numW / denomW;
 	}
 
 	writel(ctrl, jzfb->ipu_base + IPU_CTRL);
