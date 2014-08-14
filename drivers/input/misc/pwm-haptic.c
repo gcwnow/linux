@@ -62,7 +62,7 @@ static int pwm_haptic_open(struct input_dev *input)
 		return -EBUSY;
 
 	haptic->is_open = true;
-	pwm_config(haptic->pwm, 0, haptic->pwm_period);
+	pwm_config(haptic->pwm, haptic->pwm_period, haptic->pwm_period);
 	pwm_set_polarity(haptic->pwm, haptic->polarity);
 	pwm_enable(haptic->pwm);
 	return 0;
@@ -71,7 +71,7 @@ static int pwm_haptic_open(struct input_dev *input)
 static void pwm_haptic_close(struct input_dev *input)
 {
 	struct pwm_haptic *haptic = input_get_drvdata(input);
-	pwm_config(haptic->pwm, 0, haptic->pwm_period);
+	pwm_config(haptic->pwm, haptic->pwm_period, haptic->pwm_period);
 	pwm_disable(haptic->pwm);
 	haptic->is_open = false;
 }
