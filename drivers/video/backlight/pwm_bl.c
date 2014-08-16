@@ -49,9 +49,11 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness)
 	if (pb->enabled)
 		return;
 
-	err = regulator_enable(pb->power_supply);
-	if (err < 0)
-		dev_err(pb->dev, "failed to enable power supply\n");
+	if (pb->power_supply) {
+		err = regulator_enable(pb->power_supply);
+		if (err < 0)
+			dev_err(pb->dev, "failed to enable power supply\n");
+	}
 
 	if (pb->enable_gpio)
 		gpiod_set_value(pb->enable_gpio, 1);
@@ -71,7 +73,8 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 	if (pb->enable_gpio)
 		gpiod_set_value(pb->enable_gpio, 0);
 
-	regulator_disable(pb->power_supply);
+	if (pb->power_supply)
+		regulator_disable(pb->power_supply);
 	pb->enabled = false;
 }
 
@@ -274,10 +277,8 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 		gpiod_direction_output(pb->enable_gpio, 1);
 
 	pb->power_supply = devm_regulator_get(&pdev->dev, "power");
-	if (IS_ERR(pb->power_supply)) {
-		ret = PTR_ERR(pb->power_supply);
-		goto err_alloc;
-	}
+	if (IS_ERR(pb->power_supply))
+		pb->power_supply = NULL;
 
 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
 	if (IS_ERR(pb->pwm)) {
