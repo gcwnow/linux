@@ -208,7 +208,7 @@ static int jz_joystick_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_SLEEP
 static int jz_joystick_suspend(struct device *dev)
 {
 	struct jz_joystick *joystick = dev_get_drvdata(dev);
@@ -228,16 +228,10 @@ static int jz_joystick_resume(struct device *dev)
 
 	return 0;
 }
-
-static const struct dev_pm_ops jz_joystick_pm_ops = {
-	.suspend	= jz_joystick_suspend,
-	.resume		= jz_joystick_resume,
-};
-
-#define JZ_JOYSTICK_PM_OPS (&jz_joystick_pm_ops)
-#else
-#define JZ_JOYSTICK_PM_OPS NULL
 #endif
+
+static SIMPLE_DEV_PM_OPS(jz_joystick_pm_ops,
+		jz_joystick_suspend, jz_joystick_resume);
 
 static struct platform_driver jz_joystick_driver = {
 	.probe		= jz_joystick_probe,
@@ -246,7 +240,7 @@ static struct platform_driver jz_joystick_driver = {
 		/* Name needs to match the mfd cell name. */
 		.name = "jz4770-touchscreen",
 		.owner = THIS_MODULE,
-		.pm = JZ_JOYSTICK_PM_OPS,
+		.pm = &jz_joystick_pm_ops,
 	},
 };
 
