@@ -2,6 +2,7 @@
  * pwm-haptic.c - Driver for PWM based haptic devices
  *
  * Copyright (C) 2014 Paul Cercueil <paul@crapouillou.net>
+ * Copyright (C) 2014 Maarten ter Huurne <maarten@treewalker.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -166,6 +167,17 @@ err_free_input:
 	return ret;
 }
 
+static int pwm_haptic_remove(struct platform_device *pdev)
+{
+	struct pwm_haptic *haptic = platform_get_drvdata(pdev);
+	struct input_dev *idev = haptic->input_dev;
+
+	input_unregister_device(idev);
+	input_ff_destroy(idev);
+
+	return 0;
+}
+
 static struct platform_driver pwm_haptic_driver = {
 	.driver	= {
 		.name	= "pwm-haptic",
@@ -173,6 +185,7 @@ static struct platform_driver pwm_haptic_driver = {
 		.pm	= &pwm_haptic_pm_ops,
 	},
 	.probe		= pwm_haptic_probe,
+	.remove		= pwm_haptic_remove,
 };
 module_platform_driver(pwm_haptic_driver);
 
