@@ -19,6 +19,7 @@
  *
  */
 
+#include <linux/bitmap.h>
 #include <linux/input.h>
 #include <linux/module.h>
 #include <linux/platform_data/pwm-haptic.h>
@@ -144,7 +145,7 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 	idev->name = pdev->name;
 	idev->id.version = 1;
 	idev->dev.parent = pdev->dev.parent;
-	__set_bit(FF_RUMBLE, idev->ffbit);
+	set_bit(FF_RUMBLE, idev->ffbit);
 
 	ret = input_ff_create_memless(idev, NULL, pwm_haptic_play);
 	if (ret < 0) {
