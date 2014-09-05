@@ -99,9 +99,6 @@ struct jzfb {
 
 	struct clk *lpclk, *ipuclk;
 
-	struct pinctrl *pinctrl;
-	struct pinctrl_state *pins_default, *pins_sleep;
-
 	struct mutex lock;
 	bool is_enabled;
 	/*
@@ -552,8 +549,7 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 
 static void jzfb_power_up(struct jzfb *jzfb)
 {
-	if (jzfb->pins_default)
-		pinctrl_select_state(jzfb->pinctrl, jzfb->pins_default);
+	pinctrl_pm_select_default_state(&jzfb->pdev->dev);
 
 	jzfb->pdata->panel_ops->enable(jzfb->panel);
 
@@ -571,8 +567,7 @@ static void jzfb_power_down(struct jzfb *jzfb)
 
 	jzfb->pdata->panel_ops->disable(jzfb->panel);
 
-	if (jzfb->pins_sleep)
-		pinctrl_select_state(jzfb->pinctrl, jzfb->pins_sleep);
+	pinctrl_pm_select_sleep_state(&jzfb->pdev->dev);
 }
 
 /*
@@ -966,29 +961,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		ret = PTR_ERR(jzfb->ipuclk);
 		dev_err(&pdev->dev, "Failed to get ipu clock: %d\n", ret);
 		goto failed;
-	}
-
-	jzfb->pinctrl = devm_pinctrl_get(&pdev->dev);
-	if (IS_ERR(jzfb->pinctrl)) {
-		ret = PTR_ERR(jzfb->pinctrl);
-		dev_err(&pdev->dev, "Failed to get pins: %d\n", ret);
-		goto failed;
-	}
-
-	jzfb->pins_default = pinctrl_lookup_state(jzfb->pinctrl,
-						  PINCTRL_STATE_DEFAULT);
-	if (IS_ERR(jzfb->pins_default)) {
-		ret = PTR_ERR(jzfb->pins_default);
-		dev_err(&pdev->dev, "No default pins state: %d\n", ret);
-		jzfb->pins_default = NULL;
-	}
-
-	jzfb->pins_sleep = pinctrl_lookup_state(jzfb->pinctrl,
-						PINCTRL_STATE_SLEEP);
-	if (IS_ERR(jzfb->pins_sleep)) {
-		ret = PTR_ERR(jzfb->pins_sleep);
-		dev_err(&pdev->dev, "No sleep pins state: %d\n", ret);
-		jzfb->pins_sleep = NULL;
 	}
 
 	if (request_irq(IRQ_IPU, jz4760fb_interrupt_handler, 0,
