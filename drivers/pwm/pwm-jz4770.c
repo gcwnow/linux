@@ -36,7 +36,7 @@
 #define TCU_TCNT_OFFSET(pwm)	(0x38 + (pwm) * 0x10) /* Timer Counter reg */
 #define TCU_TCSR_OFFSET(pwm)	(0x3C + (pwm) * 0x10) /* Timer Control reg */
 
-#define TCU_TCSR_PWM_SD		BIT(9)  /* 0: Shutdown abruptly 1: gracefully */
+#define TCU_TCSR_PWM_SD		BIT(9)  /* Shutdown: 0=gracefully, 1=abruptly */
 #define TCU_TCSR_PWM_INITL_HIGH	BIT(8)  /* Sets the initial output level */
 #define TCU_TCSR_PWM_EN		BIT(7)  /* PWM pin output enable */
 #define TCU_TCSR_PRESCALE_MASK	0x0038
