@@ -34,7 +34,6 @@ struct pwm_haptic {
 	struct device *dev;
 	struct input_dev *input_dev;
 	struct pwm_device *pwm;
-	enum pwm_polarity polarity;
 
 	unsigned long pwm_period;
 	bool is_open;
@@ -65,7 +64,6 @@ static int pwm_haptic_open(struct input_dev *input)
 
 	haptic->is_open = true;
 	pwm_config(haptic->pwm, haptic->pwm_period, haptic->pwm_period);
-	pwm_set_polarity(haptic->pwm, haptic->polarity);
 	pwm_enable(haptic->pwm);
 	return 0;
 }
@@ -134,8 +132,9 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 		return PTR_ERR(haptic->pwm);
 	}
 
+	pwm_set_polarity(haptic->pwm, pdata->polarity);
+
 	haptic->pwm_period = pdata->pwm_period_ns ?: DEFAULT_PWM_PERIOD;
-	haptic->polarity = pdata->polarity;
 
 	idev = haptic->input_dev;
 	idev->open = pwm_haptic_open;
