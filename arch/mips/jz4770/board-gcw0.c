@@ -704,8 +704,6 @@ static struct platform_device gcw0_joystick_device = {
 };
 
 static struct pwm_haptic_platform_data gcw0_haptic_pdata = {
-	.pwm_id = 4,
-	.polarity = PWM_POLARITY_NORMAL,
 	.pwm_period_ns = 2000000,
 };
 
