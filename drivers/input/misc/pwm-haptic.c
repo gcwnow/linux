@@ -132,8 +132,6 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 		return PTR_ERR(haptic->pwm);
 	}
 
-	pwm_set_polarity(haptic->pwm, pdata->polarity);
-
 	haptic->pwm_period = pdata->pwm_period_ns ?: DEFAULT_PWM_PERIOD;
 
 	idev = haptic->input_dev;

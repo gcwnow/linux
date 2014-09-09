@@ -11,11 +11,8 @@
 #ifndef __PLATFORM_DATA_PWM_HAPTIC_H__
 #define __PLATFORM_DATA_PWM_HAPTIC_H__
 
-#include <linux/pwm.h>
-
 struct pwm_haptic_platform_data {
 	unsigned int pwm_id;
-	enum pwm_polarity polarity;
 	unsigned long pwm_period_ns;
 };
 
