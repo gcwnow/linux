@@ -126,7 +126,7 @@ static int jz4770_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	tmp = (unsigned long long)period * duty_ns;
 	do_div(tmp, period_ns);
-	duty = tmp;
+	duty = period - tmp;
 
 	if (duty >= period)
 		duty = period - 1;
@@ -162,13 +162,13 @@ static int jz4770_pwm_set_polarity(struct pwm_chip *chip,
 	struct jz4770_pwm_chip *jz = to_jz4770(chip);
 	u16 reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
 
-	/* Note: On disable, output becomes non-initial state. */
+	/* Note: On disable, output becomes initial state. */
 	switch (polarity) {
 	case PWM_POLARITY_NORMAL:
-		reg |= TCU_TCSR_PWM_INITL_HIGH;
+		reg &= ~TCU_TCSR_PWM_INITL_HIGH;
 		break;
 	case PWM_POLARITY_INVERSED:
-		reg &= ~TCU_TCSR_PWM_INITL_HIGH;
+		reg |= TCU_TCSR_PWM_INITL_HIGH;
 		break;
 	}
 
