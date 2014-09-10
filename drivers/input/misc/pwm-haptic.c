@@ -109,11 +109,6 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 	struct pwm_haptic *haptic;
 	int ret;
 
-	if (!pdata) {
-		dev_err(&pdev->dev, "platform data not available\n");
-		return -EINVAL;
-	}
-
 	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
 	if (!haptic)
 		return -ENOMEM;
@@ -132,7 +127,8 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 		return PTR_ERR(haptic->pwm);
 	}
 
-	haptic->pwm_period = pdata->pwm_period_ns ?: DEFAULT_PWM_PERIOD;
+	haptic->pwm_period = pdata && pdata->pwm_period_ns
+			   ? pdata->pwm_period_ns : DEFAULT_PWM_PERIOD;
 
 	idev = haptic->input_dev;
 	idev->open = pwm_haptic_open;
