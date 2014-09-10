@@ -113,24 +113,23 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 	if (!haptic)
 		return -ENOMEM;
 
-	haptic->dev = &pdev->dev;
-
-	haptic->input_dev = devm_input_allocate_device(&pdev->dev);
-	if (haptic->input_dev == NULL) {
-		dev_err(&pdev->dev, "couldn't allocate input device\n");
+	idev = devm_input_allocate_device(&pdev->dev);
+	if (!idev)
 		return -ENOMEM;
-	}
+
+	haptic->dev = &pdev->dev;
+	haptic->input_dev = idev;
 
 	haptic->pwm = devm_pwm_get(&pdev->dev, NULL);
 	if (IS_ERR(haptic->pwm)) {
-		dev_err(&pdev->dev, "Unable to request PWM\n");
-		return PTR_ERR(haptic->pwm);
+		ret = PTR_ERR(haptic->pwm);
+		dev_err(&pdev->dev, "Failed to get PWM: %d\n", ret);
+		return ret;
 	}
 
 	haptic->pwm_period = pdata && pdata->pwm_period_ns
 			   ? pdata->pwm_period_ns : DEFAULT_PWM_PERIOD;
 
-	idev = haptic->input_dev;
 	idev->open = pwm_haptic_open;
 	idev->close = pwm_haptic_close;
 	input_set_drvdata(idev, haptic);
@@ -143,21 +142,18 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 
 	ret = input_ff_create_memless(idev, NULL, pwm_haptic_play);
 	if (ret < 0) {
-		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
-		goto err_free_input;
+		dev_dbg(&pdev->dev, "Failed to create FF device: %d\n", ret);
+		return ret;
 	}
 
 	ret = input_register_device(idev);
 	if (ret < 0) {
-		dev_dbg(&pdev->dev, "couldn't register input device\n");
-		goto err_free_input;
+		dev_dbg(&pdev->dev,
+			"Failed to register input device: %d\n", ret);
+		return ret;
 	}
 
 	return 0;
-
-err_free_input:
-	input_ff_destroy(haptic->input_dev);
-	return ret;
 }
 
 static int pwm_haptic_remove(struct platform_device *pdev)
@@ -166,7 +162,6 @@ static int pwm_haptic_remove(struct platform_device *pdev)
 	struct input_dev *idev = haptic->input_dev;
 
 	input_unregister_device(idev);
-	input_ff_destroy(idev);
 
 	return 0;
 }
