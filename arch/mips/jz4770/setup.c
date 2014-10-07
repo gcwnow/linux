@@ -26,6 +26,7 @@
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/ioport.h>
+#include <linux/of_fdt.h>
 #include <linux/tty.h>
 #include <linux/serial.h>
 #include <linux/serial_core.h>
@@ -41,6 +42,7 @@
 #include <asm/pgtable.h>
 #include <asm/time.h>
 #include <asm/page.h>
+#include <asm/prom.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
@@ -183,6 +185,8 @@ void __init plat_mem_setup(void)
 
 	jz_soc_setup();
 	jz_serial_setup();
+
+	__dt_setup_arch(__dtb_start);
 }
 
 /*

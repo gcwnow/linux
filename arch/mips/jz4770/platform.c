@@ -13,6 +13,8 @@
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include <linux/of_fdt.h>
+#include <linux/of_platform.h>
 #include <linux/resource.h>
 
 #include <linux/usb/musb.h>
@@ -427,3 +429,19 @@ static int __init jz4770_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 postcore_initcall(jz4770_init_platform_devices);
+
+static struct of_device_id jz4770_ids[] __initdata = {
+	{ .compatible = "simple-bus", },
+	{},
+};
+
+static int __init jz4770_init_devices(void)
+{
+	return of_platform_bus_probe(NULL, jz4770_ids, NULL);
+}
+device_initcall(jz4770_init_devices);
+
+void __init device_tree_init(void)
+{
+	unflatten_and_copy_device_tree();
+}

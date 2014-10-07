@@ -1,0 +1,33 @@
+/*
+ * Copyright 2014 Paul Cercueil <paul@crapouillou.net>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	compatible = "ingenic,jz4770-board";
+
+	soc {
+		compatible = "simple-bus";
+
+		cpus {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			cpu0: cpu@0 {
+				compatible = "ingenic,xburst";
+				reg = <0>;
+			};
+		};
+	};
+};
