@@ -24,6 +24,7 @@
 #include <linux/clk.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/of.h>
 
 #define JZ_REG_WDT_TIMER_DATA     0x0
 #define JZ_REG_WDT_COUNTER_ENABLE 0x4
@@ -177,12 +178,20 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id jz4740_of_matches[] = {
+	{ .compatible = "ingenic,jz4740-watchdog", },
+	{ .compatible = "ingenic,jz4770-watchdog", },
+	{ .compatible = "ingenic,jz4780-watchdog", },
+	{ /* sentinel */ },
+};
+
 static struct platform_driver jz4740_wdt_driver = {
 	.probe = jz4740_wdt_probe,
 	.remove = jz4740_wdt_remove,
 	.driver = {
 		.name = "jz4740-wdt",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(jz4740_of_matches),
 	},
 };
 
