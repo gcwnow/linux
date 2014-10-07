@@ -1,0 +1,33 @@
+/*
+ * Copyright 2014 Paul Cercueil <paul@crapouillou.net>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/include/ "jz4770.dtsi"
+
+/ {
+	compatible = "gcw,zero";
+
+	clocks {
+		extclk: fixed-clock@0 {
+			#clock-cells = <0>;
+			clock-frequency = <12000000>;
+			clock-output-names = "extclk";
+		};
+
+		rtcclk: fixed-clock@1 {
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+			clock-output-names = "rtcclk";
+		};
+	};
+};
