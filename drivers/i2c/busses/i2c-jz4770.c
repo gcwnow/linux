@@ -29,10 +29,13 @@
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
-#include <asm/mach-jz4770/jz4770i2c.h>
+
+#include <linux/platform_data/jz4770_i2c.h>
 
 #include "i2c-jz4770.h"
 
+
+#define JZ_I2C_NUM	3
 
 /* I2C protocol */
 #define I2C_READ_CMD	(1 << 8)
