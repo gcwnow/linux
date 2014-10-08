@@ -1,13 +1,11 @@
 /*
- * arch/mips/include/asm/mach-jz4770/mmc.h
- *
  * JZ4770 MMC/SD Controller platform data
  *
  * Copyright (C) 2010 Ingenic Semiconductor Co., Ltd.
  */
 
-#ifndef __ASM_MACH_JZ4770_MMC_H__
-#define __ASM_MACH_JZ4770_MMC_H__
+#ifndef __PLATFORM_DATA_JZ4770_MMC_H__
+#define __PLATFORM_DATA_JZ4770_MMC_H__
 
 struct jz_mmc_platform_data {
 	unsigned int ocr_mask;			/* available voltages */
@@ -36,4 +34,4 @@ struct jz_mmc_platform_data {
 	unsigned use_shared_8bit_pins:1;
 };
 
-#endif /* __ASM_MACH_JZ4770_MMC_H__ */
+#endif /* __PLATFORM_DATA_JZ4770_MMC_H__ */

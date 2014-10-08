@@ -15,7 +15,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
-#include <asm/mach-jz4770/mmc.h>
+#include <linux/platform_data/jz4770_mmc.h>
 
 #include "include/chip-msc.h"
 #include "include/jz_mmc_gpio.h"
