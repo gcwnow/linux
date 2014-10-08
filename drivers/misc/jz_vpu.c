@@ -42,7 +42,6 @@
 #include <asm/uaccess.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/irq.h>
 
 #include <linux/syscalls.h>
 
