@@ -1,5 +1,5 @@
 /*
- *  linux/include/asm-mips/mach-jz4770/ipu.h
+ *  drivers/video/fbdev/jz4770_ipu.h
  *
  *  Copyright (C) 2014, Paul Cercueil <paul@crapouillou.net>
  *

@@ -45,11 +45,12 @@
 #include <asm/processor.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770lcdc.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-#include <asm/mach-jz4770/ipu.h>
 
 #include <video/jzpanel.h>
+
+#include "jz4770_ipu.h"
+#include "jz4770_lcdc.h"
 
 #define MAX_XRES 640
 #define MAX_YRES 480

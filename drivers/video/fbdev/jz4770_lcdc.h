@@ -1,5 +1,5 @@
 /*
- * linux/include/asm-mips/mach-jz4770/jz4770lcdc.h
+ * drivers/video/fbdev/jz4770_lcdc.h
  *
  * JZ4770 LCDC register definition.
  *
