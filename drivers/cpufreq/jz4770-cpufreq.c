@@ -18,7 +18,6 @@
 #include <linux/cpufreq.h>
 
 #include <linux/clk.h>
-#include <asm/mach-jz4770/base.h>
 
 static struct clk *cclk;
 static struct cpufreq_driver cpufreq_jz4770_driver;
