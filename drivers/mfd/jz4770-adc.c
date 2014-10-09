@@ -30,7 +30,6 @@
 #include <linux/mfd/core.h>
 
 #include <linux/jz4770-adc.h>
-#include <asm/mach-jz4770/jz4770sadc.h>
 
 
 #define JZ_REG_ADC_ENABLE		0x00
@@ -50,6 +49,10 @@
 #define JZ_ADC_ENABLE_TOUCHSCREEN	BIT(2)
 #define JZ_ADC_ENABLE_BATTERY		BIT(1)
 #define JZ_ADC_ENABLE_AUX		BIT(0)
+
+#define JZ_ADC_CLKDIV_MS		16
+#define JZ_ADC_CLKDIV_US		8
+#define JZ_ADC_CLKDIV_BIT		0
 
 enum {
 	JZ_ADC_IRQ_ADCIN = 0,
@@ -121,9 +124,9 @@ static int jz4770_adc_set_clock(struct jz4770_adc *adc, unsigned int freq)
 	/* Set "us_clk" to 10 kHz (0.1 ms ticks). */
 	div_us = freq / 10000 - 1;
 
-	val = (div_ms << SADC_ADCLK_CLKDIV_MS)
-	    | (div_us << SADC_ADCLK_CLKDIV_US)
-	    | (div    << SADC_ADCLK_CLKDIV_BIT);
+	val = (div_ms << JZ_ADC_CLKDIV_MS)
+	    | (div_us << JZ_ADC_CLKDIV_US)
+	    | (div    << JZ_ADC_CLKDIV_BIT);
 	writel(val, adc->base + JZ_REG_ADC_CLKDIV);
 
 	return 0;
