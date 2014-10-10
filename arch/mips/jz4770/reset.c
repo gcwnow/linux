@@ -20,11 +20,38 @@
 #include <asm/reboot.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
-#include <asm/mach-jz4770/jz4770wdt.h>
+#include <asm/mach-jz4770/jz4770misc.h>
 
 #include "intc.h"
 #include "rtc.h"
 #include "tcu.h"
+
+
+#define	WDT_BASE		0xB0002000
+
+#define JZ_REG_WDT_TDR		0x00
+#define JZ_REG_WDT_TCER		0x04
+#define JZ_REG_WDT_TCNT		0x08
+#define JZ_REG_WDT_TCSR		0x0C
+
+#define REG_WDT_TDR		REG16(WDT_BASE + JZ_REG_WDT_TDR)
+#define REG_WDT_TCER		REG8(WDT_BASE + JZ_REG_WDT_TCER)
+#define REG_WDT_TCNT		REG16(WDT_BASE + JZ_REG_WDT_TCNT)
+#define REG_WDT_TCSR		REG16(WDT_BASE + JZ_REG_WDT_TCSR)
+
+#define WDT_TCSR_PRESCALE_BIT	3
+#define WDT_TCSR_PRESCALE_MASK	(0x7 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE1	(0x0 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE4	(0x1 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE16	(0x2 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE64	(0x3 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE256	(0x4 << WDT_TCSR_PRESCALE_BIT)
+  #define WDT_TCSR_PRESCALE1024	(0x5 << WDT_TCSR_PRESCALE_BIT)
+#define WDT_TCSR_EXT_EN		(1 << 2)
+#define WDT_TCSR_RTC_EN		(1 << 1)
+#define WDT_TCSR_PCK_EN		(1 << 0)
+
+#define WDT_TCER_TCEN		(1 << 0)
 
 
 void jz_restart(char *command)
