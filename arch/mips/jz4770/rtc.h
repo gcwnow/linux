@@ -1,6 +1,4 @@
 /*
- * linux/include/asm-mips/mach-jz4770/jz4770rtc.h
- *
  * JZ4770 RTC register definition.
  *
  * Copyright (C) 2010 Ingenic Semiconductor Co., Ltd.
