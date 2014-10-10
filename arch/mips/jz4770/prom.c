@@ -42,7 +42,8 @@
 #include <uapi/linux/serial_reg.h>
 
 #include <asm/bootinfo.h>
-#include <asm/mach-jz4770/jz4770uart.h>
+
+#include "uart.h"
 
 
 static void __init prom_init_cmdline(int prom_argc, char **prom_argv)

@@ -44,13 +44,13 @@
 
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
-#include <asm/mach-jz4770/jz4770uart.h>
 
 #ifdef CONFIG_PC_KEYB
 #include <asm/keyboard.h>
 #endif
 
 #include "reset.h"
+#include "uart.h"
 
 
 extern void __init jz_board_setup(void);

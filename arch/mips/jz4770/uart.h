@@ -1,6 +1,4 @@
 /*
- * linux/include/asm-mips/mach-jz4770/jz4770uart.h
- *
  * JZ4770 UART register definition.
  *
  * Copyright (C) 2010 Ingenic Semiconductor Co., Ltd.
