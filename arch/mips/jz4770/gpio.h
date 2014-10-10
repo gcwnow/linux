@@ -1,6 +1,4 @@
 /*
- * linux/include/asm-mips/mach-jz4770/jz4770gpio.h
- *
  * JZ4770 GPIO register definition.
  *
  * Copyright (C) 2010 Ingenic Semiconductor Co., Ltd.

@@ -34,8 +34,8 @@
 #include <asm/mipsregs.h>
 
 #include <asm/mach-jz4770/jz4770dmac.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 
+#include "gpio.h"
 #include "intc.h"
 
 

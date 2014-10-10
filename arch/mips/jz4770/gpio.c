@@ -28,7 +28,8 @@
 #include <linux/pinctrl/consumer.h>
 
 #include <asm/mach-jz4770/gpio.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
+
+#include "gpio.h"
 
 
 #define JZ_REG_GPIO_PIN			0x00

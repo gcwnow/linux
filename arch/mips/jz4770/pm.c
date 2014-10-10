@@ -33,7 +33,6 @@
 #include <asm/cacheops.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770gpio.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 #include <asm/mach-jz4770/jz4770rtc.h>
 
