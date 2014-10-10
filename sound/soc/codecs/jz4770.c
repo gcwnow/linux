@@ -31,9 +31,9 @@
 
 #include <asm/div64.h>
 #include <asm/types.h>
-#include <asm/mach-jz4770/jz4770aic.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 
+#include "../jz4770/jz4770-aic.h"
 #include "jz4770.h"
 
 

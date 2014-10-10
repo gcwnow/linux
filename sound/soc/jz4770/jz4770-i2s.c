@@ -23,9 +23,9 @@
 #include <sound/soc.h>
 
 #include <asm/mach-jz4770/dma.h>
-#include <asm/mach-jz4770/jz4770aic.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 
+#include "jz4770-aic.h"
 #include "jz4770-pcm.h"
 
 
