@@ -29,9 +29,13 @@
 
 #include <asm/addrspace.h>
 
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/dma.h>
-#include <asm/mach-jz4770/jz4770aic.h>
 #include <asm/mach-jz4770/jz4770dmac.h>
+
+
+#define AIC_BASE	CKSEG1ADDR(JZ4770_AIC_BASE_ADDR)
+#define AIC_DR		(AIC_BASE + 0x34)
 
 
 /*
