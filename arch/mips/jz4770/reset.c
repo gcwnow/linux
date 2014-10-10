@@ -21,10 +21,10 @@
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/jz4770rtc.h>
-#include <asm/mach-jz4770/jz4770tcu.h>
 #include <asm/mach-jz4770/jz4770wdt.h>
 
 #include "intc.h"
+#include "tcu.h"
 
 
 void jz_restart(char *command)

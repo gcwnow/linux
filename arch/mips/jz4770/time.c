@@ -29,7 +29,8 @@
 
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-#include <asm/mach-jz4770/jz4770tcu.h>
+
+#include "tcu.h"
 
 
 #define OST_BASE		0xB0002000
