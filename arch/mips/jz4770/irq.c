@@ -35,7 +35,9 @@
 
 #include <asm/mach-jz4770/jz4770dmac.h>
 #include <asm/mach-jz4770/jz4770gpio.h>
-#include <asm/mach-jz4770/jz4770intc.h>
+
+#include "intc.h"
+
 
 /*
  * C0 irq type -- this handles only the VPU interrupt

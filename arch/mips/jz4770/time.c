@@ -28,7 +28,6 @@
 #include <asm/time.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
-#include <asm/mach-jz4770/jz4770intc.h>
 #include <asm/mach-jz4770/jz4770ost.h>
 #include <asm/mach-jz4770/jz4770tcu.h>
 
