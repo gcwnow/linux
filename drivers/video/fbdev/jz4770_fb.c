@@ -29,7 +29,6 @@
 #include <linux/gcd.h>
 #include <linux/init.h>
 #include <linux/dma-mapping.h>
-#include <linux/platform_data/jz4770_fb.h>
 #include <linux/platform_device.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pm.h>
@@ -85,7 +84,6 @@ static const struct jz4760lcd_panel_t *jz_panel = &jz4760_lcd_panel;
 
 struct jzfb {
 	struct fb_info *fb;
-	struct jzfb_platform_data *pdata;
 	struct platform_device *pdev;
 	void *panel;
 
@@ -550,8 +548,6 @@ static void jzfb_power_up(struct jzfb *jzfb)
 {
 	pinctrl_pm_select_default_state(&jzfb->pdev->dev);
 
-	jzfb->pdata->panel_ops->enable(jzfb->panel);
-
 	jzfb_lcdc_enable(jzfb);
 	jzfb_ipu_enable(jzfb);
 }
@@ -563,8 +559,6 @@ static void jzfb_power_down(struct jzfb *jzfb)
 
 	jzfb_ipu_disable(jzfb);
 	clk_disable(jzfb->ipuclk);
-
-	jzfb->pdata->panel_ops->disable(jzfb->panel);
 
 	pinctrl_pm_select_sleep_state(&jzfb->pdev->dev);
 }
@@ -874,16 +868,10 @@ static DEVICE_BOOL_ATTR(allow_downscaling, 0644, allow_downscaling);
 
 static int jz4760_fb_probe(struct platform_device *pdev)
 {
-	struct jzfb_platform_data *pdata = pdev->dev.platform_data;
 	struct jzfb *jzfb;
 	struct fb_info *fb;
 	struct resource *res;
 	int ret;
-
-	if (!pdata) {
-		dev_err(&pdev->dev, "Missing platform data\n");
-		return -ENXIO;
-	}
 
 	fb = framebuffer_alloc(sizeof(struct jzfb), &pdev->dev);
 	if (!fb) {
@@ -910,7 +898,6 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	}
 
 	jzfb->pdev = pdev;
-	jzfb->pdata = pdata;
 	jzfb->bpp = 32;
 	init_waitqueue_head(&jzfb->wait_vsync);
 
@@ -945,28 +932,28 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 	ret = jz4760fb_map_smem(fb);
 	if (ret)
-		goto failed;
+		goto err_release_fb;
 
 	/* Init pixel clock. */
 	jzfb->lpclk = devm_clk_get(&pdev->dev, "lpclk");
 	if (IS_ERR(jzfb->lpclk)) {
 		ret = PTR_ERR(jzfb->lpclk);
 		dev_err(&pdev->dev, "Failed to get pixel clock: %d\n", ret);
-		goto failed;
+		goto err_unmap;
 	}
 
 	jzfb->ipuclk = devm_clk_get(&pdev->dev, "ipu");
 	if (IS_ERR(jzfb->ipuclk)) {
 		ret = PTR_ERR(jzfb->ipuclk);
 		dev_err(&pdev->dev, "Failed to get ipu clock: %d\n", ret);
-		goto failed;
+		goto err_unmap;
 	}
 
 	if (request_irq(IRQ_IPU, jz4760fb_interrupt_handler, 0,
 				"ipu", jzfb)) {
 		dev_err(&pdev->dev, "Failed to request IRQ.\n");
 		ret = -EBUSY;
-		goto failed;
+		goto err_unmap;
 	}
 
 	mutex_init(&jzfb->lock);
@@ -986,24 +973,13 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 	jzfb->delay_flush = 0;
 
-	// TODO: Panels should be proper modules that register themselves.
-	//       They should be switchable via sysfs.
-	//       And a module parameter should select the default panel.
-
-	ret = pdata->panel_ops->init(&jzfb->panel,
-				     &pdev->dev, pdata->panel_pdata);
-	if (ret)
-		goto failed;
-
-	jzfb->pdata->panel_ops->enable(jzfb->panel);
-
 	jzfb_ipu_reset(jzfb);
 	jzfb->is_enabled = true;
 
 	ret = device_create_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 	if (ret) {
 		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
-		goto err_exit_panel;
+		goto err_unmap;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
@@ -1029,9 +1005,7 @@ err_remove_allow_downscaling_file:
 	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
 err_remove_keep_aspect_ratio_file:
 	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
-err_exit_panel:
-	jzfb->pdata->panel_ops->exit(jzfb->panel);
-failed:
+err_unmap:
 	jz4760fb_unmap_smem(fb);
 err_release_fb:
 	framebuffer_release(fb);
@@ -1047,8 +1021,6 @@ static int jz4760_fb_remove(struct platform_device *pdev)
 
 	if (jzfb->is_enabled)
 		jzfb_power_down(jzfb);
-
-	jzfb->pdata->panel_ops->exit(jzfb->panel);
 
 	return 0;
 }
