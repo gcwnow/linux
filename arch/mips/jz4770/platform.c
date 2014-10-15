@@ -20,7 +20,9 @@
 #include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/irq.h>
-#include <asm/mach-jz4770/platform.h>
+
+#include "platform.h"
+
 
 /* Pin controller */
 static struct resource jz_pinctrl_resources[] = {
