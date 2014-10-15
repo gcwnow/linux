@@ -57,9 +57,9 @@
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-#include <asm/mach-jz4770/platform.h>
 
 #include "clock.h"
+#include "platform.h"
 
 
 /* Buttons */
