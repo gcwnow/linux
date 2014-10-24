@@ -264,7 +264,9 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 	}
 
 	spin_lock_init(&adc->lock);
-	atomic_set(&adc->clk_ref, 0);
+
+	atomic_set(&adc->clk_ref, 1);
+	clk_prepare_enable(adc->clk);
 
 	platform_set_drvdata(pdev, adc);
 
