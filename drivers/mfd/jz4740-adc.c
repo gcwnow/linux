@@ -202,6 +202,11 @@ static const struct mfd_cell jz4740_adc_cells[] = {
 	},
 };
 
+static struct of_device_id jz4740_adc_of_match[] = {
+	{ .compatible = "ingenic,jz4740-adc", },
+	{ },
+};
+
 static int jz4740_adc_probe(struct platform_device *pdev)
 {
 	struct irq_chip_generic *gc;
@@ -323,6 +328,7 @@ static struct platform_driver jz4740_adc_driver = {
 	.remove = jz4740_adc_remove,
 	.driver = {
 		.name = "jz4740-adc",
+		.of_match_table = jz4740_adc_of_match,
 	},
 };
 
