@@ -16,6 +16,8 @@
  */
 
 #include <linux/err.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
@@ -39,6 +41,8 @@
 #define JZ_REG_ADC_TOUCHSCREEN_BASE	0x10
 #define JZ_REG_ADC_BATTERY_BASE	0x1c
 #define JZ_REG_ADC_HWMON_BASE	0x20
+#define JZ_REG_ADC_CMD		0x24
+#define JZ_REG_ADC_CLKDIV	0x28
 
 #define JZ_ADC_ENABLE_TOUCH	BIT(2)
 #define JZ_ADC_ENABLE_BATTERY	BIT(1)
@@ -50,19 +54,6 @@ enum {
 	JZ_ADC_IRQ_TOUCH,
 	JZ_ADC_IRQ_PENUP,
 	JZ_ADC_IRQ_PENDOWN,
-};
-
-struct jz4740_adc {
-	struct resource *mem;
-	void __iomem *base;
-
-	int irq;
-	struct irq_chip_generic *gc;
-
-	struct clk *clk;
-	atomic_t clk_ref;
-
-	spinlock_t lock;
 };
 
 static void jz4740_adc_irq_demux(struct irq_desc *desc)
@@ -203,7 +194,8 @@ static const struct mfd_cell jz4740_adc_cells[] = {
 };
 
 static struct of_device_id jz4740_adc_of_match[] = {
-	{ .compatible = "ingenic,jz4740-adc", },
+	{ .compatible = "ingenic,jz4740-adc", .data = (void *)JZ_ADC_JZ4740 },
+	{ .compatible = "ingenic,jz4780-adc", .data = (void *)JZ_ADC_JZ4780 },
 	{ },
 };
 
@@ -213,6 +205,7 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 	struct irq_chip_type *ct;
 	struct jz4740_adc *adc;
 	struct resource *mem_base;
+	const struct of_device_id *match;
 	int ret;
 	int irq_base;
 
@@ -221,6 +214,9 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
 		return -ENOMEM;
 	}
+
+	match = of_match_device(of_match_ptr(jz4740_adc_of_match), &pdev->dev);
+	adc->version = (enum jz4740_adc_version)match->data;
 
 	adc->irq = platform_get_irq(pdev, 0);
 	if (adc->irq < 0) {

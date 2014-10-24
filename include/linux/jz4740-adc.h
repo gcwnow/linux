@@ -23,10 +23,32 @@ int jz4740_adc_set_config(struct device *dev, uint32_t mask, uint32_t val);
 #define JZ_ADC_CONFIG_SAMPLE_NUM_MASK	(0x7 << 10)
 #define JZ_ADC_CONFIG_CLKDIV_MASK	(0xf << 5)
 #define JZ_ADC_CONFIG_BAT_MB		BIT(4)
+#define JZ_ADC_CONFIG_CMD_MASK		0x3
+#define JZ_ADC_CONFIG_AUX1_EN		0x1
+#define JZ_ADC_CONFIG_AUX2_EN		0x2
 
 #define JZ_ADC_CONFIG_DNUM(dnum)	((dnum) << 16)
 #define JZ_ADC_CONFIG_XYZ_OFFSET(dnum)	((xyz) << 13)
 #define JZ_ADC_CONFIG_SAMPLE_NUM(x)	((x) << 10)
 #define JZ_ADC_CONFIG_CLKDIV(div)	((div) << 5)
+
+enum jz4740_adc_version {
+	JZ_ADC_JZ4740,
+	JZ_ADC_JZ4780,
+};
+
+struct jz4740_adc {
+	struct resource *mem;
+	void __iomem *base;
+
+	int irq;
+	struct irq_chip_generic *gc;
+
+	struct clk *clk;
+	atomic_t clk_ref;
+
+	spinlock_t lock;
+	enum jz4740_adc_version version;
+};
 
 #endif

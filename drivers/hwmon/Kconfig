@@ -628,7 +628,7 @@ config SENSORS_IT87
 
 config SENSORS_JZ4740
 	tristate "Ingenic JZ4740 SoC ADC driver"
-	depends on MACH_JZ4740 && MFD_JZ4740_ADC
+	depends on (MACH_JZ4740 || MACH_JZ4780) && MFD_JZ4740_ADC
 	help
 	  If you say yes here you get support for reading adc values from the ADCIN
 	  pin on Ingenic JZ4740 SoC based boards.

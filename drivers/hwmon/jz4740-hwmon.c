@@ -26,6 +26,8 @@
 #include <linux/mfd/core.h>
 
 #include <linux/hwmon.h>
+#include <linux/hwmon-sysfs.h>
+#include <linux/jz4740-adc.h>
 
 struct jz4740_hwmon {
 	void __iomem *base;
@@ -38,6 +40,7 @@ struct jz4740_hwmon {
 	struct completion read_completion;
 
 	struct mutex lock;
+	enum jz4740_adc_version version;
 };
 
 static ssize_t jz4740_hwmon_show_name(struct device *dev,
@@ -59,6 +62,8 @@ static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
 {
 	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
 	struct completion *completion = &hwmon->read_completion;
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
+	unsigned int channel = 1;
 	long t;
 	unsigned long val;
 	int ret;
@@ -69,6 +74,18 @@ static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
 
 	enable_irq(hwmon->irq);
 	hwmon->cell->enable(to_platform_device(dev));
+
+	if (hwmon->version >= JZ_ADC_JZ4780) {
+		switch(attr->index) {
+			case 1: channel = JZ_ADC_CONFIG_AUX1_EN;
+				break;
+			case 2:	channel = JZ_ADC_CONFIG_AUX2_EN;
+				break;
+			default:	dev_err(dev, "invalid channel attribute");
+		}
+
+		jz4740_adc_set_config(dev->parent, JZ_ADC_CONFIG_CMD_MASK , channel);
+	}
 
 	t = wait_for_completion_interruptible_timeout(completion, HZ);
 
@@ -89,11 +106,17 @@ static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
 }
 
 static DEVICE_ATTR(name, S_IRUGO, jz4740_hwmon_show_name, NULL);
-static DEVICE_ATTR(in0_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL);
+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL , 1);
+#ifdef CONFIG_MACH_JZ4780
+static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL , 2);
+#endif
 
 static struct attribute *jz4740_hwmon_attributes[] = {
 	&dev_attr_name.attr,
-	&dev_attr_in0_input.attr,
+	&sensor_dev_attr_in0_input.dev_attr.attr,
+#ifdef CONFIG_MACH_JZ4780
+	&sensor_dev_attr_in1_input.dev_attr.attr,
+#endif
 	NULL
 };
 
@@ -105,6 +128,7 @@ static int jz4740_hwmon_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct jz4740_hwmon *hwmon;
+	struct jz4740_adc *adc;
 	struct resource *mem;
 
 	hwmon = devm_kzalloc(&pdev->dev, sizeof(*hwmon), GFP_KERNEL);
@@ -149,6 +173,9 @@ static int jz4740_hwmon_probe(struct platform_device *pdev)
 		ret = PTR_ERR(hwmon->hwmon);
 		goto err_remove_file;
 	}
+
+	adc = platform_get_drvdata(to_platform_device(pdev->dev.parent));
+	hwmon->version = adc->version;
 
 	return 0;
 

@@ -444,7 +444,7 @@ config MFD_JZ4740_ADC
 	bool "Janz JZ4740 ADC core"
 	select MFD_CORE
 	select GENERIC_IRQ_CHIP
-	depends on MACH_JZ4740
+	depends on (MACH_JZ4740 || MACH_JZ4780)
 	help
 	  Say yes here if you want support for the ADC unit in the JZ4740 SoC.
 	  This driver is necessary for jz4740-battery and jz4740-hwmon driver.
