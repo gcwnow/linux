@@ -754,10 +754,10 @@ static struct pinctrl_map pin_map[] __initdata = {
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", "msc1_4bit", "msc1"),
 	/* pwm1: LCD backlight */
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT,
+	PIN_MAP_MUX_GROUP("jz4740-pwm", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", NULL, "pwm1"),
 	/* pwm4: rumble motor */
-	PIN_MAP_MUX_GROUP("jz4770-pwm", PINCTRL_STATE_DEFAULT,
+	PIN_MAP_MUX_GROUP("jz4740-pwm", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", NULL, "pwm4"),
 	PIN_MAP_MUX_GROUP("musb-jz.0", PINCTRL_STATE_DEFAULT,
 			  "jz4770-pinctrl", NULL, "otg"),
@@ -768,9 +768,9 @@ static struct pinctrl_map pin_map[] __initdata = {
 };
 
 static struct pwm_lookup pwm_lookup[] = {
-	PWM_LOOKUP("jz4770-pwm", 1, "pwm-backlight", NULL,
+	PWM_LOOKUP("jz4740-pwm", 1, "pwm-backlight", NULL,
 		   40000, PWM_POLARITY_INVERSED),
-	PWM_LOOKUP("jz4770-pwm", 4, "pwm-haptic", NULL,
+	PWM_LOOKUP("jz4740-pwm", 4, "pwm-haptic", NULL,
 		   2000000, PWM_POLARITY_NORMAL),
 };
 

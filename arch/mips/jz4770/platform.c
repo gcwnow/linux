@@ -243,7 +243,7 @@ static struct resource jz_pwm_resources[] = {
 };
 
 struct platform_device jz4770_pwm_device = {
-	.name = "jz4770-pwm",
+	.name = "jz4740-pwm",
 	.id   = -1,
 	.resource	= jz_pwm_resources,
 	.num_resources	= ARRAY_SIZE(jz_pwm_resources),
