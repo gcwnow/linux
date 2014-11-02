@@ -39,7 +39,6 @@
 #include <linux/platform_data/jz4770_mmc.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
-#include <linux/platform_data/pwm-haptic.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/pinctrl/machine.h>
 #include <linux/power/gpio-charger.h>
@@ -410,7 +409,6 @@ static struct platform_device gcw0_i2c4_gpio_device = {
 /* LCD backlight */
 
 static struct platform_pwm_backlight_data gcw0_backlight_pdata = {
-	.polarity = PWM_POLARITY_INVERSED,
 	.max_brightness = 255,
 	.dft_brightness = 145,
 	.pwm_period_ns = 40000, /* 25 kHz: outside human hearing range */
@@ -671,20 +669,10 @@ static struct platform_device gcw0_joystick_device = {
 	},
 };
 
-static struct pwm_haptic_platform_data gcw0_haptic_pdata = {
-	.pwm_id = 4,
-	.polarity = PWM_POLARITY_NORMAL,
-	.pwm_period_ns = 2000000,
-};
-
-
 /* Rumble device */
 static struct platform_device gcw0_haptic_device = {
 	.name = "pwm-haptic",
 	.id = -1,
-	.dev = {
-		.platform_data = &gcw0_haptic_pdata,
-	},
 };
 
 
