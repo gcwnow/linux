@@ -23,7 +23,6 @@
 #include <linux/bitmap.h>
 #include <linux/input.h>
 #include <linux/module.h>
-#include <linux/platform_data/pwm-haptic.h>
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
 #include <linux/slab.h>
@@ -34,7 +33,6 @@ struct pwm_haptic {
 	struct device *dev;
 	struct input_dev *input_dev;
 	struct pwm_device *pwm;
-	enum pwm_polarity polarity;
 
 	unsigned long pwm_period;
 	bool is_open;
@@ -65,7 +63,6 @@ static int pwm_haptic_open(struct input_dev *input)
 
 	haptic->is_open = true;
 	pwm_config(haptic->pwm, haptic->pwm_period, haptic->pwm_period);
-	pwm_set_polarity(haptic->pwm, haptic->polarity);
 	pwm_enable(haptic->pwm);
 	return 0;
 }
@@ -106,15 +103,9 @@ static SIMPLE_DEV_PM_OPS(pwm_haptic_pm_ops,
 
 static int pwm_haptic_probe(struct platform_device *pdev)
 {
-	struct pwm_haptic_platform_data *pdata = pdev->dev.platform_data;
 	struct input_dev *idev;
 	struct pwm_haptic *haptic;
 	int ret;
-
-	if (!pdata) {
-		dev_err(&pdev->dev, "platform data not available\n");
-		return -EINVAL;
-	}
 
 	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
 	if (!haptic)
@@ -134,8 +125,7 @@ static int pwm_haptic_probe(struct platform_device *pdev)
 		return PTR_ERR(haptic->pwm);
 	}
 
-	haptic->pwm_period = pdata->pwm_period_ns ?: DEFAULT_PWM_PERIOD;
-	haptic->polarity = pdata->polarity;
+	haptic->pwm_period = pwm_get_period(haptic->pwm);
 
 	idev = haptic->input_dev;
 	idev->open = pwm_haptic_open;
