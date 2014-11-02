@@ -155,7 +155,7 @@ config PWM_IMX
 
 config PWM_JZ4740
 	tristate "Ingenic JZ4740 PWM support"
-	depends on MACH_JZ4740
+	depends on MACH_JZ4740 || MACH_JZ4770
 	help
 	  Generic PWM framework driver for Ingenic JZ4740 based
 	  machines.
