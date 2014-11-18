@@ -208,6 +208,12 @@ config USB_F_PRINTER
 config USB_F_TCM
 	tristate
 
+config USB_F_MTP
+	tristate
+
+config USB_F_PTP
+	tristate
+
 choice
 	tristate "USB Gadget Drivers"
 	default USB_ETH
@@ -473,6 +479,20 @@ config USB_CONFIGFS_F_TCM
 	  interface 0 (primary) and UAS is on alternative interface 1.
 	  Both protocols can work on USB2.0 and USB3.0.
 	  UAS utilizes the USB 3.0 feature called streams support.
+
+config USB_CONFIGFS_F_MTP
+	  boolean "MTP gadget"
+	  depends on USB_CONFIGFS
+	  select USB_F_MTP
+	  help
+	    USB gadget MTP support
+
+config USB_CONFIGFS_F_PTP
+	  boolean "PTP gadget"
+	  depends on USB_CONFIGFS && USB_CONFIGFS_F_MTP
+	  select USB_F_PTP
+	  help
+	    USB gadget PTP support
 
 source "drivers/usb/gadget/legacy/Kconfig"
 
