@@ -196,6 +196,12 @@ config USB_F_MIDI
 config USB_F_HID
 	tristate
 
+config USB_F_MTP
+	tristate
+
+config USB_F_PTP
+	tristate
+
 choice
 	tristate "USB Gadget Drivers"
 	default USB_ETH
@@ -433,6 +439,20 @@ config USB_CONFIGFS_F_UVC
 	  The Webcam function acts as a composite USB Audio and Video Class
 	  device. It provides a userspace API to process UVC control requests
 	  and stream video data to the host.
+
+config USB_CONFIGFS_F_MTP
+        boolean "MTP gadget"
+        depends on USB_CONFIGFS
+        select USB_F_MTP
+        help
+          USB gadget MTP support
+
+config USB_CONFIGFS_F_PTP
+        boolean "PTP gadget"
+        depends on USB_CONFIGFS && USB_CONFIGFS_F_MTP
+        select USB_F_PTP
+        help
+          USB gadget PTP support
 
 source "drivers/usb/gadget/legacy/Kconfig"
 
