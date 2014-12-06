@@ -216,6 +216,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
 	unsigned int num, denom;
+	unsigned int framerate, divider;
 
 	/* The minimum input size for the IPU to work is 4x4 */
 	if (var->xres < 4)
@@ -272,6 +273,18 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 
 	jzfb->clear_fb = var->bits_per_pixel != fb->var.bits_per_pixel ||
 		var->xres != fb->var.xres || var->yres != fb->var.yres;
+
+	divider = (jz_panel->w + jz_panel->elw + jz_panel->blw)
+		* (jz_panel->h + jz_panel->efw + jz_panel->bfw);
+	if (var->pixclock) {
+		framerate = var->pixclock / divider;
+		if (framerate > jz_panel->fclk)
+			framerate = jz_panel->fclk;
+	} else {
+		framerate = jz_panel->fclk;
+	}
+
+	var->pixclock = framerate * divider;
 	return 0;
 }
 
@@ -713,14 +726,8 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	writel(0, jzfb->base + LCD_BGC);
 }
 
-static void jzfb_change_clock(struct jzfb *jzfb,
-			      const struct jz4760lcd_panel_t *panel)
+static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 {
-	unsigned int rate;
-
-	rate = panel->fclk * (panel->w + panel->elw + panel->blw)
-	                   * (panel->h + panel->efw + panel->bfw);
-
 	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
 	__cpm_select_pixclk_lcd();
 
@@ -966,7 +973,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	 * video in your boot loader, you'll have to update this driver.
 	 */
 
-	jzfb_change_clock(jzfb, jz_panel);
+	jzfb_change_clock(jzfb, fb->var.pixclock);
 	clk_enable(jzfb->lpclk);
 
 	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
