@@ -126,7 +126,7 @@ static int skb_pull_and_merge(struct sk_buff *skb, unsigned char *src, int len)
 	int tail_len;
 	unsigned long end, tail;
 
-	if ((unsigned long)(src+len) > skb->tail || skb->len < len)
+	if (src+len > skb_tail_pointer(skb) || skb->len < len)
 		return -1;
 
 	tail = (unsigned long)skb->tail;
