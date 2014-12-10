@@ -3305,7 +3305,7 @@ static int amsdu_to_msdu(_adapter *padapter, union recv_frame *prframe)
 			{
 				sub_skb->data = pdata;
 				sub_skb->len = nSubframe_Length;
-				sub_skb->tail = (unsigned long)(sub_skb->data + nSubframe_Length);
+				skb_set_tail_pointer(sub_skb, nSubframe_Length);
 			}
 			else
 			{
