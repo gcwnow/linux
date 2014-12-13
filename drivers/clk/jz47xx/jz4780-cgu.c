@@ -144,56 +144,6 @@ struct clk_ops jz4780_otg_phy_ops = {
 	.set_rate = jz4780_otg_phy_set_rate,
 };
 
-static void jz4780_pll_get_cfg(void __iomem *reg,
-			       struct jz47xx_cgu_pll_cfg *cfg)
-{
-	u32 ctl = readl(reg);
-
-	cfg->m = ((ctl & PLLCTL_M_MASK) >> PLLCTL_M_SHIFT) + 1;
-	cfg->n = ((ctl & PLLCTL_N_MASK) >> PLLCTL_N_SHIFT) + 1;
-	cfg->od = ((ctl & PLLCTL_OD_MASK) >> PLLCTL_OD_SHIFT) + 1;
-	cfg->bypass = !!(ctl & PLLCTL_BYPASS);
-	cfg->enable = !!(ctl & PLLCTL_ENABLE);
-}
-
-static int jz4780_pll_set_cfg(void __iomem *reg,
-			      const struct jz47xx_cgu_pll_cfg *cfg)
-{
-	u32 ctl = readl(reg);
-	const unsigned timeout = 100;
-	unsigned i;
-
-	ctl &= ~(PLLCTL_M_MASK | PLLCTL_N_MASK | PLLCTL_OD_MASK);
-	ctl &= ~(PLLCTL_BYPASS | PLLCTL_ENABLE);
-
-	ctl |= cfg->m << PLLCTL_M_SHIFT;
-	ctl |= cfg->n << PLLCTL_N_SHIFT;
-	ctl |= cfg->od << PLLCTL_OD_SHIFT;
-
-	if (cfg->bypass)
-		ctl |= PLLCTL_BYPASS;
-	if (cfg->enable)
-		ctl |= PLLCTL_ENABLE;
-
-	/* TODO: set the AF_MODE bit? */
-
-	writel(ctl, reg);
-
-	if (cfg->enable) {
-		/* wait for the PLL to stabilise */
-		for (i = 0; i < timeout; i++) {
-			if (readl(reg) & PLLCTL_ON)
-				break;
-			mdelay(1);
-		}
-
-		if (i == timeout)
-			return -EBUSY;
-	}
-
-	return 0;
-}
-
 static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 
 	/* External clocks */
@@ -204,12 +154,16 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 	/* PLLs */
 
 #define DEF_PLL(name) { \
-	.max_m = (1 << 13), \
-	.max_n = (1 << 6), \
-	.max_od = (1 << 4), \
+	.m_offset = 19, \
+	.m_bits = 13, \
+	.n_offset = 13, \
+	.n_bits = 6, \
+	.od_offset = 9, \
+	.od_bits = 4, \
+	.bypass_bit = 1, \
+	.enable_bit = 0, \
+	.enabled_bit = 4, \
 	.reg = CGU_REG_ ## name, \
-	.get_cfg = jz4780_pll_get_cfg, \
-	.set_cfg = jz4780_pll_set_cfg, \
 }
 
 	[JZ4780_CLK_APLL] = {
