@@ -314,7 +314,7 @@ static int linkdev_create_device(struct linkdev *linkdev)
 static ssize_t alt_key_map_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%c\n", alt_key_map ? 'Y' : 'N');
+	return device_show_bool(dev, attr, buf);
 }
 
 static ssize_t alt_key_map_store(struct device *dev,
