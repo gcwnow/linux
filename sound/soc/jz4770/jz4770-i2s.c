@@ -10,6 +10,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/init.h>
@@ -23,7 +24,6 @@
 #include <sound/soc.h>
 
 #include <asm/mach-jz4770/dma.h>
-#include <asm/mach-jz4770/jz4770cpm.h>
 
 #include "jz4770-aic.h"
 #include "jz4770-pcm.h"
@@ -38,8 +38,7 @@ struct jz4770_i2s {
 	void __iomem *base;
 	//dma_addr_t phys_base;
 
-	//struct clk *clk_aic;
-	//struct clk *clk_i2s;
+	struct clk *clk;
 
 	//struct jz4740_pcm_config pcm_config_playback;
 	//struct jz4740_pcm_config pcm_config_capture;
@@ -271,10 +270,8 @@ static int jz4770_i2s_trigger(struct snd_pcm_substream *substream, int cmd, stru
 
 static int jz4770_i2s_dai_probe(struct snd_soc_dai *dai)
 {
-	cpm_start_clock(CGM_AIC);
-	/* Select exclk as i2s clock */
-	cpm_set_clock(CGU_I2SCLK, JZ_EXTAL);
-	REG_AIC_I2SCR |= AIC_I2SCR_ESCLK;
+	struct jz4770_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	clk_enable(i2s->clk);
 
 	__i2s_disable();
 	__aic_disable_transmit_dma();
@@ -306,9 +303,9 @@ static int jz4770_i2s_dai_probe(struct snd_soc_dai *dai)
 
 static int jz4770_i2s_dai_remove(struct snd_soc_dai *dai)
 {
-	//struct jz4770_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	struct jz4770_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
-	//clk_disable(i2s->clk_aic);
+	clk_disable(i2s->clk);
 	return 0;
 }
 
@@ -399,15 +396,9 @@ static int jz4770_i2s_dev_probe(struct platform_device *pdev)
 
 	//i2s->phys_base = i2s->mem->start;
 
-	/*i2s->clk_aic = devm_clk_get(&pdev->dev, "aic");
-	if (IS_ERR(i2s->clk_aic))
-		return PTR_ERR(i2s->clk_aic);
-	*/
-
-	/*i2s->clk_i2s = devm_clk_get(&pdev->dev, "i2s");
-	if (IS_ERR(i2s->clk_i2s))
-		return PTR_ERR(i2s->clk_i2s);
-	*/
+	i2s->clk = devm_clk_get(&pdev->dev, "aic");
+	if (IS_ERR(i2s->clk))
+		return PTR_ERR(i2s->clk);
 
 	platform_set_drvdata(pdev, i2s);
 	ret = snd_soc_register_component(&pdev->dev, &jz4770_i2s_component,
@@ -423,9 +414,6 @@ static int jz4770_i2s_dev_probe(struct platform_device *pdev)
 static int jz4770_i2s_dev_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_component(&pdev->dev);
-
-	platform_set_drvdata(pdev, NULL);
-
 	return 0;
 }
 

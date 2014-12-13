@@ -18,6 +18,7 @@
 #include <linux/pm.h>
 #include <linux/i2c.h>
 #include <linux/spi/spi.h>
+#include <linux/clk.h>
 
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -31,7 +32,6 @@
 
 #include <asm/div64.h>
 #include <asm/types.h>
-#include <asm/mach-jz4770/jz4770cpm.h>
 
 #include "../jz4770/jz4770-aic.h"
 #include "jz4770.h"
@@ -62,6 +62,7 @@ struct jz_icdc {
 	struct regmap *regmap;
 	void __iomem *base;
 	enum jz4770_icdc_mic_mode mic_mode;
+	struct clk *clk;
 };
 
 __attribute__((__unused__)) static void dump_aic_regs(const char *func, int line)
@@ -733,9 +734,6 @@ static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
 	struct regmap *regmap = jz_icdc->regmap;
 
-	cpm_start_clock(CGM_AIC);
-	msleep(1);
-
 	/* Collect updates for later sending. */
 	regcache_cache_only(regmap, true);
 
@@ -857,6 +855,9 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 	};
 	int ret;
 
+	clk_enable(jz_icdc->clk);
+	msleep(1);
+
 	jz_icdc_codec_init_regs(codec);
 
 	/* Add mic related widgets, controls and routes. */
@@ -878,6 +879,9 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 
 static int jz_icdc_codec_remove(struct snd_soc_codec *codec)
 {
+	struct jz_icdc *jz_icdc = snd_soc_codec_get_drvdata(codec);
+	int ret;
+
 	/* clr SB_SLEEP */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 1, 0x1, 1);
 	msleep(10);
@@ -885,7 +889,10 @@ static int jz_icdc_codec_remove(struct snd_soc_codec *codec)
 	/* clr SB */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 0, 0x1, 1);
 
-	return jz_icdc_set_bias_level(codec, SND_SOC_BIAS_OFF);
+	ret = jz_icdc_set_bias_level(codec, SND_SOC_BIAS_OFF);
+
+	clk_disable(jz_icdc->clk);
+	return ret;
 }
 
 static const struct snd_soc_codec_driver jz_icdc_soc_codec_dev = {
@@ -1010,6 +1017,10 @@ static int jz_icdc_probe(struct platform_device *pdev)
 		jz_icdc->mic_mode = pdata->mic_mode;
 	else
 		dev_warn(&pdev->dev, "No pdata, assuming no mics\n");
+
+	jz_icdc->clk = devm_clk_get(&pdev->dev, "aic");
+	if (IS_ERR(jz_icdc->clk))
+		return PTR_ERR(jz_icdc->clk);
 
 	platform_set_drvdata(pdev, jz_icdc);
 
