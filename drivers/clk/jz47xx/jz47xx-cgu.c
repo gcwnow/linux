@@ -96,20 +96,27 @@ static unsigned long jz47xx_pll_recalc_rate(struct clk_hw *hw,
 	struct jz47xx_clk *jz_clk = to_jz47xx_clk(hw);
 	struct jz47xx_cgu *cgu = jz_clk->cgu;
 	const struct jz47xx_cgu_clk_info *clk_info;
-	struct jz47xx_cgu_pll_cfg cfg;
+	const struct jz47xx_cgu_pll_info *pll_info;
+	unsigned m, n, od;
+	u32 ctl;
 
 	clk_info = &cgu->clock_info[jz_clk->idx];
 	BUG_ON(clk_info->type != CGU_CLK_PLL);
 
-	clk_info->pll.get_cfg(cgu->base + clk_info->pll.reg, &cfg);
+	pll_info = &clk_info->pll;
 
-	if (cfg.bypass)
+	ctl = readl(cgu->base + pll_info->reg);
+	if (ctl & BIT(pll_info->bypass_bit))
 		return parent_rate;
 
-	if (!cfg.enable)
+	if (!(ctl & BIT(pll_info->enabled_bit)))
 		return 0;
 
-	return parent_rate * cfg.m / (cfg.n * cfg.od);
+	m = (ctl >> pll_info->m_offset) & GENMASK(pll_info->m_bits - 1, 0);
+	n = (ctl >> pll_info->n_offset) & GENMASK(pll_info->n_bits - 1, 0);
+	od = (ctl >> pll_info->od_offset) & GENMASK(pll_info->od_bits - 1, 0);
+
+	return parent_rate * m / (n * od);
 }
 
 static unsigned long jz47xx_pll_calc(const struct jz47xx_cgu_clk_info *clk_info,
@@ -117,17 +124,20 @@ static unsigned long jz47xx_pll_calc(const struct jz47xx_cgu_clk_info *clk_info,
 				     unsigned long parent_rate,
 				     unsigned *pm, unsigned *pn, unsigned *pod)
 {
-	unsigned m, n, od;
+	unsigned m, n, od, max_m, max_n;
 
 	/* deal with MHz */
 	rate -= (rate % MHZ);
 
+	max_m = GENMASK(clk_info->pll.m_bits - 1, 0);
+	max_n = GENMASK(clk_info->pll.n_bits - 1, 0);
+
 	m = rate / MHZ;
-	m = min_t(unsigned, m, clk_info->pll.max_m);
+	m = min_t(unsigned, m, max_m);
 	m = max_t(unsigned, m, 1);
 
 	n = parent_rate / MHZ;
-	n = min_t(unsigned, n, clk_info->pll.max_n);
+	n = min_t(unsigned, n, max_n);
 	n = max_t(unsigned, n, 1);
 
 	od = 1;
@@ -161,23 +171,46 @@ static int jz47xx_pll_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	struct jz47xx_clk *jz_clk = to_jz47xx_clk(hw);
 	struct jz47xx_cgu *cgu = jz_clk->cgu;
 	const struct jz47xx_cgu_clk_info *clk_info;
-	struct jz47xx_cgu_pll_cfg cfg;
+	const struct jz47xx_cgu_pll_info *pll_info;
 	unsigned long rate;
+	unsigned m, n, od, i, timeout = 100;
+	u32 ctl;
 
 	clk_info = &cgu->clock_info[jz_clk->idx];
 	BUG_ON(clk_info->type != CGU_CLK_PLL);
 
-	rate = jz47xx_pll_calc(clk_info, req_rate, parent_rate,
-			       &cfg.m, &cfg.n, &cfg.od);
+	rate = jz47xx_pll_calc(clk_info, req_rate, parent_rate, &m, &n, &od);
 	if (rate != req_rate) {
 		pr_info("jz47xx-cgu: request '%s' rate %luHz, actual %luHz\n",
 			clk_info->name, req_rate, rate);
 	}
 
-	cfg.bypass = 0;
-	cfg.enable = 1;
+	pll_info = &clk_info->pll;
 
-	return clk_info->pll.set_cfg(cgu->base + clk_info->pll.reg, &cfg);
+	ctl = readl(cgu->base + pll_info->reg);
+	ctl &= ~GENMASK(pll_info->m_bits - 1, 0) << pll_info->m_offset;
+	ctl &= ~GENMASK(pll_info->n_bits - 1, 0) << pll_info->n_offset;
+	ctl &= ~GENMASK(pll_info->od_bits - 1, 0) << pll_info->od_offset;
+	ctl &= ~BIT(pll_info->bypass_bit);
+	ctl |= BIT(pll_info->enable_bit);
+
+	ctl |= m << pll_info->m_offset;
+	ctl |= n << pll_info->n_offset;
+	ctl |= od << pll_info->od_offset;
+
+	/* TODO: set the AF_MODE bit? */
+
+	writel(ctl, cgu->base + pll_info->reg);
+
+	/* wait for the PLL to stabilise */
+	for (i = 0; i < timeout; i++) {
+		if (readl(cgu->base + pll_info->reg)
+				& BIT(pll_info->enabled_bit))
+			break;
+		mdelay(1);
+	}
+
+	return i == timeout ? -EBUSY : 0;
 }
 
 static const struct clk_ops jz47xx_pll_ops = {

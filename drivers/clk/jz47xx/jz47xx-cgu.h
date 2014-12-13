@@ -27,22 +27,6 @@
 #include <linux/spinlock.h>
 
 /**
- * struct jz47xx_cgu_pll_cfg - describes the configuration of a PLL
- * @m: the PLL multiplier
- * @n: the PLL divider
- * @od: the PLL post-VCO divider
- * @bypass: 1 to bypass the PLL (output its input), else 0
- * @enable: 1 to enable the PLL, else 0
- */
-struct jz47xx_cgu_pll_cfg {
-	unsigned m;
-	unsigned n;
-	unsigned od;
-	unsigned bypass:1;
-	unsigned enable:1;
-};
-
-/**
  * struct jz47xx_cgu_pll_info - information about a PLL
  * @max_m: maximum PLL multiplier
  * @max_n: maximum PLL divider
@@ -52,16 +36,14 @@ struct jz47xx_cgu_pll_cfg {
  * @set_cfg: set the current PLL configuration
  */
 struct jz47xx_cgu_pll_info {
-	unsigned max_m;
-	unsigned max_n;
-	unsigned max_od;
+	unsigned char m_offset,  m_bits;
+	unsigned char n_offset,  n_bits;
+	unsigned char od_offset, od_bits;
+	unsigned char bypass_bit;
+	unsigned char enable_bit;
+	unsigned char enabled_bit;
 
 	unsigned reg;
-
-	void (*get_cfg)(void __iomem *reg,
-			struct jz47xx_cgu_pll_cfg *setup);
-	int (*set_cfg)(void __iomem *reg,
-		       const struct jz47xx_cgu_pll_cfg *setup);
 };
 
 /**
