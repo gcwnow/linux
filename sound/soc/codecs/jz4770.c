@@ -104,12 +104,12 @@ static int jz_icdc_set_bias_level(struct snd_soc_codec *codec,
 	case SND_SOC_BIAS_ON:
 	case SND_SOC_BIAS_PREPARE:
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 0, 0x1, 0);
-		mdelay(10);
+		msleep(10);
 		break;
 	case SND_SOC_BIAS_STANDBY:
 	case SND_SOC_BIAS_OFF:
 		jz_icdc_update_reg(codec, JZ_ICDC_CR_MIC, 0, 0x1, 1);
-		mdelay(10);
+		msleep(10);
 		break;
 	}
 	codec->dapm.bias_level = level;
@@ -244,7 +244,7 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		if (substream->stream != SNDRV_PCM_STREAM_PLAYBACK) {
 			jz_icdc_set_bias_level(codec, SND_SOC_BIAS_ON);
-			mdelay(2);
+			msleep(2);
 
 			//dump_aic_regs(__func__, __LINE__);
 		}
@@ -275,9 +275,9 @@ static int jz_icdc_digital_mute(struct snd_soc_dai *dai, int mute)
 
 		/* wait for gain up/down complete (GUP/GDO) */
 		while (!(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << gain_bit)))
-			mdelay(10);
+			msleep(10);
 
-		mdelay(1);
+		msleep(1);
 
 		/* clear GUP/GDO flag */
 		jz_icdc_update_reg(codec, JZ_ICDC_IFR, gain_bit, 0x1, 1);
@@ -399,7 +399,7 @@ static int hpout_event(struct snd_soc_dapm_widget *w,
 		       struct snd_kcontrol *kcontrol, int event) {
 	struct snd_soc_codec *codec = w->codec;
 
-	mdelay(1);
+	msleep(1);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -416,9 +416,9 @@ static int hpout_event(struct snd_soc_dapm_widget *w,
 
 		/* wait for ramp-up complete (RUP) */
 		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 3)))
-			mdelay(10);
+			msleep(10);
 
-		mdelay(1);
+		msleep(1);
 
 		/* clear RUP flag */
 		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 3, 0x1, 1);
@@ -435,9 +435,9 @@ static int hpout_event(struct snd_soc_dapm_widget *w,
 
 		/* wait for ramp-down complete (RDO) */
 		while( !(jz_icdc_read_reg(codec, JZ_ICDC_IFR) & (1 << 2)))
-			mdelay(10);
+			msleep(10);
 
-		mdelay(1);
+		msleep(1);
 
 		/* clear RDO flag */
 		jz_icdc_update_reg(codec, JZ_ICDC_IFR, 2, 0x1, 1);
@@ -734,7 +734,7 @@ static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 	struct regmap *regmap = jz_icdc->regmap;
 
 	cpm_start_clock(CGM_AIC);
-	mdelay(1);
+	msleep(1);
 
 	/* Collect updates for later sending. */
 	regcache_cache_only(regmap, true);
@@ -809,11 +809,11 @@ static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 	/* These steps are too time consuming, so we do it here */
 	/* clr SB */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC,  0, 0x1, 0);
-	mdelay(300);
+	msleep(300);
 
 	/* clr SB_SLEEP */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 1, 0x1, 0);
-	mdelay(400);
+	msleep(400);
 }
 
 #define MIC_CONFIG_DECL(mode) { \
@@ -880,7 +880,7 @@ static int jz_icdc_codec_remove(struct snd_soc_codec *codec)
 {
 	/* clr SB_SLEEP */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 1, 0x1, 1);
-	mdelay(10);
+	msleep(10);
 
 	/* clr SB */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_VIC, 0, 0x1, 1);
