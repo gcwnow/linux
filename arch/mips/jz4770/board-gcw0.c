@@ -51,6 +51,7 @@
 #include <sound/jz4770.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
+#include <video/panel-jz4770-tve.h>
 #include <video/platform_lcd.h>
 
 #include <asm/mach-jz4770/board-gcw0.h>
@@ -427,6 +428,9 @@ static struct platform_device gcw0_backlight_device = {
 
 static struct platform_device gcw0_lcd_device;
 static void *gcw0_lcd_panel;
+#ifdef CONFIG_PANEL_JZ4770_TVE
+static void *gcw0_tve_panel;
+#endif
 
 static struct nt39016_platform_data gcw0_panel_pdata = {
 	.gpio_reset		= JZ_GPIO_PORTE(2),
@@ -455,6 +459,12 @@ static int gcw0_lcd_probe(struct plat_lcd_data *pdata)
 	}
 
 	gpio_direction_output(GPIO_PANEL_SOMETHING, 1);
+
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	ret = jz4770_tve_panel_ops.init(&gcw0_tve_panel, dev, NULL);
+	if (ret)
+		dev_err(dev, "TV encoder init: %d\n", ret);
+#endif
 
 	return 0;
 }
