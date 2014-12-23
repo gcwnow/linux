@@ -43,6 +43,7 @@
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 
+#include <asm/mach-jz4770/clock.h>
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
@@ -68,6 +69,21 @@ struct jz4760lcd_panel_t {
 };
 
 static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	.cfg = LCD_CFG_TVEN | /* output to tv encoder */
+	       LCD_CFG_RECOVER | /* underrun protect */
+	       LCD_CFG_MODE_NONINTER_CCIR656,
+	/* NTSC */
+	.w = 704,	/* line freq in 13.5 MHz ticks */
+	.h = 240,	/* half of TV lines because noninterlaced */
+	.fclk = 60,
+	.hsw = 0,
+	.vsw = 0,
+	.elw = 0,
+	.blw = 0,
+	.efw = 11,
+	.bfw = 11,
+#else
 	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER | /* Underrun recover */
 	       LCD_CFG_MODE_GENERIC_TFT | /* General TFT panel */
 	       LCD_CFG_MODE_TFT_24BIT | 	/* output 24bpp */
@@ -77,6 +93,7 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	/* bw, bh, dw, dh, fclk, hsw, vsw, elw, blw, efw, bfw */
 	320, 240, 320, 240, 60, 50, 1, 10, 70, 5, 5,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
+#endif
 };
 
 /* default output to lcd panel */
@@ -119,6 +136,9 @@ static void ctrl_enable(struct jzfb *jzfb)
 {
 	u32 val = readl(jzfb->base + LCD_CTRL);
 	val = (val & ~LCD_CTRL_DIS) | LCD_CTRL_ENA;
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	val |= LCD_CTRL_OFUM | LCD_CTRL_BST_16;    /* 16words burst */
+#endif
 	writel(val, jzfb->base + LCD_CTRL);
 }
 
@@ -215,7 +235,9 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
 	unsigned int num, denom;
+#ifndef CONFIG_PANEL_JZ4770_TVE
 	unsigned int framerate, divider;
+#endif
 
 	/* The minimum input size for the IPU to work is 4x4 */
 	if (var->xres < 4)
@@ -273,6 +295,9 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	jzfb->clear_fb = var->bits_per_pixel != fb->var.bits_per_pixel ||
 		var->xres != fb->var.xres || var->yres != fb->var.yres;
 
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	var->pixclock = 27000000;
+#else
 	divider = (jz_panel->bw + jz_panel->elw + jz_panel->blw)
 		* (jz_panel->bh + jz_panel->efw + jz_panel->bfw);
 	if (var->pixclock) {
@@ -284,6 +309,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	}
 
 	var->pixclock = framerate * divider;
+#endif
 	return 0;
 }
 
@@ -714,6 +740,10 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 	writel(panel->hsw << LCD_HSYNC_HPE_BIT, jzfb->base + LCD_HSYNC);
 	writel(panel->vsw << LCD_VSYNC_VPE_BIT, jzfb->base + LCD_VSYNC);
 
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	writew(LCD_RGBC_YCC, jzfb->base + LCD_RGBC);
+#endif
+
 	/* Enable foreground 1, OSD mode */
 	writew(LCD_OSDC_F1EN | LCD_OSDC_OSDEN, jzfb->base + LCD_OSDC);
 
@@ -727,8 +757,12 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 
 static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 {
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	__cpm_select_pixclk_tve();
+#else
 	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
 	__cpm_select_pixclk_lcd();
+#endif
 
 	clk_set_rate(jzfb->lpclk, rate);
 
