@@ -54,6 +54,7 @@
 #include <video/panel-jz4770-tve.h>
 #include <video/platform_lcd.h>
 
+#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770misc.h>
@@ -474,7 +475,13 @@ static void gcw0_lcd_set_power(struct plat_lcd_data *pdata, unsigned int power)
 	if (power) {
 		act8600_output_enable(6, true);
 		nt39016_panel_ops.enable(gcw0_lcd_panel);
+#ifdef CONFIG_PANEL_JZ4770_TVE
+		jz4770_tve_panel_ops.enable(gcw0_tve_panel);
+#endif
 	} else {
+#ifdef CONFIG_PANEL_JZ4770_TVE
+		jz4770_tve_panel_ops.disable(gcw0_tve_panel);
+#endif
 		nt39016_panel_ops.disable(gcw0_lcd_panel);
 		act8600_output_enable(6, false);
 	}
@@ -485,12 +492,23 @@ static struct plat_lcd_data gcw0_lcd_pdata = {
 	.set_power = gcw0_lcd_set_power,
 };
 
+static struct resource jz_tve_resources[] = {
+	{
+		.name           = "tve",
+		.start          = JZ4770_LCD_BASE_ADDR + 0x140,
+		.end            = JZ4770_LCD_BASE_ADDR + 0x1BF,
+		.flags          = IORESOURCE_MEM,
+	},
+};
+
 static struct platform_device gcw0_lcd_device = {
 	.name = "platform-lcd",
 	.dev = {
 		.platform_data = &gcw0_lcd_pdata,
 		.parent = &jz4770_lcd_device.dev,
 	},
+	.num_resources  = ARRAY_SIZE(jz_tve_resources),
+	.resource       = jz_tve_resources,
 };
 
 
