@@ -46,8 +46,6 @@
 #include <asm/mach-jz4770/jz4770cpm.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
-#include <video/jzpanel.h>
-
 #include "jz4770_ipu.h"
 #include "jz4770_lcdc.h"
 
@@ -85,7 +83,6 @@ static const struct jz4760lcd_panel_t *jz_panel = &jz4760_lcd_panel;
 struct jzfb {
 	struct fb_info *fb;
 	struct platform_device *pdev;
-	void *panel;
 
 	uint32_t pseudo_palette[16];
 	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
