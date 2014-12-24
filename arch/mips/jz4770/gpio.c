@@ -141,6 +141,11 @@ int irq_to_gpio(unsigned irq)
 }
 EXPORT_SYMBOL_GPL(irq_to_gpio);
 
+static int jz4770_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+{
+	return gpio_to_irq(chip->base + offset);
+}
+
 static int jz4770_gpio_request(struct gpio_chip *chip, unsigned offset)
 {
 	return pinctrl_request_gpio(chip->base + offset);
@@ -309,6 +314,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 	[1] = {
@@ -325,6 +331,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 	[2] = {
@@ -341,6 +348,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 	[3] = {
@@ -357,6 +365,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 	[4] = {
@@ -373,6 +382,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 	[5] = {
@@ -389,6 +399,7 @@ static struct jz_gpio_chip jz4770_gpios[] = {
 			.get			= jz4770_gpiolib_get,
 			.request		= jz4770_gpio_request,
 			.free			= jz4770_gpio_free,
+			.to_irq			= jz4770_gpio_to_irq,
 		},
 	},
 };
