@@ -308,6 +308,11 @@ static struct resource jz_vpu_resources[] = {
 		.flags	= IORESOURCE_MEM,
 	},
 	{
+		.start	= JZ4770_SCH_BASE_ADDR,
+		.end	= JZ4770_SCH_BASE_ADDR + 0xFFF,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
 		/* TCSM0 is 16K in size, other 48K is reserved. */
 		.start	= JZ4770_TCSM0_BASE_ADDR,
 		.end	= JZ4770_TCSM0_BASE_ADDR + 0xFFFF,
@@ -321,7 +326,7 @@ static struct resource jz_vpu_resources[] = {
 };
 
 struct platform_device jz4770_vpu_device = {
-	.name		= "jz-vpu",
+	.name		= "jz4770-vpu",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(jz_vpu_resources),
 	.resource	= jz_vpu_resources,
