@@ -149,7 +149,8 @@ static void jz4770_tve_set_enabled(struct jz4770_tve *panel, bool enabled)
 	}
 	writel(ctrl, panel->base + JZ_REG_TVE_CTRL);
 	dev_info(panel->dev, "TVE CTRL = %08X\n", ctrl);
-	// jz-lcd jz-lcd.0: TVE CTRL = 21340210
+	// jz-lcd jz-lcd.0: TVE CTRL = 21340210 <- 3.7?
+	//                             21240000 <- 3.18
 }
 
 static void jz4770_tve_set_chroma_ntsc(struct jz4770_tve *panel)
@@ -234,7 +235,6 @@ static int jz4770_tve_panel_init(void **out_panel, struct device *dev,
 	struct resource *mem;
 	int ret;
 
-#if 1
 	mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tve");
 	if (!mem) {
 		dev_err(&pdev->dev, "Failed to get resource for TVE regs\n");
@@ -247,10 +247,6 @@ static int jz4770_tve_panel_init(void **out_panel, struct device *dev,
 			PTR_ERR(panel->base));
 		return PTR_ERR(panel->base);
 	}
-#else
-	mem = NULL;
-	panel->base = (void __iomem *)0xB3050140;
-#endif
 	dev_info(&pdev->dev, "Got TVE regs: %p\n", panel->base);
 
 	ret = device_create_file(dev, &dev_attr_tv_norm);

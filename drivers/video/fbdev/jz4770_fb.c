@@ -70,19 +70,31 @@ struct jz4760lcd_panel_t {
 
 static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 #ifdef CONFIG_PANEL_JZ4770_TVE
+#if 1
 	.cfg = LCD_CFG_TVEN | /* output to tv encoder */
 	       LCD_CFG_RECOVER | /* underrun protect */
 	       LCD_CFG_MODE_NONINTER_CCIR656,
+#else
+	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER | /* Underrun recover */
+	       LCD_CFG_MODE_GENERIC_TFT | /* General TFT panel */
+	       LCD_CFG_MODE_TFT_24BIT | 	/* output 24bpp */
+	       LCD_CFG_PCP |	/* Pixel clock polarity: falling edge */
+	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
+	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
+#endif
 	/* NTSC */
-	.w = 704,	/* line freq in 13.5 MHz ticks */
-	.h = 240,	/* half of TV lines because noninterlaced */
+	/* horizontal timing is 13.5 MHz ticks */
+	.bw = 713,
+	.bh = 243,
+	.dw = 640,
+	.dh = 240,
 	.fclk = 60,
-	.hsw = 0,
-	.vsw = 0,
-	.elw = 0,
-	.blw = 0,
-	.efw = 11,
-	.bfw = 11,
+	.hsw = 63,
+	.vsw = 3,
+	.elw = 18,
+	.blw = 127,
+	.efw = 3,
+	.bfw = 16,
 #else
 	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER | /* Underrun recover */
 	       LCD_CFG_MODE_GENERIC_TFT | /* General TFT panel */
@@ -296,6 +308,7 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		var->xres != fb->var.xres || var->yres != fb->var.yres;
 
 #ifdef CONFIG_PANEL_JZ4770_TVE
+	/* The TV encoder only works correctly at 27 MHz. */
 	var->pixclock = 27000000;
 #else
 	divider = (jz_panel->bw + jz_panel->elw + jz_panel->blw)
@@ -766,7 +779,7 @@ static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 
 	clk_set_rate(jzfb->lpclk, rate);
 
-	dev_dbg(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
+	dev_info(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
 		rate, clk_get_rate(jzfb->lpclk));
 }
 
@@ -1008,6 +1021,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 
 	jzfb_change_clock(jzfb, fb->var.pixclock);
 	clk_enable(jzfb->lpclk);
+	// TODO: Do this by acquiring the "tve" clk. Here or in panel?
+	CLRREG32(CPM_CLKGR0, CLKGR0_TVE);
 
 	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
 
