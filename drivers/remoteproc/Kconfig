@@ -64,4 +64,12 @@ config DA8XX_REMOTEPROC
 	  It's safe to say n here if you're not interested in multimedia
 	  offloading.
 
+config JZ4770_RPROC
+	tristate "JZ4770 VPU remoteproc support"
+	select REMOTEPROC
+	help
+	  Say y or m here to support the VPU in the JZ4770 SoC.
+	  This can be either built-in or a loadable module.
+	  If unsure say N.
+
 endmenu
