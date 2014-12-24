@@ -159,6 +159,23 @@ static void ctrl_disable(struct jzfb *jzfb)
 	unsigned int cnt;
 	u32 val;
 
+#ifdef CONFIG_PANEL_JZ4770_TVE
+	/* Use quick disable: stops immediately. */
+	val = readl(jzfb->base + LCD_CTRL) & ~LCD_CTRL_ENA;
+	writel(val, jzfb->base + LCD_CTRL);
+
+	/* Wait 20 ms for frame to end (at 60 Hz, one frame is 17 ms). */
+	for (cnt = 20; cnt; cnt -= 4) {
+		if (readl(jzfb->base + LCD_STATE) & LCD_STATE_QD)
+			break;
+		msleep(4);
+	}
+	if (!cnt)
+		dev_err(&jzfb->pdev->dev, "LCD quick disable timeout!\n");
+
+	val = readl(jzfb->base + LCD_STATE);
+	writel(val & ~LCD_STATE_QD, jzfb->base + LCD_STATE);
+#else
 	/* Use regular disable: finishes current frame, then stops. */
 	val = readl(jzfb->base + LCD_CTRL) | LCD_CTRL_DIS;
 	writel(val, jzfb->base + LCD_CTRL);
@@ -174,6 +191,7 @@ static void ctrl_disable(struct jzfb *jzfb)
 
 	val = readl(jzfb->base + LCD_STATE);
 	writel(val & ~LCD_STATE_LDD, jzfb->base + LCD_STATE);
+#endif
 }
 
 static int jz4760fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
