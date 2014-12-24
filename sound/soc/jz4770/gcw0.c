@@ -127,15 +127,26 @@ static int gcw0_codec_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_nc_pin(dapm, "MIC2N");
 
 	/* set up headphone plug detection */
-	snd_soc_jack_new(codec, "Headphone Jack",
-			 SND_JACK_VIDEOOUT | SND_JACK_HEADPHONE,
-			 &gcw0_avout_jack);
-	snd_soc_jack_add_pins(&gcw0_avout_jack,
-			      ARRAY_SIZE(gcw0_avout_jack_pins),
-			      gcw0_avout_jack_pins);
-	snd_soc_jack_add_gpios(&gcw0_avout_jack,
-			       ARRAY_SIZE(gcw0_avout_jack_gpios),
-			       gcw0_avout_jack_gpios);
+	ret = snd_soc_jack_new(codec, "Headphone Jack",
+			       SND_JACK_VIDEOOUT | SND_JACK_HEADPHONE,
+			       &gcw0_avout_jack);
+	if (ret < 0) {
+		dev_err(codec->dev,
+			"Failed to create headphone jack: %d\n", ret);
+	} else {
+		ret = snd_soc_jack_add_pins(&gcw0_avout_jack,
+					    ARRAY_SIZE(gcw0_avout_jack_pins),
+					    gcw0_avout_jack_pins);
+		if (ret < 0)
+			dev_err(codec->dev,
+				"Failed to add headphone jack pins: %d\n", ret);
+		ret = snd_soc_jack_add_gpios(&gcw0_avout_jack,
+					     ARRAY_SIZE(gcw0_avout_jack_gpios),
+					     gcw0_avout_jack_gpios);
+		if (ret < 0)
+			dev_err(codec->dev,
+				"Failed to add headphone jack GPIO: %d\n", ret);
+	}
 
 	/* set endpoints to default mode */
 	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
