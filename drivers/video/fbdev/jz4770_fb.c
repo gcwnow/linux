@@ -54,8 +54,10 @@
 
 struct jz4760lcd_panel_t {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
-	unsigned int w;		/* Panel Width(in pixel) */
-	unsigned int h;		/* Panel Height(in line) */
+	unsigned int bw;	/* panel background width (in pixels) */
+	unsigned int bh;	/* panel background height (in lines) */
+	unsigned int dw;	/* panel display area width (in pixels) */
+	unsigned int dh;	/* panel display area height (in lines) */
 	unsigned int fclk;	/* frame clk */
 	unsigned int hsw;	/* hsync width, in pclk */
 	unsigned int vsw;	/* vsync width, in line count */
@@ -72,8 +74,8 @@ static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
 	       LCD_CFG_PCP |	/* Pixel clock polarity: falling edge */
 	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
 	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
-	/* w, h, fclk, hsw, vsw, elw, blw, efw, bfw */
-	320, 240, 60, 50, 1, 10, 70, 5, 5,
+	/* bw, bh, dw, dh, fclk, hsw, vsw, elw, blw, efw, bfw */
+	320, 240, 320, 240, 60, 50, 1, 10, 70, 5, 5,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
@@ -222,20 +224,20 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		var->yres = 4;
 
 	if (!allow_downscaling) {
-		if (var->xres > jz_panel->w)
-			var->xres = jz_panel->w;
-		if (var->yres > jz_panel->h)
-			var->yres = jz_panel->h;
+		if (var->xres > jz_panel->dw)
+			var->xres = jz_panel->dw;
+		if (var->yres > jz_panel->dh)
+			var->yres = jz_panel->dh;
 	}
 
 	/* Adjust the input size until we find a valid configuration */
-	for (num = jz_panel->w, denom = var->xres; var->xres <= MAX_XRES &&
+	for (num = jz_panel->dw, denom = var->xres; var->xres <= MAX_XRES &&
 			reduce_fraction(&num, &denom) < 0;
 			denom++, var->xres++);
 	if (var->xres > MAX_XRES)
 		return -EINVAL;
 
-	for (num = jz_panel->h, denom = var->yres; var->yres <= MAX_YRES &&
+	for (num = jz_panel->dh, denom = var->yres; var->yres <= MAX_YRES &&
 			reduce_fraction(&num, &denom) < 0;
 			denom++, var->yres++);
 	if (var->yres > MAX_YRES)
@@ -271,8 +273,8 @@ static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	jzfb->clear_fb = var->bits_per_pixel != fb->var.bits_per_pixel ||
 		var->xres != fb->var.xres || var->yres != fb->var.yres;
 
-	divider = (jz_panel->w + jz_panel->elw + jz_panel->blw)
-		* (jz_panel->h + jz_panel->efw + jz_panel->bfw);
+	divider = (jz_panel->bw + jz_panel->elw + jz_panel->blw)
+		* (jz_panel->bh + jz_panel->efw + jz_panel->bfw);
 	if (var->pixclock) {
 		framerate = var->pixclock / divider;
 		if (framerate > jz_panel->fclk)
@@ -449,7 +451,7 @@ static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 static inline bool scaling_required(struct jzfb *jzfb)
 {
 	struct fb_var_screeninfo *var = &jzfb->fb->var;
-	return var->xres != jz_panel->w || var->yres != jz_panel->h;
+	return var->xres != jz_panel->dw || var->yres != jz_panel->dh;
 }
 
 static void jzfb_ipu_configure(struct jzfb *jzfb,
@@ -457,8 +459,8 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 {
 	struct fb_info *fb = jzfb->fb;
 	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
-	unsigned int outputW = panel->w,
-		     outputH = panel->h,
+	unsigned int outputW = panel->dw,
+		     outputH = panel->dh,
 		     xpos = 0, ypos = 0;
 
 	/* Enable the chip, reset all the registers */
@@ -489,8 +491,8 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 		ctrl |= IPU_CTRL_SPKG_SEL;
 
 	if (scaling_required(jzfb)) {
-		unsigned int numW = panel->w, denomW = fb->var.xres,
-			     numH = panel->h, denomH = fb->var.yres;
+		unsigned int numW = panel->dw, denomW = fb->var.xres,
+			     numH = panel->dh, denomH = fb->var.yres;
 
 		BUG_ON(reduce_fraction(&numW, &denomW) < 0);
 		BUG_ON(reduce_fraction(&numH, &denomH) < 0);
@@ -546,8 +548,8 @@ static void jzfb_ipu_configure(struct jzfb *jzfb,
 	writel(outputW * 4, jzfb->ipu_base + IPU_OUT_STRIDE);
 
 	/* Resize Foreground1 to the output size of the IPU */
-	xpos = (panel->w - outputW) / 2;
-	ypos = (panel->h - outputH) / 2;
+	xpos = (panel->bw - outputW) / 2;
+	ypos = (panel->bh - outputH) / 2;
 	jzfb_foreground_resize(jzfb, xpos, ypos, outputW, outputH);
 
 	dev_dbg(&jzfb->pdev->dev, "Scaling %ux%u to %ux%u\n",
@@ -696,18 +698,18 @@ static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
 
 	/* Enable IPU auto-restart */
 	writel(LCD_IPUR_IPUREN |
-			(panel->blw + panel->w + panel->elw) * panel->vsw / 3,
+			(panel->blw + panel->bw + panel->elw) * panel->vsw / 3,
 			jzfb->base + LCD_IPUR);
 
 	/* Set HT / VT / HDS / HDE / VDS / VDE / HPE / VPE */
-	writel((panel->blw + panel->w + panel->elw) << LCD_VAT_HT_BIT |
-			(panel->bfw + panel->h + panel->efw) << LCD_VAT_VT_BIT,
+	writel((panel->blw + panel->bw + panel->elw) << LCD_VAT_HT_BIT |
+			(panel->bfw + panel->bh + panel->efw) << LCD_VAT_VT_BIT,
 		jzfb->base + LCD_VAT);
 	writel(panel->blw << LCD_DAH_HDS_BIT |
-			(panel->blw + panel->w) << LCD_DAH_HDE_BIT,
+			(panel->blw + panel->bw) << LCD_DAH_HDE_BIT,
 			jzfb->base + LCD_DAH);
 	writel(panel->bfw << LCD_DAV_VDS_BIT |
-			(panel->bfw + panel->h) << LCD_DAV_VDE_BIT,
+			(panel->bfw + panel->bh) << LCD_DAV_VDE_BIT,
 			jzfb->base + LCD_DAV);
 	writel(panel->hsw << LCD_HSYNC_HPE_BIT, jzfb->base + LCD_HSYNC);
 	writel(panel->vsw << LCD_VSYNC_VPE_BIT, jzfb->base + LCD_VSYNC);
@@ -922,8 +924,8 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->var.accel_flags	= FB_ACCELF_TEXT;
 	fb->var.bits_per_pixel = jzfb->bpp;
 
-	fb->var.xres = jz_panel->w;
-	fb->var.yres = jz_panel->h;
+	fb->var.xres = jz_panel->dw;
+	fb->var.yres = jz_panel->dh;
 	fb->var.vmode = FB_VMODE_NONINTERLACED;
 
 	jz4760fb_check_var(&fb->var, fb);
