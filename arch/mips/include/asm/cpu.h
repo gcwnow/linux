@@ -43,6 +43,7 @@
 #define PRID_COMP_NETLOGIC	0x0c0000
 #define PRID_COMP_CAVIUM	0x0d0000
 #define PRID_COMP_INGENIC_JZ4740 0xd00000
+#define PRID_COMP_INGENIC_JZ4780 0xe10000
 
 /*
  * Assigned Processor ID (implementation) values for bits 15:8 of the PRId
@@ -168,7 +169,7 @@
 #define PRID_IMP_CAVIUM_CN70XX 0x9600
 
 /*
- * These are the PRID's for when 23:16 == PRID_COMP_INGENIC_JZ4740
+ * These are the PRID's for when 23:16 == PRID_COMP_INGENIC_*
  */
 
 #define PRID_IMP_JZRISC	       0x0200
