@@ -20,4 +20,26 @@
 		interrupt-parent = <&cpuintc>;
 		interrupts = <2>;
 	};
+
+	ext: ext {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-output-names = "ext";
+	};
+
+	rtc: rtc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+	};
+
+	cgu: jz4740-cgu@0x10000000 {
+		compatible = "ingenic,jz4740-cgu";
+		reg = <0x10000000 0x100>;
+
+		clocks = <&ext>, <&rtc>;
+		clock-names = "ext", "rtc";
+
+		#clock-cells = <1>;
+	};
 };
