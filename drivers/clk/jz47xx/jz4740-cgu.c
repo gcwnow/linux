@@ -263,3 +263,37 @@ void jz4740_clock_udc_enable_auto_suspend(void)
 	writel(clkgr, cgu->base + CGU_REG_CLKGR);
 }
 EXPORT_SYMBOL_GPL(jz4740_clock_udc_enable_auto_suspend);
+
+#define JZ_CLOCK_GATE_UART0	BIT(0)
+#define JZ_CLOCK_GATE_TCU	BIT(1)
+#define JZ_CLOCK_GATE_DMAC	BIT(12)
+
+void jz4740_clock_suspend(void)
+{
+	uint32_t clkgr, cppcr;
+
+	clkgr = readl(cgu->base + CGU_REG_CLKGR);
+	clkgr |= JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0;
+	writel(clkgr, cgu->base + CGU_REG_CLKGR);
+
+	cppcr = readl(cgu->base + CGU_REG_CPPCR);
+	cppcr &= ~BIT(jz4740_cgu_clocks[JZ4740_CLK_PLL].pll.enable_bit);
+	writel(cppcr, cgu->base + CGU_REG_CPPCR);
+}
+
+void jz4740_clock_resume(void)
+{
+	uint32_t clkgr, cppcr;
+
+	cppcr = readl(cgu->base + CGU_REG_CPPCR);
+	cppcr |= BIT(jz4740_cgu_clocks[JZ4740_CLK_PLL].pll.enable_bit);
+	writel(cppcr, cgu->base + CGU_REG_CPPCR);
+
+	do {
+		cppcr = readl(cgu->base + CGU_REG_CPPCR);
+	} while (!(cppcr & BIT(jz4740_cgu_clocks[JZ4740_CLK_PLL].pll.stable_bit)));
+
+	clkgr = readl(cgu->base + CGU_REG_CLKGR);
+	clkgr &= ~(JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0);
+	writel(clkgr, cgu->base + CGU_REG_CLKGR);
+}
