@@ -83,7 +83,14 @@ arch_initcall(populate_machine);
 
 const char *get_system_type(void)
 {
-	return "JZ4740";
+	switch (boot_cpu_data.processor_id & PRID_COMP_MASK) {
+	case PRID_COMP_INGENIC_JZ4780:
+		return "JZ4780";
+
+	case PRID_COMP_INGENIC_JZ4740:
+	default:
+		return "JZ4740";
+	}
 }
 
 void __init arch_init_irq(void)
