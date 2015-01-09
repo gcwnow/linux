@@ -22,6 +22,9 @@
 #ifdef CONFIG_MACH_JZ4740
 # define NR_INTC_IRQS	32
 #endif
+#ifdef CONFIG_MACH_JZ4780
+# define NR_INTC_IRQS	64
+#endif
 
 /* 1st-level interrupts */
 #define JZ4740_IRQ(x)		(JZ4740_IRQ_BASE + (x))
@@ -47,6 +50,8 @@
 #define JZ4740_IRQ_GPIO0	JZ4740_IRQ(28)
 #define JZ4740_IRQ_IPU		JZ4740_IRQ(29)
 #define JZ4740_IRQ_LCD		JZ4740_IRQ(30)
+
+#define JZ4780_IRQ_TCU2		JZ4740_IRQ(25)
 
 /* 2nd-level interrupts */
 #define JZ4740_IRQ_DMA(x)	(JZ4740_IRQ(NR_INTC_IRQS) + (x))
