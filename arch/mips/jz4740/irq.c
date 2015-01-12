@@ -87,6 +87,7 @@ static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chi
 {
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
+	struct irq_domain *domain;
 	int parent_irq;
 	unsigned i;
 
@@ -119,6 +120,11 @@ static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chi
 
 		irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, IRQ_NOPROBE | IRQ_LEVEL);
 	}
+
+	domain = irq_domain_add_legacy(node, num_chips * 32, JZ4740_IRQ_BASE, 0,
+				       &irq_domain_simple_ops, NULL);
+	if (!domain)
+		pr_warn("unable to register IRQ domain\n");
 
 	setup_irq(parent_irq, &jz4740_cascade_action);
 	return 0;
