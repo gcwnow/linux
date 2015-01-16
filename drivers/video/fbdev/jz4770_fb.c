@@ -201,7 +201,8 @@ static int reduce_fraction(unsigned int *num, unsigned int *denom)
 {
 	unsigned long d = gcd(*num, *denom);
 
-	if (*num > 32 * d)
+	/* The scaling table has only 31 entries */
+	if (*num > 31 * d)
 		return -EINVAL;
 
 	*num /= d;
