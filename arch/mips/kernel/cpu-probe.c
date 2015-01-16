@@ -1335,6 +1335,7 @@ void cpu_probe(void)
 		cpu_probe_cavium(c, cpu);
 		break;
 	case PRID_COMP_INGENIC_JZ4740:
+	case PRID_COMP_INGENIC_JZ4770:
 	case PRID_COMP_INGENIC_JZ4780:
 		cpu_probe_ingenic(c, cpu);
 		break;
