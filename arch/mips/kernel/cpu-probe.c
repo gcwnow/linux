@@ -1265,9 +1265,7 @@ void cpu_probe(void)
 		cpu_probe_cavium(c, cpu);
 		break;
 	case PRID_COMP_INGENIC:
-	case 0xd80000: // used on fpga
-	case 0xd90000:
-	case 0xd10000: //falcon
+	case PRID_COMP_INGENIC_4770:
 		cpu_probe_ingenic(c, cpu);
 		break;
 	case PRID_COMP_NETLOGIC:
