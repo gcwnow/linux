@@ -52,7 +52,7 @@
 #define MAX_XRES 640
 #define MAX_YRES 480
 
-struct jz4760lcd_panel_t {
+struct jz_panel {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
 	unsigned int bw;	/* panel background width (in pixels) */
 	unsigned int bh;	/* panel background height (in lines) */
@@ -67,20 +67,20 @@ struct jz4760lcd_panel_t {
 	unsigned int bfw;	/* begin of frame, in line count */
 };
 
-static const struct jz4760lcd_panel_t jz4760_lcd_panel = {
-	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER | /* Underrun recover */
-	       LCD_CFG_MODE_GENERIC_TFT | /* General TFT panel */
-	       LCD_CFG_MODE_TFT_24BIT | 	/* output 24bpp */
-	       LCD_CFG_PCP |	/* Pixel clock polarity: falling edge */
-	       LCD_CFG_HSP | 	/* Hsync polarity: active low */
-	       LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
+static const struct jz_panel jz4770_lcd_panel = {
+	.cfg = LCD_CFG_LCDPIN_LCD | LCD_CFG_RECOVER |	/* Underrun recover */
+		LCD_CFG_MODE_GENERIC_TFT |	/* General TFT panel */
+		LCD_CFG_MODE_TFT_24BIT |	/* output 24bpp */
+		LCD_CFG_PCP |	/* Pixel clock polarity: falling edge */
+		LCD_CFG_HSP |	/* Hsync polarity: active low */
+		LCD_CFG_VSP,	/* Vsync polarity: leading edge is falling edge */
 	/* bw, bh, dw, dh, fclk, hsw, vsw, elw, blw, efw, bfw */
 	320, 240, 320, 240, 60, 50, 1, 10, 70, 5, 5,
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
 /* default output to lcd panel */
-static const struct jz4760lcd_panel_t *jz_panel = &jz4760_lcd_panel;
+static const struct jz_panel *jz_panel = &jz4770_lcd_panel;
 
 struct jzfb {
 	struct fb_info *fb;
@@ -144,7 +144,7 @@ static void ctrl_disable(struct jzfb *jzfb)
 	writel(val & ~LCD_STATE_LDD, jzfb->base + LCD_STATE);
 }
 
-static int jz4760fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+static int jzfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 			      u_int transp, struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
@@ -163,7 +163,7 @@ static int jz4760fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 }
 
 /* Use mmap /dev/fb can only get a non-cacheable Virtual Address. */
-static int jz4760fb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
+static int jzfb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
 {
 	unsigned long start;
 	unsigned long off;
@@ -212,7 +212,7 @@ static int reduce_fraction(unsigned int *num, unsigned int *denom)
 
 /* checks var and eventually tweaks it to something supported,
  * DO NOT MODIFY PAR */
-static int jz4760fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
+static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
 	unsigned int num, denom;
@@ -455,8 +455,7 @@ static inline bool scaling_required(struct jzfb *jzfb)
 	return var->xres != jz_panel->dw || var->yres != jz_panel->dh;
 }
 
-static void jzfb_ipu_configure(struct jzfb *jzfb,
-		const struct jz4760lcd_panel_t *panel)
+static void jzfb_ipu_configure(struct jzfb *jzfb, const struct jz_panel *panel)
 {
 	struct fb_info *fb = jzfb->fb;
 	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
@@ -579,7 +578,7 @@ static void jzfb_power_down(struct jzfb *jzfb)
 /*
  * (Un)blank the display.
  */
-static int jz4760fb_blank(int blank_mode, struct fb_info *info)
+static int jzfb_blank(int blank_mode, struct fb_info *info)
 {
 	struct jzfb *jzfb = info->par;
 
@@ -602,7 +601,7 @@ static int jz4760fb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
-static int jz4760fb_pan_display(struct fb_var_screeninfo *var,
+static int jzfb_pan_display(struct fb_var_screeninfo *var,
 				struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
@@ -645,7 +644,7 @@ static inline unsigned int words_per_line(unsigned int width, unsigned int bpp)
 /*
  * Map screen memory
  */
-static int jz4760fb_map_smem(struct fb_info *fb)
+static int jzfb_map_smem(struct fb_info *fb)
 {
 	/* Compute space for max res at 32bpp, triple buffered. */
 	unsigned int size = PAGE_ALIGN(MAX_XRES * MAX_YRES * 4 * 3);
@@ -677,7 +676,7 @@ static int jz4760fb_map_smem(struct fb_info *fb)
 	return 0;
 }
 
-static void jz4760fb_unmap_smem(struct fb_info *fb)
+static void jzfb_unmap_smem(struct fb_info *fb)
 {
 	if (lcd_frame1) {
 		void *end = lcd_frame1 + fb->fix.smem_len;
@@ -691,8 +690,7 @@ static void jz4760fb_unmap_smem(struct fb_info *fb)
 	}
 }
 
-static void jz4760fb_set_panel_mode(struct jzfb *jzfb,
-			const struct jz4760lcd_panel_t *panel)
+static void jzfb_set_panel_mode(struct jzfb *jzfb, const struct jz_panel *panel)
 {
 	/* Configure LCDC */
 	writel(panel->cfg, jzfb->base + LCD_CFG);
@@ -738,7 +736,7 @@ static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 }
 
 /* set the video mode according to info->var */
-static int jz4760fb_set_par(struct fb_info *info)
+static int jzfb_set_par(struct fb_info *info)
 {
 	struct fb_var_screeninfo *var = &info->var;
 	struct fb_fix_screeninfo *fix = &info->fix;
@@ -756,7 +754,7 @@ static int jz4760fb_set_par(struct fb_info *info)
 	jzfb->bpp = var->bits_per_pixel;
 	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
 
-	jz4760fb_set_panel_mode(jzfb, jz_panel);
+	jzfb_set_panel_mode(jzfb, jz_panel);
 	jzfb_ipu_configure(jzfb, jz_panel);
 
 	/* Clear the framebuffer to avoid artifacts */
@@ -788,13 +786,13 @@ static void jzfb_ipu_reset(struct jzfb *jzfb)
 	jzfb_ipu_disable(jzfb);
 	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
 
-	jz4760fb_set_panel_mode(jzfb, jz_panel);
+	jzfb_set_panel_mode(jzfb, jz_panel);
 	jzfb_ipu_configure(jzfb, jz_panel);
 	jzfb_ipu_enable(jzfb);
 	ctrl_enable(jzfb);
 }
 
-static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
+static int jzfb_ioctl(struct fb_info *info, unsigned int cmd,
 			  unsigned long arg)
 {
 	struct jzfb *jzfb = info->par;
@@ -807,21 +805,21 @@ static int jz4760fb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 }
 
-static struct fb_ops jz4760fb_ops = {
+static struct fb_ops jzfb_ops = {
 	.owner			= THIS_MODULE,
-	.fb_setcolreg		= jz4760fb_setcolreg,
-	.fb_check_var 		= jz4760fb_check_var,
-	.fb_set_par 		= jz4760fb_set_par,
-	.fb_blank		= jz4760fb_blank,
-	.fb_pan_display		= jz4760fb_pan_display,
+	.fb_setcolreg		= jzfb_setcolreg,
+	.fb_check_var		= jzfb_check_var,
+	.fb_set_par		= jzfb_set_par,
+	.fb_blank		= jzfb_blank,
+	.fb_pan_display		= jzfb_pan_display,
 	.fb_fillrect		= sys_fillrect,
 	.fb_copyarea		= sys_copyarea,
 	.fb_imageblit		= sys_imageblit,
-	.fb_mmap		= jz4760fb_mmap,
-	.fb_ioctl		= jz4760fb_ioctl,
+	.fb_mmap		= jzfb_mmap,
+	.fb_ioctl		= jzfb_ioctl,
 };
 
-static irqreturn_t jz4760fb_interrupt_handler(int irq, void *dev_id)
+static irqreturn_t jzfb_interrupt_handler(int irq, void *dev_id)
 {
 	struct jzfb *jzfb = dev_id;
 
@@ -873,7 +871,7 @@ static ssize_t keep_aspect_ratio_store(struct device *dev,
 static DEVICE_ATTR_RW(keep_aspect_ratio);
 static DEVICE_BOOL_ATTR(allow_downscaling, 0644, allow_downscaling);
 
-static int jz4760_fb_probe(struct platform_device *pdev)
+static int jzfb_probe(struct platform_device *pdev)
 {
 	struct jzfb *jzfb;
 	struct fb_info *fb;
@@ -929,15 +927,15 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 	fb->var.yres = jz_panel->dh;
 	fb->var.vmode = FB_VMODE_NONINTERLACED;
 
-	jz4760fb_check_var(&fb->var, fb);
+	jzfb_check_var(&fb->var, fb);
 
-	fb->fbops		= &jz4760fb_ops;
+	fb->fbops		= &jzfb_ops;
 	fb->flags		= FBINFO_FLAG_DEFAULT;
 
 	fb->pseudo_palette	= jzfb->pseudo_palette;
 	INIT_LIST_HEAD(&fb->modelist);
 
-	ret = jz4760fb_map_smem(fb);
+	ret = jzfb_map_smem(fb);
 	if (ret)
 		goto err_release_fb;
 
@@ -956,7 +954,7 @@ static int jz4760_fb_probe(struct platform_device *pdev)
 		goto err_unmap;
 	}
 
-	if (request_irq(IRQ_IPU, jz4760fb_interrupt_handler, 0,
+	if (request_irq(IRQ_IPU, jzfb_interrupt_handler, 0,
 				"ipu", jzfb)) {
 		dev_err(&pdev->dev, "Failed to request IRQ.\n");
 		ret = -EBUSY;
@@ -1013,13 +1011,13 @@ err_remove_allow_downscaling_file:
 err_remove_keep_aspect_ratio_file:
 	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 err_unmap:
-	jz4760fb_unmap_smem(fb);
+	jzfb_unmap_smem(fb);
 err_release_fb:
 	framebuffer_release(fb);
 	return ret;
 }
 
-static int jz4760_fb_remove(struct platform_device *pdev)
+static int jzfb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
 
@@ -1033,7 +1031,7 @@ static int jz4760_fb_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
-static int jz4760_fb_suspend(struct device *dev)
+static int jzfb_suspend(struct device *dev)
 {
 	struct jzfb *jzfb = dev_get_drvdata(dev);
 
@@ -1045,7 +1043,7 @@ static int jz4760_fb_suspend(struct device *dev)
 	return 0;
 }
 
-static int jz4760_fb_resume(struct device *dev)
+static int jzfb_resume(struct device *dev)
 {
 	struct jzfb *jzfb = dev_get_drvdata(dev);
 
@@ -1058,19 +1056,19 @@ static int jz4760_fb_resume(struct device *dev)
 }
 #endif /* CONFIG_PM_SLEEP */
 
-static SIMPLE_DEV_PM_OPS(jz4760_fb_pm_ops, jz4760_fb_suspend, jz4760_fb_resume);
+static SIMPLE_DEV_PM_OPS(jzfb_pm_ops, jzfb_suspend, jzfb_resume);
 
-static struct platform_driver jz4760_fb_driver = {
-	.probe	= jz4760_fb_probe,
-	.remove = jz4760_fb_remove,
+static struct platform_driver jzfb_driver = {
+	.probe	= jzfb_probe,
+	.remove = jzfb_remove,
 	.driver = {
 		.name  = "jz-lcd",
 		.owner = THIS_MODULE,
-		.pm    = &jz4760_fb_pm_ops,
+		.pm    = &jzfb_pm_ops,
 	},
 };
 
-module_platform_driver(jz4760_fb_driver);
+module_platform_driver(jzfb_driver);
 
 MODULE_DESCRIPTION("Jz4770 LCD frame buffer driver");
 MODULE_AUTHOR("Maarten ter Huurne <maarten@treewalker.org>");
