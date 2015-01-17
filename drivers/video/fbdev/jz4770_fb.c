@@ -79,9 +79,6 @@ static const struct jz_panel jz4770_lcd_panel = {
 	/* Note: 432000000 / 72 = 60 * 400 * 250, so we get exactly 60 Hz. */
 };
 
-/* default output to lcd panel */
-static const struct jz_panel *jz_panel = &jz4770_lcd_panel;
-
 struct jzfb {
 	struct fb_info *fb;
 	struct platform_device *pdev;
@@ -108,6 +105,8 @@ struct jzfb {
 
 	void __iomem *base;
 	void __iomem *ipu_base;
+
+	const struct jz_panel *panel;
 };
 
 static void *lcd_frame1;
@@ -215,6 +214,7 @@ static int reduce_fraction(unsigned int *num, unsigned int *denom)
 static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 {
 	struct jzfb *jzfb = fb->par;
+	const struct jz_panel *panel = jzfb->panel;
 	unsigned int num, denom;
 	unsigned int framerate, divider;
 
@@ -225,20 +225,20 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		var->yres = 4;
 
 	if (!allow_downscaling) {
-		if (var->xres > jz_panel->dw)
-			var->xres = jz_panel->dw;
-		if (var->yres > jz_panel->dh)
-			var->yres = jz_panel->dh;
+		if (var->xres > panel->dw)
+			var->xres = panel->dw;
+		if (var->yres > panel->dh)
+			var->yres = panel->dh;
 	}
 
 	/* Adjust the input size until we find a valid configuration */
-	for (num = jz_panel->dw, denom = var->xres; var->xres <= MAX_XRES &&
+	for (num = panel->dw, denom = var->xres; var->xres <= MAX_XRES &&
 			reduce_fraction(&num, &denom) < 0;
 			denom++, var->xres++);
 	if (var->xres > MAX_XRES)
 		return -EINVAL;
 
-	for (num = jz_panel->dh, denom = var->yres; var->yres <= MAX_YRES &&
+	for (num = panel->dh, denom = var->yres; var->yres <= MAX_YRES &&
 			reduce_fraction(&num, &denom) < 0;
 			denom++, var->yres++);
 	if (var->yres > MAX_YRES)
@@ -274,14 +274,14 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	jzfb->clear_fb = var->bits_per_pixel != fb->var.bits_per_pixel ||
 		var->xres != fb->var.xres || var->yres != fb->var.yres;
 
-	divider = (jz_panel->bw + jz_panel->elw + jz_panel->blw)
-		* (jz_panel->bh + jz_panel->efw + jz_panel->bfw);
+	divider = (panel->bw + panel->elw + panel->blw)
+		* (panel->bh + panel->efw + panel->bfw);
 	if (var->pixclock) {
 		framerate = var->pixclock / divider;
-		if (framerate > jz_panel->fclk)
-			framerate = jz_panel->fclk;
+		if (framerate > panel->fclk)
+			framerate = panel->fclk;
 	} else {
-		framerate = jz_panel->fclk;
+		framerate = panel->fclk;
 	}
 
 	var->pixclock = framerate * divider;
@@ -452,11 +452,12 @@ static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 static inline bool scaling_required(struct jzfb *jzfb)
 {
 	struct fb_var_screeninfo *var = &jzfb->fb->var;
-	return var->xres != jz_panel->dw || var->yres != jz_panel->dh;
+	return var->xres != jzfb->panel->dw || var->yres != jzfb->panel->dh;
 }
 
-static void jzfb_ipu_configure(struct jzfb *jzfb, const struct jz_panel *panel)
+static void jzfb_ipu_configure(struct jzfb *jzfb)
 {
+	const struct jz_panel *panel = jzfb->panel;
 	struct fb_info *fb = jzfb->fb;
 	u32 ctrl, coef_index = 0, size, format = 2 << IPU_D_FMT_OUT_FMT_BIT;
 	unsigned int outputW = panel->dw,
@@ -690,8 +691,10 @@ static void jzfb_unmap_smem(struct fb_info *fb)
 	}
 }
 
-static void jzfb_set_panel_mode(struct jzfb *jzfb, const struct jz_panel *panel)
+static void jzfb_set_panel_mode(struct jzfb *jzfb)
 {
+	const struct jz_panel *panel = jzfb->panel;
+
 	/* Configure LCDC */
 	writel(panel->cfg, jzfb->base + LCD_CFG);
 
@@ -754,8 +757,8 @@ static int jzfb_set_par(struct fb_info *info)
 	jzfb->bpp = var->bits_per_pixel;
 	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
 
-	jzfb_set_panel_mode(jzfb, jz_panel);
-	jzfb_ipu_configure(jzfb, jz_panel);
+	jzfb_set_panel_mode(jzfb);
+	jzfb_ipu_configure(jzfb);
 
 	/* Clear the framebuffer to avoid artifacts */
 	if (jzfb->clear_fb) {
@@ -786,8 +789,8 @@ static void jzfb_ipu_reset(struct jzfb *jzfb)
 	jzfb_ipu_disable(jzfb);
 	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
 
-	jzfb_set_panel_mode(jzfb, jz_panel);
-	jzfb_ipu_configure(jzfb, jz_panel);
+	jzfb_set_panel_mode(jzfb);
+	jzfb_ipu_configure(jzfb);
 	jzfb_ipu_enable(jzfb);
 	ctrl_enable(jzfb);
 }
@@ -860,7 +863,7 @@ static ssize_t keep_aspect_ratio_store(struct device *dev,
 	if (jzfb->is_enabled && scaling_required(jzfb)) {
 		ctrl_disable(jzfb);
 		jzfb_ipu_disable(jzfb);
-		jzfb_ipu_configure(jzfb, jz_panel);
+		jzfb_ipu_configure(jzfb);
 		jzfb_ipu_enable(jzfb);
 		jzfb_lcdc_enable(jzfb);
 	}
@@ -902,6 +905,7 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_release_fb;
 	}
 
+	jzfb->panel = &jz4770_lcd_panel;
 	jzfb->pdev = pdev;
 	jzfb->bpp = 32;
 	init_waitqueue_head(&jzfb->wait_vsync);
@@ -923,8 +927,8 @@ static int jzfb_probe(struct platform_device *pdev)
 	fb->var.accel_flags	= FB_ACCELF_TEXT;
 	fb->var.bits_per_pixel = jzfb->bpp;
 
-	fb->var.xres = jz_panel->dw;
-	fb->var.yres = jz_panel->dh;
+	fb->var.xres = jzfb->panel->dw;
+	fb->var.yres = jzfb->panel->dh;
 	fb->var.vmode = FB_VMODE_NONINTERLACED;
 
 	jzfb_check_var(&fb->var, fb);
