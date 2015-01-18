@@ -20,6 +20,12 @@
 #ifndef __JZ4740_SERIAL_H__
 #define __JZ4740_SERIAL_H__
 
-#define BASE_BAUD (12000000 / 16)
+#ifdef CONFIG_MACH_JZ4740
+# define BASE_BAUD (12000000 / 16)
+#endif
+
+#ifdef CONFIG_MACH_JZ4780
+# define BASE_BAUD (48000000 / 16)
+#endif
 
 #endif /* __JZ4740_SERIAL_H__ */
