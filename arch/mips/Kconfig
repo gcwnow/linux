@@ -292,7 +292,7 @@ config MACH_JZ4740
 	select LIBFDT
 
 config MACH_JZ4780
-	bool
+	bool "Ingenic JZ4780 based machines"
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_32BIT_KERNEL
 	select SYS_SUPPORTS_LITTLE_ENDIAN
