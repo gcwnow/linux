@@ -283,6 +283,8 @@ config MACH_JZ4770
 	select JZSOC
 	select JZRISC
 	select PINCTRL
+	select BUILTIN_DTB
+	select USE_OF
 	select CPU_SUPPORTS_CPUFREQ
 	select MIPS_EXTERNAL_TIMER
 
