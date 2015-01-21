@@ -19,6 +19,7 @@
 #include <linux/gpio.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
 
@@ -221,10 +222,18 @@ static int jz4740_pwm_remove(struct platform_device *pdev)
 	return pwmchip_remove(&jz4740->chip);
 }
 
+static const struct of_device_id jz4740_pwm_dt_ids[] = {
+	{ .compatible = "ingenic,jz4740-pwm", .data = NULL, },
+	{ .compatible = "ingenic,jz4770-pwm", .data = NULL, },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, jz4740_pwm_dt_ids);
+
 static struct platform_driver jz4740_pwm_driver = {
 	.driver = {
 		.name = "jz4740-pwm",
 		.owner = THIS_MODULE,
+		.of_match_table = jz4740_pwm_dt_ids,
 	},
 	.probe = jz4740_pwm_probe,
 	.remove = jz4740_pwm_remove,
