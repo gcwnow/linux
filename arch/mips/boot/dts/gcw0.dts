@@ -1,0 +1,8 @@
+/dts-v1/;
+
+#include "jz4770.dtsi"
+
+/ {
+	compatible = "gcw,zero", "ingenic,jz4770";
+
+};

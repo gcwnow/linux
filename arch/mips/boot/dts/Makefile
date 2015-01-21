@@ -10,6 +10,7 @@ dtb-$(CONFIG_DTB_RT3883_EVAL)		+= rt3883_eval.dtb
 dtb-$(CONFIG_DTB_MT7620A_EVAL)		+= mt7620a_eval.dtb
 dtb-$(CONFIG_JZ4740_QI_LB60)		+= qi_lb60.dtb
 dtb-$(CONFIG_JZ4780_CI20)		+= ci20.dtb
+dtb-$(CONFIG_JZ4770_GCW0)		+= gcw0.dtb
 dtb-$(CONFIG_MIPS_SEAD3)		+= sead3.dtb
 
 obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
