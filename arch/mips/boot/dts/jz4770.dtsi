@@ -9,4 +9,16 @@
 		interrupt-controller;
 		compatible = "mti,cpu-interrupt-controller";
 	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <>;
+
+		pwm: jz4740-pwm@10002010 {
+			compatible = "ingenic,jz4770-pwm";
+			reg = <0x10002010 0x4B>;
+		};
+	};
 };
