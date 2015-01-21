@@ -329,6 +329,13 @@ static const struct serial8250_config uart_config[] = {
 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
 		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
 	},
+	[PORT_INGENIC_JZ4780] = {
+		.name		= "Ingenic jz4780 UART",
+		.fifo_size	= 64,
+		.tx_loadsz	= 32,
+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+		.flags		= UART_CAP_FIFO | UART_CAP_RTOIE,
+	},
 };
 
 /* Uart divisor latch read */
@@ -440,6 +447,20 @@ static void io_serial_out(struct uart_port *p, int offset, int value)
 	outb(value, p->iobase + offset);
 }
 
+static void jz47xx_serial_out(struct uart_port *p, int offset, int value)
+{
+	switch (offset) {
+	case UART_FCR:
+		value |= 0x10; /* Enable uart module */
+		break;
+	default:
+		break;
+	}
+
+	offset = offset << p->regshift;
+	writeb(value, p->membase + offset);
+}
+
 static int serial8250_default_handle_irq(struct uart_port *port);
 static int exar_handle_irq(struct uart_port *port);
 
@@ -458,7 +479,10 @@ static void set_io_from_upio(struct uart_port *p)
 
 	case UPIO_MEM:
 		p->serial_in = mem_serial_in;
-		p->serial_out = mem_serial_out;
+		if (p->type == PORT_INGENIC_JZ4780)
+			p->serial_out = jz47xx_serial_out;
+		else
+			p->serial_out = mem_serial_out;
 		break;
 
 	case UPIO_MEM32:

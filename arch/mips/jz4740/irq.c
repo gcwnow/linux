@@ -18,6 +18,7 @@
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
+#include <linux/of_irq.h>
 #include <linux/timex.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
@@ -26,27 +27,33 @@
 #include <linux/seq_file.h>
 
 #include <asm/io.h>
-#include <asm/mipsregs.h>
-#include <asm/irq_cpu.h>
 
 #include <asm/mach-jz4740/base.h>
 
+#include "../../drivers/irqchip/irqchip.h"
+
 static void __iomem *jz_intc_base;
+static unsigned jz_num_chips;
 
 #define JZ_REG_INTC_STATUS	0x00
 #define JZ_REG_INTC_MASK	0x04
 #define JZ_REG_INTC_SET_MASK	0x08
 #define JZ_REG_INTC_CLEAR_MASK	0x0c
 #define JZ_REG_INTC_PENDING	0x10
+#define CHIP_SIZE		0x20
 
 static irqreturn_t jz4740_cascade(int irq, void *data)
 {
 	uint32_t irq_reg;
+	unsigned i;
 
-	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
+	for (i = 0; i < jz_num_chips; i++) {
+		irq_reg = readl(jz_intc_base + (i * CHIP_SIZE) + JZ_REG_INTC_PENDING);
+		if (!irq_reg)
+			continue;
 
-	if (irq_reg)
-		generic_handle_irq(__fls(irq_reg) + JZ4740_IRQ_BASE);
+		generic_handle_irq(__fls(irq_reg) + (i * 32) + JZ4740_IRQ_BASE);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -76,48 +83,66 @@ static struct irqaction jz4740_cascade_action = {
 	.name = "JZ4740 cascade interrupt",
 };
 
-void __init arch_init_irq(void)
+static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chips)
 {
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
+	struct irq_domain *domain;
+	int parent_irq;
+	unsigned i;
 
-	mips_cpu_irq_init();
+	parent_irq = irq_of_parse_and_map(node, 0);
+	if (!parent_irq)
+		return -EINVAL;
 
-	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR, 0x14);
+	jz_num_chips = num_chips;
+	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR,
+			       ((num_chips - 1) * CHIP_SIZE) + 0x14);
 
-	/* Mask all irqs */
-	writel(0xffffffff, jz_intc_base + JZ_REG_INTC_SET_MASK);
+	for (i = 0; i < num_chips; i++) {
+		/* Mask all irqs */
+		writel(0xffffffff, jz_intc_base + JZ_REG_INTC_SET_MASK);
 
-	gc = irq_alloc_generic_chip("INTC", 1, JZ4740_IRQ_BASE, jz_intc_base,
-		handle_level_irq);
+		gc = irq_alloc_generic_chip("INTC", 1, JZ4740_IRQ_BASE + (i * 32),
+					    jz_intc_base + (i * CHIP_SIZE), handle_level_irq);
 
-	gc->wake_enabled = IRQ_MSK(32);
+		gc->wake_enabled = IRQ_MSK(32);
 
-	ct = gc->chip_types;
-	ct->regs.enable = JZ_REG_INTC_CLEAR_MASK;
-	ct->regs.disable = JZ_REG_INTC_SET_MASK;
-	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
-	ct->chip.irq_mask = irq_gc_mask_disable_reg;
-	ct->chip.irq_mask_ack = irq_gc_mask_disable_reg;
-	ct->chip.irq_set_wake = irq_gc_set_wake;
-	ct->chip.irq_suspend = jz4740_irq_suspend;
-	ct->chip.irq_resume = jz4740_irq_resume;
+		ct = gc->chip_types;
+		ct->regs.enable = JZ_REG_INTC_CLEAR_MASK;
+		ct->regs.disable = JZ_REG_INTC_SET_MASK;
+		ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
+		ct->chip.irq_mask = irq_gc_mask_disable_reg;
+		ct->chip.irq_mask_ack = irq_gc_mask_disable_reg;
+		ct->chip.irq_set_wake = irq_gc_set_wake;
+		ct->chip.irq_suspend = jz4740_irq_suspend;
+		ct->chip.irq_resume = jz4740_irq_resume;
 
-	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, IRQ_NOPROBE | IRQ_LEVEL);
+		irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, IRQ_NOPROBE | IRQ_LEVEL);
+	}
 
-	setup_irq(2, &jz4740_cascade_action);
+	domain = irq_domain_add_legacy(node, num_chips * 32, JZ4740_IRQ_BASE, 0,
+				       &irq_domain_simple_ops, NULL);
+	if (!domain)
+		pr_warn("unable to register IRQ domain\n");
+
+	setup_irq(parent_irq, &jz4740_cascade_action);
+	return 0;
 }
 
-asmlinkage void plat_irq_dispatch(void)
+static int __init jz4740_intc_of_init(struct device_node *node,
+	struct device_node *parent)
 {
-	unsigned int pending = read_c0_status() & read_c0_cause() & ST0_IM;
-	if (pending & STATUSF_IP2)
-		do_IRQ(2);
-	else if (pending & STATUSF_IP3)
-		do_IRQ(3);
-	else
-		spurious_interrupt();
+	return jz47xx_intc_of_init(node, 1);
 }
+IRQCHIP_DECLARE(jz4740_intc, "ingenic,jz4740-intc", jz4740_intc_of_init);
+
+static int __init jz4780_intc_of_init(struct device_node *node,
+	struct device_node *parent)
+{
+	return jz47xx_intc_of_init(node, 2);
+}
+IRQCHIP_DECLARE(jz4780_intc, "ingenic,jz4780-intc", jz4780_intc_of_init);
 
 #ifdef CONFIG_DEBUG_FS
 

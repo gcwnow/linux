@@ -1266,6 +1266,7 @@ void cpu_probe(void)
 		break;
 	case PRID_COMP_INGENIC:
 	case PRID_COMP_INGENIC_4770:
+	case PRID_COMP_INGENIC_4780:
 		cpu_probe_ingenic(c, cpu);
 		break;
 	case PRID_COMP_NETLOGIC:
