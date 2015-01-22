@@ -16,6 +16,7 @@
 #include <asm/io.h>
 #include <linux/mm.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/pinctrl/pinconf.h>
 #include <linux/pinctrl/pinmux.h>
@@ -773,10 +774,17 @@ static int jz4770_pinctrl_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id jz4770_pinctrl_dt_ids[] = {
+	{ .compatible = "ingenic,jz4770-pinctrl", .data = NULL, },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, jz4770_pinctrl_dt_ids);
+
 static struct platform_driver jz4770_pinctrl_driver = {
 	.driver = {
 		.name = "jz4770-pinctrl",
 		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(jz4770_pinctrl_dt_ids),
 	},
 	.probe =  jz4770_pinctrl_probe,
 	.remove = jz4770_pinctrl_remove,
