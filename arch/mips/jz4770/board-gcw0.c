@@ -722,21 +722,21 @@ static void __init board_gpio_setup(void)
 
 static struct pinctrl_map pin_map[] __initdata = {
 	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", "msc0_4bit", "msc0"),
+			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", "msc1_4bit", "msc1"),
+			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
 	/* pwm1: LCD backlight */
 	PIN_MAP_MUX_GROUP("10002010.jz4740-pwm", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", NULL, "pwm1"),
+			  "10010000.jz4770-pinctrl", NULL, "pwm1"),
 	/* pwm4: rumble motor */
 	PIN_MAP_MUX_GROUP("10002010.jz4740-pwm", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", NULL, "pwm4"),
+			  "10010000.jz4770-pinctrl", NULL, "pwm4"),
 	PIN_MAP_MUX_GROUP("musb-jz.0", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", NULL, "otg"),
+			  "10010000.jz4770-pinctrl", NULL, "otg"),
 	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_DEFAULT,
-			  "jz4770-pinctrl", "lcd_rgb888", "lcd"),
+			  "10010000.jz4770-pinctrl", "lcd_rgb888", "lcd"),
 	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_SLEEP,
-			  "jz4770-pinctrl", "no_pins", "lcd"),
+			  "10010000.jz4770-pinctrl", "no_pins", "lcd"),
 };
 
 static void __init board_init_pins(void)
