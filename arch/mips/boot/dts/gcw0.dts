@@ -5,4 +5,15 @@
 / {
 	compatible = "gcw,zero", "ingenic,jz4770";
 
+	board {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges = <>;
+
+		rumble {
+			compatible = "pwm-haptic";
+			pwms = <&pwm 4 2000000 0>;
+		};
+	};
 };

@@ -669,12 +669,6 @@ static struct platform_device gcw0_joystick_device = {
 	},
 };
 
-/* Rumble device */
-static struct platform_device gcw0_haptic_device = {
-	.name = "pwm-haptic",
-	.id = -1,
-};
-
 
 /* Device registration */
 
@@ -706,7 +700,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_rfkill_device,
 	&gcw0_joystick_device,
 	&jz4770_wdt_device,
-	&gcw0_haptic_device,
 };
 
 static int __init gcw0_init_platform_devices(void)
@@ -769,8 +762,6 @@ static struct pinctrl_map pin_map[] __initdata = {
 static struct pwm_lookup pwm_lookup[] = {
 	PWM_LOOKUP("10002010.jz4740-pwm", 1, "pwm-backlight", NULL,
 		   40000, PWM_POLARITY_INVERSED),
-	PWM_LOOKUP("10002010.jz4740-pwm", 4, "pwm-haptic", NULL,
-		   2000000, PWM_POLARITY_NORMAL),
 };
 
 static void __init board_init_pins(void)
