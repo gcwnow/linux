@@ -19,6 +19,7 @@
 		pwm: jz4740-pwm@10002010 {
 			compatible = "ingenic,jz4770-pwm";
 			reg = <0x10002010 0x4B>;
+			#pwm-cells = <3>;
 		};
 	};
 };
