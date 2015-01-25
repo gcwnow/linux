@@ -26,8 +26,6 @@
 #include <linux/gpio_keys.h>
 #include <linux/leds.h>
 #include <linux/platform_device.h>
-#include <linux/pwm.h>
-#include <linux/pwm_backlight.h>
 
 #include <asm/cpu.h>
 #include <asm/bootinfo.h>
@@ -406,23 +404,6 @@ static struct platform_device gcw0_i2c4_gpio_device = {
 };
 
 
-/* LCD backlight */
-
-static struct platform_pwm_backlight_data gcw0_backlight_pdata = {
-	.max_brightness = 255,
-	.dft_brightness = 145,
-	.pwm_period_ns = 40000, /* 25 kHz: outside human hearing range */
-};
-
-static struct platform_device gcw0_backlight_device = {
-	.name = "pwm-backlight",
-	.id = -1,
-	.dev = {
-		.platform_data = &gcw0_backlight_pdata,
-	},
-};
-
-
 /* LCD panel */
 
 static struct platform_device gcw0_lcd_device;
@@ -688,7 +669,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_adc_device,
 	&jz4770_rtc_device,
 	&gcw0_gpio_keys_device,
-	&gcw0_backlight_device,
 	&gcw0_lcd_device,
 	&gcw0_audio_device,
 	&jz4770_msc0_device,
@@ -759,16 +739,9 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "jz4770-pinctrl", "no_pins", "lcd"),
 };
 
-static struct pwm_lookup pwm_lookup[] = {
-	PWM_LOOKUP("10002010.jz4740-pwm", 1, "pwm-backlight", NULL,
-		   40000, PWM_POLARITY_INVERSED),
-};
-
 static void __init board_init_pins(void)
 {
 	pinctrl_register_mappings(pin_map, ARRAY_SIZE(pin_map));
-
-	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
 }
 
 static int __init gcw0_board_setup(void)

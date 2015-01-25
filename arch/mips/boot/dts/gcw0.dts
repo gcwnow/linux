@@ -2,6 +2,8 @@
 
 #include "jz4770.dtsi"
 
+#include <dt-bindings/pwm/pwm.h>
+
 / {
 	compatible = "gcw,zero", "ingenic,jz4770";
 
@@ -14,6 +16,14 @@
 		rumble {
 			compatible = "pwm-haptic";
 			pwms = <&pwm 4 2000000 0>;
+		};
+
+		backlight {
+			compatible = "pwm-backlight";
+			pwms = <&pwm 1 40000 PWM_POLARITY_INVERTED>;
+
+			brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
+			default-brightness-level = <128>;
 		};
 	};
 };
