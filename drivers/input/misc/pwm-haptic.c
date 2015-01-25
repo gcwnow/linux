@@ -165,11 +165,18 @@ static int pwm_haptic_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id pwm_haptic_dt_ids[] = {
+	{ .compatible = "pwm-haptic", .data = NULL, },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, pwm_haptic_dt_ids);
+
 static struct platform_driver pwm_haptic_driver = {
 	.driver	= {
 		.name	= "pwm-haptic",
 		.owner	= THIS_MODULE,
 		.pm	= &pwm_haptic_pm_ops,
+		.of_match_table = of_match_ptr(pwm_haptic_dt_ids),
 	},
 	.probe		= pwm_haptic_probe,
 	.remove		= pwm_haptic_remove,
