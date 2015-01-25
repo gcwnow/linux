@@ -21,5 +21,10 @@
 			reg = <0x10002010 0x4B>;
 			#pwm-cells = <3>;
 		};
+
+		pinctrl: jz4770-pinctrl@10010000 {
+			compatible = "ingenic,jz4770-pinctrl";
+			reg = <0x10010000 0x5AB>;
+		};
 	};
 };

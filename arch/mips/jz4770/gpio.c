@@ -443,7 +443,7 @@ static void jz4770_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int id)
 
 	gpiochip_add(&chip->gpio_chip);
 
-	gpiochip_add_pin_range(&chip->gpio_chip, "jz4770-pinctrl",
+	gpiochip_add_pin_range(&chip->gpio_chip, "10010000.jz4770-pinctrl",
 			0, chip->gpio_chip.base, chip->gpio_chip.ngpio);
 }
 
