@@ -210,6 +210,11 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	jz4740->chip.npwm = NUM_PWM;
 	jz4740->chip.base = -1;
 
+	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) {
+		jz4740->chip.of_xlate = of_pwm_xlate_with_flags;
+		jz4740->chip.of_pwm_n_cells = 3;
+	}
+
 	platform_set_drvdata(pdev, jz4740);
 
 	return pwmchip_add(&jz4740->chip);
@@ -233,7 +238,7 @@ static struct platform_driver jz4740_pwm_driver = {
 	.driver = {
 		.name = "jz4740-pwm",
 		.owner = THIS_MODULE,
-		.of_match_table = jz4740_pwm_dt_ids,
+		.of_match_table = of_match_ptr(jz4740_pwm_dt_ids),
 	},
 	.probe = jz4740_pwm_probe,
 	.remove = jz4740_pwm_remove,
