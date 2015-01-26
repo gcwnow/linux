@@ -18,6 +18,7 @@
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
+#include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/timex.h>
 #include <linux/slab.h>
@@ -28,7 +29,6 @@
 
 #include <asm/io.h>
 
-#include <asm/mach-jz4740/base.h>
 #include <asm/mach-jz4740/irq.h>
 
 #include "irq.h"
@@ -91,15 +91,20 @@ static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chi
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
 	struct irq_domain *domain;
-	int parent_irq;
+	struct resource res;
+	int ret, parent_irq;
 	unsigned i;
 
 	parent_irq = irq_of_parse_and_map(node, 0);
 	if (!parent_irq)
 		return -EINVAL;
 
+	ret = of_address_to_resource(node, 0, &res);
+	if (ret < 0)
+		return ret;
+
 	jz_num_chips = num_chips;
-	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR,
+	jz_intc_base = ioremap(res.start,
 			       ((num_chips - 1) * CHIP_SIZE) + 0x14);
 
 	for (i = 0; i < num_chips; i++) {
