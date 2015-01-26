@@ -30,7 +30,7 @@
 
 #include <asm/mach-jz4740/base.h>
 
-#include "../../drivers/irqchip/irqchip.h"
+#include "irqchip.h"
 
 static void __iomem *jz_intc_base;
 static unsigned jz_num_chips;
@@ -104,7 +104,8 @@ static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chi
 		writel(0xffffffff, jz_intc_base + JZ_REG_INTC_SET_MASK);
 
 		gc = irq_alloc_generic_chip("INTC", 1, JZ4740_IRQ_BASE + (i * 32),
-					    jz_intc_base + (i * CHIP_SIZE), handle_level_irq);
+					    jz_intc_base + (i * CHIP_SIZE),
+					    handle_level_irq);
 
 		gc->wake_enabled = IRQ_MSK(32);
 
