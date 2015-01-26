@@ -32,7 +32,7 @@
 
 #include <asm/mach-jz4740/irq.h>
 
-#include "../../drivers/irqchip/irqchip.h"
+#include "irqchip.h"
 
 static void __iomem *jz_intc_base;
 static unsigned jz_num_chips;
