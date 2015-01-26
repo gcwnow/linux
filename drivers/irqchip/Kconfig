@@ -80,6 +80,10 @@ config IMGPDC_IRQ
 	select GENERIC_IRQ_CHIP
 	select IRQ_DOMAIN
 
+config JZ4740_IRQC
+	bool
+	select GENERIC_IRQ_CHIP
+
 config CLPS711X_IRQCHIP
 	bool
 	depends on ARCH_CLPS711X
