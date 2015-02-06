@@ -149,6 +149,7 @@ static int __init jz4780_intc_of_init(struct device_node *node,
 {
 	return jz47xx_intc_of_init(node, 2);
 }
+IRQCHIP_DECLARE(jz4770_intc, "ingenic,jz4770-intc", jz4780_intc_of_init);
 IRQCHIP_DECLARE(jz4780_intc, "ingenic,jz4780-intc", jz4780_intc_of_init);
 
 #ifdef CONFIG_DEBUG_FS
