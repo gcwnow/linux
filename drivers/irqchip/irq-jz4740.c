@@ -106,7 +106,7 @@ static int __init jz47xx_intc_of_init(struct device_node *node, unsigned num_chi
 
 	for (i = 0; i < num_chips; i++) {
 		/* Mask all irqs */
-		writel(0xffffffff, jz_intc_base + JZ_REG_INTC_SET_MASK);
+		writel(0xffffffff, jz_intc_base + i * CHIP_SIZE + JZ_REG_INTC_SET_MASK);
 
 		gc = irq_alloc_generic_chip("INTC", 1, IRQ_BASE + (i * 32),
 					    jz_intc_base + (i * CHIP_SIZE),
