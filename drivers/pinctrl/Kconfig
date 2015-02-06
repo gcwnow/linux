@@ -261,7 +261,7 @@ config PINCTRL_TB10X
 	select GPIOLIB
 
 config PINCTRL_JZ4780
-	def_bool y if MACH_JZ4780
+	def_bool y if MACH_JZ4780 || MACH_JZ4770
 	select PINMUX
 	select GENERIC_PINCONF
 
