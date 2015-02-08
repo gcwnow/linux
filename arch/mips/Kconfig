@@ -283,6 +283,7 @@ config MACH_JZ4770
 	select JZSOC
 	select JZRISC
 	select PINCTRL
+	select PINCTRL_JZ4780
 	select JZ4740_IRQC
 	select BUILTIN_DTB
 	select USE_OF
