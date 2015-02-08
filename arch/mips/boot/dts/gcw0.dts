@@ -17,6 +17,9 @@
 		rumble {
 			compatible = "pwm-haptic";
 			pwms = <&pwm 4 2000000 0>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinfunc_pwm4_data>;
 		};
 
 		backlight {
@@ -25,6 +28,9 @@
 
 			brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
 			default-brightness-level = <128>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinfunc_pwm1_data>;
 		};
 
 		gpio-keys {

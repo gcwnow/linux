@@ -616,12 +616,6 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
-	/* pwm1: LCD backlight */
-	PIN_MAP_MUX_GROUP("10002010.jz4740-pwm", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", NULL, "pwm1"),
-	/* pwm4: rumble motor */
-	PIN_MAP_MUX_GROUP("10002010.jz4740-pwm", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", NULL, "pwm4"),
 	PIN_MAP_MUX_GROUP("musb-jz.0", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", NULL, "otg"),
 	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_DEFAULT,
