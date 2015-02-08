@@ -20,8 +20,6 @@
 #include <linux/console.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
-#include <linux/i2c.h>
-#include <linux/i2c-gpio.h>
 #include <linux/input.h>
 #include <linux/gpio_keys.h>
 #include <linux/leds.h>
@@ -45,7 +43,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/rfkill-regulator.h>
 #include <linux/usb/musb.h>
-#include <media/radio-rda5807.h>
 #include <sound/jz4770.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
@@ -80,30 +77,6 @@ static struct jz_mmc_platform_data gcw_external_sd_data = {
 	.gpio_read_only		= -1,
 	.gpio_power		= JZ_GPIO_PORTE(9),
 	.power_active_low	= 1,
-};
-
-
-/* FM radio receiver */
-
-static struct rda5807_platform_data gcw0_rda5807_pdata = {
-	.input_flags		= RDA5807_INPUT_LNA_WC_25 | RDA5807_LNA_PORT_P,
-	.output_flags		= RDA5807_OUTPUT_AUDIO_ANALOG,
-};
-
-
-/* Power Management Unit */
-
-static struct act8600_outputs_t act8600_outputs[] = {
-	{ 4, 0x57, true  }, /* USB OTG: 5.3V */
-	{ 5, 0x31, true  }, /* AVD:     2.5V */
-	{ 6, 0x39, false }, /* LCD:     3.3V */
-	{ 7, 0x39, true  }, /* generic: 3.3V */
-	{ 8, 0x24, true  }, /* generic: 1.8V */
-};
-
-static struct act8600_platform_pdata_t act8600_platform_pdata = {
-        .outputs = act8600_outputs,
-        .nr_outputs = ARRAY_SIZE(act8600_outputs),
 };
 
 
@@ -203,96 +176,6 @@ static struct platform_device gcw0_internal_usb_regulator_device = {
 static struct jz_otg_board_data gcw0_otg_board_data = {
 	.gpio_id_pin = GPIO_USB_OTG_ID_PIN,
 	.gpio_id_debounce_ms = 500,
-};
-
-
-/* I2C devices */
-
-static struct i2c_board_info gcw0_i2c0_devs[] __initdata = {
-	{
-		.type		= "radio-rda5807",
-		.addr		= RDA5807_I2C_ADDR,
-		.platform_data	= &gcw0_rda5807_pdata,
-	},
-};
-
-/* We don't have a use for the INT pin yet. */
-#define GPIO_MXC6225_INT	JZ_GPIO_PORTF(13)
-static struct i2c_board_info gcw0_i2c1_devs[] __initdata = {
-	{
-		.type		= "mxc6225",
-		.addr		= MXC6225_I2C_ADDR,
-	},
-};
-
-static struct i2c_board_info gcw0_i2c3_devs[] __initdata = {
-	{
-		.type		= ACT8600_NAME,
-		.addr		= ACT8600_I2C_ADDR,
-		.platform_data	= &act8600_platform_pdata,
-	},
-};
-
-static struct i2c_board_info gcw0_i2c4_devs[] __initdata = {
-	/* the IT6610 is on this bus, but we don't have a driver for it */
-};
-
-/* I2C busses */
-
-static struct i2c_gpio_platform_data gcw0_i2c0_gpio_data = {
-	.sda_pin		= JZ_GPIO_PORTD(30),
-	.scl_pin		= JZ_GPIO_PORTD(31),
-	.udelay			= 2, /* 250 kHz */
-};
-
-static struct platform_device gcw0_i2c0_gpio_device = {
-	.name			= "i2c-gpio",
-	.id			= 0,
-	.dev			= {
-		.platform_data = &gcw0_i2c0_gpio_data,
-	},
-};
-
-static struct i2c_gpio_platform_data gcw0_i2c1_gpio_data = {
-	.sda_pin		= JZ_GPIO_PORTE(30),
-	.scl_pin		= JZ_GPIO_PORTE(31),
-	.udelay			= 2, /* 250 kHz */
-};
-
-static struct platform_device gcw0_i2c1_gpio_device = {
-	.name			= "i2c-gpio",
-	.id			= 1,
-	.dev			= {
-		.platform_data = &gcw0_i2c1_gpio_data,
-	},
-};
-
-static struct i2c_gpio_platform_data gcw0_i2c3_gpio_data = {
-	.sda_pin		= JZ_GPIO_PORTD(5),
-	.scl_pin		= JZ_GPIO_PORTD(4),
-	.udelay			= 2, /* 250 kHz */
-};
-
-static struct platform_device gcw0_i2c3_gpio_device = {
-	.name			= "i2c-gpio",
-	.id			= 3,
-	.dev			= {
-		.platform_data = &gcw0_i2c3_gpio_data,
-	},
-};
-
-static struct i2c_gpio_platform_data gcw0_i2c4_gpio_data = {
-	.sda_pin		= JZ_GPIO_PORTD(6),
-	.scl_pin		= JZ_GPIO_PORTD(7),
-	.udelay			= 5, /* 100 kHz */
-};
-
-static struct platform_device gcw0_i2c4_gpio_device = {
-	.name			= "i2c-gpio",
-	.id			= 4,
-	.dev			= {
-		.platform_data = &gcw0_i2c4_gpio_data,
-	},
 };
 
 
@@ -554,10 +437,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
 	&jz4770_icdc_device,
-	&gcw0_i2c0_gpio_device,
-	&gcw0_i2c1_gpio_device,
-	&gcw0_i2c3_gpio_device,
-	&gcw0_i2c4_gpio_device,
 	&jz4770_adc_device,
 	&jz4770_rtc_device,
 	&gcw0_lcd_device,
@@ -588,13 +467,8 @@ static int __init gcw0_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 
-static void __init board_i2c_init(void)
-{
-	i2c_register_board_info(0, gcw0_i2c0_devs, ARRAY_SIZE(gcw0_i2c0_devs));
-	i2c_register_board_info(1, gcw0_i2c1_devs, ARRAY_SIZE(gcw0_i2c1_devs));
-	i2c_register_board_info(3, gcw0_i2c3_devs, ARRAY_SIZE(gcw0_i2c3_devs));
-	i2c_register_board_info(4, gcw0_i2c4_devs, ARRAY_SIZE(gcw0_i2c4_devs));
-}
+/* We don't have a use for the INT pin yet. */
+#define GPIO_MXC6225_INT	JZ_GPIO_PORTF(13)
 
 static void __init board_gpio_setup(void)
 {
@@ -635,7 +509,6 @@ static int __init gcw0_board_setup(void)
 
 	board_init_pins();
 	board_gpio_setup();
-	board_i2c_init();
 
 	if (gcw0_init_platform_devices())
 		panic("Failed to initialize platform devices");
