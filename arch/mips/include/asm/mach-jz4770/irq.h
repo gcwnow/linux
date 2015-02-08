@@ -19,56 +19,56 @@
 #define NR_IRQS	384
 
 // 1st-level interrupts
-#define IRQ_I2C1	0
-#define IRQ_I2C0	1
-#define IRQ_UART3	2
-#define IRQ_UART2	3
-#define IRQ_UART1	4
-#define IRQ_UART0	5
-#define IRQ_GPU		6
-#define IRQ_SSI1   	7
-#define IRQ_SSI0   	8
-#define IRQ_TSSI	9
-#define IRQ_BDMA	10
-#define IRQ_KBC		11
-#define IRQ_GPIO5	12
-#define IRQ_GPIO4	13
-#define IRQ_GPIO3	14
-#define IRQ_GPIO2	15
-#define IRQ_GPIO1	16
-#define IRQ_GPIO0	17
-#define IRQ_SADC	18
-#define IRQ_ETH		19
-#define IRQ_UHC		20
-#define IRQ_OTG		21
-//#define IRQ_MDMA	22
-#define IRQ_I2C2	22
-#define IRQ_DMAC1	23
-#define IRQ_DMAC0	24
-#define IRQ_TCU2	25
-#define IRQ_TCU1	26
-#define IRQ_TCU0	27
-#define IRQ_GPS		28
-#define IRQ_IPU		29
-#define IRQ_CIM		30
-#define IRQ_LCD		31
+#define IRQ_I2C1	8
+#define IRQ_I2C0	9
+#define IRQ_UART3	10
+#define IRQ_UART2	11
+#define IRQ_UART1	12
+#define IRQ_UART0	13
+#define IRQ_GPU		14
+#define IRQ_SSI1	15
+#define IRQ_SSI0   	16
+#define IRQ_TSSI	17
+#define IRQ_BDMA	18
+#define IRQ_KBC		19
+#define IRQ_GPIO5	20
+#define IRQ_GPIO4	21
+#define IRQ_GPIO3	22
+#define IRQ_GPIO2	23
+#define IRQ_GPIO1	24
+#define IRQ_GPIO0	25
+#define IRQ_SADC	26
+#define IRQ_ETH		27
+#define IRQ_UHC		28
+#define IRQ_OTG		29
+//#define IRQ_MDMA	30
+#define IRQ_I2C2	30
+#define IRQ_DMAC1	31
+#define IRQ_DMAC0	32
+#define IRQ_TCU2	33
+#define IRQ_TCU1	34
+#define IRQ_TCU0	35
+#define IRQ_GPS		36
+#define IRQ_IPU		37
+#define IRQ_CIM		38
+#define IRQ_LCD		39
 
-#define IRQ_RTC		32
-#define IRQ_OWI		33
-#define IRQ_AIC 	34
-#define IRQ_MSC2	35
-#define IRQ_MSC1	36
-#define IRQ_MSC0	37
-#define IRQ_SCC		38
-#define IRQ_BCH		39
-#define IRQ_PCM0	40
-#define IRQ_PCM1	41
-#define IRQ_UART4	42
-#define IRQ_AOSD        43
-#define IRQ_HARB2	44
-#define IRQ_I2S2	45
-#define IRQ_CPM		47
-#define INTC_IRQ_NUM	48
+#define IRQ_RTC		40
+#define IRQ_OWI		41
+#define IRQ_AIC 	42
+#define IRQ_MSC2	43
+#define IRQ_MSC1	44
+#define IRQ_MSC0	45
+#define IRQ_SCC		46
+#define IRQ_BCH		47
+#define IRQ_PCM0	48
+#define IRQ_PCM1	49
+#define IRQ_UART4	50
+#define IRQ_AOSD        51
+#define IRQ_HARB2	52
+#define IRQ_I2S2	53
+#define IRQ_CPM		54
+#define INTC_IRQ_NUM	55
 
 // 2nd-level interrupts
 
@@ -88,6 +88,8 @@
 
 // Coprocessor 0 interrupts
 
-#define IRQ_VPU         48
+#define IRQ_VPU         56
+
+#include <asm/mach-generic/irq.h>
 
 #endif

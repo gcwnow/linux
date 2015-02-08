@@ -14,6 +14,7 @@
 #include <linux/errno.h>
 #include <linux/init.h>
 #include <linux/irq.h>
+#include <linux/irqchip.h>
 #include <linux/kernel_stat.h>
 #include <linux/module.h>
 #include <linux/signal.h>
@@ -37,105 +38,6 @@
 
 #include "gpio.h"
 #include "intc.h"
-
-
-/*
- * C0 irq type -- this handles only the VPU interrupt
- */
-
-static int c0_irq_pending(void)
-{
-	unsigned long c0_pending = 0;
-	__asm__ __volatile__ (
-			"mfc0  %0, $13,  0   \n\t"
-			"nop                  \n\t"
-			:"=r"(c0_pending)
-			:);
-
-	return (c0_pending & 0x800) != 0;
-}
-
-static void enable_c0_irq(struct irq_data *data)
-{
-	unsigned long cpuflags;
-	local_irq_save(cpuflags);
-	write_c0_status(read_c0_status() | 0x800);
-	local_irq_restore(cpuflags);
-}
-
-static void disable_c0_irq(struct irq_data *data)
-{
-	unsigned long cpuflags;
-	local_irq_save(cpuflags);
-	write_c0_status(read_c0_status() & ~0x800);
-	local_irq_restore(cpuflags);
-}
-
-static void mask_and_ack_c0_irq(struct irq_data *data)
-{
-	disable_c0_irq(data);
-}
-
-static unsigned int startup_c0_irq(struct irq_data *data)
-{
-	enable_c0_irq(data);
-	return 0;
-}
-
-static void shutdown_c0_irq(struct irq_data *data)
-{
-	disable_c0_irq(data);
-}
-
-static struct irq_chip c0_irq_type = {
-	.name = "C0",
-	.irq_startup = startup_c0_irq,
-	.irq_shutdown = shutdown_c0_irq,
-	.irq_unmask = enable_c0_irq,
-	.irq_mask = disable_c0_irq,
-	.irq_ack = mask_and_ack_c0_irq,
-};
-
-/*
- * INTC irq type
- */
-
-static void enable_intc_irq(struct irq_data *data)
-{
-	__intc_unmask_irq(data->irq);
-}
-
-static void disable_intc_irq(struct irq_data *data)
-{
-	__intc_mask_irq(data->irq);
-}
-
-static void mask_and_ack_intc_irq(struct irq_data *data)
-{
-	__intc_mask_irq(data->irq);
-	__intc_ack_irq(data->irq);
-}
-
-static unsigned int startup_intc_irq(struct irq_data *data)
-{
-	enable_intc_irq(data);
-	return 0;
-}
-
-static void shutdown_intc_irq(struct irq_data *data)
-{
-	disable_intc_irq(data);
-}
-
-static struct irq_chip intc_irq_type = {
-	.name = "INTC",
-	.irq_startup = startup_intc_irq,
-	.irq_shutdown = shutdown_intc_irq,
-	.irq_unmask = enable_intc_irq,
-	.irq_mask = disable_intc_irq,
-	// TODO(MtH): There is a dedicated irq_mask_ack as well.
-	.irq_ack = mask_and_ack_intc_irq,
-};
 
 /*
  * DMA irq type
@@ -206,18 +108,21 @@ static struct irq_chip dma_irq_type = {
 
 //----------------------------------------------------------------------
 
+static irqreturn_t jz4770_dma_cascade(int irq, void *data)
+{
+	return generic_handle_irq(__dmac_get_irq() + IRQ_DMA_0);
+}
+
+static struct irqaction jz4770_dma_cascade_action = {
+	.name = "JZ4770 DMA cascade interrupt",
+	.handler = jz4770_dma_cascade,
+};
+
 void __init arch_init_irq(void)
 {
 	int i;
 
-	clear_c0_status(0xff04); /* clear ERL */
-	set_c0_status(0x0400);   /* set IP2 */
-
-	/* Set up INTC irq. */
-	for (i = 0; i < INTC_IRQ_NUM; i++) {
-		disable_intc_irq(&irq_desc[i].irq_data);
-		irq_set_chip_and_handler(i, &intc_irq_type, handle_level_irq);
-	}
+	irqchip_init();
 
 	/* Set up DMAC irq. */
 	for (i = IRQ_DMA_0; i < IRQ_DMA_0 + DMA_IRQ_NUM; i++) {
@@ -225,59 +130,6 @@ void __init arch_init_irq(void)
 		irq_set_chip_and_handler(i, &dma_irq_type, handle_level_irq);
 	}
 
-	/* Set up C0 irq. */
-	disable_intc_irq(&irq_desc[IRQ_VPU].irq_data);
-	irq_set_chip_and_handler(IRQ_VPU, &c0_irq_type, handle_level_irq);
-}
-
-static int plat_real_irq(int irq)
-{
-	if ((irq >= IRQ_GPIO5) && (irq <= IRQ_GPIO0)) {
-		int group = IRQ_GPIO0 - irq;
-		irq = __gpio_group_irq(group);
-		if (irq >= 0)
-			irq += IRQ_GPIO_0 + 32 * group;
-	} else {
-		switch (irq) {
-		case IRQ_DMAC0:
-		case IRQ_DMAC1:
-			irq = __dmac_get_irq();
-			if (irq < 0) {
-				printk("REG_DMAC_DMAIPR(0) = 0x%08x\n",
-						REG_DMAC_DMAIPR(0));
-				printk("REG_DMAC_DMAIPR(1) = 0x%08x\n",
-						REG_DMAC_DMAIPR(1));
-				return irq;
-			}
-			irq += IRQ_DMA_0;
-			break;
-		}
-	}
-
-	return irq;
-}
-
-asmlinkage void plat_irq_dispatch(void)
-{
-	unsigned long intc_ipr0 = REG_INTC_IPR(0);
-	unsigned long intc_ipr1 = REG_INTC_IPR(1);
-	int irq;
-
-	if (intc_ipr0) {
-		irq = ffs(intc_ipr0) - 1;
-	} else if (intc_ipr1) {
-		irq = ffs(intc_ipr1) - 1 + 32;
-	} else if (c0_irq_pending()) {
-		irq = IRQ_VPU;
-	} else {
-		spurious_interrupt();
-		return;
-	}
-
-	irq = plat_real_irq(irq);
-	WARN((irq < 0), "irq raised, but no irq pending!\n");
-	if (irq < 0)
-		return;
-
-	do_IRQ(irq);
+	setup_irq(IRQ_DMAC0, &jz4770_dma_cascade_action);
+	setup_irq(IRQ_DMAC1, &jz4770_dma_cascade_action);
 }
