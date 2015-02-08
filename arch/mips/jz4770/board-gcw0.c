@@ -59,114 +59,6 @@
 #include "platform.h"
 
 
-/* Buttons */
-
-static struct gpio_keys_button gcw0_buttons[] = {
-	/* D-pad up */ {
-		.gpio			= JZ_GPIO_PORTE(21),
-		.active_low		= 1,
-		.code			= KEY_UP,
-		.debounce_interval	= 10,
-	},
-	/* D-pad down */ {
-		.gpio			= JZ_GPIO_PORTE(25),
-		.active_low		= 1,
-		.code			= KEY_DOWN,
-		.debounce_interval	= 10,
-	},
-	/* D-pad left */ {
-		.gpio			= JZ_GPIO_PORTE(23),
-		.active_low		= 1,
-		.code			= KEY_LEFT,
-		.debounce_interval	= 10,
-	},
-	/* D-pad right */ {
-		.gpio			= JZ_GPIO_PORTE(24),
-		.active_low		= 1,
-		.code			= KEY_RIGHT,
-		.debounce_interval	= 10,
-	},
-	/* A button */ {
-		.gpio			= JZ_GPIO_PORTE(29),
-		.active_low		= 1,
-		.code			= KEY_LEFTCTRL,
-		.debounce_interval	= 10,
-	},
-	/* B button */ {
-		.gpio			= JZ_GPIO_PORTE(20),
-		.active_low		= 1,
-		.code			= KEY_LEFTALT,
-		.debounce_interval	= 10,
-	},
-	/* Top button (labeled Y, should be X) */ {
-		.gpio			= JZ_GPIO_PORTE(27),
-		.active_low		= 1,
-		.code			= KEY_SPACE,
-		.debounce_interval	= 10,
-	},
-	/* Left button (labeled X, should be Y) */ {
-		.gpio			= JZ_GPIO_PORTE(28),
-		.active_low		= 1,
-		.code			= KEY_LEFTSHIFT,
-		.debounce_interval	= 10,
-	},
-	/* Left shoulder button */ {
-		.gpio			= JZ_GPIO_PORTB(20),
-		.active_low		= 1,
-		.code			= KEY_TAB,
-		.debounce_interval	= 10,
-	},
-	/* Right shoulder button */ {
-		.gpio			= JZ_GPIO_PORTE(26),
-		.active_low		= 1,
-		.code			= KEY_BACKSPACE,
-		.debounce_interval	= 10,
-	},
-	/* START button */ {
-		.gpio			= JZ_GPIO_PORTB(21),
-		.active_low		= 1,
-		.code			= KEY_ENTER,
-		.debounce_interval	= 10,
-	},
-	/* SELECT button */ {
-		.gpio			= JZ_GPIO_PORTD(18),
-		/* This is the only button that is active high,
-		 * since it doubles as BOOT_SEL1.
-		 */
-		.active_low		= 0,
-		.code			= KEY_ESC,
-		.debounce_interval	= 10,
-	},
-	/* POWER slider */ {
-		.gpio			= JZ_GPIO_PORTA(30),
-		.active_low		= 1,
-		.code			= KEY_POWER,
-		.debounce_interval	= 10,
-		.wakeup			= 1,
-	},
-	/* POWER hold */ {
-		.gpio			= JZ_GPIO_PORTF(11),
-		.active_low		= 1,
-		.code			= KEY_PAUSE,
-		.debounce_interval	= 10,
-	},
-};
-
-static struct gpio_keys_platform_data gcw0_gpio_keys_pdata = {
-	.buttons = gcw0_buttons,
-	.nbuttons = ARRAY_SIZE(gcw0_buttons),
-	.rep = 1,
-};
-
-static struct platform_device gcw0_gpio_keys_device = {
-	.name = "gpio-keys",
-	.id = -1,
-	.dev = {
-		.platform_data = &gcw0_gpio_keys_pdata,
-	},
-};
-
-
 /* SD cards */
 
 static struct jz_mmc_platform_data gcw_internal_sd_data = {
@@ -534,7 +426,7 @@ static const struct linkdev_pdata_device_info gcw0_joystick_devices[] = {
 		.name = "analog joystick",
 	},
 	{
-		.name = "gpio-keys",
+		.name = "board:gpio-keys",
 		.handlers_whitelist = gcw0_joystick_gpiokeys_whitelist,
 		.nb_handlers = ARRAY_SIZE(gcw0_joystick_gpiokeys_whitelist),
 	},
@@ -668,7 +560,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_i2c4_gpio_device,
 	&jz4770_adc_device,
 	&jz4770_rtc_device,
-	&gcw0_gpio_keys_device,
 	&gcw0_lcd_device,
 	&gcw0_audio_device,
 	&jz4770_msc0_device,

@@ -2,6 +2,7 @@
 
 #include "jz4770.dtsi"
 
+#include <dt-bindings/input/input.h>
 #include <dt-bindings/pwm/pwm.h>
 
 / {
@@ -24,6 +25,116 @@
 
 			brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
 			default-brightness-level = <128>;
+		};
+
+		gpio-keys {
+			compatible = "gpio-keys";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			autorepeat;
+
+			button@0 {
+				label = "D-pad up";
+				linux,code = <KEY_UP>;
+				gpios = <&gpe 21 1>;
+				debounce-interval = <10>;
+			};
+
+			button@1 {
+				label = "D-pad down";
+				linux,code = <KEY_DOWN>;
+				gpios = <&gpe 25 1>;
+				debounce-interval = <10>;
+			};
+
+			button@2 {
+				label = "D-pad left";
+				linux,code = <KEY_LEFT>;
+				gpios = <&gpe 23 1>;
+				debounce-interval = <10>;
+			};
+
+			button@3 {
+				label = "D-pad right";
+				linux,code = <KEY_RIGHT>;
+				gpios = <&gpe 24 1>;
+				debounce-interval = <10>;
+			};
+
+			button@4 {
+				label = "Button A";
+				linux,code = <KEY_LEFTCTRL>;
+				gpios = <&gpe 29 1>;
+				debounce-interval = <10>;
+			};
+
+			button@5 {
+				label = "Button B";
+				linux,code = <KEY_LEFTALT>;
+				gpios = <&gpe 20 1>;
+				debounce-interval = <10>;
+			};
+
+			button@6 {
+				label = "Button Y";
+				linux,code = <KEY_SPACE>;
+				gpios = <&gpe 27 1>;
+				debounce-interval = <10>;
+			};
+
+			button@7 {
+				label = "Button X";
+				linux,code = <KEY_LEFTSHIFT>;
+				gpios = <&gpe 28 1>;
+				debounce-interval = <10>;
+			};
+
+			button@8 {
+				label = "Left shoulder button";
+				linux,code = <KEY_TAB>;
+				gpios = <&gpb 20 1>;
+				debounce-interval = <10>;
+			};
+
+			button@9 {
+				label = "Right shoulder button";
+				linux,code = <KEY_BACKSPACE>;
+				gpios = <&gpe 26 1>;
+				debounce-interval = <10>;
+			};
+
+			button@10 {
+				label = "Start button";
+				linux,code = <KEY_ENTER>;
+				gpios = <&gpb 21 1>;
+				debounce-interval = <10>;
+			};
+
+			button@11 {
+				label = "Select button";
+				linux,code = <KEY_ESC>;
+				/* This is the only button that is active high,
+				 * since it doubles as BOOT_SEL1.
+				 */
+				gpios = <&gpd 18 0>;
+				debounce-interval = <10>;
+			};
+
+			button@12 {
+				label = "Power slider";
+				linux,code = <KEY_POWER>;
+				gpios = <&gpa 30 1>;
+				debounce-interval = <10>;
+				gpio-key,wakeup;
+			};
+
+			button@13 {
+				label = "Power hold";
+				linux,code = <KEY_PAUSE>;
+				gpios = <&gpf 11 1>;
+				debounce-interval = <10>;
+			};
 		};
 	};
 };
