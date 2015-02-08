@@ -37,6 +37,7 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
+#include <linux/of_platform.h>
 #include <linux/pm.h>
 #include <linux/slab.h>
 #include <linux/types.h>
@@ -148,6 +149,9 @@ struct rda5807_driver {
 	struct video_device		video_dev;
 	struct v4l2_device		v4l2_dev;
 	struct i2c_client		*i2c_client;
+
+	u8 input_flags;
+	u8 output_flags;
 };
 
 static const struct v4l2_file_operations rda5807_fops = {
@@ -481,18 +485,55 @@ static const struct v4l2_ioctl_ops rda5807_ioctl_ops = {
 
 static const char *rda5807_name = "RDA5807 FM receiver";
 
+static const u16 rda5807_lna_current[] = { 1800, 2100, 2500, 3000 };
+
 static int rda5807_i2c_probe(struct i2c_client *client,
 			     const struct i2c_device_id *id)
 {
+	struct device_node *np = client->dev.of_node;
 	struct rda5807_platform_data *pdata = client->dev.platform_data;
 	struct rda5807_driver *radio;
 	int err;
 	u16 val;
 
-	if (!pdata) {
-		dev_err(&client->dev, "Platform data missing\n");
-		return -EINVAL;
+	radio = devm_kzalloc(&client->dev, sizeof(*radio), GFP_KERNEL);
+	if (!radio) {
+		dev_err(&client->dev, "Failed to allocate driver data\n");
+		return -ENOMEM;
 	}
+
+	radio->i2c_client = client;
+
+	/* Configuration. */
+	if (np) {
+		u16 lna_current = 2500;
+		size_t i;
+
+		radio->input_flags = 0;
+		of_property_read_u16(np, "lna-current", &lna_current);
+		for (i = 0; i < ARRAY_SIZE(rda5807_lna_current); i++)
+			if (rda5807_lna_current[i] == lna_current)
+				radio->input_flags = i;
+
+		if (of_property_read_bool(np, "lnan"))
+			radio->input_flags |= RDA5807_LNA_PORT_N;
+		if (of_property_read_bool(np, "lnap"))
+			radio->input_flags |= RDA5807_LNA_PORT_P;
+
+		if (of_property_read_bool(np, "i2s-out"))
+			radio->output_flags |= RDA5807_OUTPUT_AUDIO_I2S;
+		if (of_property_read_bool(np, "analog-out"))
+			radio->output_flags |= RDA5807_OUTPUT_AUDIO_ANALOG;
+
+	} else if (pdata) {
+		radio->input_flags = pdata->input_flags;
+		radio->output_flags = pdata->output_flags;
+	} else {
+		radio->input_flags = RDA5807_INPUT_LNA_WC_25;
+		radio->output_flags = 0;
+	}
+	if (!(radio->input_flags & (RDA5807_LNA_PORT_N | RDA5807_LNA_PORT_P)))
+		dev_warn(&client->dev, "Both LNA inputs disabled\n");
 
 	err = rda5807_i2c_read(client, RDA5807_REG_CHIPID);
 	if (err < 0) {
@@ -508,14 +549,6 @@ static int rda5807_i2c_probe(struct i2c_client *client,
 	dev_info(&client->dev, "Found FM radio receiver\n");
 
 	// TODO: Resetting the chip would be good.
-
-	radio = devm_kzalloc(&client->dev, sizeof(*radio), GFP_KERNEL);
-	if (!radio) {
-		dev_err(&client->dev, "Failed to allocate driver data\n");
-		return -ENOMEM;
-	}
-
-	radio->i2c_client = client;
 
 	/* Initialize controls. */
 	v4l2_ctrl_handler_init(&radio->ctrl_handler, 3);
@@ -571,17 +604,15 @@ static int rda5807_i2c_probe(struct i2c_client *client,
 
 	/* Configure chip inputs. */
 	err = rda5807_update_reg(radio, RDA5807_REG_INTM_THRESH_VOL,
-				 0xF << 4, (pdata->input_flags & 0xF) << 4);
+				 0xF << 4, (radio->input_flags & 0xF) << 4);
 	if (err < 0) {
 		dev_warn(&client->dev, "Failed to configure inputs (%d)\n",
 				       err);
 	}
 	/* Configure chip outputs. */
 	val = 0;
-	if (pdata->output_flags & RDA5807_OUTPUT_AUDIO_I2S) {
+	if (radio->output_flags & RDA5807_OUTPUT_AUDIO_I2S) {
 		val |= BIT(6);
-	} else if (pdata->output_flags & RDA5807_OUTPUT_STEREO_INDICATOR) {
-		val |= BIT(4);
 	}
 	err = rda5807_update_reg(radio, RDA5807_REG_IOCFG, 0x003F, val);
 	if (err < 0) {
@@ -589,7 +620,7 @@ static int rda5807_i2c_probe(struct i2c_client *client,
 				       err);
 	}
 	val = 0;
-	if (pdata->output_flags & RDA5807_OUTPUT_AUDIO_ANALOG) {
+	if (radio->output_flags & RDA5807_OUTPUT_AUDIO_ANALOG) {
 		val |= BIT(15);
 	}
 	err = rda5807_update_reg(radio, RDA5807_REG_CTRL, BIT(15), val);
@@ -670,6 +701,14 @@ static const struct i2c_device_id rda5807_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, rda5807_id);
 
+#ifdef CONFIG_OF
+static const struct of_device_id rda5807_dt_ids[] = {
+	{ .compatible = "rdamicro,rda5807" },
+	{ }
+};
+MODULE_DEVICE_TABLE(of, rda5807_dt_ids);
+#endif
+
 static struct i2c_driver rda5807_i2c_driver = {
 	.probe = rda5807_i2c_probe,
 	.remove = rda5807_i2c_remove,
@@ -678,6 +717,7 @@ static struct i2c_driver rda5807_i2c_driver = {
 		.name	= "radio-rda5807",
 		.owner	= THIS_MODULE,
 		.pm	= RDA5807_PM_OPS,
+		.of_match_table = of_match_ptr(rda5807_dt_ids),
 	},
 };
 
