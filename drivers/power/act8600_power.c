@@ -149,10 +149,24 @@ int act8600_set_power_mode(enum act8600_power_mode mode)
 }
 EXPORT_SYMBOL_GPL(act8600_set_power_mode);
 
+static struct act8600_outputs_t act8600_outputs[] = {
+	{ 4, 0x57, true  }, /* USB OTG: 5.3V */
+	{ 5, 0x31, true  }, /* AVD:     2.5V */
+	{ 6, 0x39, false }, /* LCD:     3.3V */
+	{ 7, 0x39, true  }, /* generic: 3.3V */
+	{ 8, 0x24, true  }, /* generic: 1.8V */
+};
+
+static struct act8600_platform_pdata_t act8600_platform_pdata = {
+        .outputs = act8600_outputs,
+        .nr_outputs = ARRAY_SIZE(act8600_outputs),
+};
+
 static int act8600_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {
 	int i, ret;
-	struct act8600_platform_pdata_t *pdata = i2c->dev.platform_data;
+	//struct act8600_platform_pdata_t *pdata = i2c->dev.platform_data;
+	struct act8600_platform_pdata_t *pdata = &act8600_platform_pdata;
 
 	act8600 = kzalloc(sizeof(struct act8600_device), GFP_KERNEL);
 	if (!act8600 )
