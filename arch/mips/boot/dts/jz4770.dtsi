@@ -210,65 +210,35 @@
 				};
 			};
 		};
-	};
 
-	i2c@0 {
-		compatible = "i2c-gpio";
-		gpios = <&gpd 30 GPIO_ACTIVE_HIGH	/* sda */
-			 &gpd 31 GPIO_ACTIVE_HIGH	/* scl */
-			>;
-		i2c-gpio,delay-us = <2>;		/* 250 kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		rda5807@11 {				/* FM radio receiver */
-			compatible = "rdamicro,rda5807";
-			reg = <0x11>;
-			lnap;
-			lna-current = <2500>;
-			analog-out;
+		i2c0: i2c@0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpd 30 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 31 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
 		};
-	};
 
-	i2c@1 {
-		compatible = "i2c-gpio";
-		gpios = <&gpe 30 GPIO_ACTIVE_HIGH	/* sda */
-			 &gpe 31 GPIO_ACTIVE_HIGH	/* scl */
-			>;
-		i2c-gpio,delay-us = <2>;		/* 250 kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		mxc6225@15 {				/* g-sensor */
-			compatible = "mxc6225";
-			reg = <0x15>;
+		i2c1: i2c@1 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpe 30 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpe 31 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
 		};
-	};
 
-	i2c@3 {
-		compatible = "i2c-gpio";
-		gpios = <&gpd 5 GPIO_ACTIVE_HIGH	/* sda */
-			 &gpd 4 GPIO_ACTIVE_HIGH	/* scl */
-			>;
-		i2c-gpio,delay-us = <2>;		/* 250 kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		act8600@5a {				/* power management unit */
-			compatible = "act8600";
-			reg = <0x5a>;
+		i2c2: i2c@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gpf 16 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpf 17 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			status = "disabled";
 		};
-	};
-
-	i2c@4 {
-		compatible = "i2c-gpio";
-		gpios = <&gpd 6 GPIO_ACTIVE_HIGH	/* sda */
-			 &gpd 7 GPIO_ACTIVE_HIGH	/* scl */
-			>;
-		i2c-gpio,delay-us = <5>;		/* 100 kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		/* the IT6610 is on this bus, but we don't have a driver for it */
 	};
 };

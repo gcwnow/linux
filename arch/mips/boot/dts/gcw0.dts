@@ -143,5 +143,61 @@
 				debounce-interval = <10>;
 			};
 		};
+
+		i2c3: i2c-act8600 {
+			compatible = "i2c-gpio";
+			gpios = <&gpd 5 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 4 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		i2c4: i2c-it6610 {
+			compatible = "i2c-gpio";
+			gpios = <&gpd 6 GPIO_ACTIVE_HIGH	/* sda */
+				 &gpd 7 GPIO_ACTIVE_HIGH	/* scl */
+				>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
 	};
+};
+
+&i2c0 {
+	status = "okay";
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	rda5807@11 {				/* FM radio receiver */
+		compatible = "rdamicro,rda5807";
+		reg = <0x11>;
+		lnap;
+		lna-current = <2500>;
+		analog-out;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	mxc6225@15 {				/* g-sensor */
+		compatible = "mxc6225";
+		reg = <0x15>;
+	};
+};
+
+&i2c3 {
+	i2c-gpio,delay-us = <2>;		/* 250 kHz */
+
+	act8600@5a {				/* power management unit */
+		compatible = "act8600";
+		reg = <0x5a>;
+	};
+};
+
+&i2c4 {
+	i2c-gpio,delay-us = <5>;		/* 100 kHz */
+
+	/* the IT6610 is on this bus, but we don't have a driver for it yet */
 };
