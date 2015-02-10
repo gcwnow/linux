@@ -21,14 +21,13 @@
 #include <linux/gpio.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <linux/bitops.h>
 
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 
 #include <asm/mach-jz4740/base.h>
-
-#include "irq.h"
 
 #define JZ4740_GPIO_BASE_A (32*0)
 #define JZ4740_GPIO_BASE_B (32*1)
@@ -328,6 +327,26 @@ static void jz_gpio_irq_unmask(struct irq_data *data)
 	irq_gc_unmask_enable_reg(data);
 };
 
+static void jz_gpio_irq_set_mask(struct irq_chip_generic *gc, uint32_t mask)
+{
+	struct irq_chip_regs *regs = &gc->chip_types->regs;
+
+	writel(mask, gc->reg_base + regs->enable);
+	writel(~mask, gc->reg_base + regs->disable);
+}
+
+static void jz_gpio_irq_suspend(struct irq_data *data)
+{
+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
+	jz_gpio_irq_set_mask(gc, gc->wake_active);
+}
+
+static void jz_gpio_irq_resume(struct irq_data *data)
+{
+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
+	jz_gpio_irq_set_mask(gc, gc->mask_cache);
+}
+
 /* TODO: Check if function is gpio */
 static unsigned int jz_gpio_irq_startup(struct irq_data *data)
 {
@@ -442,8 +461,8 @@ static void jz4740_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int id)
 	ct->chip.irq_mask = irq_gc_mask_disable_reg;
 	ct->chip.irq_unmask = jz_gpio_irq_unmask;
 	ct->chip.irq_ack = irq_gc_ack_set_bit;
-	ct->chip.irq_suspend = jz4740_irq_suspend;
-	ct->chip.irq_resume = jz4740_irq_resume;
+	ct->chip.irq_suspend = jz_gpio_irq_suspend;
+	ct->chip.irq_resume = jz_gpio_irq_resume;
 	ct->chip.irq_startup = jz_gpio_irq_startup;
 	ct->chip.irq_shutdown = jz_gpio_irq_shutdown;
 	ct->chip.irq_set_type = jz_gpio_irq_set_type;
