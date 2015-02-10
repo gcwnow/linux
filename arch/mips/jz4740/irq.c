@@ -18,6 +18,7 @@
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
+#include <linux/irq.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/timex.h>
@@ -30,8 +31,6 @@
 #include <asm/io.h>
 
 #include <asm/mach-jz4740/irq.h>
-
-#include "irq.h"
 
 #include "../../drivers/irqchip/irqchip.h"
 
@@ -69,13 +68,13 @@ static void jz4740_irq_set_mask(struct irq_chip_generic *gc, uint32_t mask)
 	writel(~mask, gc->reg_base + regs->disable);
 }
 
-void jz4740_irq_suspend(struct irq_data *data)
+static void jz4740_irq_suspend(struct irq_data *data)
 {
 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
 	jz4740_irq_set_mask(gc, gc->wake_active);
 }
 
-void jz4740_irq_resume(struct irq_data *data)
+static void jz4740_irq_resume(struct irq_data *data)
 {
 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
 	jz4740_irq_set_mask(gc, gc->mask_cache);
