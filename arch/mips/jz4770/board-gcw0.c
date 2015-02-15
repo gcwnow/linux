@@ -467,24 +467,6 @@ static int __init gcw0_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 
-/* We don't have a use for the INT pin yet. */
-#define GPIO_MXC6225_INT	JZ_GPIO_PORTF(13)
-
-static void __init board_gpio_setup(void)
-{
-	/* SELECT button */
-	jz_gpio_disable_pullup(JZ_GPIO_PORTD(18));
-
-	/* DC power source present (high active) */
-	jz_gpio_disable_pullup(GPIO_DC_CHARGER);
-
-	/* USB power source present (high active) */
-	jz_gpio_disable_pullup(GPIO_USB_CHARGER);
-
-	/* MXC6225 data sheet says INT should not be pulled up or down */
-	jz_gpio_disable_pullup(GPIO_MXC6225_INT);
-}
-
 static struct pinctrl_map pin_map[] __initdata = {
 	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
@@ -508,7 +490,6 @@ static int __init gcw0_board_setup(void)
 	printk(KERN_INFO "GCW Zero JZ4770 setup\n");
 
 	board_init_pins();
-	board_gpio_setup();
 
 	if (gcw0_init_platform_devices())
 		panic("Failed to initialize platform devices");
