@@ -9,10 +9,10 @@
 #ifndef __JZ4770CPM_H__
 #define __JZ4770CPM_H__
 
+#include <linux/bitops.h>
 #include <asm/addrspace.h>
 #include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/jz4770misc.h>
-
 
 #ifndef JZ_EXTAL
 #define JZ_EXTAL		12000000   /* 3.6864 MHz */
@@ -106,285 +106,285 @@
  */
 
 /* Clock control register(CPCCR) */
-#define CPCCR_ECS               BIT31
-#define CPCCR_MEM               BIT30
-#define CPCCR_CE                BIT22
-#define CPCCR_PCS               BIT21
+#define CPCCR_ECS               BIT(31)
+#define CPCCR_MEM               BIT(30)
+#define CPCCR_CE                BIT(22)
+#define CPCCR_PCS               BIT(21)
 
 #define CPCCR_H1DIV_LSB		24
 #define CPCCR_H1DIV_MASK		(0x0f << CPCCR_H1DIV_LSB)
 
 #define CPCCR_H2DIV_LSB         16
-#define CPCCR_H2DIV_MASK        BITS_H2L(19, CPCCR_H2DIV_LSB)
+#define CPCCR_H2DIV_MASK        GENMASK(19, CPCCR_H2DIV_LSB)
 
 #define CPCCR_C1DIV_LSB		12
 #define CPCCR_C1DIV_MASK	(0x0f << CPCCR_C1DIV_LSB)
 
 #define CPCCR_PDIV_LSB		8
-#define CPCCR_PDIV_MASK         BITS_H2L(11, CPCCR_PDIV_LSB)
+#define CPCCR_PDIV_MASK         GENMASK(11, CPCCR_PDIV_LSB)
 
 #define CPCCR_H0DIV_LSB		4
 #define CPCCR_H0DIV_MASK	(0x0f << CPCCR_H0DIV_LSB)
 
 #define CPCCR_CDIV_LSB		0
-#define CPCCR_CDIV_MASK         BITS_H2L(3, CPCCR_CDIV_LSB)
+#define CPCCR_CDIV_MASK         GENMASK(3, CPCCR_CDIV_LSB)
 
 /* Low power control register(LCR) */
-#define LCR_PDAHB1              BIT30
-#define LCR_VBATIR              BIT29
-#define LCR_PDGPS               BIT28
-#define LCR_PDAHB1S             BIT26
-#define LCR_PDGPSS              BIT24
-#define LCR_DOZE                BIT2
+#define LCR_PDAHB1              BIT(30)
+#define LCR_VBATIR              BIT(29)
+#define LCR_PDGPS               BIT(28)
+#define LCR_PDAHB1S             BIT(26)
+#define LCR_PDGPSS              BIT(24)
+#define LCR_DOZE                BIT(2)
 
 #define LCR_PST_LSB             8
-#define LCR_PST_MASK            BITS_H2L(19, LCR_PST_LSB)
+#define LCR_PST_MASK            GENMASK(19, LCR_PST_LSB)
 
 #define LCR_DUTY_LSB            3
-#define LCR_DUTY_MASK           BITS_H2L(7, LCR_DUTY_LSB)
+#define LCR_DUTY_MASK           GENMASK(7, LCR_DUTY_LSB)
 
 #define LCR_LPM_LSB             0
-#define LCR_LPM_MASK            BITS_H2L(1, LCR_LPM_LSB)
+#define LCR_LPM_MASK            GENMASK(1, LCR_LPM_LSB)
 #define LCR_LPM_IDLE            (0x0 << LCR_LPM_LSB)
 #define LCR_LPM_SLEEP           (0x1 << LCR_LPM_LSB)
 
 /* Reset status register(RSR) */
-#define RSR_P0R         BIT2
-#define RSR_WR          BIT1
-#define RSR_PR          BIT0
+#define RSR_P0R         BIT(2)
+#define RSR_WR          BIT(1)
+#define RSR_PR          BIT(0)
 
 /* PLL control register 0(CPPCR0) */
-#define CPPCR0_LOCK             BIT15   /* LOCK0 bit */
-#define CPPCR0_ENLOCK           BIT14
-#define CPPCR0_PLLS             BIT10
-#define CPPCR0_PLLBP            BIT9
-#define CPPCR0_PLLEN            BIT8
+#define CPPCR0_LOCK             BIT(15)   /* LOCK0 bit */
+#define CPPCR0_ENLOCK           BIT(14)
+#define CPPCR0_PLLS             BIT(10)
+#define CPPCR0_PLLBP            BIT(9)
+#define CPPCR0_PLLEN            BIT(8)
 
 #define CPPCR0_PLLM_LSB         24
-#define CPPCR0_PLLM_MASK        BITS_H2L(30, CPPCR0_PLLM_LSB)
+#define CPPCR0_PLLM_MASK        GENMASK(30, CPPCR0_PLLM_LSB)
 
 #define CPPCR0_PLLN_LSB         18
-#define CPPCR0_PLLN_MASK        BITS_H2L(22, CPPCR0_PLLN_LSB)
+#define CPPCR0_PLLN_MASK        GENMASK(22, CPPCR0_PLLN_LSB)
 
 #define CPPCR0_PLLOD_LSB        16
-#define CPPCR0_PLLOD_MASK       BITS_H2L(17, CPPCR0_PLLOD_LSB)
+#define CPPCR0_PLLOD_MASK       GENMASK(17, CPPCR0_PLLOD_LSB)
 
 #define CPPCR0_PLLST_LSB        0
-#define CPPCR0_PLLST_MASK       BITS_H2L(7, CPPCR0_PLLST_LSB)
+#define CPPCR0_PLLST_MASK       GENMASK(7, CPPCR0_PLLST_LSB)
 
 /* PLL switch and status register(CPPSR) */
-#define CPPSR_PLLOFF            BIT31
-#define CPPSR_PLLBP             BIT30
-#define CPPSR_PLLON             BIT29
-#define CPPSR_PS                BIT28
-#define CPPSR_FS                BIT27
-#define CPPSR_CS                BIT26
-#define CPPSR_SM                BIT2
-#define CPPSR_PM                BIT1
-#define CPPSR_FM                BIT0
+#define CPPSR_PLLOFF            BIT(31)
+#define CPPSR_PLLBP             BIT(30)
+#define CPPSR_PLLON             BIT(29)
+#define CPPSR_PS                BIT(28)
+#define CPPSR_FS                BIT(27)
+#define CPPSR_CS                BIT(26)
+#define CPPSR_SM                BIT(2)
+#define CPPSR_PM                BIT(1)
+#define CPPSR_FM                BIT(0)
 
 /* Clock gate register 0(CGR0) */
-#define CLKGR0_AHB_MON          BIT31
-#define CLKGR0_DDR              BIT30
-#define CLKGR0_IPU              BIT29
-#define CLKGR0_LCD              BIT28
-#define CLKGR0_TVE              BIT27
-#define CLKGR0_CIM              BIT26
-#define CLKGR0_MDMA             BIT25
-#define CLKGR0_UHC              BIT24
-#define CLKGR0_MAC              BIT23
-#define CLKGR0_GPS              BIT22
-#define CLKGR0_DMAC             BIT21
-#define CLKGR0_SSI2             BIT20
-#define CLKGR0_SSI1             BIT19
-#define CLKGR0_UART3            BIT18
-#define CLKGR0_UART2            BIT17
-#define CLKGR0_UART1            BIT16
-#define CLKGR0_UART0            BIT15
-#define CLKGR0_SADC             BIT14
-#define CLKGR0_KBC              BIT13
-#define CLKGR0_MSC2             BIT12
-#define CLKGR0_MSC1             BIT11
-#define CLKGR0_OWI              BIT10
-#define CLKGR0_TSSI             BIT9
-#define CLKGR0_AIC              BIT8
-#define CLKGR0_SCC              BIT7
-#define CLKGR0_I2C1             BIT6
-#define CLKGR0_I2C0             BIT5
-#define CLKGR0_SSI0             BIT4
-#define CLKGR0_MSC0             BIT3
-#define CLKGR0_OTG              BIT2
-#define CLKGR0_BCH              BIT1
-#define CLKGR0_NEMC             BIT0
+#define CLKGR0_AHB_MON          BIT(31)
+#define CLKGR0_DDR              BIT(30)
+#define CLKGR0_IPU              BIT(29)
+#define CLKGR0_LCD              BIT(28)
+#define CLKGR0_TVE              BIT(27)
+#define CLKGR0_CIM              BIT(26)
+#define CLKGR0_MDMA             BIT(25)
+#define CLKGR0_UHC              BIT(24)
+#define CLKGR0_MAC              BIT(23)
+#define CLKGR0_GPS              BIT(22)
+#define CLKGR0_DMAC             BIT(21)
+#define CLKGR0_SSI2             BIT(20)
+#define CLKGR0_SSI1             BIT(19)
+#define CLKGR0_UART3            BIT(18)
+#define CLKGR0_UART2            BIT(17)
+#define CLKGR0_UART1            BIT(16)
+#define CLKGR0_UART0            BIT(15)
+#define CLKGR0_SADC             BIT(14)
+#define CLKGR0_KBC              BIT(13)
+#define CLKGR0_MSC2             BIT(12)
+#define CLKGR0_MSC1             BIT(11)
+#define CLKGR0_OWI              BIT(10)
+#define CLKGR0_TSSI             BIT(9)
+#define CLKGR0_AIC              BIT(8)
+#define CLKGR0_SCC              BIT(7)
+#define CLKGR0_I2C1             BIT(6)
+#define CLKGR0_I2C0             BIT(5)
+#define CLKGR0_SSI0             BIT(4)
+#define CLKGR0_MSC0             BIT(3)
+#define CLKGR0_OTG              BIT(2)
+#define CLKGR0_BCH              BIT(1)
+#define CLKGR0_NEMC             BIT(0)
 
 /* Oscillator and power control register(OPCR) */
-#define OPCR_IDLE_DIS           BIT31
-#define OPCR_AHB1_ST            BIT30
-#define OPCR_AHB1_STP           BIT29
-#define OPCR_AHB1_ACK           BIT28
-#define OPCR_OTGPHY_ENABLE      BIT7    /* SPENDN bit */
-#define OPCR_GPSEN              BIT6
-#define OPCR_UHCPHY_DISABLE     BIT5    /* SPENDH bit */
-#define OPCR_O1SE               BIT4
-#define OPCR_PD                 BIT3
-#define OPCR_ERCS               BIT2
+#define OPCR_IDLE_DIS           BIT(31)
+#define OPCR_AHB1_ST            BIT(30)
+#define OPCR_AHB1_STP           BIT(29)
+#define OPCR_AHB1_ACK           BIT(28)
+#define OPCR_OTGPHY_ENABLE      BIT(7)    /* SPENDN bit */
+#define OPCR_GPSEN              BIT(6)
+#define OPCR_UHCPHY_DISABLE     BIT(5)    /* SPENDH bit */
+#define OPCR_O1SE               BIT(4)
+#define OPCR_PD                 BIT(3)
+#define OPCR_ERCS               BIT(2)
 
 #define OPCR_O1ST_LSB           8
-#define OPCR_O1ST_MASK          BITS_H2L(15, OPCR_O1ST_LSB)
+#define OPCR_O1ST_MASK          GENMASK(15, OPCR_O1ST_LSB)
 
 /* Clock gate register 1(CGR1) */
-#define CLKGR1_I2C2             BIT15
-#define CLKGR1_AUX              BIT14
-#define CLKGR1_I2S2             BIT13
-#define CLKGR1_OSD              BIT12
-#define CLKGR1_PCM1             BIT10
-#define CLKGR1_GPU              BIT9
-#define CLKGR1_PCM0             BIT8
-#define CLKGR1_VPU              BIT7
-#define CLKGR1_CABAC            BIT6
-#define CLKGR1_SRAM             BIT5
-#define CLKGR1_DCT              BIT4
-#define CLKGR1_ME               BIT3
-#define CLKGR1_DBLK             BIT2
-#define CLKGR1_MC               BIT1
-#define CLKGR1_BDMA             BIT0
+#define CLKGR1_I2C2             BIT(15)
+#define CLKGR1_AUX              BIT(14)
+#define CLKGR1_I2S2             BIT(13)
+#define CLKGR1_OSD              BIT(12)
+#define CLKGR1_PCM1             BIT(10)
+#define CLKGR1_GPU              BIT(9)
+#define CLKGR1_PCM0             BIT(8)
+#define CLKGR1_VPU              BIT(7)
+#define CLKGR1_CABAC            BIT(6)
+#define CLKGR1_SRAM             BIT(5)
+#define CLKGR1_DCT              BIT(4)
+#define CLKGR1_ME               BIT(3)
+#define CLKGR1_DBLK             BIT(2)
+#define CLKGR1_MC               BIT(1)
+#define CLKGR1_BDMA             BIT(0)
 
 /* PLL control register 1(CPPCR1) */
-#define CPPCR1_PLL1BS           BIT31
-#define CPPCR1_P1SCS            BIT15
-#define CPPCR1_PLL1EN           BIT7
-#define CPPCR1_PLL1S            BIT6
-#define CPPCR1_LOCK             BIT2    /* LOCK1 bit */
-#define CPPCR1_PLL1OFF          BIT1
-#define CPPCR1_PLL1ON           BIT0
+#define CPPCR1_PLL1BS           BIT(31)
+#define CPPCR1_P1SCS            BIT(15)
+#define CPPCR1_PLL1EN           BIT(7)
+#define CPPCR1_PLL1S            BIT(6)
+#define CPPCR1_LOCK             BIT(2)    /* LOCK1 bit */
+#define CPPCR1_PLL1OFF          BIT(1)
+#define CPPCR1_PLL1ON           BIT(0)
 
 #define CPPCR1_PLL1M_LSB        24
-#define CPPCR1_PLL1M_MASK       BITS_H2L(30, CPPCR1_PLL1M_LSB)
+#define CPPCR1_PLL1M_MASK       GENMASK(30, CPPCR1_PLL1M_LSB)
 
 #define CPPCR1_PLL1N_LSB        18
-#define CPPCR1_PLL1N_MASK       BITS_H2L(21, CPPCR1_PLL1N_LSB)
+#define CPPCR1_PLL1N_MASK       GENMASK(21, CPPCR1_PLL1N_LSB)
 
 #define CPPCR1_PLL1OD_LSB       16
-#define CPPCR1_PLL1OD_MASK      BITS_H2L(17, CPPCR1_PLL1OD_LSB)
+#define CPPCR1_PLL1OD_MASK      GENMASK(17, CPPCR1_PLL1OD_LSB)
 
 #define CPPCR1_P1SDIV_LSB       9
-#define CPPCR1_P1SDIV_MASK      BITS_H2L(14, CPPCR1_P1SDIV_LSB)
+#define CPPCR1_P1SDIV_MASK      GENMASK(14, CPPCR1_P1SDIV_LSB)
 
 /* CPM scratch pad protected register(CPSPPR) */
 #define CPSPPR_CPSPR_WRITABLE   (0x00005a5a)
 
 /* OTG parameter control register(USBPCR) */
-#define USBPCR_USB_MODE         BIT31
-#define USBPCR_AVLD_REG         BIT30
-#define USBPCR_INCRM            BIT27   /* INCR_MASK bit */
-#define USBPCR_CLK12_EN         BIT26
-#define USBPCR_COMMONONN        BIT25
-#define USBPCR_VBUSVLDEXT       BIT24
-#define USBPCR_VBUSVLDEXTSEL    BIT23
-#define USBPCR_POR              BIT22
-#define USBPCR_SIDDQ            BIT21
-#define USBPCR_OTG_DISABLE      BIT20
-#define USBPCR_TXPREEMPHTUNE    BIT6
+#define USBPCR_USB_MODE         BIT(31)
+#define USBPCR_AVLD_REG         BIT(30)
+#define USBPCR_INCRM            BIT(27)   /* INCR_MASK bit */
+#define USBPCR_CLK12_EN         BIT(26)
+#define USBPCR_COMMONONN        BIT(25)
+#define USBPCR_VBUSVLDEXT       BIT(24)
+#define USBPCR_VBUSVLDEXTSEL    BIT(23)
+#define USBPCR_POR              BIT(22)
+#define USBPCR_SIDDQ            BIT(21)
+#define USBPCR_OTG_DISABLE      BIT(20)
+#define USBPCR_TXPREEMPHTUNE    BIT(6)
 
 #define USBPCR_IDPULLUP_LSB             28   /* IDPULLUP_MASK bit */
-#define USBPCR_IDPULLUP_MASK            BITS_H2L(29, USBPCR_IDPULLUP_LSB)
+#define USBPCR_IDPULLUP_MASK            GENMASK(29, USBPCR_IDPULLUP_LSB)
 #define USBPCR_IDPULLUP_ALWAYS          (3 << USBPCR_IDPULLUP_LSB)
 #define USBPCR_IDPULLUP_SUSPEND         (1 << USBPCR_IDPULLUP_LSB)
 #define USBPCR_IDPULLUP_OTG             (0 << USBPCR_IDPULLUP_LSB)
 
 #define USBPCR_COMPDISTUNE_LSB          17
-#define USBPCR_COMPDISTUNE_MASK         BITS_H2L(19, USBPCR_COMPDISTUNE_LSB)
+#define USBPCR_COMPDISTUNE_MASK         GENMASK(19, USBPCR_COMPDISTUNE_LSB)
 
 #define USBPCR_OTGTUNE_LSB              14
-#define USBPCR_OTGTUNE_MASK             BITS_H2L(16, USBPCR_OTGTUNE_LSB)
+#define USBPCR_OTGTUNE_MASK             GENMASK(16, USBPCR_OTGTUNE_LSB)
 
 #define USBPCR_SQRXTUNE_LSB             11
-#define USBPCR_SQRXTUNE_MASK            BITS_H2L(13, USBPCR_SQRXTUNE_LSB)
+#define USBPCR_SQRXTUNE_MASK            GENMASK(13, USBPCR_SQRXTUNE_LSB)
 
 #define USBPCR_TXFSLSTUNE_LSB           7
-#define USBPCR_TXFSLSTUNE_MASK          BITS_H2L(10, USBPCR_TXFSLSTUNE_LSB)
+#define USBPCR_TXFSLSTUNE_MASK          GENMASK(10, USBPCR_TXFSLSTUNE_LSB)
 
 #define USBPCR_TXRISETUNE_LSB           4
-#define USBPCR_TXRISETUNE_MASK          BITS_H2L(5, USBPCR_TXRISETUNE_LSB)
+#define USBPCR_TXRISETUNE_MASK          GENMASK(5, USBPCR_TXRISETUNE_LSB)
 
 #define USBPCR_TXVREFTUNE_LSB           0
-#define USBPCR_TXVREFTUNE_MASK          BITS_H2L(3, USBPCR_TXVREFTUNE_LSB)
+#define USBPCR_TXVREFTUNE_MASK          GENMASK(3, USBPCR_TXVREFTUNE_LSB)
 
 
-#define USBPCR1_UHC_POWON		BIT5
+#define USBPCR1_UHC_POWON		BIT(5)
 /* OTG reset detect timer register(USBRDT) */
-#define USBRDT_VBFIL_LD_EN      BIT25
-#define USBRDT_IDDIG_EN         BIT24
-#define USBRDT_IDDIG_REG        BIT23
+#define USBRDT_VBFIL_LD_EN      BIT(25)
+#define USBRDT_IDDIG_EN         BIT(24)
+#define USBRDT_IDDIG_REG        BIT(23)
 
 #define USBRDT_USBRDT_LSB       0
-#define USBRDT_USBRDT_MASK      BITS_H2L(22, USBRDT_USBRDT_LSB)
+#define USBRDT_USBRDT_MASK      GENMASK(22, USBRDT_USBRDT_LSB)
 
 /* OTG PHY clock divider register(USBCDR) */
-#define USBCDR_UCS              BIT31
-#define USBCDR_UPCS             BIT30
+#define USBCDR_UCS              BIT(31)
+#define USBCDR_UPCS             BIT(30)
 
 #define USBCDR_OTGDIV_LSB       0       /* USBCDR bit */
-#define USBCDR_OTGDIV_MASK      BITS_H2L(5, USBCDR_OTGDIV_LSB)
+#define USBCDR_OTGDIV_MASK      GENMASK(5, USBCDR_OTGDIV_LSB)
 
 /* I2S device clock divider register(I2SCDR) */
-#define I2SCDR_I2CS             BIT31
-#define I2SCDR_I2PCS            BIT30
+#define I2SCDR_I2CS             BIT(31)
+#define I2SCDR_I2PCS            BIT(30)
 
 #define I2SCDR_I2SDIV_LSB       0       /* I2SCDR bit */
-#define I2SCDR_I2SDIV_MASK      BITS_H2L(8, I2SCDR_I2SDIV_LSB)
+#define I2SCDR_I2SDIV_MASK      GENMASK(8, I2SCDR_I2SDIV_LSB)
 
 /* LCD pix clock divider register(LPCDR) */
-#define LPCDR_LTCS              BIT30
-#define LPCDR_LPCS              BIT29
+#define LPCDR_LTCS              BIT(30)
+#define LPCDR_LPCS              BIT(29)
 
 #define LPCDR_PIXDIV_LSB        0       /* LPCDR bit */
-#define LPCDR_PIXDIV_MASK       BITS_H2L(10, LPCDR_PIXDIV_LSB)
+#define LPCDR_PIXDIV_MASK       GENMASK(10, LPCDR_PIXDIV_LSB)
 
 /* MSC clock divider register(MSCCDR) */
-#define MSCCDR_MCSG		BIT31
-#define MSCCDR_MPCS		BIT30
+#define MSCCDR_MCSG		BIT(31)
+#define MSCCDR_MPCS		BIT(30)
 
 #define MSCCDR_MSCDIV_LSB       0       /* MSCCDR bit */
-#define MSCCDR_MSCDIV_MASK      BITS_H2L(6, MSCCDR_MSCDIV_LSB)
+#define MSCCDR_MSCDIV_MASK      GENMASK(6, MSCCDR_MSCDIV_LSB)
 
 /* UHC device clock divider register(UHCCDR) */
-#define UHCCDR_UHPCS            BIT29
-#define UHCCDR_UHCS		BIT30 	/* pll1 as default */
+#define UHCCDR_UHPCS            BIT(29)
+#define UHCCDR_UHCS		BIT(30)	/* pll1 as default */
 
 #define UHCCDR_UHCDIV_LSB       0       /* UHCCDR bit */
-#define UHCCDR_UHCDIV_MASK      BITS_H2L(3, UHCCDR_UHCDIV_LSB)
+#define UHCCDR_UHCDIV_MASK      GENMASK(3, UHCCDR_UHCDIV_LSB)
 
 /* SSI clock divider register(SSICDR) */
-#define SSICDR_SCS              BIT31
-#define SSICDR_SPCS             BIT30
+#define SSICDR_SCS              BIT(31)
+#define SSICDR_SPCS             BIT(30)
 
 #define SSICDR_SSIDIV_LSB       0       /* SSICDR bit */
-#define SSICDR_SSIDIV_MASK      BITS_H2L(5, SSICDR_SSIDIV_LSB)
+#define SSICDR_SSIDIV_MASK      GENMASK(5, SSICDR_SSIDIV_LSB)
 
 /* CIM mclk clock divider register(CIMCDR) */
-#define CIMCDR_CIMPCS           BIT31
+#define CIMCDR_CIMPCS           BIT(31)
 
 #define CIMCDR_CIMDIV_LSB       0       /* CIMCDR bit */
-#define CIMCDR_CIMDIV_MASK      BITS_H2L(7, CIMCDR_CIMDIV_LSB)
+#define CIMCDR_CIMDIV_MASK      GENMASK(7, CIMCDR_CIMDIV_LSB)
 
 /* GPS clock divider register(GPSCDR) */
-#define GPSCDR_GPCS             BIT31
+#define GPSCDR_GPCS             BIT(31)
 
 #define GPSCDR_GPSDIV_LSB       0       /* GPSCDR bit */
-#define GSPCDR_GPSDIV_MASK      BITS_H2L(3, GPSCDR_GPSDIV_LSB)
+#define GSPCDR_GPSDIV_MASK      GENMASK(3, GPSCDR_GPSDIV_LSB)
 
 /* PCM device clock divider register(PCMCDR) */
-#define PCMCDR_PCMS             BIT31
-#define PCMCDR_PCMPCS           BIT30
+#define PCMCDR_PCMS             BIT(31)
+#define PCMCDR_PCMPCS           BIT(30)
 
 #define PCMCDR_PCMDIV_LSB       0       /* PCMCDR bit */
-#define PCMCDR_PCMDIV_MASK      BITS_H2L(8, PCMCDR_PCMDIV_LSB)
+#define PCMCDR_PCMDIV_MASK      GENMASK(8, PCMCDR_PCMDIV_LSB)
 
 /* GPU clock divider register */
-#define GPUCDR_GPCS             BIT31
+#define GPUCDR_GPCS             BIT(31)
 #define GPUCDR_GPUDIV_LSB       0       /* GPUCDR bit */
-#define GPUCDR_GPUDIV_MASK      BITS_H2L(2, GPUCDR_GPUDIV_LSB)
+#define GPUCDR_GPUDIV_MASK      GENMASK(2, GPUCDR_GPUDIV_LSB)
 
 /* BCH clock divider register */
 #define CPM_BCHCDR_BPCS			(1 << 31)

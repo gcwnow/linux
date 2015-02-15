@@ -181,7 +181,7 @@ do {									\
 do {									\
 	unsigned int timeout = 1;					\
 	__wait_write_ready();						\
-	OUTREG32(RTC_WENR, WENR_WENPAT_WRITABLE);			\
+	REG32(RTC_WENR) = WENR_WENPAT_WRITABLE;				\
 	__wait_write_ready();						\
 	while (!(rtc_read_reg(RTC_WENR) & RTC_WENR_WEN) && timeout++);	\
 }while(0);
@@ -191,15 +191,15 @@ do {									\
 ({							\
 	unsigned int data;				\
 	do {						\
-		data = INREG32(reg);			\
-	} while (INREG32(reg) != data);			\
+		data = REG32(reg);			\
+	} while (REG32(reg) != data);			\
 	data;						\
 })
 
 #define rtc_write_reg(reg, data)			\
 do {							\
 	__wait_writable();				\
-	OUTREG32(reg, data);				\
+	REG32(reg) = data;				\
 	__wait_write_ready();				\
 }while(0);
 

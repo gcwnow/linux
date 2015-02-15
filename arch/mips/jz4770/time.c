@@ -48,14 +48,14 @@
 #define REG_OST_OSTCNTH_BUF	REG32(OST_BASE + JZ_REG_OST_OSTCNTH_BUF)
 
 /* Operating system control register(OSTCSR) */
-#define OSTCSR_CNT_MD		BIT15
-#define OSTCSR_SD		BIT9
-#define OSTCSR_EXT_EN		BIT2
-#define OSTCSR_RTC_EN		BIT1
-#define OSTCSR_PCK_EN		BIT0
+#define OSTCSR_CNT_MD		BIT(15)
+#define OSTCSR_SD		BIT(9)
+#define OSTCSR_EXT_EN		BIT(2)
+#define OSTCSR_RTC_EN		BIT(1)
+#define OSTCSR_PCK_EN		BIT(0)
 
 #define OSTCSR_PRESCALE_LSB	3
-#define OSTCSR_PRESCALE_MASK	BITS_H2L(5, OSTCSR_PRESCALE_LSB)
+#define OSTCSR_PRESCALE_MASK	GENMASK(5, OSTCSR_PRESCALE_LSB)
 #define OSTCSR_PRESCALE1	(0x0 << OSTCSR_PRESCALE_LSB)
 #define OSTCSR_PRESCALE4	(0x1 << OSTCSR_PRESCALE_LSB)
 #define OSTCSR_PRESCALE16	(0x2 << OSTCSR_PRESCALE_LSB)
@@ -206,7 +206,8 @@ static void __init jz_timer_setup(void)
 	setup_irq(JZ_TIMER_IRQ, &jz_irqaction);
 	__tcu_clear_full_match_flag(JZ_TIMER_TCU_CH);
 	__tcu_unmask_full_match_irq(JZ_TIMER_TCU_CH);
-	__tcu_start_counter(JZ_TIMER_TCU_CH);}
+	__tcu_start_counter(JZ_TIMER_TCU_CH);
+}
 
 
 void __init plat_time_init(void)

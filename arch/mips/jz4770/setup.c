@@ -83,7 +83,7 @@ static void __init jz_serial_setup(void)
 	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
 	s.iotype = SERIAL_IO_MEM;
 	s.regshift = 2;
-	s.uartclk = __cpm_get_extalclk();
+	s.uartclk = JZ_EXTAL;
 	s.serial_out = jz4740_serial_out;
 
 	s.line = 0;

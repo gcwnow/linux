@@ -80,8 +80,8 @@ void jz_power_off(void)
 	printk("Put CPU into hibernate mode.\n");
 
 	/* Mask all interrupts */
-	OUTREG32(INTC_ICMSR(0), 0xffffffff);
-	OUTREG32(INTC_ICMSR(1), 0x7ff);
+	REG32(INTC_ICMSR(0)) = 0xffffffff;
+	REG32(INTC_ICMSR(1)) = 0x7ff;
 
 	/*
 	 * RTC Wakeup or 1Hz interrupt can be enabled or disabled
