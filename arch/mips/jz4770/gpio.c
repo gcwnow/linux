@@ -15,33 +15,7 @@
  * published by the Free Software Foundation.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/init.h>
-
-#include <linux/io.h>
-#include <linux/gpio.h>
-#include <linux/delay.h>
-#include <linux/interrupt.h>
-#include <linux/bitops.h>
-#include <linux/export.h>
-#include <linux/pinctrl/consumer.h>
-
-#include <asm/mach-jz4770/gpio.h>
-
-#include "gpio.h"
-
-void jz_gpio_enable_pullup(unsigned gpio)
-{
-	__gpio_enable_pull(gpio);
-}
-EXPORT_SYMBOL_GPL(jz_gpio_enable_pullup);
-
-void jz_gpio_disable_pullup(unsigned gpio)
-{
-	__gpio_disable_pull(gpio);
-}
-EXPORT_SYMBOL_GPL(jz_gpio_disable_pullup);
+#include <asm/gpio.h>
 
 int gpio_to_irq(unsigned gpio)
 {

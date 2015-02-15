@@ -10,7 +10,4 @@
 #define JZ_GPIO_PORTE(x) ((x) + 32 * 4)
 #define JZ_GPIO_PORTF(x) ((x) + 32 * 5)
 
-void jz_gpio_enable_pullup(unsigned gpio);
-void jz_gpio_disable_pullup(unsigned gpio);
-
 #endif /* _JZ_GPIO_H */
