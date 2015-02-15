@@ -413,6 +413,28 @@ static const struct clk_ops jz_clk_main_ops = {
 	.round_rate = jz_clk_main_round_rate,
 };
 
+static int jz_clk_h1clk_enable(struct clk *clk)
+{
+	jz_clk_reg_clear_bits(CPM_LCR_OFFSET, LCR_PDAHB1);
+	while (jz_clk_reg_read(CPM_LCR_OFFSET) & LCR_PDAHB1S);
+	return 0;
+}
+
+static int jz_clk_h1clk_disable(struct clk *clk)
+{
+	jz_clk_reg_set_bits(CPM_LCR_OFFSET, LCR_PDAHB1);
+	while (!(jz_clk_reg_read(CPM_LCR_OFFSET) & LCR_PDAHB1S));
+	return 0;
+}
+
+static const struct clk_ops jz_clk_h1clk_ops = {
+	.get_rate = jz_clk_main_get_rate,
+	.set_rate = jz_clk_main_set_rate,
+	.round_rate = jz_clk_main_round_rate,
+	.enable = jz_clk_h1clk_enable,
+	.disable = jz_clk_h1clk_disable,
+};
+
 enum {
 	JZ_CLK_MAIN_CCLK,
 	JZ_CLK_MAIN_H0CLK,
@@ -443,7 +465,7 @@ static struct main_clk jz_clk_main_clks[] = {
 		.clk = {
 			.name = "h1clk",
 			.parent = &jz_clk_pll0,
-			.ops = &jz_clk_main_ops,
+			.ops = &jz_clk_h1clk_ops,
 		},
 		.div_offset = CPCCR_H1DIV_LSB,
 	},
@@ -1112,6 +1134,9 @@ static int __init jz_clk_init(void)
 
 	jz_clk_ext.rate = jz_clk_bdata.ext_rate;
 	jz_clk_rtc.rate = jz_clk_bdata.rtc_rate;
+
+	/* Disable AHB1 clock by default */
+	clk_disable(&jz_clk_main_clks[JZ_CLK_MAIN_H1CLK].clk);
 
 	/* Connect as much clocks to EXT as possible */
 	for (i = 0; i < ARRAY_SIZE(jz_clk_divided_clks_ext); ++i) {
