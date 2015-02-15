@@ -541,8 +541,6 @@ unsigned int cpm_get_clock(cgu_clock clock_name);
 unsigned int cpm_get_pllout(void);
 unsigned int cpm_get_pllout1(void);
 
-void cpm_uhc_phy(unsigned int en);
-
 /**************remove me if android's kernel support these operations********start*********  */
 #define __cpm_stop_lcd()	(REG_CPM_CLKGR0 |= CLKGR0_LCD)
 #define __cpm_start_lcd()	(REG_CPM_CLKGR0 &= ~CLKGR0_LCD)

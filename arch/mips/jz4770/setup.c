@@ -56,55 +56,6 @@
 #include "uart.h"
 
 
-extern void __init jz_board_setup(void);
-
-static void __init soc_cpm_setup(void)
-{
-	/* Enable device DMA */
-	cpm_start_clock(CGM_DMAC);
-
-	/* CPU enters IDLE mode when executing 'wait' instruction */
-	CMSREG32(CPM_LCR, LCR_LPM_IDLE, LCR_LPM_MASK);
-
-	/* Enable the 32k oscillator instead of using 12M/512 */
-	SETREG32(CPM_OPCR, OPCR_ERCS);
-
-	/* Disable AHB1 (VPU) power */
-	SETREG32(CPM_LCR, LCR_PDAHB1);
-	while(!(REG_CPM_LCR && LCR_PDAHB1S)) ;
-
-	/* Setup system clocks */
-	printk("CPU clock: %dMHz, System clock: %dMHz, "
-	       "Peripheral clock: %dMHz, Memory clock: %dMHz, AUX clock %dMHz, AHB1 clock %dMHz, AHB2 clock %dMHz\n",
-	       (cpm_get_clock(CGU_CCLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_HCLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_PCLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_MCLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_C1CLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_H1CLK) + 500000) / 1000000,
-	       (cpm_get_clock(CGU_H2CLK) + 500000) / 1000000);
-}
-
-static void __init soc_harb_setup(void)
-{
-//	__harb_set_priority(0x00);  /* CIM>LCD>DMA>ETH>PCI>USB>CBB */
-//	__harb_set_priority(0x03);  /* LCD>CIM>DMA>ETH>PCI>USB>CBB */
-//	__harb_set_priority(0x0a);  /* ETH>LCD>CIM>DMA>PCI>USB>CBB */
-}
-
-static void __init soc_dmac_setup(void)
-{
-	__dmac_enable_module(0);
-	__dmac_enable_module(1);
-}
-
-static void __init jz_soc_setup(void)
-{
-	soc_cpm_setup();
-	soc_harb_setup();
-	soc_dmac_setup();
-}
-
 /* XXX: We really should just merge with jz4740. */
 void jz4740_serial_out(struct uart_port *p, int offset, int value)
 {
@@ -184,7 +135,6 @@ void __init plat_mem_setup(void)
 	jz_reset_init();
 	__dt_setup_arch(__dtb_start);
 
-	jz_soc_setup();
 	jz_serial_setup();
 }
 
