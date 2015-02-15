@@ -16,10 +16,6 @@
 #include <linux/clk.h>
 #include <linux/regulator/consumer.h>
 
-#if defined(CONFIG_MACH_JZ4770)
-#include <asm/mach-jz4770/jz4770cpm.h>
-#endif
-
 enum jz4740_ohci_devtype {
 	DEVTYPE_JZ4740,
 	DEVTYPE_JZ4770,
@@ -41,14 +37,6 @@ static inline struct jz4740_ohci_hcd *hcd_to_jz4740_hcd(struct usb_hcd *hcd)
 static inline struct usb_hcd *jz4740_hcd_to_hcd(struct jz4740_ohci_hcd *jz4740_ohci)
 {
 	return container_of((void *)jz4740_ohci, struct usb_hcd, hcd_priv);
-}
-
-static inline void phy_set_enabled(struct platform_device *pdev, bool enabled)
-{
-#if defined(CONFIG_MACH_JZ4770)
-	if (platform_get_device_id(pdev)->driver_data == DEVTYPE_JZ4770)
-		cpm_uhc_phy(enabled);
-#endif
 }
 
 static int ohci_jz4740_start(struct usb_hcd *hcd)
@@ -204,8 +192,6 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 	clk_set_rate(jz4740_ohci->clk, 48000000);
 	clk_enable(jz4740_ohci->clk);
 
-	phy_set_enabled(pdev, true);
-
 	platform_set_drvdata(pdev, hcd);
 
 	ohci_hcd_init(hcd_to_ohci(hcd));
@@ -220,7 +206,6 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 	return 0;
 
 err_disable:
-	phy_set_enabled(pdev, false);
 	if (jz4740_ohci->vbus)
 		regulator_disable(jz4740_ohci->vbus);
 	clk_disable(jz4740_ohci->clk);
@@ -237,8 +222,6 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 	struct jz4740_ohci_hcd *jz4740_ohci = hcd_to_jz4740_hcd(hcd);
 
 	usb_remove_hcd(hcd);
-
-	phy_set_enabled(pdev, false);
 
 	if (jz4740_ohci->vbus)
 		regulator_disable(jz4740_ohci->vbus);
