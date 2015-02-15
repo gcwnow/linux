@@ -132,6 +132,17 @@ static int jz_clk_enable_gating_msc(struct clk *clk)
 	return 0;
 }
 
+static int jz_clk_enable_gating_uhc(struct clk *clk)
+{
+	int ret = jz_clk_enable_gating(clk);
+	if (ret)
+		return ret;
+
+	jz_clk_reg_clear_bits(CPM_OPCR_OFFSET, OPCR_UHCPHY_DISABLE);
+	jz_clk_reg_set_bits(CPM_USBPCR1_OFFSET, USBPCR1_UHC_POWON);
+	return 0;
+}
+
 static int jz_clk_disable_gating(struct clk *clk)
 {
 	if (clk->gate_bit == JZ_CLK_NOT_GATED)
@@ -139,6 +150,13 @@ static int jz_clk_disable_gating(struct clk *clk)
 
 	jz_clk_reg_set_bits(clk->gate_register, clk->gate_bit);
 	return 0;
+}
+
+static int jz_clk_disable_gating_uhc(struct clk *clk)
+{
+	jz_clk_reg_clear_bits(CPM_USBPCR1_OFFSET, USBPCR1_UHC_POWON);
+	jz_clk_reg_set_bits(CPM_OPCR_OFFSET, OPCR_UHCPHY_DISABLE);
+	return jz_clk_disable_gating(clk);
 }
 
 static int jz_clk_is_enabled_gating(struct clk *clk)
@@ -539,6 +557,15 @@ static const struct clk_ops jz_clk_msc_ops = {
 	.is_enabled = jz_clk_is_enabled_gating,
 };
 
+static const struct clk_ops jz_clk_uhc_ops = {
+	.set_parent = jz_clk_divided_set_parent,
+	.set_rate = jz_clk_divided_set_rate,
+	.get_rate = jz_clk_divided_get_rate,
+	.enable = jz_clk_enable_gating_uhc,
+	.disable = jz_clk_disable_gating_uhc,
+	.is_enabled = jz_clk_is_enabled_gating,
+};
+
 /* Those clocks can connect to PLL0_half or PLL1 */
 static struct divided_clk jz_clk_divided_clks[] = {
 	/* TODO: Complete this */
@@ -595,7 +622,7 @@ static struct divided_clk jz_clk_divided_clks[] = {
 			.name = "uhc",
 			.gate_register = CPM_CLKGR0_OFFSET,
 			.gate_bit = CLKGR0_UHC,
-			.ops = &jz_clk_divided_ops,
+			.ops = &jz_clk_uhc_ops,
 		},
 		.reg = CPM_UHCCDR_OFFSET,
 		.mask = UHCCDR_UHCDIV_MASK,
