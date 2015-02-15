@@ -205,7 +205,6 @@ static int gcw0_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	jz_gpio_disable_pullup(GCW0_AVOUT_DETECT_GPIO);
 	gpio_direction_output(GCW0_AVOUT_GPIO, 1);
 	gpio_direction_output(GCW0_SPEAKER_GPIO, 0);
 
