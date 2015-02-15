@@ -20,7 +20,7 @@
 
 
 
-
+#include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/slab.h>
 #if defined(JZSOC) && defined(CONFIG_PREEMPT)
@@ -693,44 +693,8 @@ OnError:
 #ifdef CONFIG_JZSOC
 static void enable_jzsoc_gpu_clock(void)
 {
-#ifdef CONFIG_MACH_JZ4770
-    {
-        /* JZ4770 GPU CLK2x 100MHz -- 500MHz */
-#define GPU_CLK_MAX 500000000
-        unsigned int GPUCDR_VAL=0;
-        int div;
-        int gpu_use_pll1 = 1;
-        unsigned int pll_clk;
-        unsigned int gpu_clk = 0;
-
-        /* Right now: hardcode PLL0.
-	 * Later: use generic clock interface.
-        pll_clk = cpm_get_pllout1();
-        if ( pll_clk == 0 )*/ {
-            gpu_use_pll1 = 0;   /* use pll0 */
-            pll_clk = cpm_get_pllout();
-            if ((INREG32(CPM_CPCCR) & CPCCR_PCS) != 0 )
-            pll_clk /= 2;
-        }
-
-        for ( div=1; div <= ((GPUCDR_GPUDIV_MASK>>GPUCDR_GPUDIV_LSB)+1); div++ ) {
-            gpu_clk = pll_clk/div;
-            if ( gpu_clk < GPU_CLK_MAX )
-                break;
-        }
-
-        cpm_stop_clock(CGM_GPU);
-        GPUCDR_VAL = (div-1);
-        if (gpu_use_pll1)
-            GPUCDR_VAL |= 1<<31;
-        REG_CPM_GPUCDR = GPUCDR_VAL;
-        cpm_start_clock(CGM_GPU);
-
-        printk("REG_CPM_GPUCDR= 0x%08x\n", GPUCDR_VAL);
-        printk("GPU CLOCK USE PLL%d\n", gpu_use_pll1);
-        printk("GPU GPU_CLK2x= %d MHz\n", gpu_clk/1000000);
-    }
-#endif
+	struct clk *clk = clk_get(NULL, "gpu");
+	clk_enable(clk);
 }
 #endif
 
