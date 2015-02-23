@@ -405,11 +405,11 @@ unsigned jz47xx_tcu_set_channel_rate(struct jz47xx_tcu_channel *channel,
 		csr |= TCSR_PCK_EN;
 		break;
 	case JZ47XX_TCU_SRC_RTCCLK:
-		src_clk = clk_get(NULL, "rtclk");
+		src_clk = clk_get(NULL, "rtc");
 		csr |= TCSR_RTC_EN;
 		break;
 	case JZ47XX_TCU_SRC_EXTAL:
-		src_clk = clk_get(NULL, "exclk");
+		src_clk = clk_get(NULL, "ext");
 		csr |= TCSR_EXT_EN;
 		break;
 	default:
@@ -447,9 +447,9 @@ unsigned jz47xx_tcu_get_channel_rate(struct jz47xx_tcu_channel *channel)
 	if (csr & TCSR_PCK_EN)
 		src_clk = clk_get(NULL, "pclk");
 	else if (csr & TCSR_RTC_EN)
-		src_clk = clk_get(NULL, "rtclk");
+		src_clk = clk_get(NULL, "rtc");
 	else if (csr & TCSR_EXT_EN)
-		src_clk = clk_get(NULL, "exclk");
+		src_clk = clk_get(NULL, "ext");
 	else
 		return 0;
 
