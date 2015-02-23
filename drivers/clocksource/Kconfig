@@ -299,6 +299,7 @@ config JZ47XX_TCU
 config JZ4780_TCU
 	def_bool y if MACH_JZ4780
 	select JZ47XX_TCU
+	select CLKSRC_OF if OF
 	help
 	  Support for the timer/counter unit of the Ingenic jz4780 SoC.
 
