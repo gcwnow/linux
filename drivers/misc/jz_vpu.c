@@ -100,13 +100,13 @@ static void jz_vpu_on(struct device *dev)
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 
 	/* Do not stop CPUI clock when in idle mode. */
-	SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
+	REG32(CPM_OPCR) |= OPCR_IDLE_DIS;
 
 	clk_enable(vpu->aux_clk);
 	clk_enable(vpu->vpu_clk);
 
 	/* enable power to AHB1 (VPU), then wait for it to enable */
-	CLRREG32(CPM_LCR, LCR_PDAHB1);
+	REG32(CPM_LCR) &= ~LCR_PDAHB1;
 	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
 	/*
@@ -126,7 +126,7 @@ static void jz_vpu_off(struct device *dev)
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 
 	/* Power down AHB1 (VPU) */
-	SETREG32(CPM_LCR, LCR_PDAHB1);
+	REG32(CPM_LCR) |= LCR_PDAHB1;
 	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
 
 	disable_irq_nosync(vpu->irq);
@@ -140,7 +140,7 @@ static void jz_vpu_off(struct device *dev)
 	 */
 	clear_c0_config7(BIT(6));
 
-	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
+	REG32(CPM_OPCR) &= ~OPCR_IDLE_DIS;
 
 	dev_dbg(dev, "VPU disabled\n");
 }
