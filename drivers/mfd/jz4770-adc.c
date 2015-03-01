@@ -286,6 +286,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	struct resource *mem_base;
 	struct resource *mem;
 	void __iomem *base2;
+	struct irq_domain *irq_domain;
 	int irq_base;
 	int err;
 
@@ -302,14 +303,6 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to get platform irq: %d\n",
 			adc->irq);
 		return adc->irq;
-	}
-
-	/* Get base number for demultiplexed cell IRQs. */
-
-	irq_base = platform_get_irq(pdev, 1);
-	if (irq_base < 0) {
-		dev_err(&pdev->dev, "Failed to get irq base: %d\n", irq_base);
-		return irq_base;
 	}
 
 	/*
@@ -355,6 +348,11 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
+	irq_domain = irq_domain_add_linear(pdev->dev.of_node,
+			SADC_IRQ_NUM, &irq_domain_simple_ops, NULL);
+	if (!irq_domain)
+		return -EINVAL;
+
 	/* Initialize hardware. */
 
 	adc->clk = devm_clk_get(&pdev->dev, "adc");
@@ -387,6 +385,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, adc);
 
+	irq_base = irq_create_mapping(irq_domain, 0);
 	gc = irq_alloc_generic_chip("INTC", 1, irq_base, adc->base,
 				    handle_level_irq);
 
