@@ -44,6 +44,201 @@
 		#clock-cells = <1>;
 	};
 
+	pinctrl@10010000 {
+		compatible = "ingenic,jz4780-pinctrl";
+		reg = <0x10010000 0x600>;
+
+		gpa: gpa {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <17>;
+
+			ingenic,pull-ups = <0x3fffffff>;
+		};
+
+		gpb: gpb {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <16>;
+
+			ingenic,pull-downs = <0x000f0c03>;
+			ingenic,pull-ups   = <0xfff0030c>;
+		};
+
+		gpc: gpc {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <15>;
+
+			ingenic,pull-ups = <0xffffffff>;
+		};
+
+		gpd: gpd {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <14>;
+
+			ingenic,pull-downs = <0x0000b000>;
+			ingenic,pull-ups   = <0xffff4fff>;
+		};
+
+		gpe: gpe {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <13>;
+
+			ingenic,pull-downs = <0x00000483>;
+			ingenic,pull-ups   = <0xfffffb7c>;
+		};
+
+		gpf: gpf {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <12>;
+
+			ingenic,pull-downs = <0x00580ff0>;
+			ingenic,pull-ups   = <0xffa7f00f>;
+		};
+
+		pincfg_nobias: nobias {
+			bias-disable;
+		};
+
+		pincfg_pull_up: pull_up {
+			bias-pull-up;
+		};
+
+		pincfg_pull_down: pull_down {
+			bias-pull-down;
+		};
+
+		pinfunc_uart0: uart0 {
+			pins_uart0_data: uart0-data {
+				ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+						&gpf  3 0 &pincfg_nobias>; /* txd */
+			};
+
+			pins_uart0_dataplusflow: uart0-dataplusflow {
+				ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+						&gpf  1 0 &pincfg_nobias   /* cts */
+						&gpf  2 0 &pincfg_nobias   /* rts */
+						&gpf  3 0 &pincfg_nobias>; /* txd */
+			};
+		};
+
+		pinfunc_uart3: uart3 {
+			pins_uart3_data: uart3-data {
+				ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+						&gpe  5 1 &pincfg_nobias>;  /* txd */
+			};
+
+			pins_uart3_dataplusflow: uart3-dataplusflow {
+				ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+						&gpe  5 1 &pincfg_nobias    /* txd */
+						&gpe  8 0 &pincfg_nobias    /* cts */
+						&gpe  9 0 &pincfg_nobias>;  /* rts */
+			};
+		};
+
+		pinfunc_uart4: uart4 {
+			pins_uart4_data: uart4-data {
+				ingenic,pins = <&gpc 20 2 &pincfg_pull_up   /* rxd */
+						&gpc 10 2 &pincfg_nobias>;  /* txd */
+			};
+		};
+
+		pinfunc_nemc: nemc {
+			pins_nemc_data: nemc-data {
+				ingenic,pins = <&gpa 0 0 &pincfg_nobias    /* sd0 */
+						&gpa 1 0 &pincfg_nobias    /* sd1 */
+						&gpa 2 0 &pincfg_nobias    /* sd2 */
+						&gpa 3 0 &pincfg_nobias    /* sd3 */
+						&gpa 4 0 &pincfg_nobias    /* sd4 */
+						&gpa 5 0 &pincfg_nobias    /* sd5 */
+						&gpa 6 0 &pincfg_nobias    /* sd6 */
+						&gpa 7 0 &pincfg_nobias>;  /* sd7 */
+			};
+
+			pins_nemc_rd_we: nemc-rd-we {
+				ingenic,pins = <&gpa 16 0 &pincfg_nobias   /* rd */
+						&gpa 17 0 &pincfg_nobias>; /* we */
+			};
+
+			pins_nemc_frd_fwe: nemc-frd-fwe {
+				ingenic,pins = <&gpa 18 0 &pincfg_nobias   /* rd */
+						&gpa 19 0 &pincfg_nobias>; /* we */
+			};
+
+			pins_nemc_cs1: nemc-cs1 {
+				ingenic,pins = <&gpa 21 0 &pincfg_nobias>; /* cs1 */
+			};
+
+			pins_nemc_cs2: nemc-cs2 {
+				ingenic,pins = <&gpa 22 0 &pincfg_nobias>; /* cs2 */
+			};
+
+			pins_nemc_cs3: nemc-cs3 {
+				ingenic,pins = <&gpa 23 0 &pincfg_nobias>; /* cs3 */
+			};
+
+			pins_nemc_cs4: nemc-cs4 {
+				ingenic,pins = <&gpa 24 0 &pincfg_nobias>; /* cs4 */
+			};
+
+			pins_nemc_cs5: nemc-cs5 {
+				ingenic,pins = <&gpa 25 0 &pincfg_nobias>; /* cs5 */
+			};
+
+			pins_nemc_cs6: nemc-cs6 {
+				ingenic,pins = <&gpa 26 0 &pincfg_nobias>; /* cs6 */
+			};
+
+			pins_nemc_cle_ale: nemc-cle-ale {
+				ingenic,pins = <&gpb 0 0 &pincfg_nobias    /* sa0_cl */
+						&gpb 1 0 &pincfg_nobias>;  /* sa1_al */
+			};
+
+			pins_nemc_addr: nemc-addr {
+				ingenic,pins = <&gpb 0 0 &pincfg_nobias    /* sa0_cl */
+						&gpb 1 0 &pincfg_nobias    /* sa1_al */
+						&gpb 2 0 &pincfg_nobias    /* sa2 */
+						&gpb 3 0 &pincfg_nobias    /* sa3 */
+						&gpb 4 0 &pincfg_nobias    /* sa4 */
+						&gpb 5 0 &pincfg_nobias>;  /* sa5 */
+			};
+		};
+	};
+
 	uart0: serial@10030000 {
 		compatible = "ingenic,jz4780-uart";
 		reg = <0x10030000 0x100>;
