@@ -42,7 +42,7 @@
 #define PRID_COMP_LEXRA		0x0b0000
 #define PRID_COMP_NETLOGIC	0x0c0000
 #define PRID_COMP_CAVIUM	0x0d0000
-#define PRID_COMP_INGENIC	0xd00000
+#define PRID_COMP_INGENIC_JZ4740 0xd00000
 
 /*
  * Assigned Processor ID (implementation) values for bits 15:8 of the PRId
@@ -168,7 +168,7 @@
 #define PRID_IMP_CAVIUM_CN70XX 0x9600
 
 /*
- * These are the PRID's for when 23:16 == PRID_COMP_INGENIC
+ * These are the PRID's for when 23:16 == PRID_COMP_INGENIC_JZ4740
  */
 
 #define PRID_IMP_JZRISC	       0x0200
