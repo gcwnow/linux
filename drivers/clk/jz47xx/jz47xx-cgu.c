@@ -384,6 +384,7 @@ static int jz47xx_clk_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	unsigned long rate, flags;
 	unsigned div, i;
 	u32 reg, mask;
+	int ret = 0;
 
 	clk_info = &cgu->clock_info[jz_clk->idx];
 
@@ -422,12 +423,12 @@ static int jz47xx_clk_set_rate(struct clk_hw *hw, unsigned long req_rate,
 				mdelay(1);
 			}
 			if (i == timeout)
-				return -EBUSY;
+				ret = -EBUSY;
 		}
 
 		spin_unlock_irqrestore(&cgu->divmux_lock, flags);
 
-		return 0;
+		return ret;
 	}
 
 	return -EINVAL;
