@@ -346,6 +346,7 @@ config SERIAL_8250_JZ47XX
 	tristate "Support for Ingenic jz47xx series serial ports"
 	depends on SERIAL_8250
 	select SERIAL_EARLYCON
+	select SERIAL_CORE_CONSOLE
 	help
 	  If you have a system using an Ingenic jz47xx series SoC and wish to
 	  make use of its UARTs, say Y to this option. If unsure, say N.
