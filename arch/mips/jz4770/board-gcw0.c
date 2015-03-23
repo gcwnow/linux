@@ -37,6 +37,7 @@
 #include <linux/platform_data/mxc6225.h>
 #include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/pinctrl/machine.h>
+#include <linux/pinctrl/pinconf-generic.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
@@ -467,6 +468,10 @@ static int __init gcw0_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 
+static unsigned long gpio_charger_pin_cfg[] = {
+	PIN_CONFIG_BIAS_DISABLE,
+};
+
 static struct pinctrl_map pin_map[] __initdata = {
 	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
@@ -478,6 +483,10 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "10010000.jz4770-pinctrl", "lcd_rgb888", "lcd"),
 	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_SLEEP,
 			  "10010000.jz4770-pinctrl", "no_pins", "lcd"),
+	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.0", "10010000.jz4770-pinctrl",
+			  "PF5", gpio_charger_pin_cfg),
+	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.1", "10010000.jz4770-pinctrl",
+			  "PB5", gpio_charger_pin_cfg),
 };
 
 static void __init board_init_pins(void)
