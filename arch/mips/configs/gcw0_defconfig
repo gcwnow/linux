@@ -11,14 +11,6 @@ CONFIG_DEFAULT_HOSTNAME="gcw-zero"
 # CONFIG_CROSS_MEMORY_ATTACH is not set
 # CONFIG_USELIB is not set
 CONFIG_NO_HZ_IDLE=y
-CONFIG_BLK_DEV_INITRD=y
-CONFIG_INITRAMFS_SOURCE="initramfs/tree.txt"
-# CONFIG_RD_GZIP is not set
-# CONFIG_RD_BZIP2 is not set
-# CONFIG_RD_LZMA is not set
-# CONFIG_RD_XZ is not set
-# CONFIG_RD_LZO is not set
-# CONFIG_RD_LZ4 is not set
 # CONFIG_INIT_FALLBACK is not set
 # CONFIG_SGETMASK_SYSCALL is not set
 # CONFIG_SYSFS_SYSCALL is not set
@@ -51,6 +43,7 @@ CONFIG_RFKILL=y
 CONFIG_RFKILL_REGULATOR=y
 # CONFIG_UEVENT_HELPER is not set
 CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
 # CONFIG_STANDALONE is not set
 # CONFIG_PREVENT_FIRMWARE_BUILD is not set
 CONFIG_BLK_DEV_LOOP=y
@@ -211,7 +204,7 @@ CONFIG_PANIC_TIMEOUT=5
 # CONFIG_SCHED_DEBUG is not set
 # CONFIG_FTRACE is not set
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="console=ttyS2,57600 console=tty0 boot=/dev/mmcblk0p1 rfkill.default_state=0"
+CONFIG_CMDLINE="console=ttyS2,57600 console=tty0 root=/dev/mmcblk0p1 rootfstype=vfat ro rootwait init=/mininit-syspart rfkill.default_state=0"
 # CONFIG_CRYPTO_ANSI_CPRNG is not set
 # CONFIG_CRYPTO_HW is not set
 CONFIG_FONTS=y
