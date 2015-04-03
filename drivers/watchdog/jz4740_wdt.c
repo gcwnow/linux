@@ -24,6 +24,7 @@
 #include <linux/clk.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/reboot.h>
 
 #define JZ_REG_WDT_TIMER_DATA     0x0
 #define JZ_REG_WDT_COUNTER_ENABLE 0x4
@@ -44,6 +45,8 @@ MODULE_PARM_DESC(heartbeat,
 		"Watchdog heartbeat period in seconds from 1 to "
 		__MODULE_STRING(MAX_HEARTBEAT) ", default "
 		__MODULE_STRING(DEFAULT_HEARTBEAT));
+
+static struct watchdog_device *jz4740_wdt;
 
 struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
@@ -110,6 +113,19 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 	return 0;
 }
 
+static int jz4740_wdt_restart_handler(struct notifier_block *nb,
+		unsigned long mode, void *cmd)
+{
+	jz4740_wdt->timeout = 0;
+	jz4740_wdt_start(jz4740_wdt);
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block jz4740_wdt_restart_nb = {
+	.notifier_call = jz4740_wdt_restart_handler,
+	.priority = 128,
+};
+
 static const struct watchdog_info jz4740_wdt_info = {
 	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
 	.identity = "jz4740 Watchdog",
@@ -126,7 +142,6 @@ static const struct watchdog_ops jz4740_wdt_ops = {
 static int jz4740_wdt_probe(struct platform_device *pdev)
 {
 	struct jz4740_wdt_drvdata *drvdata;
-	struct watchdog_device *jz4740_wdt;
 	struct resource	*res;
 	int ret;
 
@@ -163,13 +178,21 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
+	ret = register_restart_handler(&jz4740_wdt_restart_nb);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "cannot register restart handler\n");
+		goto err_disable_clk;
+	}
+
 	ret = watchdog_register_device(&drvdata->wdt);
 	if (ret < 0)
-		goto err_disable_clk;
+		goto err_unregister_restart_handler;
 
 	platform_set_drvdata(pdev, drvdata);
 	return 0;
 
+err_unregister_restart_handler:
+	unregister_restart_handler(&jz4740_wdt_restart_nb);
 err_disable_clk:
 	clk_put(drvdata->wdt_clk);
 err_out:
