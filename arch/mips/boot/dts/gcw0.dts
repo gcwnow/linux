@@ -161,6 +161,15 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
+
+		leds {
+			compatible = "gpio-leds";
+
+			power {
+				gpios = <&gpb 30 GPIO_ACTIVE_LOW>;
+				default-state = "on";
+			};
+		};
 	};
 };
 

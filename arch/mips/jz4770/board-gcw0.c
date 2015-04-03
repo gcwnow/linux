@@ -264,30 +264,6 @@ struct jz_clk_board_data jz_clk_bdata = {
 	.pll1_rate	=  432000000,
 };
 
-/* Power LED */
-
-static struct gpio_led gcw0_leds[] = {
-	{
-		.name = "power",
-		.gpio = JZ_GPIO_PORTB(30),
-		.active_low = 1,
-		.default_state = LEDS_GPIO_DEFSTATE_ON,
-	},
-};
-
-static struct gpio_led_platform_data gcw0_led_pdata = {
-	.leds = gcw0_leds,
-	.num_leds = ARRAY_SIZE(gcw0_leds),
-};
-
-static struct platform_device gcw0_led_device = {
-	.name = "leds-gpio",
-	.id = -1,
-	.dev = {
-		.platform_data = &gcw0_led_pdata,
-	},
-};
-
 static struct rfkill_regulator_platform_data gcw0_rfkill_pdata = {
 	.name = "gcw0-wifi",
 	.type = RFKILL_TYPE_WLAN,
@@ -444,7 +420,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_audio_device,
 	&jz4770_msc0_device,
 	&jz4770_msc1_device,
-	&gcw0_led_device,
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
