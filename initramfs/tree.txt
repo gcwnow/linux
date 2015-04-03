@@ -1,3 +1,0 @@
-dir	/dev					0755    0 0
-nod	/dev/console				0644    0 0	c 5	1
-file	/init		initramfs/mininit	0755    0 0
