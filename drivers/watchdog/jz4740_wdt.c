@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/of.h>
+#include <linux/reboot.h>
 
 #include <asm/mach-jz4740/timer.h>
 
@@ -66,6 +67,7 @@ struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
 	void __iomem *base;
 	struct clk *rtc_clk;
+	struct notifier_block restart_nb;
 };
 
 static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
@@ -130,6 +132,17 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 	return 0;
 }
 
+static int jz4740_wdt_restart_handler(struct notifier_block *nb,
+		unsigned long mode, void *cmd)
+{
+	struct jz4740_wdt_drvdata *drvdata = container_of(nb,
+			struct jz4740_wdt_drvdata, restart_nb);
+
+	drvdata->wdt.timeout = 0;
+	jz4740_wdt_start(&drvdata->wdt);
+	return NOTIFY_DONE;
+}
+
 static const struct watchdog_info jz4740_wdt_info = {
 	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
 	.identity = "jz4740 Watchdog",
@@ -192,13 +205,22 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
+	drvdata->restart_nb.notifier_call = jz4740_wdt_restart_handler;
+	ret = register_restart_handler(&drvdata->restart_nb);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "cannot register restart handler\n");
+		goto err_disable_clk;
+	}
+
 	ret = watchdog_register_device(&drvdata->wdt);
 	if (ret < 0)
-		goto err_disable_clk;
+		goto err_unregister_restart_handler;
 
 	platform_set_drvdata(pdev, drvdata);
 	return 0;
 
+err_unregister_restart_handler:
+	unregister_restart_handler(&drvdata->restart_nb);
 err_disable_clk:
 	clk_put(drvdata->rtc_clk);
 err_out:
@@ -211,6 +233,7 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
+	unregister_restart_handler(&drvdata->restart_nb);
 	clk_put(drvdata->rtc_clk);
 
 	return 0;
