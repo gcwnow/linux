@@ -205,6 +205,7 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
+	unregister_restart_handler(&jz4740_wdt_restart_nb);
 	clk_put(drvdata->wdt_clk);
 
 	return 0;
