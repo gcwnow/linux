@@ -284,7 +284,7 @@ static int jz_musb_platform_init(struct musb *musb)
 		return ret;
 	}
 	glue->clk = clk;
-	clk_enable(clk);
+	clk_prepare_enable(clk);
 
 	jz_musb_init_regs(musb);
 
@@ -298,7 +298,7 @@ static int jz_musb_platform_exit(struct musb *musb)
 
 	jz_musb_phy_disable();
 
-	clk_disable(glue->clk);
+	clk_disable_unprepare(glue->clk);
 
 	otg_id_pin_cleanup(musb);
 
