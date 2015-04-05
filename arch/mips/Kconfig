@@ -286,6 +286,7 @@ config MACH_JZ4740
 	select IRQ_CPU
 	select ARCH_REQUIRE_GPIOLIB
 	select COMMON_CLK
+	select COMMON_CLK_JZ47XX
 	select JZ4740_IRQC
 	select BUILTIN_DTB
 	select USE_OF
@@ -323,6 +324,7 @@ config MACH_JZ4780
 	select IRQ_CPU
 	select ARCH_REQUIRE_GPIOLIB
 	select COMMON_CLK
+	select COMMON_CLK_JZ47XX
 	select JZ4740_IRQC
 	select BUILTIN_DTB
 	select USE_OF
