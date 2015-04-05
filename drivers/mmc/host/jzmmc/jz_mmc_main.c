@@ -215,9 +215,13 @@ static int jz_mmc_probe(struct platform_device *pdev)
 	host->mmc = mmc;
 	//spin_lock_init(&host->lock);
 
-	ret = jz_mmc_msc_init(host);
+	ret = clk_prepare(host->clk);
 	if (ret)
 		goto err_free_host;
+
+	ret = jz_mmc_msc_init(host);
+	if (ret)
+		goto err_clk_unprepare;
 
 	ret = jz_mmc_gpio_init(host, pdev);
 	if (ret)
@@ -248,6 +252,8 @@ err_deinit_gpio:
 	jz_mmc_gpio_deinit(host, pdev);
 err_deinit_msc:
 	jz_mmc_msc_deinit(host);
+err_clk_unprepare:
+	clk_unprepare(host->clk);
 err_free_host:
 	mmc_free_host(mmc);
 
@@ -267,6 +273,7 @@ static int jz_mmc_remove(struct platform_device *pdev)
 	jz_mmc_msc_deinit(host);
 
 	mmc_remove_host(host->mmc);
+	clk_unprepare(host->clk);
 	mmc_free_host(host->mmc);
 
 	return 0;
