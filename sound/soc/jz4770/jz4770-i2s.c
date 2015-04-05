@@ -271,7 +271,7 @@ static int jz4770_i2s_trigger(struct snd_pcm_substream *substream, int cmd, stru
 static int jz4770_i2s_dai_probe(struct snd_soc_dai *dai)
 {
 	struct jz4770_i2s *i2s = snd_soc_dai_get_drvdata(dai);
-	clk_enable(i2s->clk);
+	clk_prepare_enable(i2s->clk);
 
 	__i2s_disable();
 	__aic_disable_transmit_dma();
@@ -305,7 +305,7 @@ static int jz4770_i2s_dai_remove(struct snd_soc_dai *dai)
 {
 	struct jz4770_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
-	clk_disable(i2s->clk);
+	clk_disable_unprepare(i2s->clk);
 	return 0;
 }
 
