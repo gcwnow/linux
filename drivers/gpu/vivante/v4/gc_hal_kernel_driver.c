@@ -694,6 +694,7 @@ OnError:
 static void enable_jzsoc_gpu_clock(void)
 {
 	struct clk *clk = clk_get(NULL, "gpu");
+	clk_set_rate(clk, 800000000UL);
 	clk_prepare_enable(clk);
 }
 #endif
