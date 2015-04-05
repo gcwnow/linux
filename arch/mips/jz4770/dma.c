@@ -268,7 +268,7 @@ int jz_request_dma(int dev_id, const char *dev_str,
 			return ret;
 		}
 		dma_clk = clk;
-		clk_enable(clk);
+		clk_prepare_enable(clk);
 		/*
 		 * Note: We don't bother to disable the clock again when the
 		 *       DMAC is idle, since this code is going to be replaced
