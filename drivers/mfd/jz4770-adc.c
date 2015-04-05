@@ -363,7 +363,11 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	}
 
 	/* Register writes have no effect unless clock is running. */
-	clk_enable(adc->clk);
+	err = clk_prepare_enable(adc->clk);
+	if (err) {
+		dev_err(&pdev->dev, "Unable to enable clock: %i\n", err);
+		return err;
+	}
 
 	/* Disable all cells and power off. */
 	writeb(JZ_ADC_ENABLE_POWER, adc->base + JZ_REG_ADC_ENABLE);
@@ -376,7 +380,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	if (err) {
 		dev_err(&pdev->dev, "Failed to configure clock: %d\n", err);
-		return err;
+		goto err_clk_unprepare;
 	}
 
 
@@ -405,9 +409,17 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	irq_set_handler_data(adc->irq, gc);
 	irq_set_chained_handler(adc->irq, jz4770_adc_irq_demux);
 
-	return mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
+	err = mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
 			       ARRAY_SIZE(jz4770_adc_cells), mem_base,
 			       irq_base, NULL);
+	if (err)
+		goto err_clk_unprepare;
+
+	return 0;
+
+err_clk_unprepare:
+	clk_unprepare(adc->clk);
+	return err;
 }
 
 static int jz4770_adc_remove(struct platform_device *pdev)
