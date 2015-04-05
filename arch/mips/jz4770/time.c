@@ -20,6 +20,7 @@
  *  59 Temple Place - Suite 330, Boston MA 02111-1307, USA.
  *
  */
+#include <linux/clk-provider.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
@@ -209,8 +210,11 @@ static void __init jz_timer_setup(void)
 	__tcu_start_counter(JZ_TIMER_TCU_CH);
 }
 
+extern int jz_clk_init(void);
 
 void __init plat_time_init(void)
 {
+	jz_clk_init();
+	of_clk_init(NULL);
 	jz_timer_setup();
 }

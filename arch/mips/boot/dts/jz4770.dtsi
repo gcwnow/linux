@@ -1,4 +1,5 @@
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/clock/jz4770-cgu.h>
 
 / {
 	#address-cells = <1>;
@@ -23,11 +24,35 @@
 		interrupts = <2>;
 	};
 
+	clocks {
+		ext: ext {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <12000000>;
+		};
+
+		rtc: rtc {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+		};
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "simple-bus";
 		ranges = <>;
+
+		cgu: jz4770-cgu@10000000 {
+			compatible = "ingenic,jz4770-cgu";
+			reg = <0x10000000 0x100>;
+
+			clocks = <&ext>, <&rtc>;
+			clock-names = "ext", "rtc";
+
+			#clock-cells = <1>;
+		};
 
 		pwm: jz4740-pwm@10002010 {
 			compatible = "ingenic,jz4770-pwm";

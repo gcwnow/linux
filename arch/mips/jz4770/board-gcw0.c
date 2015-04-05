@@ -53,7 +53,6 @@
 #include <asm/mach-jz4770/gpio.h>
 #include <asm/mach-jz4770/jz4770misc.h>
 
-#include "clock.h"
 #include "platform.h"
 
 
@@ -252,17 +251,6 @@ static struct platform_device gcw0_audio_device = {
 	.id = -1,
 };
 
-
-struct jz_clk_board_data jz_clk_bdata = {
-	/* These two are fixed in hardware. */
-	.ext_rate	=   12000000,
-	.rtc_rate	=      32768,
-	/*
-	 * Pick 432 MHz as it is the least common multiple of 27 MHz (required
-	 * by TV encoder) and 48 MHz (required by USB host).
-	 */
-	.pll1_rate	=  432000000,
-};
 
 static struct rfkill_regulator_platform_data gcw0_rfkill_pdata = {
 	.name = "gcw0-wifi",

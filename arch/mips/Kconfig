@@ -303,7 +303,8 @@ config MACH_JZ4770
 	select IRQ_CPU
 	select ARCH_REQUIRE_GPIOLIB
 	select SYS_HAS_EARLY_PRINTK
-	select HAVE_CLK
+	select COMMON_CLK
+	select COMMON_CLK_JZ47XX
 	select JZSOC
 	select JZRISC
 	select PINCTRL
