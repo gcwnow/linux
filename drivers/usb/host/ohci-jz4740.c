@@ -189,7 +189,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 
 
 	clk_set_rate(jz4740_ohci->clk, 48000000);
-	clk_enable(jz4740_ohci->clk);
+	clk_prepare_enable(jz4740_ohci->clk);
 	if (jz4740_ohci->vbus)
 		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
 
@@ -209,7 +209,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
 err_disable:
 	if (jz4740_ohci->vbus)
 		regulator_disable(jz4740_ohci->vbus);
-	clk_disable(jz4740_ohci->clk);
+	clk_disable_unprepare(jz4740_ohci->clk);
 
 err_free:
 	usb_put_hcd(hcd);
@@ -227,7 +227,7 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 	if (jz4740_ohci->vbus)
 		regulator_disable(jz4740_ohci->vbus);
 
-	clk_disable(jz4740_ohci->clk);
+	clk_disable_unprepare(jz4740_ohci->clk);
 
 	usb_put_hcd(hcd);
 
