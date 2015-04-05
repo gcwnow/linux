@@ -281,7 +281,7 @@ static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 }
 
 static struct irq_chip jz4780_gpio_irq_chip = {
-	.name		= "jz4780_gpio_irq_chip",
+	.name		= "GPIO",
 	.irq_unmask	= jz4780_gpio_irq_unmask,
 	.irq_mask	= jz4780_gpio_irq_mask,
 	.irq_ack	= jz4780_gpio_irq_ack,
