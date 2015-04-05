@@ -694,7 +694,7 @@ OnError:
 static void enable_jzsoc_gpu_clock(void)
 {
 	struct clk *clk = clk_get(NULL, "gpu");
-	clk_enable(clk);
+	clk_prepare_enable(clk);
 }
 #endif
 
@@ -714,6 +714,8 @@ static int drv_init(void)
 
 #ifdef CONFIG_JZSOC
     enable_jzsoc_gpu_clock();
+#else
+    clk_enable(clk);
 #endif
 
     if (showArgs)
@@ -863,7 +865,7 @@ static void drv_exit(void)
     gcmkVERIFY_OK(gckGALDEVICE_Destroy(galDevice));
 
 #ifndef CONFIG_JZSOC
-    clk_disable(clk);
+    clk_disable_unprepare(clk);
     clk_put(clk);
 #endif
 
@@ -929,7 +931,6 @@ static int  gpu_probe(struct platform_device *pdev)
         ret = PTR_ERR(clk);
         goto gpu_probe_fail;
     }
-    clk_enable(clk);
 
     ret = drv_init();
     galDevice->dev = &pdev->dev;
@@ -949,7 +950,7 @@ static int  gpu_probe(struct platform_device *pdev)
         return ret;
     }
 
-    clk_disable(clk);
+    clk_disable_unprepare(clk);
     clk_put(clk);
 
 gpu_probe_fail:
