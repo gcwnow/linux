@@ -134,6 +134,12 @@ config COMMON_CLK_PXA
 	---help---
 	  Sypport for the Marvell PXA SoC.
 
+config COMMON_CLK_JZ47XX
+	bool "Clock driver for Ingenic JZ47xx SoCs"
+	depends on OF
+	---help---
+	  Support for the Ingenic JZ47xx SoCs.
+
 source "drivers/clk/qcom/Kconfig"
 
 endmenu
