@@ -561,17 +561,20 @@ static void jzfb_power_up(struct jzfb *jzfb)
 {
 	pinctrl_pm_select_default_state(&jzfb->pdev->dev);
 
+	clk_prepare(jzfb->lpclk);
 	jzfb_lcdc_enable(jzfb);
+
+	clk_prepare(jzfb->ipuclk);
 	jzfb_ipu_enable(jzfb);
 }
 
 static void jzfb_power_down(struct jzfb *jzfb)
 {
 	ctrl_disable(jzfb);
-	clk_disable(jzfb->lpclk);
+	clk_disable_unprepare(jzfb->lpclk);
 
 	jzfb_ipu_disable(jzfb);
-	clk_disable(jzfb->ipuclk);
+	clk_disable_unprepare(jzfb->ipuclk);
 
 	pinctrl_pm_select_sleep_state(&jzfb->pdev->dev);
 }
@@ -976,7 +979,8 @@ static int jzfb_probe(struct platform_device *pdev)
 	 */
 
 	jzfb_change_clock(jzfb, fb->var.pixclock);
-	clk_enable(jzfb->lpclk);
+	clk_prepare(jzfb->ipuclk);
+	clk_prepare_enable(jzfb->lpclk);
 
 	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
 
