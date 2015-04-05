@@ -281,7 +281,7 @@ static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 }
 
 static struct irq_chip jz4780_gpio_irq_chip = {
-	.name		= "jz4780_gpio_irq_chip",
+	.name		= "GPIO",
 	.irq_unmask	= jz4780_gpio_irq_unmask,
 	.irq_mask	= jz4780_gpio_irq_mask,
 	.irq_ack	= jz4780_gpio_irq_ack,
@@ -495,14 +495,17 @@ static int jz4780_pinconf_get(struct pinctrl_dev *pctldev,
 	case PIN_CONFIG_BIAS_DISABLE:
 		if (pull)
 			return -EINVAL;
+		break;
 
 	case PIN_CONFIG_BIAS_PULL_UP:
 		if (!pull || !(jzgc->pull_ups & (1 << idx)))
 			return -EINVAL;
+		break;
 
 	case PIN_CONFIG_BIAS_PULL_DOWN:
 		if (!pull || !(jzgc->pull_downs & (1 << idx)))
 			return -EINVAL;
+		break;
 
 	default:
 		return -ENOTSUPP;
