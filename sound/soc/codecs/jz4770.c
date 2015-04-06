@@ -855,7 +855,7 @@ static int jz_icdc_codec_probe(struct snd_soc_codec *codec)
 	};
 	int ret;
 
-	clk_enable(jz_icdc->clk);
+	clk_prepare_enable(jz_icdc->clk);
 	msleep(1);
 
 	jz_icdc_codec_init_regs(codec);
@@ -891,7 +891,7 @@ static int jz_icdc_codec_remove(struct snd_soc_codec *codec)
 
 	ret = jz_icdc_set_bias_level(codec, SND_SOC_BIAS_OFF);
 
-	clk_disable(jz_icdc->clk);
+	clk_disable_unprepare(jz_icdc->clk);
 	return ret;
 }
 
