@@ -33,7 +33,9 @@
 #define CGU_REG_MPLL		0x14
 #define CGU_REG_EPLL		0x18
 #define CGU_REG_VPLL		0x1c
+#define CGU_REG_CLKGR0		0x20
 #define CGU_REG_OPCR		0x24
+#define CGU_REG_CLKGR1		0x28
 #define CGU_REG_DDRCDR		0x2c
 #define CGU_REG_VPUCDR		0x30
 #define CGU_REG_USBPCR		0x3c
@@ -359,7 +361,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 			     JZ4780_CLK_EPLL, -1 },
 		.mux = { CGU_REG_VPUCDR, 30, 2 },
 		.div = { CGU_REG_VPUCDR, 0, 4, 29, 28, 27 },
-		.gate_bit = 32 + 2,
+		.gate = { CGU_REG_CLKGR1, 2 },
 	},
 
 	[JZ4780_CLK_I2SPLL] = {
@@ -401,21 +403,21 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 		"msc0", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_MSCMUX, -1 },
 		.div = { CGU_REG_MSC0CDR, 0, 8, 29, 28, 27 },
-		.gate_bit = 3,
+		.gate = { CGU_REG_CLKGR0, 3 },
 	},
 
 	[JZ4780_CLK_MSC1] = {
 		"msc1", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_MSCMUX, -1 },
 		.div = { CGU_REG_MSC1CDR, 0, 8, 29, 28, 27 },
-		.gate_bit = 11,
+		.gate = { CGU_REG_CLKGR0, 11 },
 	},
 
 	[JZ4780_CLK_MSC2] = {
 		"msc2", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_MSCMUX, -1 },
 		.div = { CGU_REG_MSC2CDR, 0, 8, 29, 28, 27 },
-		.gate_bit = 12,
+		.gate = { CGU_REG_CLKGR0, 12 },
 	},
 
 	[JZ4780_CLK_UHC] = {
@@ -424,7 +426,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 			     JZ4780_CLK_EPLL, JZ4780_CLK_OTGPHY },
 		.mux = { CGU_REG_UHCCDR, 30, 2 },
 		.div = { CGU_REG_UHCCDR, 0, 8, 29, 28, 27 },
-		.gate_bit = 24,
+		.gate = { CGU_REG_CLKGR0, 24 },
 	},
 
 	[JZ4780_CLK_SSIPLL] = {
@@ -459,7 +461,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 		"pcm", CGU_CLK_MUX | CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, JZ4780_CLK_PCMPLL, -1 },
 		.mux = { CGU_REG_PCMCDR, 31, 1 },
-		.gate_bit = 32 + 3,
+		.gate = { CGU_REG_CLKGR1, 3 },
 	},
 
 	[JZ4780_CLK_GPU] = {
@@ -468,7 +470,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 			     JZ4780_CLK_EPLL },
 		.mux = { CGU_REG_GPUCDR, 30, 2 },
 		.div = { CGU_REG_GPUCDR, 0, 4, 29, 28, 27 },
-		.gate_bit = 32 + 4,
+		.gate = { CGU_REG_CLKGR1, 4 },
 	},
 
 	[JZ4780_CLK_HDMI] = {
@@ -477,7 +479,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 			     JZ4780_CLK_VPLL, -1 },
 		.mux = { CGU_REG_HDMICDR, 30, 2 },
 		.div = { CGU_REG_HDMICDR, 0, 8, 29, 28, 26 },
-		.gate_bit = 32 + 9,
+		.gate = { CGU_REG_CLKGR1, 9 },
 	},
 
 	[JZ4780_CLK_BCH] = {
@@ -486,7 +488,7 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 			     JZ4780_CLK_EPLL },
 		.mux = { CGU_REG_BCHCDR, 30, 2 },
 		.div = { CGU_REG_BCHCDR, 0, 4, 29, 28, 27 },
-		.gate_bit = 1,
+		.gate = { CGU_REG_CLKGR0, 1 },
 	},
 
 	/* Gate-only clocks */
@@ -494,235 +496,235 @@ static const struct jz47xx_cgu_clk_info jz4780_cgu_clocks[] = {
 	[JZ4780_CLK_NEMC] = {
 		"nemc", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_AHB2, -1 },
-		.gate_bit = 0,
+		.gate = { CGU_REG_CLKGR0, 0 },
 	},
 
 	[JZ4780_CLK_OTG0] = {
 		"otg0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 2,
+		.gate = { CGU_REG_CLKGR0, 2 },
 	},
 
 	[JZ4780_CLK_SSI0] = {
 		"ssi0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_SSI, -1 },
-		.gate_bit = 4,
+		.gate = { CGU_REG_CLKGR0, 4 },
 	},
 
 	[JZ4780_CLK_SMB0] = {
 		"smb0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_PCLK, -1 },
-		.gate_bit = 5,
+		.gate = { CGU_REG_CLKGR0, 5 },
 	},
 
 	[JZ4780_CLK_SMB1] = {
 		"smb1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_PCLK, -1 },
-		.gate_bit = 6,
+		.gate = { CGU_REG_CLKGR0, 6 },
 	},
 
 	[JZ4780_CLK_SCC] = {
 		"scc", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 7,
+		.gate = { CGU_REG_CLKGR0, 7 },
 	},
 
 	[JZ4780_CLK_AIC] = {
 		"aic", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 8,
+		.gate = { CGU_REG_CLKGR0, 8 },
 	},
 
 	[JZ4780_CLK_TSSI0] = {
 		"tssi0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 9,
+		.gate = { CGU_REG_CLKGR0, 9 },
 	},
 
 	[JZ4780_CLK_OWI] = {
 		"owi", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 10,
+		.gate = { CGU_REG_CLKGR0, 10 },
 	},
 
 	[JZ4780_CLK_KBC] = {
 		"kbc", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 13,
+		.gate = { CGU_REG_CLKGR0, 13 },
 	},
 
 	[JZ4780_CLK_SADC] = {
 		"sadc", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 14,
+		.gate = { CGU_REG_CLKGR0, 14 },
 	},
 
 	[JZ4780_CLK_UART0] = {
 		"uart0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 15,
+		.gate = { CGU_REG_CLKGR0, 15 },
 	},
 
 	[JZ4780_CLK_UART1] = {
 		"uart1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 16,
+		.gate = { CGU_REG_CLKGR0, 16 },
 	},
 
 	[JZ4780_CLK_UART2] = {
 		"uart2", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 17,
+		.gate = { CGU_REG_CLKGR0, 17 },
 	},
 
 	[JZ4780_CLK_UART3] = {
 		"uart3", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 18,
+		.gate = { CGU_REG_CLKGR0, 18 },
 	},
 
 	[JZ4780_CLK_SSI1] = {
 		"ssi1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_SSI, -1 },
-		.gate_bit = 19,
+		.gate = { CGU_REG_CLKGR0, 19 },
 	},
 
 	[JZ4780_CLK_SSI2] = {
 		"ssi2", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_SSI, -1 },
-		.gate_bit = 20,
+		.gate = { CGU_REG_CLKGR0, 20 },
 	},
 
 	[JZ4780_CLK_PDMA] = {
 		"pdma", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 21,
+		.gate = { CGU_REG_CLKGR0, 21 },
 	},
 
 	[JZ4780_CLK_GPS] = {
 		"gps", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 22,
+		.gate = { CGU_REG_CLKGR0, 22 },
 	},
 
 	[JZ4780_CLK_MAC] = {
 		"mac", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 23,
+		.gate = { CGU_REG_CLKGR0, 23 },
 	},
 
 	[JZ4780_CLK_SMB2] = {
 		"smb2", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_PCLK, -1 },
-		.gate_bit = 25,
+		.gate = { CGU_REG_CLKGR0, 24 },
 	},
 
 	[JZ4780_CLK_CIM] = {
 		"cim", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 26,
+		.gate = { CGU_REG_CLKGR0, 26 },
 	},
 
 	[JZ4780_CLK_LCD] = {
 		"lcd", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 28,
+		.gate = { CGU_REG_CLKGR0, 28 },
 	},
 
 	[JZ4780_CLK_TVE] = {
 		"tve", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_LCD, -1 },
-		.gate_bit = 27,
+		.gate = { CGU_REG_CLKGR0, 27 },
 	},
 
 	[JZ4780_CLK_IPU] = {
 		"ipu", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 29,
+		.gate = { CGU_REG_CLKGR0, 29 },
 	},
 
 	[JZ4780_CLK_DDR0] = {
 		"ddr0", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_DDR, -1 },
-		.gate_bit = 30,
+		.gate = { CGU_REG_CLKGR0, 30 },
 	},
 
 	[JZ4780_CLK_DDR1] = {
 		"ddr1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_DDR, -1 },
-		.gate_bit = 31,
+		.gate = { CGU_REG_CLKGR0, 31 },
 	},
 
 	[JZ4780_CLK_SMB3] = {
 		"smb3", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_PCLK, -1 },
-		.gate_bit = 32 + 0,
+		.gate = { CGU_REG_CLKGR1, 0 },
 	},
 
 	[JZ4780_CLK_TSSI1] = {
 		"tssi1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 1,
+		.gate = { CGU_REG_CLKGR1, 1 },
 	},
 
 	[JZ4780_CLK_COMPRESS] = {
 		"compress", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 5,
+		.gate = { CGU_REG_CLKGR1, 5 },
 	},
 
 	[JZ4780_CLK_AIC1] = {
 		"aic1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 6,
+		.gate = { CGU_REG_CLKGR1, 6 },
 	},
 
 	[JZ4780_CLK_GPVLC] = {
 		"gpvlc", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 7,
+		.gate = { CGU_REG_CLKGR1, 7 },
 	},
 
 	[JZ4780_CLK_OTG1] = {
 		"otg1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 8,
+		.gate = { CGU_REG_CLKGR1, 8 },
 	},
 
 	[JZ4780_CLK_UART4] = {
 		"uart4", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 10,
+		.gate = { CGU_REG_CLKGR1, 10 },
 	},
 
 	[JZ4780_CLK_AHBMON] = {
 		"ahb_mon", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 11,
+		.gate = { CGU_REG_CLKGR1, 11 },
 	},
 
 	[JZ4780_CLK_SMB4] = {
 		"smb4", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_PCLK, -1 },
-		.gate_bit = 32 + 12,
+		.gate = { CGU_REG_CLKGR1, 12 },
 	},
 
 	[JZ4780_CLK_DES] = {
 		"des", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 13,
+		.gate = { CGU_REG_CLKGR1, 13 },
 	},
 
 	[JZ4780_CLK_X2D] = {
 		"x2d", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_EXCLK, -1 },
-		.gate_bit = 32 + 14,
+		.gate = { CGU_REG_CLKGR1, 14 },
 	},
 
 	[JZ4780_CLK_CORE1] = {
 		"core1", CGU_CLK_GATE,
 		.parents = { JZ4780_CLK_CPU, -1 },
-		.gate_bit = 32 + 15,
+		.gate = { CGU_REG_CLKGR1, 15 },
 	},
 
 };
