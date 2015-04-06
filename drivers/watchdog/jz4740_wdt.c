@@ -29,6 +29,25 @@
 #define JZ_REG_WDT_TIMER_DATA     0x0
 #define JZ_REG_WDT_COUNTER_ENABLE 0x4
 #define JZ_REG_WDT_TIMER_COUNTER  0x8
+#define JZ_REG_WDT_TIMER_CONTROL  0xC
+
+#define JZ_REG_TCU_TIMER_STOP_SET	0x2c
+#define JZ_REG_TCU_TIMER_STOP_CLEAR	0x3c
+
+#define JZ_TCU_TIMER_WDT BIT(16)
+
+#define JZ_WDT_CLOCK_PCLK 0x1
+#define JZ_WDT_CLOCK_RTC  0x2
+#define JZ_WDT_CLOCK_EXT  0x4
+
+#define JZ_WDT_CLOCK_DIV_SHIFT   3
+
+#define JZ_WDT_CLOCK_DIV_1    (0 << JZ_WDT_CLOCK_DIV_SHIFT)
+#define JZ_WDT_CLOCK_DIV_4    (1 << JZ_WDT_CLOCK_DIV_SHIFT)
+#define JZ_WDT_CLOCK_DIV_16   (2 << JZ_WDT_CLOCK_DIV_SHIFT)
+#define JZ_WDT_CLOCK_DIV_64   (3 << JZ_WDT_CLOCK_DIV_SHIFT)
+#define JZ_WDT_CLOCK_DIV_256  (4 << JZ_WDT_CLOCK_DIV_SHIFT)
+#define JZ_WDT_CLOCK_DIV_1024 (5 << JZ_WDT_CLOCK_DIV_SHIFT)
 
 #define DEFAULT_HEARTBEAT 5
 #define MAX_HEARTBEAT     2048
@@ -51,7 +70,7 @@ static struct watchdog_device *jz4740_wdt;
 struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
 	void __iomem *base;
-	struct clk *wdt_clk;
+	struct clk *rtc_clk;
 };
 
 static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
@@ -66,28 +85,31 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 				    unsigned int new_timeout)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
-	unsigned int clk_rate, timeout_value, clock_shift;
+	unsigned int rtc_clk_rate;
+	unsigned int timeout_value;
+	unsigned short clock_div = JZ_WDT_CLOCK_DIV_1;
 
-	clk_rate = clk_get_rate(clk_get_parent(drvdata->wdt_clk));
+	rtc_clk_rate = clk_get_rate(drvdata->rtc_clk);
 
-	timeout_value = clk_rate * new_timeout;
-	for (clock_shift = 0; clock_shift < 10;
-			clock_shift += 2, timeout_value >>= 2) {
-		if (timeout_value <= 0xffff)
+	timeout_value = rtc_clk_rate * new_timeout;
+	while (timeout_value > 0xffff) {
+		if (clock_div == JZ_WDT_CLOCK_DIV_1024) {
+			/* Requested timeout too high;
+			* use highest possible value. */
+			timeout_value = 0xffff;
 			break;
+		}
+		timeout_value >>= 2;
+		clock_div += (1 << JZ_WDT_CLOCK_DIV_SHIFT);
 	}
 
-	/* Requested timeout too high; use highest possible value. */
-	if (clock_shift == 10)
-		timeout_value = 0xffff;
-
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
-	clk_set_rate(drvdata->wdt_clk, clk_rate >> clock_shift);
+	writew(clock_div, drvdata->base + JZ_REG_WDT_TIMER_CONTROL);
 
 	writew((u16)timeout_value, drvdata->base + JZ_REG_WDT_TIMER_DATA);
-
-	/* Reset counter */
 	writew(0x0, drvdata->base + JZ_REG_WDT_TIMER_COUNTER);
+	writew(clock_div | JZ_WDT_CLOCK_RTC,
+		drvdata->base + JZ_REG_WDT_TIMER_CONTROL);
 
 	writeb(0x1, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 
@@ -99,8 +121,9 @@ static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
-	clk_enable(drvdata->wdt_clk);
+	writel(JZ_TCU_TIMER_WDT, drvdata->base + JZ_REG_TCU_TIMER_STOP_CLEAR);
 	jz4740_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+
 	return 0;
 }
 
@@ -109,7 +132,8 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
-	clk_disable(drvdata->wdt_clk);
+	writel(JZ_TCU_TIMER_WDT, drvdata->base + JZ_REG_TCU_TIMER_STOP_SET);
+
 	return 0;
 }
 
@@ -171,10 +195,10 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
-	drvdata->wdt_clk = clk_get(&pdev->dev, "wdt");
-	if (IS_ERR(drvdata->wdt_clk)) {
-		dev_err(&pdev->dev, "cannot find WDT clock\n");
-		ret = PTR_ERR(drvdata->wdt_clk);
+	drvdata->rtc_clk = clk_get(&pdev->dev, "rtc");
+	if (IS_ERR(drvdata->rtc_clk)) {
+		dev_err(&pdev->dev, "cannot find RTC clock\n");
+		ret = PTR_ERR(drvdata->rtc_clk);
 		goto err_out;
 	}
 
@@ -194,7 +218,7 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 err_unregister_restart_handler:
 	unregister_restart_handler(&jz4740_wdt_restart_nb);
 err_disable_clk:
-	clk_put(drvdata->wdt_clk);
+	clk_put(drvdata->rtc_clk);
 err_out:
 	return ret;
 }
@@ -206,7 +230,7 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
 	unregister_restart_handler(&jz4740_wdt_restart_nb);
-	clk_put(drvdata->wdt_clk);
+	clk_put(drvdata->rtc_clk);
 
 	return 0;
 }
