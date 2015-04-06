@@ -99,7 +99,7 @@ static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
-	clk_prepare_enable(drvdata->wdt_clk);
+	clk_enable(drvdata->wdt_clk);
 	jz4740_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
 	return 0;
 }
@@ -109,7 +109,7 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
-	clk_disable_unprepare(drvdata->wdt_clk);
+	clk_disable(drvdata->wdt_clk);
 	return 0;
 }
 
