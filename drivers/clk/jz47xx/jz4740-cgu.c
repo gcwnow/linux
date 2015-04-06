@@ -125,7 +125,7 @@ static const struct jz47xx_cgu_clk_info jz4740_cgu_clocks[] = {
 		"lcd", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_PLL_HALF, -1 },
 		.div = { CGU_REG_CPCCR, 16, 5, 22, -1, -1 },
-		.gate_bit = 10,
+		.gate = { CGU_REG_CLKGR, 10 },
 	},
 
 	[JZ4740_CLK_LCD_PCLK] = {
@@ -139,7 +139,7 @@ static const struct jz47xx_cgu_clk_info jz4740_cgu_clocks[] = {
 		.parents = { JZ4740_CLK_EXT, JZ4740_CLK_PLL_HALF, -1 },
 		.mux = { CGU_REG_CPCCR, 31, 1 },
 		.div = { CGU_REG_I2SCDR, 0, 8, -1, -1, -1 },
-		.gate_bit = 6,
+		.gate = { CGU_REG_CLKGR, 6 },
 	},
 
 	[JZ4740_CLK_SPI] = {
@@ -147,21 +147,21 @@ static const struct jz47xx_cgu_clk_info jz4740_cgu_clocks[] = {
 		.parents = { JZ4740_CLK_EXT, JZ4740_CLK_PLL, -1 },
 		.mux = { CGU_REG_SSICDR, 31, 1 },
 		.div = { CGU_REG_SSICDR, 0, 4, -1, -1, -1 },
-		.gate_bit = 4,
+		.gate = { CGU_REG_CLKGR, 4 },
 	},
 
 	[JZ4740_CLK_MMC] = {
 		"mmc", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_PLL_HALF, -1 },
 		.div = { CGU_REG_MSCCDR, 0, 5, -1, -1, -1 },
-		.gate_bit = 7,
+		.gate = { CGU_REG_CLKGR, 7 },
 	},
 
 	[JZ4740_CLK_UHC] = {
 		"uhc", CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_PLL_HALF, -1 },
 		.div = { CGU_REG_UHCCDR, 0, 4, -1, -1, -1 },
-		.gate_bit = 14,
+		.gate = { CGU_REG_CLKGR, 14 },
 	},
 
 	[JZ4740_CLK_UDC] = {
@@ -177,43 +177,43 @@ static const struct jz47xx_cgu_clk_info jz4740_cgu_clocks[] = {
 	[JZ4740_CLK_UART0] = {
 		"uart0", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_EXT, -1 },
-		.gate_bit = 0,
+		.gate = { CGU_REG_CLKGR, 0 },
 	},
 
 	[JZ4740_CLK_UART1] = {
 		"uart1", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_EXT, -1 },
-		.gate_bit = 15,
+		.gate = { CGU_REG_CLKGR, 15 },
 	},
 
 	[JZ4740_CLK_DMA] = {
 		"dma", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_PCLK, -1 },
-		.gate_bit = 12,
+		.gate = { CGU_REG_CLKGR, 12 },
 	},
 
 	[JZ4740_CLK_IPU] = {
 		"ipu", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_PCLK, -1 },
-		.gate_bit = 13,
+		.gate = { CGU_REG_CLKGR, 13 },
 	},
 
 	[JZ4740_CLK_ADC] = {
 		"adc", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_EXT, -1 },
-		.gate_bit = 8,
+		.gate = { CGU_REG_CLKGR, 8 },
 	},
 
 	[JZ4740_CLK_I2C] = {
 		"i2c", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_EXT, -1 },
-		.gate_bit = 3,
+		.gate = { CGU_REG_CLKGR, 3 },
 	},
 
 	[JZ4740_CLK_AIC] = {
 		"aic", CGU_CLK_GATE,
 		.parents = { JZ4740_CLK_EXT, -1 },
-		.gate_bit = 5,
+		.gate = { CGU_REG_CLKGR, 5 },
 	},
 };
 
