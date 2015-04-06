@@ -345,8 +345,8 @@ static unsigned jz47xx_clk_calc_div(const struct jz47xx_cgu_clk_info *clk_info,
 {
 	unsigned div;
 
-	/* calculate the divide that gets us closest */
-	div = DIV_ROUND_CLOSEST(parent_rate, req_rate);
+	/* calculate the divider */
+	div = DIV_ROUND_UP(parent_rate, req_rate);
 
 	/* and impose hardware constraints */
 	div = min_t(unsigned, div, 1 << clk_info->div.bits);
