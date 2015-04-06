@@ -29,9 +29,6 @@
 #include <linux/spinlock.h>
 #include "jz47xx-cgu.h"
 
-#define REG_CLKGR		0x20
-#define REG_CLKGR_STRIDE	0x8
-
 #define MHZ (1000 * 1000)
 
 /**
@@ -46,15 +43,9 @@
  * The caller must hold cgu->power_lock.
  */
 static inline unsigned jz47xx_cgu_gate_get(struct jz47xx_cgu *cgu,
-					   unsigned idx)
+		const struct jz47xx_cgu_gate_info *info)
 {
-	void __iomem *reg;
-	u32 bit, clkgr;
-
-	reg = cgu->base + REG_CLKGR + ((idx / 32) * REG_CLKGR_STRIDE);
-	bit = 1 << (idx % 32);
-	clkgr = readl(reg);
-	return !!(clkgr & bit);
+	return !!(readl(cgu->base + info->reg) & BIT(info->bit));
 }
 
 /**
@@ -69,21 +60,16 @@ static inline unsigned jz47xx_cgu_gate_get(struct jz47xx_cgu *cgu,
  * The caller must hold cgu->power_lock.
  */
 static inline void jz47xx_cgu_gate_set(struct jz47xx_cgu *cgu,
-				       unsigned idx, unsigned val)
+		const struct jz47xx_cgu_gate_info *info, bool val)
 {
-	void __iomem *reg;
-	u32 bit, clkgr;
-
-	reg = cgu->base + REG_CLKGR + ((idx / 32) * REG_CLKGR_STRIDE);
-	bit = 1 << (idx % 32);
-	clkgr = readl(reg);
+	u32 clkgr = readl(cgu->base + info->reg);
 
 	if (val)
-		clkgr |= bit;
+		clkgr |= BIT(info->bit);
 	else
-		clkgr &= ~bit;
+		clkgr &= ~BIT(info->bit);
 
-	writel(clkgr, reg);
+	writel(clkgr, cgu->base + info->reg);
 }
 
 /*
@@ -445,7 +431,7 @@ static int jz47xx_clk_enable(struct clk_hw *hw)
 	if (clk_info->type & CGU_CLK_GATE) {
 		/* ungate the clock */
 		spin_lock_irqsave(&cgu->power_lock, flags);
-		jz47xx_cgu_gate_set(cgu, clk_info->gate_bit, 0);
+		jz47xx_cgu_gate_set(cgu, &clk_info->gate, false);
 		spin_unlock_irqrestore(&cgu->power_lock, flags);
 	}
 
@@ -464,7 +450,7 @@ static void jz47xx_clk_disable(struct clk_hw *hw)
 	if (clk_info->type & CGU_CLK_GATE) {
 		/* gate the clock */
 		spin_lock_irqsave(&cgu->power_lock, flags);
-		jz47xx_cgu_gate_set(cgu, clk_info->gate_bit, 1);
+		jz47xx_cgu_gate_set(cgu, &clk_info->gate, true);
 		spin_unlock_irqrestore(&cgu->power_lock, flags);
 	}
 }
@@ -481,7 +467,7 @@ static int jz47xx_clk_is_enabled(struct clk_hw *hw)
 
 	if (clk_info->type & CGU_CLK_GATE) {
 		spin_lock_irqsave(&cgu->power_lock, flags);
-		enabled = !jz47xx_cgu_gate_get(cgu, clk_info->gate_bit);
+		enabled = !jz47xx_cgu_gate_get(cgu, &clk_info->gate);
 		spin_unlock_irqrestore(&cgu->power_lock, flags);
 	}
 
