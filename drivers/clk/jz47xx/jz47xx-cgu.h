@@ -98,6 +98,16 @@ struct jz47xx_cgu_div_info {
 };
 
 /**
+ * struct jz47xx_cgu_gate_info - information about a clock gate
+ * @reg: offset of the gate control register within the CGU
+ * @bit: offset of the bit in the register that controls the gate
+ */
+struct jz47xx_cgu_gate_info {
+	unsigned reg;
+	unsigned bit:5;
+};
+
+/**
  * struct jz47xx_cgu_custom_info - information about a custom (SoC) clock
  */
 struct jz47xx_cgu_custom_info {
@@ -112,8 +122,7 @@ struct jz47xx_cgu_custom_info {
  *           within the clock_info array of the CGU, or -1 in entries
  *           which correspond to no valid parent
  * @pll: information valid if type includes CGU_CLK_PLL
- * @gate_bit: the index of the gate bit in the CLKGR* registers, valid if
- *            type includes CGU_CLK_GATE
+ * @gate: information valid if type includes CGU_CLK_GATE
  * @mux: information valid if type includes CGU_CLK_MUX
  * @div: information valid if type includes CGU_CLK_DIV
  */
@@ -137,7 +146,7 @@ struct jz47xx_cgu_clk_info {
 		struct jz47xx_cgu_pll_info pll;
 
 		struct {
-			unsigned gate_bit;
+			struct jz47xx_cgu_gate_info gate;
 			struct jz47xx_cgu_mux_info mux;
 			struct jz47xx_cgu_div_info div;
 		};
