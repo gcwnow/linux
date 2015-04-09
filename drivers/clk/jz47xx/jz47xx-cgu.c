@@ -127,18 +127,17 @@ static unsigned long jz47xx_pll_calc(const struct jz47xx_cgu_clk_info *clk_info,
 {
 	unsigned m, n, od;
 
-	/* deal with MHz */
-	rate -= (rate % MHZ);
+	od = 1;
 
-	m = rate / MHZ;
-	m = min_t(unsigned, m, 1 << clk_info->pll.m_bits);
-	m = max_t(unsigned, m, 1);
-
-	n = parent_rate / MHZ;
+	/* The frequency after the input divider must be between 10 and 50 MHz.
+	   The highest divider yields the best resolution. */
+	n = parent_rate / (10 * MHZ);
 	n = min_t(unsigned, n, 1 << clk_info->pll.n_bits);
 	n = max_t(unsigned, n, 1);
 
-	od = 1;
+	m = (rate / MHZ) * od * n / (parent_rate / MHZ);
+	m = min_t(unsigned, m, 1 << clk_info->pll.m_bits);
+	m = max_t(unsigned, m, 1);
 
 	if (pm)
 		*pm = m;
