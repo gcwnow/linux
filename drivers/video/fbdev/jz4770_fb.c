@@ -305,7 +305,6 @@ static void jzfb_update_frame_address(struct jzfb *jzfb)
 
 static void jzfb_lcdc_enable(struct jzfb *jzfb)
 {
-	clk_enable(jzfb->lpclk);
 	jzfb_update_frame_address(jzfb);
 
 	jzfb->delay_flush = 0;
@@ -343,8 +342,6 @@ static void jzfb_foreground_resize(struct jzfb *jzfb,
 static void jzfb_ipu_enable(struct jzfb *jzfb)
 {
 	u32 ctrl;
-
-	clk_enable(jzfb->ipuclk);
 
 	/* Clear the status register and enable the chip */
 	writel(0, jzfb->ipu_base + IPU_STATUS);
@@ -561,20 +558,20 @@ static void jzfb_power_up(struct jzfb *jzfb)
 {
 	pinctrl_pm_select_default_state(&jzfb->pdev->dev);
 
-	clk_prepare(jzfb->lpclk);
+	clk_enable(jzfb->lpclk);
 	jzfb_lcdc_enable(jzfb);
 
-	clk_prepare(jzfb->ipuclk);
+	clk_enable(jzfb->ipuclk);
 	jzfb_ipu_enable(jzfb);
 }
 
 static void jzfb_power_down(struct jzfb *jzfb)
 {
 	ctrl_disable(jzfb);
-	clk_disable_unprepare(jzfb->lpclk);
+	clk_disable(jzfb->lpclk);
 
 	jzfb_ipu_disable(jzfb);
-	clk_disable_unprepare(jzfb->ipuclk);
+	clk_disable(jzfb->ipuclk);
 
 	pinctrl_pm_select_sleep_state(&jzfb->pdev->dev);
 }
@@ -735,6 +732,7 @@ static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
 	__cpm_select_pixclk_lcd();
 
+	rate = clk_round_rate(jzfb->lpclk, rate);
 	clk_set_rate(jzfb->lpclk, rate);
 
 	dev_dbg(&jzfb->pdev->dev, "PixClock: req %u, got %lu\n",
@@ -977,10 +975,20 @@ static int jzfb_probe(struct platform_device *pdev)
 	 * We assume the LCDC is disabled initially. If you really must have
 	 * video in your boot loader, you'll have to update this driver.
 	 */
+	ret = clk_prepare(jzfb->ipuclk);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to prepare IPU clock: %i\n", ret);
+		goto err_unmap;
+	}
+
+	ret = clk_prepare(jzfb->lpclk);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to prepare pixel clock: %i\n", ret);
+		goto err_unprepare_ipuclk;
+	}
 
 	jzfb_change_clock(jzfb, fb->var.pixclock);
-	clk_prepare(jzfb->ipuclk);
-	clk_prepare_enable(jzfb->lpclk);
+	clk_enable(jzfb->lpclk);
 
 	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
 
@@ -992,7 +1000,7 @@ static int jzfb_probe(struct platform_device *pdev)
 	ret = device_create_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 	if (ret) {
 		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
-		goto err_unmap;
+		goto err_unprepare_lpclk;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
@@ -1018,6 +1026,10 @@ err_remove_allow_downscaling_file:
 	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
 err_remove_keep_aspect_ratio_file:
 	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
+err_unprepare_lpclk:
+	clk_disable_unprepare(jzfb->lpclk);
+err_unprepare_ipuclk:
+	clk_unprepare(jzfb->ipuclk);
 err_unmap:
 	jzfb_unmap_smem(fb);
 err_release_fb:
@@ -1035,6 +1047,8 @@ static int jzfb_remove(struct platform_device *pdev)
 	if (jzfb->is_enabled)
 		jzfb_power_down(jzfb);
 
+	clk_unprepare(jzfb->lpclk);
+	clk_unprepare(jzfb->ipuclk);
 	return 0;
 }
 
