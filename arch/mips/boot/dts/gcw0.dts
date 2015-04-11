@@ -28,7 +28,7 @@
 			pwms = <&pwm 1 40000 PWM_POLARITY_INVERTED>;
 
 			brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
-			default-brightness-level = <128>;
+			default-brightness-level = <16>;
 
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinfunc_pwm1_data>;
@@ -209,4 +209,10 @@
 	i2c-gpio,delay-us = <5>;		/* 100 kHz */
 
 	/* the IT6610 is on this bus, but we don't have a driver for it yet */
+};
+
+&cgu {
+	/* Set the PLL1 to 432 MHz */
+	assigned-clocks = <&cgu JZ4770_CLK_PLL1>;
+	assigned-clock-rates = <432000000>;
 };
