@@ -137,8 +137,9 @@ _OS_INTFS_FILES :=	os_dep/osdep_service.o \
 			os_dep/linux/ioctl_linux.o \
 			os_dep/linux/xmit_linux.o \
 			os_dep/linux/mlme_linux.o \
-			os_dep/linux/recv_linux.o \
-			os_dep/linux/rtw_android.o
+			os_dep/linux/recv_linux.o
+
+$(MODULE_NAME)-$(CONFIG_ANDROID) += os_dep/linux/rtw_android.o
 
 _HAL_INTFS_FILES := hal/$(RTL871X)/hal_init.o \
 		    hal/$(RTL871X)/sdio_halinit.o \
@@ -159,8 +160,9 @@ _OS_INTFS_FILES :=	os_dep/osdep_service.o \
 			os_dep/linux/xmit_linux.o \
 			os_dep/linux/mlme_linux.o \
 			os_dep/linux/recv_linux.o	\
-			os_dep/linux/ioctl_cfg80211.o \
-			os_dep/linux/rtw_android.o
+			os_dep/linux/ioctl_cfg80211.o
+
+$(MODULE_NAME)-$(CONFIG_ANDROID) += os_dep/linux/rtw_android.o
 
 _HAL_INTFS_FILES :=	hal/hal_init.o \
                         hal/$(RTL871X)/$(RTL871X)_hal_init.o \
