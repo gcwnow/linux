@@ -247,8 +247,7 @@ _OS_INTFS_FILES :=	os_dep/osdep_service.o \
 			os_dep/linux/xmit_linux.o \
 			os_dep/linux/mlme_linux.o \
 			os_dep/linux/recv_linux.o \
-			os_dep/linux/ioctl_cfg80211.o \
-			os_dep/linux/rtw_android.o
+			os_dep/linux/ioctl_cfg80211.o
 
 ifeq ($(CONFIG_SDIO_HCI), y)
 _OS_INTFS_FILES += os_dep/linux/custom_gpio_linux.o
@@ -258,6 +257,10 @@ endif
 ifeq ($(CONFIG_GSPI_HCI), y)
 _OS_INTFS_FILES += os_dep/linux/custom_gpio_linux.o
 _OS_INTFS_FILES += os_dep/linux/$(HCI_NAME)_ops_linux.o
+endif
+
+ifeq ($(CONFIG_ANDROID), y)
+_OS_INTFS_FILES += os_dep/linux/rtw_android.o
 endif
 
 _HAL_INTFS_FILES :=	hal/hal_intf.o \
