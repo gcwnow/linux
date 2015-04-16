@@ -2699,14 +2699,6 @@ config ZONE_DMA
 config ZONE_DMA32
 	bool
 
-config FORCE_MAX_ZONEORDER
-	prompt "MAX_ZONEORDER"
-	depends on JZSOC
-	int
-	default "13"
-help
-	 The max memory that can be allocated = 4KB * 2^(CONFIG_FORCE_MAX_ZONEORDER - 1)
-
 source "drivers/pcmcia/Kconfig"
 
 source "drivers/pci/hotplug/Kconfig"
