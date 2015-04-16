@@ -23,9 +23,6 @@
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/slab.h>
-#if defined(JZSOC) && defined(CONFIG_PREEMPT)
-#include <linux/kernel_lock.h>
-#endif
 
 #include "gc_hal_kernel_linux.h"
 
@@ -399,10 +396,6 @@ long drv_ioctl(
     gcsHAL_PRIVATE_DATA_PTR data;
     s32 i, count;
 
-#if defined(JZSOC) && defined(CONFIG_PREEMPT)
-    /* 1: lock_kernel, fix bug WOWFish. */
-    lock_kernel();
-#endif
     gcmkHEADER_ARG(
         "filp=0x%08X ioctlCode=0x%08X arg=0x%08X",
         filp, ioctlCode, arg
@@ -583,18 +576,10 @@ long drv_ioctl(
 
     /* Success. */
     gcmkFOOTER_NO();
-#if defined(JZSOC) && defined(CONFIG_PREEMPT)
-    /* 1: lock_kernel, fix bug WOWFish. */
-    unlock_kernel();
-#endif
     return 0;
 
 OnError:
     gcmkFOOTER();
-#if defined(JZSOC) && defined(CONFIG_PREEMPT)
-    /* 1: lock_kernel, fix bug WOWFish. */
-    unlock_kernel();
-#endif
     return -ENOTTY;
 }
 

@@ -6626,12 +6626,6 @@ gckOS_WaitSignal(
                 }
 
                 status = gcvSTATUS_OK;
-#ifdef CONFIG_JZSOC
-                /* Fix WOW_Fish suspend resume render bugs. Code from
-                 * Vivante Yun.Li.
-                 */
-//                INIT_COMPLETION(signal->obj);
-#endif
                 break;
             }
 
