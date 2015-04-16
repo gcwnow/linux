@@ -128,8 +128,8 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
-	writel(BIT(16), drvdata->base + JZ_REG_TIMER_STOP_SET);
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
+	writel(BIT(16), drvdata->base + JZ_REG_TIMER_STOP_SET);
 
 	return 0;
 }
