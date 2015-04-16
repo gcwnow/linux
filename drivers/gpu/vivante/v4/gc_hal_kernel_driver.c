@@ -675,7 +675,7 @@ OnError:
     return -ENOTTY;
 }
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_INGENIC
 static void enable_jzsoc_gpu_clock(void)
 {
 	struct clk *clk = clk_get(NULL, "gpu");
@@ -698,7 +698,7 @@ static int drv_init(void)
 
     gcmkHEADER();
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_INGENIC
     enable_jzsoc_gpu_clock();
 #else
     clk_enable(clk);
@@ -835,7 +835,7 @@ static void __exit drv_exit(void)
 static void drv_exit(void)
 #endif
 {
-#ifndef CONFIG_JZSOC
+#ifndef CONFIG_MACH_INGENIC
     struct clk *clk = galDevice->clk;
 #endif
 
@@ -850,7 +850,7 @@ static void drv_exit(void)
     gcmkVERIFY_OK(gckGALDEVICE_Stop(galDevice));
     gcmkVERIFY_OK(gckGALDEVICE_Destroy(galDevice));
 
-#ifndef CONFIG_JZSOC
+#ifndef CONFIG_MACH_INGENIC
     clk_disable_unprepare(clk);
     clk_put(clk);
 #endif
@@ -958,7 +958,7 @@ static int gpu_suspend(struct platform_device *dev, pm_message_t state)
     gckGALDEVICE device;
     int i;
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_INGENIC
     cpm_stop_clock(CGM_GPU);
 #endif
     device = platform_get_drvdata(dev);
@@ -992,7 +992,7 @@ static int gpu_resume(struct platform_device *dev)
     int i;
     gceCHIPPOWERSTATE   statesStored;
 
-#ifdef CONFIG_JZSOC
+#ifdef CONFIG_MACH_INGENIC
     cpm_start_clock(CGM_GPU);
 #endif
     device = platform_get_drvdata(dev);
