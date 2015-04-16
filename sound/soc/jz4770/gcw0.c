@@ -109,7 +109,7 @@ static const struct snd_soc_dapm_route gcw0_routes[] = {
 
 	{ "MIC1P", NULL, "Mic Bias" },
 	{ "MIC1N", NULL, "Mic Bias" }, /* no such connection, but not harm */
-	{ "Mic Bias", NULL, "Built-in Mic" },
+	{ "Built-in Mic", NULL, "Mic Bias" },
 };
 
 /*
