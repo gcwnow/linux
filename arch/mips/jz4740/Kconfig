@@ -13,9 +13,6 @@ config JZ4770_GCW0
 
 endchoice
 
-config JZSOC
-	bool
-
 config JZRISC
 	bool
 
@@ -26,7 +23,6 @@ config MACH_JZ4740
 config MACH_JZ4770
 	bool
 	select CPU_SUPPORTS_CPUFREQ
-	select JZSOC
 	select JZRISC
 	select MIPS_EXTERNAL_TIMER
 	select PINCTRL
