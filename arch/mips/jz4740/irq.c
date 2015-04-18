@@ -32,7 +32,9 @@
 
 #include "../../drivers/irqchip/irqchip.h"
 
-static void __iomem *jz_intc_base;
+struct ingenic_intc_data {
+	void __iomem *base;
+};
 
 #define JZ_REG_INTC_STATUS	0x00
 #define JZ_REG_INTC_MASK	0x04
@@ -42,9 +44,10 @@ static void __iomem *jz_intc_base;
 
 static irqreturn_t jz4740_cascade(int irq, void *data)
 {
+	struct ingenic_intc_data *intc = irq_get_handler_data(irq);
 	uint32_t irq_reg;
 
-	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
+	irq_reg = readl(intc->base + JZ_REG_INTC_PENDING);
 
 	if (irq_reg)
 		generic_handle_irq(__fls(irq_reg) + JZ4740_IRQ_BASE);
@@ -80,21 +83,30 @@ static struct irqaction jz4740_cascade_action = {
 static int __init jz4740_intc_of_init(struct device_node *node,
 	struct device_node *parent)
 {
+	struct ingenic_intc_data *intc;
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
 	struct irq_domain *domain;
-	int parent_irq;
+	int parent_irq, err = 0;
+
+	intc = kzalloc(sizeof(*intc), GFP_KERNEL);
+	if (!intc) {
+		err = -ENOMEM;
+		goto out;
+	}
 
 	parent_irq = irq_of_parse_and_map(node, 0);
-	if (!parent_irq)
-		return -EINVAL;
+	if (!parent_irq) {
+		err = -EINVAL;
+		goto out;
+	}
 
-	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR, 0x14);
+	intc->base = ioremap(JZ4740_INTC_BASE_ADDR, 0x14);
 
 	/* Mask all irqs */
-	writel(0xffffffff, jz_intc_base + JZ_REG_INTC_SET_MASK);
+	writel(0xffffffff, intc->base + JZ_REG_INTC_SET_MASK);
 
-	gc = irq_alloc_generic_chip("INTC", 1, JZ4740_IRQ_BASE, jz_intc_base,
+	gc = irq_alloc_generic_chip("INTC", 1, JZ4740_IRQ_BASE, intc->base,
 		handle_level_irq);
 
 	gc->wake_enabled = IRQ_MSK(32);
@@ -116,7 +128,12 @@ static int __init jz4740_intc_of_init(struct device_node *node,
 	if (!domain)
 		pr_warn("unable to register IRQ domain\n");
 
+	err = irq_set_handler_data(parent_irq, intc);
+	if (err)
+		goto out;
+
 	setup_irq(parent_irq, &jz4740_cascade_action);
-	return 0;
+out:
+	return err;
 }
 IRQCHIP_DECLARE(jz4740_intc, "ingenic,jz4740-intc", jz4740_intc_of_init);
