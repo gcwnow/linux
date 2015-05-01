@@ -7,6 +7,8 @@ rm -rf /tmp/modules_fs
 mkdir /tmp/modules_fs
 INSTALL_MOD_PATH=/tmp/modules_fs ARCH=mips make modules_install
 
+find /tmp/modules_fs -name '*.ko' -exec mipsel-linux-strip '{}' \;
+
 NAME=`ls -d /tmp/modules_fs/lib/modules/*`
 NAME=`basename "$NAME" +`
 
