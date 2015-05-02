@@ -116,6 +116,7 @@
 enum jz4740_mmc_version {
 	JZ_MMC_JZ4740,
 	JZ_MMC_JZ4750,
+	JZ_MMC_JZ4770,
 	JZ_MMC_JZ4780,
 };
 
@@ -968,6 +969,7 @@ static const struct mmc_host_ops jz4740_mmc_ops = {
 
 static const struct of_device_id jz4740_mmc_of_match[] = {
 	{ .compatible = "ingenic,jz4740-mmc", .data = (void *) JZ_MMC_JZ4740 },
+	{ .compatible = "ingenic,jz4770-mmc", .data = (void *) JZ_MMC_JZ4770 },
 	{ .compatible = "ingenic,jz4780-mmc", .data = (void *) JZ_MMC_JZ4780 },
 	{},
 };
