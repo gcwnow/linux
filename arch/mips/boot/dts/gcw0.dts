@@ -15,6 +15,26 @@
 		compatible = "simple-bus";
 		ranges = <>;
 
+		regulators {
+			mmc0_power: regulator@0 {
+				compatible = "regulator-fixed";
+				regulator-name = "mmc0_vcc";
+
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			mmc1_power: regulator@1 {
+				compatible = "regulator-fixed";
+				regulator-name = "mmc1_vcc";
+				gpio = <&gpe 9 GPIO_ACTIVE_LOW>;
+
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+			};
+		};
+
 		rumble {
 			compatible = "pwm-haptic";
 			pwms = <&pwm 4 2000000 0>;
@@ -215,4 +235,35 @@
 	/* Set the PLL1 to 432 MHz */
 	assigned-clocks = <&cgu JZ4770_CLK_PLL1>;
 	assigned-clock-rates = <432000000>;
+};
+
+&mmc0 {
+	bus-width = <4>;
+	max-frequency = <48000000>;
+	vmmc-supply = <&mmc0_power>;
+	non-removable;
+
+	assigned-clocks = <&cgu JZ4770_CLK_MMC0_MUX>;
+	assigned-clock-parents = <&cgu JZ4770_CLK_PLL1>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_msc0_4bit>;
+};
+
+&mmc1 {
+	bus-width = <4>;
+	max-frequency = <48000000>;
+	cd-gpios = <&gpb 2 GPIO_ACTIVE_LOW>;
+	vmmc-supply = <&mmc1_power>;
+
+	assigned-clocks = <&cgu JZ4770_CLK_MMC1_MUX>;
+	assigned-clock-parents = <&cgu JZ4770_CLK_PLL1>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_msc1_4bit>;
+};
+
+&mmc2 {
+	/* MMC2 is not used on the GCW0; disable it */
+	status = "disabled";
 };
