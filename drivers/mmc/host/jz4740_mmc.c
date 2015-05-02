@@ -1024,6 +1024,7 @@ static int jz4740_mmc_remove(struct platform_device *pdev)
 
 static const struct of_device_id jz47xx_mmc_of_match[] = {
 	{ .compatible = "ingenic,jz4740-mmc" },
+	{ .compatible = "ingenic,jz4770-mmc" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, jz47xx_mmc_of_match);
