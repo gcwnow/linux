@@ -257,6 +257,9 @@
 			interrupt-parent = <&intc>;
 			interrupts = <37>;
 
+			dmas = <&dmac0 26 &dmac0 27>;
+			dma-names = "tx", "rx";
+
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
 			cap-sdio-irq;
@@ -271,6 +274,9 @@
 
 			interrupt-parent = <&intc>;
 			interrupts = <36>;
+
+			dmas = <&dmac0 30 &dmac0 31>;
+			dma-names = "tx", "rx";
 
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
@@ -287,9 +293,38 @@
 			interrupt-parent = <&intc>;
 			interrupts = <35>;
 
+			dmas = <&dmac0 36 &dmac0 37>;
+			dma-names = "tx", "rx";
+
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
 			cap-sdio-irq;
+		};
+
+		dmac0: jz4770-dma@13420000 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420000 0xBF
+				   0x13420300 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <24>;
+		};
+
+		dmac1: jz4770-dma@13420100 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420100 0xBF
+				   0x13420400 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <23>;
 		};
 
 		i2c0: i2c@0 {
