@@ -99,96 +99,16 @@ static struct resource jz_usb_otg_resources[] = {
 	},
 };
 
-static u64  usb_otg_dmamask = ~(u32)0;
-
 struct platform_device jz4770_usb_otg_device = {
 	.name	= "musb-jz",
 	.id	= 0,
 	.dev = {
-		.dma_mask		= &usb_otg_dmamask,
-		.coherent_dma_mask	= 0xffffffff,
+		.dma_mask		= &jz4770_usb_otg_device.dev.coherent_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
 		.platform_data		= &jz_usb_otg_platform_data,
 	},
 	.num_resources	= ARRAY_SIZE(jz_usb_otg_resources),
 	.resource	= jz_usb_otg_resources,
-};
-
-/** MMC/SD/SDIO controllers**/
-
-#define JZ_MSC_PLATFORM_DEV(msc_id)					\
-	static struct resource jz4770_msc##msc_id##_resources[] = {		\
-		{							\
-			.start	= JZ4770_MSC##msc_id##_BASE_ADDR,	\
-			.end	= JZ4770_MSC##msc_id##_BASE_ADDR + 0x1000 - 1, \
-			.flags	= IORESOURCE_MEM,			\
-		},							\
-		{							\
-			.start	= IRQ_MSC##msc_id,			\
-			.end	= IRQ_MSC##msc_id,			\
-			.flags	= IORESOURCE_IRQ,			\
-		},							\
-		{							\
-			.start	= DMA_ID_MSC##msc_id,			\
-			.end	= DMA_ID_MSC##msc_id,			\
-			.flags	= IORESOURCE_DMA,			\
-		},							\
-	};								\
-									\
-	static u64 jz4770_msc##msc_id##_dmamask =  ~(u32)0;			\
-									\
-	struct platform_device jz4770_msc##msc_id##_device = {		\
-		.name = "jz-msc",					\
-		.id = msc_id,						\
-		.dev = {						\
-			.dma_mask               = &jz4770_msc##msc_id##_dmamask, \
-			.coherent_dma_mask      = 0xffffffff,		\
-		},							\
-		.num_resources  = ARRAY_SIZE(jz4770_msc##msc_id##_resources), \
-		.resource       = jz4770_msc##msc_id##_resources,		\
-	};
-
-JZ_MSC_PLATFORM_DEV(0)
-JZ_MSC_PLATFORM_DEV(1)
-JZ_MSC_PLATFORM_DEV(2)
-
-/* Sound devices */
-
-/* I2S */
-static struct resource jz_i2s_resources[] = {
-	{
-		.start	= JZ4770_AIC_BASE_ADDR,
-		.end	= JZ4770_AIC_BASE_ADDR + 0x38 - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-};
-
-struct platform_device jz4770_i2s_device = {
-	.name		= "jz4770-i2s",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(jz_i2s_resources),
-	.resource	= jz_i2s_resources,
-};
-
-/* PCM */
-struct platform_device jz4770_pcm_device = {
-	.name		= "jz4770-pcm-audio",
-	.id		= -1,
-};
-
-/* Codec */
-static struct resource jz_icdc_resources[] = {
-	{
-		.start	= JZ4770_AIC_BASE_ADDR + 0xA0,
-		.end	= JZ4770_AIC_BASE_ADDR + 0xB0 - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-};
-
-struct platform_device jz4770_icdc_device = {
-	.name		= "jz4770-icdc",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(jz_icdc_resources),
-	.resource	= jz_icdc_resources,
 };
 
 /* VPU */
