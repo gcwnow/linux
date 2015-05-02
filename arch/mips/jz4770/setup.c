@@ -42,7 +42,6 @@
 #include <asm/page.h>
 
 #include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770dmac.h>
 
 #ifdef CONFIG_PC_KEYB
 #include <asm/keyboard.h>
