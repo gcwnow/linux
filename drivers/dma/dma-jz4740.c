@@ -15,6 +15,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/of_dma.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
@@ -78,6 +79,10 @@
 #define JZ_DMA_CTRL_ADDRESS_ERROR		BIT(2)
 #define JZ_DMA_CTRL_ENABLE			BIT(0)
 
+enum jz4740_dma_version {
+	JZ_DMA_JZ4740,
+};
+
 enum jz4740_dma_width {
 	JZ4740_DMA_WIDTH_32BIT	= 0,
 	JZ4740_DMA_WIDTH_8BIT	= 1,
@@ -133,6 +138,8 @@ struct jz4740_dma_dev {
 	void __iomem *base;
 	void __iomem *base2;
 	struct clk *clk;
+
+	enum jz4740_dma_version version;
 
 	struct jz4740_dmaengine_chan chan[JZ_DMA_NR_CHANS];
 };
@@ -510,6 +517,12 @@ static void jz4740_dma_desc_free(struct virt_dma_desc *vdesc)
 	kfree(container_of(vdesc, struct jz4740_dma_desc, vdesc));
 }
 
+static const struct of_device_id jz4740_dma_of_match[] = {
+	{ .compatible = "ingenic,jz4740-dma", .data = (void *) JZ_DMA_JZ4740 },
+	{},
+};
+MODULE_DEVICE_TABLE(of, jz4740_dma_of_match);
+
 #define JZ4740_DMA_BUSWIDTHS (BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
 	BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
 
@@ -520,14 +533,16 @@ static int jz4740_dma_probe(struct platform_device *pdev)
 	struct dma_device *dd;
 	unsigned int i;
 	struct resource *res;
-	int ret;
-	int irq;
+	int ret, irq;
+	const struct of_device_id *of_id = of_match_device(
+			jz4740_dma_of_match, &pdev->dev);
 
 	dmadev = devm_kzalloc(&pdev->dev, sizeof(*dmadev), GFP_KERNEL);
 	if (!dmadev)
 		return -EINVAL;
 
 	dd = &dmadev->ddev;
+	dmadev->version = (enum jz4740_dma_version) of_id->data;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	dmadev->base = devm_ioremap_resource(&pdev->dev, res);
@@ -573,7 +588,13 @@ static int jz4740_dma_probe(struct platform_device *pdev)
 		return ret;
 
 	irq = platform_get_irq(pdev, 0);
-	ret = request_irq(irq, jz4740_dma_irq, 0, dev_name(&pdev->dev), dmadev);
+	ret = devm_request_irq(&pdev->dev, irq, jz4740_dma_irq, 0,
+			dev_name(&pdev->dev), dmadev);
+	if (ret)
+		goto err_unregister;
+
+	ret = of_dma_controller_register(pdev->dev.of_node,
+			of_dma_xlate_by_chan_id, dmadev);
 	if (ret)
 		goto err_unregister;
 
@@ -603,6 +624,7 @@ static struct platform_driver jz4740_dma_driver = {
 	.remove = jz4740_dma_remove,
 	.driver = {
 		.name = "jz4740-dma",
+		.of_match_table = of_match_ptr(jz4740_dma_of_match),
 	},
 };
 module_platform_driver(jz4740_dma_driver);
