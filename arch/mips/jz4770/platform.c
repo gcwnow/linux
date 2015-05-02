@@ -138,44 +138,6 @@ struct platform_device jz4770_usb_otg_device = {
 	.resource	= jz_usb_otg_resources,
 };
 
-/** MMC/SD/SDIO controllers**/
-
-#define JZ_MSC_PLATFORM_DEV(msc_id)					\
-	static struct resource jz4770_msc##msc_id##_resources[] = {		\
-		{							\
-			.start	= JZ4770_MSC##msc_id##_BASE_ADDR,	\
-			.end	= JZ4770_MSC##msc_id##_BASE_ADDR + 0x1000 - 1, \
-			.flags	= IORESOURCE_MEM,			\
-		},							\
-		{							\
-			.start	= IRQ_MSC##msc_id,			\
-			.end	= IRQ_MSC##msc_id,			\
-			.flags	= IORESOURCE_IRQ,			\
-		},							\
-		{							\
-			.start	= DMA_ID_MSC##msc_id,			\
-			.end	= DMA_ID_MSC##msc_id,			\
-			.flags	= IORESOURCE_DMA,			\
-		},							\
-	};								\
-									\
-	static u64 jz4770_msc##msc_id##_dmamask =  ~(u32)0;			\
-									\
-	struct platform_device jz4770_msc##msc_id##_device = {		\
-		.name = "jz-msc",					\
-		.id = msc_id,						\
-		.dev = {						\
-			.dma_mask               = &jz4770_msc##msc_id##_dmamask, \
-			.coherent_dma_mask      = 0xffffffff,		\
-		},							\
-		.num_resources  = ARRAY_SIZE(jz4770_msc##msc_id##_resources), \
-		.resource       = jz4770_msc##msc_id##_resources,		\
-	};
-
-JZ_MSC_PLATFORM_DEV(0)
-JZ_MSC_PLATFORM_DEV(1)
-JZ_MSC_PLATFORM_DEV(2)
-
 /* Sound devices */
 
 /* I2S */
