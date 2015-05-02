@@ -19,6 +19,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/of_dma.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
@@ -123,7 +124,7 @@ struct jz4740_dma_desc {
 
 struct jz4740_dmaengine_chan {
 	struct virt_dma_chan vchan;
-	unsigned int id;
+	unsigned int id, slave_id;
 
 	dma_addr_t fifo_addr;
 	unsigned int transfer_shift;
@@ -263,6 +264,9 @@ static int jz4740_dma_slave_config(struct dma_chan *c,
 		break;
 	}
 
+	if (config->slave_id)
+		chan->slave_id = config->slave_id;
+
 	cmd = flags << JZ_DMA_CMD_FLAGS_OFFSET;
 	cmd |= src_width << JZ_DMA_CMD_SRC_WIDTH_OFFSET;
 	cmd |= dst_width << JZ_DMA_CMD_DST_WIDTH_OFFSET;
@@ -273,7 +277,7 @@ static int jz4740_dma_slave_config(struct dma_chan *c,
 	jz4740_dma_write(base, JZ_REG_DMA_CMD(chan->id), cmd);
 	jz4740_dma_write(base, JZ_REG_DMA_STATUS_CTRL(chan->id), 0);
 	jz4740_dma_write(base, JZ_REG_DMA_REQ_TYPE(chan->id),
-		config->slave_id);
+		chan->slave_id);
 
 	return 0;
 }
@@ -519,6 +523,25 @@ static void jz4740_dma_desc_free(struct virt_dma_desc *vdesc)
 	kfree(container_of(vdesc, struct jz4740_dma_desc, vdesc));
 }
 
+static struct dma_chan *jz4740_of_dma_xlate(struct of_phandle_args *dma_spec,
+		struct of_dma *ofdma)
+{
+	struct jz4740_dma_dev *dmadev = ofdma->of_dma_data;
+	struct jz4740_dmaengine_chan *jzchan;
+	struct dma_chan *chan;
+
+	if (dma_spec->args_count != 1)
+		return NULL;
+
+	chan = dma_request_channel(dmadev->ddev.cap_mask, NULL, NULL);
+	if (!chan)
+		return NULL;
+
+	jzchan = to_jz4740_dma_chan(chan);
+	jzchan->slave_id = dma_spec->args[0];
+	return chan;
+}
+
 #define JZ4740_DMA_BUSWIDTHS (BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
 	BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
 
@@ -583,7 +606,13 @@ static int jz4740_dma_probe(struct platform_device *pdev)
 		return ret;
 
 	irq = platform_get_irq(pdev, 0);
-	ret = request_irq(irq, jz4740_dma_irq, 0, dev_name(&pdev->dev), dmadev);
+	ret = devm_request_irq(&pdev->dev, irq, jz4740_dma_irq, 0,
+			dev_name(&pdev->dev), dmadev);
+	if (ret)
+		goto err_unregister;
+
+	ret = of_dma_controller_register(pdev->dev.of_node,
+			jz4740_of_dma_xlate, dmadev);
 	if (ret)
 		goto err_unregister;
 
@@ -608,11 +637,19 @@ static int jz4740_dma_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id jz4740_dma_dt_match[] = {
+	{ .compatible = "ingenic,jz4740-dma" },
+	{ .compatible = "ingenic,jz4770-dma" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, jz4740_dma_dt_match);
+
 static struct platform_driver jz4740_dma_driver = {
 	.probe = jz4740_dma_probe,
 	.remove = jz4740_dma_remove,
 	.driver = {
 		.name = "jz4740-dma",
+		.of_match_table = of_match_ptr(jz4740_dma_dt_match),
 	},
 };
 module_platform_driver(jz4740_dma_driver);
