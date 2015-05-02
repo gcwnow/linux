@@ -25,6 +25,7 @@
 #include <linux/kernel.h>
 #include <linux/io.h>
 #include <linux/irq.h>
+#include <linux/irqchip.h>
 #include <linux/ioport.h>
 #include <linux/of_fdt.h>
 #include <linux/of_platform.h>
@@ -166,6 +167,11 @@ void __init device_tree_init(void)
 		return;
 
 	unflatten_and_copy_device_tree();
+}
+
+void __init arch_init_irq(void)
+{
+	irqchip_init();
 }
 
 static int __init populate_machine(void)
