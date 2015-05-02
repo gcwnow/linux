@@ -354,7 +354,7 @@ config MMP_PDMA
 
 config DMA_JZ4740
 	tristate "JZ4740 DMA support"
-	depends on MACH_JZ4740
+	depends on MACH_INGENIC
 	select DMA_ENGINE
 	select DMA_VIRTUAL_CHANNELS
 
