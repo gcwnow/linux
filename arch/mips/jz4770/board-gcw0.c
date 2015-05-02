@@ -30,8 +30,6 @@
 #include <asm/mipsregs.h>
 #include <asm/reboot.h>
 
-#include <linux/mmc/host.h>
-#include <linux/platform_data/jz4770_mmc.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
 #include <linux/pinctrl/machine.h>
@@ -50,30 +48,6 @@
 #include <asm/mach-jz4770/jz4770misc.h>
 
 #include "platform.h"
-
-
-/* SD cards */
-
-static struct jz_mmc_platform_data gcw_internal_sd_data = {
-	.support_sdio		= 0,
-	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.bus_width		= 4,
-	.gpio_card_detect	= -1,
-	.gpio_read_only		= -1,
-	.gpio_power		= -1,
-	.nonremovable		= 1,
-};
-
-static struct jz_mmc_platform_data gcw_external_sd_data = {
-	.support_sdio		= 0,
-	.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34,
-	.bus_width		= 4,
-	.gpio_card_detect	= JZ_GPIO_PORTB(2),
-	.card_detect_active_low	= 1,
-	.gpio_read_only		= -1,
-	.gpio_power		= JZ_GPIO_PORTE(9),
-	.power_active_low	= 1,
-};
 
 
 /* Charger */
@@ -366,8 +340,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_icdc_device,
 	&gcw0_lcd_device,
 	&gcw0_audio_device,
-	&jz4770_msc0_device,
-	&jz4770_msc1_device,
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
@@ -376,8 +348,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 
 static int __init gcw0_init_platform_devices(void)
 {
-	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
-	jz4770_msc1_device.dev.platform_data = &gcw_external_sd_data;
 	jz4770_icdc_device.dev.platform_data = &gcw0_icdc_pdata;
 
 	return platform_add_devices(jz_platform_devices,
@@ -389,10 +359,6 @@ static unsigned long gpio_charger_pin_cfg[] = {
 };
 
 static struct pinctrl_map pin_map[] __initdata = {
-	PIN_MAP_MUX_GROUP("jz-msc.0", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
-	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.0", "10010000.jz4770-pinctrl",
 			  "PF5", gpio_charger_pin_cfg),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.1", "10010000.jz4770-pinctrl",
