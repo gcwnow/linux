@@ -370,6 +370,11 @@
 			interrupt-parent = <&intc>;
 			interrupts = <37>;
 
+			dmas = <&dmac1 0>;
+			dma-names = "rx-tx";
+			dma-tx-id = <26>;
+			dma-rx-id = <27>;
+
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
 			cap-sdio-irq;
@@ -385,6 +390,11 @@
 			interrupt-parent = <&intc>;
 			interrupts = <36>;
 
+			dmas = <&dmac1 1>;
+			dma-names = "rx-tx";
+			dma-tx-id = <30>;
+			dma-rx-id = <31>;
+
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
 			cap-sdio-irq;
@@ -399,6 +409,11 @@
 
 			interrupt-parent = <&intc>;
 			interrupts = <35>;
+
+			dmas = <&dmac1 2>;
+			dma-names = "rx-tx";
+			dma-tx-id = <36>;
+			dma-rx-id = <37>;
 
 			cap-sd-highspeed;
 			cap-mmc-highspeed;
@@ -422,6 +437,36 @@
 			joystick: jz4770-touchscreen {
 				compatible = "ingenic,jz4770-adc,touchscreen", "ingenic,jz4770-touchscreen";
 			};
+		};
+
+		dmac0: jz4770-dma@13420000 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420000 0xBF
+				   0x13420300 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <24>;
+
+			/* Disable dmac0 until we have something
+			 * that uses it */
+			status = "disabled";
+		};
+
+		dmac1: jz4770-dma@13420100 {
+			compatible = "ingenic,jz4770-dma";
+			reg = <0x13420100 0xBF
+				   0x13420400 0x20>;
+
+			dma-channels = <6>;
+			#dma-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_DMA>;
+			interrupt-parent = <&intc>;
+			interrupts = <23>;
 		};
 
 		uhc: uhc@13430000 {
