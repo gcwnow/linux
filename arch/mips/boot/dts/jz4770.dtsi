@@ -186,6 +186,17 @@
 				};
 			};
 
+			pinfunc_msc2: msc2 {
+				pins_msc2_4bit: msc2_4bit {
+					ingenic,pins = <&gpb 20 0 &pincfg_nobias
+							&gpb 21 0 &pincfg_nobias
+							&gpb 28 0 &pincfg_nobias
+							&gpb 29 0 &pincfg_nobias
+							&gpb 30 0 &pincfg_nobias
+							&gpb 31 0 &pincfg_nobias>;
+				};
+			};
+
 			pinfunc_pwm1: pwm1 {
 				pinfunc_pwm1_data: pwm1-data {
 					ingenic,pins = <&gpe 1 0 &pincfg_nobias>;
@@ -234,6 +245,51 @@
 					ingenic,pins = <>;
 				};
 			};
+		};
+
+		mmc0: jz4770-mmc@10021000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10021000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC0>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <37>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
+		};
+
+		mmc1: jz4770-mmc@10022000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10022000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC1>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <36>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
+		};
+
+		mmc2: jz4770-mmc@10023000 {
+			compatible = "ingenic,jz4770-mmc";
+			reg = <0x10023000 0xFFF>;
+
+			clocks = <&cgu JZ4770_CLK_MMC2>;
+			clock-names = "mmc";
+
+			interrupt-parent = <&intc>;
+			interrupts = <35>;
+
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			cap-sdio-irq;
 		};
 
 		i2c0: i2c@0 {
