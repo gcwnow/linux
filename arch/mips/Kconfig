@@ -288,6 +288,7 @@ config MACH_INGENIC
 	select COMMON_CLK
 	select COMMON_CLK_JZ47XX
 	select JZ4740_IRQC
+	select MMC_JZ4740
 	select BUILTIN_DTB
 	select USE_OF
 	select LIBFDT
