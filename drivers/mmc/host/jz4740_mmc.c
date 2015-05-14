@@ -173,21 +173,30 @@ static void jz4740_mmc_release_dma_channels(struct jz4740_mmc_host *host)
 		return;
 
 	dma_release_channel(host->dma_tx);
-	dma_release_channel(host->dma_rx);
+	if (host->dma_rx)
+		dma_release_channel(host->dma_rx);
 }
 
 static int jz4740_mmc_acquire_dma_channels(struct jz4740_mmc_host *host)
 {
 	struct device *dev = &host->pdev->dev;
 
-	host->dma_tx = of_dma_request_slave_channel(dev->of_node, "tx");
-	if (IS_ERR(host->dma_tx))
-		return PTR_ERR(host->dma_tx);
+	host->dma_rx = NULL;
+	host->dma_tx = of_dma_request_slave_channel(dev->of_node, "rx-tx");
 
-	host->dma_rx = of_dma_request_slave_channel(dev->of_node, "rx");
-	if (IS_ERR(host->dma_rx)) {
-		dma_release_channel(host->dma_tx);
-		return PTR_ERR(host->dma_rx);
+	if (IS_ERR(host->dma_tx)) {
+		if (PTR_ERR(host->dma_tx) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
+
+		host->dma_tx = of_dma_request_slave_channel(dev->of_node, "tx");
+		if (IS_ERR(host->dma_tx))
+			return PTR_ERR(host->dma_tx);
+
+		host->dma_rx = of_dma_request_slave_channel(dev->of_node, "rx");
+		if (IS_ERR(host->dma_rx)) {
+			dma_release_channel(host->dma_tx);
+			return PTR_ERR(host->dma_rx);
+		}
 	}
 
 	/* Initialize DMA pre request cookie */
@@ -203,7 +212,10 @@ static inline int jz4740_mmc_get_dma_dir(struct mmc_data *data)
 static inline struct dma_chan *jz4740_mmc_get_dma_chan(struct jz4740_mmc_host *host,
 						       struct mmc_data *data)
 {
-	return (data->flags & MMC_DATA_READ) ? host->dma_rx : host->dma_tx;
+	if (!!host->dma_rx && (data->flags & MMC_DATA_READ))
+		return host->dma_rx;
+	else
+		return host->dma_tx;
 }
 
 static void jz4740_mmc_dma_unmap(struct jz4740_mmc_host *host,
@@ -284,7 +296,7 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
 		conf.direction = DMA_DEV_TO_MEM;
 		conf.src_addr = host->mem_res->start + JZ_REG_MMC_RXFIFO;
 		conf.slave_id = JZ4740_DMA_TYPE_MMC_RECEIVE;
-		chan = host->dma_rx;
+		chan = host->dma_rx ?: host->dma_tx;
 	}
 
 	ret = jz4740_mmc_prepare_dma_data(host, data, NULL, chan);
