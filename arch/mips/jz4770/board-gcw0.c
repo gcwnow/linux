@@ -42,7 +42,6 @@
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
-#include <linux/rfkill-regulator.h>
 #include <linux/usb/musb.h>
 #include <sound/jz4770.h>
 #include <video/jzpanel.h>
@@ -135,40 +134,6 @@ static struct platform_device gcw0_usb_charger_device = {
 	},
 };
 
-
-/* USB 1.1 Host (OHCI) */
-
-static struct regulator_consumer_supply gcw0_internal_usb_regulator_consumer =
-	REGULATOR_SUPPLY("vrfkill", "rfkill-regulator.0");
-
-static struct regulator_init_data gcw0_internal_usb_regulator_init_data = {
-	.num_consumer_supplies = 1,
-	.consumer_supplies = &gcw0_internal_usb_regulator_consumer,
-	.constraints = {
-		.name = "USB power",
-		.min_uV = 3300000,
-		.max_uV = 3300000,
-		.valid_modes_mask = REGULATOR_MODE_NORMAL,
-		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-	},
-};
-
-static struct fixed_voltage_config gcw0_internal_usb_regulator_data = {
-	.supply_name = "USB power",
-	.microvolts = 3300000,
-	.gpio = JZ_GPIO_PORTF(10),
-	.init_data = &gcw0_internal_usb_regulator_init_data,
-};
-
-static struct platform_device gcw0_internal_usb_regulator_device = {
-	.name = "reg-fixed-voltage",
-	.id = -1,
-	.dev = {
-		.platform_data = &gcw0_internal_usb_regulator_data,
-	}
-};
-
-
 /* USB OTG (musb) */
 
 #define GPIO_USB_OTG_ID_PIN	JZ_GPIO_PORTF(18)
@@ -251,19 +216,6 @@ static struct platform_device gcw0_audio_device = {
 	.id = -1,
 };
 
-
-static struct rfkill_regulator_platform_data gcw0_rfkill_pdata = {
-	.name = "gcw0-wifi",
-	.type = RFKILL_TYPE_WLAN,
-};
-
-static struct platform_device gcw0_rfkill_device = {
-	.name = "rfkill-regulator",
-	.id = 0,
-	.dev = {
-		.platform_data = &gcw0_rfkill_pdata,
-	},
-};
 
 static const char * gcw0_joystick_gpiokeys_whitelist[] = {
 	"evdev",
@@ -394,7 +346,6 @@ static struct platform_device gcw0_joystick_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-	&gcw0_internal_usb_regulator_device,
 	&jz4770_usb_ohci_device,
 	&jz4770_usb_otg_xceiv_device,
 	&jz4770_usb_otg_device,
@@ -411,7 +362,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
-	&gcw0_rfkill_device,
 	&gcw0_joystick_device,
 	&jz4770_wdt_device,
 };

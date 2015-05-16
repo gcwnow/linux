@@ -29,6 +29,23 @@
 				regulator-max-microvolt = <3300000>;
 				regulator-always-on;
 			};
+
+			usb_power: regulator@1 {
+				compatible = "regulator-fixed";
+				regulator-name = "USB Power";
+				gpio = <&gpf 10 GPIO_ACTIVE_HIGH>;
+
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				power-supply = <&vcc>;
+			};
+		};
+
+		rfkill {
+			compatible = "rfkill-regulator";
+			vrfkill-supply = <&usb_power>;
+			rfkill-name = "gcw0-wifi";
+			rfkill-type = <1>;
 		};
 
 		rumble {
