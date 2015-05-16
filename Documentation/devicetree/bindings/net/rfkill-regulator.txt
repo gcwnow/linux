@@ -1,0 +1,15 @@
+* rfkill-regulator - Regulator consumer driver for rfkill *
+
+Required properties:
+  - compatible:		should be "rfkill-regulator"
+  - rfkill-name:	the name of this rfkill device
+  - rfkill-type:	the type of this rfkill device.
+		Must correspond to a valid rfkill_type from <uapi/linux/rfkill.h>
+
+Example:
+
+	wlan-rfkill {
+		compatible = "rfkill-regulator";
+		rfkill-name = "WLAN power switch";
+		rfkill-type = <1>;
+	};
