@@ -114,9 +114,10 @@ config DMA_BCM2835
 
 config DMA_JZ4740
 	tristate "JZ4740 DMA support"
-	depends on MACH_JZ4740
+	depends on MACH_JZ4740 || MACH_JZ4770
 	select DMA_ENGINE
 	select DMA_VIRTUAL_CHANNELS
+	default y
 
 config DMA_JZ4780
 	tristate "JZ4780 DMA support"
