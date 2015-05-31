@@ -28,12 +28,9 @@
 
 #include <linux/bitops.h>
 #include <linux/gpio.h>
-#include <asm/mach-jz4740/gpio.h>
 #include <asm/cacheflush.h>
 #include <linux/dma-mapping.h>
 #include <linux/dmaengine.h>
-
-#include <asm/mach-jz4740/dma.h>
 
 #define JZ_REG_MMC_STRPCL	0x00
 #define JZ_REG_MMC_STATUS	0x04
@@ -157,6 +154,7 @@ struct jz4740_mmc_host {
 	struct dma_chan *dma_rx;
 	struct dma_chan *dma_tx;
 	struct jz4740_mmc_host_next next_data;
+	unsigned int dma_tx_id, dma_rx_id;
 	bool use_dma;
 	int sg_len;
 
@@ -185,6 +183,10 @@ static int jz4740_mmc_acquire_dma_channels(struct jz4740_mmc_host *host)
 	struct device *dev = &host->pdev->dev;
 
 	host->dma_rx = NULL;
+
+	of_property_read_u32(dev->of_node, "dma-tx-id", &host->dma_tx_id);
+	of_property_read_u32(dev->of_node, "dma-rx-id", &host->dma_rx_id);
+
 	host->dma_tx = of_dma_request_slave_channel(dev->of_node, "rx-tx");
 
 	if (IS_ERR(host->dma_tx)) {
@@ -293,12 +295,12 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
 	if (data->flags & MMC_DATA_WRITE) {
 		conf.direction = DMA_MEM_TO_DEV;
 		conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
-		conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
+		conf.slave_id = host->dma_tx_id;
 		chan = host->dma_tx;
 	} else {
 		conf.direction = DMA_DEV_TO_MEM;
 		conf.src_addr = host->mem_res->start + JZ_REG_MMC_RXFIFO;
-		conf.slave_id = JZ4740_DMA_TYPE_MMC_RECEIVE;
+		conf.slave_id = host->dma_rx_id;
 		chan = host->dma_rx ?: host->dma_tx;
 	}
 
