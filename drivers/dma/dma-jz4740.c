@@ -15,6 +15,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 #include <linux/of_dma.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -81,6 +82,7 @@
 
 enum jz4740_dma_version {
 	JZ_DMA_JZ4740,
+	JZ_DMA_JZ4770,
 };
 
 enum jz4740_dma_width {
@@ -184,6 +186,24 @@ static inline void jz4740_dma_write_mask(void __iomem *base,
 	jz4740_dma_write(base, reg, tmp);
 }
 
+static inline void jz4740_dma_chan_enable(struct jz4740_dmaengine_chan *chan)
+{
+	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+
+	if (dmadev->version >= JZ_DMA_JZ4770)
+		jz4740_dma_write(dmadev->base2,
+				JZ_REG_DMA_CLK_EN_SET, BIT(chan->id));
+}
+
+static inline void jz4740_dma_chan_disable(struct jz4740_dmaengine_chan *chan)
+{
+	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+
+	if (dmadev->version >= JZ_DMA_JZ4770)
+		jz4740_dma_write(dmadev->base2,
+				JZ_REG_DMA_CLK_EN_CLR, BIT(chan->id));
+}
+
 static struct jz4740_dma_desc *jz4740_dma_alloc_desc(unsigned int num_sgs)
 {
 	return kzalloc(sizeof(struct jz4740_dma_desc) +
@@ -273,6 +293,7 @@ static int jz4740_dma_slave_config(struct dma_chan *c,
 	cmd |= JZ4740_DMA_MODE_SINGLE << JZ_DMA_CMD_MODE_OFFSET;
 	cmd |= JZ_DMA_CMD_TRANSFER_IRQ_ENABLE;
 
+	jz4740_dma_chan_enable(chan);
 	jz4740_dma_write(base, JZ_REG_DMA_CMD(chan->id), cmd);
 	jz4740_dma_write(base, JZ_REG_DMA_STATUS_CTRL(chan->id), 0);
 	jz4740_dma_write(base, JZ_REG_DMA_REQ_TYPE(chan->id),
@@ -291,6 +312,7 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
 	spin_lock_irqsave(&chan->vchan.lock, flags);
 	jz4740_dma_write_mask(dmadev->base, JZ_REG_DMA_STATUS_CTRL(chan->id), 0,
 			JZ_DMA_STATUS_CTRL_ENABLE);
+	jz4740_dma_chan_disable(chan);
 	chan->desc = NULL;
 	vchan_get_all_descriptors(&chan->vchan, &head);
 	spin_unlock_irqrestore(&chan->vchan.lock, flags);
@@ -313,8 +335,11 @@ static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
 
 	if (!chan->desc) {
 		vdesc = vchan_next_desc(&chan->vchan);
-		if (!vdesc)
+		if (!vdesc) {
+			jz4740_dma_chan_disable(chan);
 			return 0;
+		}
+
 		chan->desc = to_jz4740_dma_desc(vdesc);
 		chan->next_sg = 0;
 	}
@@ -519,6 +544,7 @@ static void jz4740_dma_desc_free(struct virt_dma_desc *vdesc)
 
 static const struct of_device_id jz4740_dma_of_match[] = {
 	{ .compatible = "ingenic,jz4740-dma", .data = (void *) JZ_DMA_JZ4740 },
+	{ .compatible = "ingenic,jz4770-dma", .data = (void *) JZ_DMA_JZ4770 },
 	{},
 };
 MODULE_DEVICE_TABLE(of, jz4740_dma_of_match);
