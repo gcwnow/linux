@@ -1008,7 +1008,7 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 			dev_name(&pdev->dev), host);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
-		goto err_release_dma;
+		goto err_free_host;
 	}
 
 	jz4740_mmc_clock_disable(host);
@@ -1017,16 +1017,18 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 	/* It is not important when it times out, it just needs to timeout. */
 	set_timer_slack(&host->timeout_timer, HZ);
 
-	host->use_dma = true;
-	if (host->use_dma && jz4740_mmc_acquire_dma_channels(host) != 0)
-		host->use_dma = false;
+	ret = jz4740_mmc_acquire_dma_channels(host);
+	if (ret == -EPROBE_DEFER)
+		goto err_free_irq;
+
+	host->use_dma = !ret;
 
 	platform_set_drvdata(pdev, host);
 	ret = mmc_add_host(mmc);
 
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to add mmc host: %d\n", ret);
-		goto err_free_irq;
+		goto err_release_dma;
 	}
 	dev_info(&pdev->dev, "JZ SD/MMC card driver registered\n");
 
@@ -1036,11 +1038,11 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 
 	return 0;
 
-err_free_irq:
-	free_irq(host->irq, host);
 err_release_dma:
 	if (host->use_dma)
 		jz4740_mmc_release_dma_channels(host);
+err_free_irq:
+	free_irq(host->irq, host);
 err_free_host:
 	mmc_free_host(mmc);
 
