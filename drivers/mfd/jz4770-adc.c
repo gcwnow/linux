@@ -252,6 +252,7 @@ static struct mfd_cell jz4770_adc_cells[] = {
 	{
 		.id = 0,
 		.name = "jz4770-aux",
+		.of_compatible = "ingenic,jz4770-adc,aux",
 		.num_resources = ARRAY_SIZE(jz4770_aux_resources),
 		.resources = jz4770_aux_resources,
 
@@ -261,6 +262,7 @@ static struct mfd_cell jz4770_adc_cells[] = {
 	{
 		.id = 1,
 		.name = "jz4770-battery",
+		.of_compatible = "ingenic,jz4770-adc,battery",
 		.num_resources = ARRAY_SIZE(jz4770_battery_resources),
 		.resources = jz4770_battery_resources,
 
@@ -270,6 +272,7 @@ static struct mfd_cell jz4770_adc_cells[] = {
 	{
 		.id = 2,
 		.name = "jz4770-touchscreen",
+		.of_compatible = "ingenic,jz4770-adc,touchscreen",
 		.num_resources = ARRAY_SIZE(jz4770_touchscreen_resources),
 		.resources = jz4770_touchscreen_resources,
 
@@ -390,7 +393,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, adc);
 
 	irq_base = irq_create_mapping(irq_domain, 0);
-	gc = irq_alloc_generic_chip("INTC", 1, irq_base, adc->base,
+	gc = irq_alloc_generic_chip("ADC", 1, irq_base, adc->base,
 				    handle_level_irq);
 
 	ct = gc->chip_types;
@@ -439,11 +442,18 @@ static int jz4770_adc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id jz4770_adc_of_match[] = {
+	{ .compatible = "ingenic,jz4770-adc", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz4770_adc_of_match);
+
 static struct platform_driver jz4770_adc_driver = {
 	.probe	= jz4770_adc_probe,
 	.remove = jz4770_adc_remove,
 	.driver = {
 		.name = "jz4770-adc",
+		.of_match_table = jz4770_adc_of_match,
 	},
 };
 
