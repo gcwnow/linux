@@ -233,6 +233,12 @@ static int jz_joystick_resume(struct device *dev)
 static SIMPLE_DEV_PM_OPS(jz_joystick_pm_ops,
 		jz_joystick_suspend, jz_joystick_resume);
 
+static const struct of_device_id jz_joystick_of_match[] = {
+	{ .compatible = "ingenic,jz4770-touchscreen", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz_joystick_of_match);
+
 static struct platform_driver jz_joystick_driver = {
 	.probe		= jz_joystick_probe,
 	.remove		= jz_joystick_remove,
@@ -240,6 +246,7 @@ static struct platform_driver jz_joystick_driver = {
 		/* Name needs to match the mfd cell name. */
 		.name = "jz4770-touchscreen",
 		.pm = &jz_joystick_pm_ops,
+		.of_match_table = jz_joystick_of_match,
 	},
 };
 
