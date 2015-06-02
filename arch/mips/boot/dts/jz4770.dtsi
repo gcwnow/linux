@@ -236,6 +236,25 @@
 			};
 		};
 
+		adc: jz4770-adc@10070000 {
+			compatible = "ingenic,jz4770-adc";
+			reg = <0x10070000 0x2F>;
+			#address-cells = <0>;
+			#size-cells = <0>;
+
+			clocks = <&cgu JZ4770_CLK_ADC>;
+			interrupt-parent = <&intc>;
+			interrupts = <18>;
+
+			battery: jz4770-battery {
+				compatible = "ingenic,jz4770-adc,battery", "ingenic,jz4770-battery";
+			};
+
+			joystick: jz4770-touchscreen {
+				compatible = "ingenic,jz4770-adc,touchscreen", "ingenic,jz4770-touchscreen";
+			};
+		};
+
 		i2c0: i2c@0 {
 			#address-cells = <1>;
 			#size-cells = <0>;
