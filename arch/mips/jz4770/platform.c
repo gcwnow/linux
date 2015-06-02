@@ -238,34 +238,6 @@ struct platform_device jz4770_rtc_device = {
 	.resource	= jz_rtc_resources,
 };
 
-/* ADC controller */
-
-static struct resource jz_adc_resources[] = {
-	{
-		/* Assign only the shared registers to the MFD driver. */
-		.start	= JZ4770_SADC_BASE_ADDR,
-		.end	= JZ4770_SADC_BASE_ADDR + 0x2F,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.start	= IRQ_SADC,
-		.end	= IRQ_SADC,
-		.flags	= IORESOURCE_IRQ,
-	},
-	{
-		.start	= IRQ_SADC_BASE,
-		.end	= IRQ_SADC_BASE + SADC_IRQ_NUM - 1,
-		.flags	= IORESOURCE_IRQ,
-	},
-};
-
-struct platform_device jz4770_adc_device = {
-	.name		= "jz4770-adc",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(jz_adc_resources),
-	.resource	= jz_adc_resources,
-};
-
 /* VPU */
 
 static struct resource jz_vpu_resources[] = {

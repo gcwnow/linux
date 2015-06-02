@@ -3,7 +3,6 @@
 
 #include <linux/platform_device.h>
 
-extern struct platform_device jz4770_adc_device;
 extern struct platform_device jz4770_i2c0_device;
 extern struct platform_device jz4770_i2c1_device;
 extern struct platform_device jz4770_i2c2_device;
