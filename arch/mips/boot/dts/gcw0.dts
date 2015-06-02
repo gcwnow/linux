@@ -250,3 +250,10 @@
 	assigned-clocks = <&cgu JZ4770_CLK_PLL1>;
 	assigned-clock-rates = <432000000>;
 };
+
+&battery {
+	battery-name = "battery";
+	technology = <3>; /* Lithium polymer */
+	max-uV = <5700000>;
+	min-uV = <4600000>;
+};

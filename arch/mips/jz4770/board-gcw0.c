@@ -79,20 +79,6 @@ static struct jz_mmc_platform_data gcw_external_sd_data = {
 };
 
 
-/* Battery */
-
-static struct jz_battery_platform_data gcw0_battery_pdata = {
-	.gpio_charge = -1,
-	//.gpio_charge_active_low = 0,
-	.info = {
-		.name = "battery",
-		.technology = POWER_SUPPLY_TECHNOLOGY_LIPO,
-		.voltage_max_design = 5700000,
-		.voltage_min_design = 4600000,
-	},
-};
-
-
 /* Charger */
 
 #define GPIO_DC_CHARGER		JZ_GPIO_PORTF(5)
@@ -353,7 +339,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
 	&jz4770_icdc_device,
-	&jz4770_adc_device,
 	&jz4770_rtc_device,
 	&gcw0_lcd_device,
 	&gcw0_audio_device,
@@ -372,7 +357,6 @@ static int __init gcw0_init_platform_devices(void)
 			jz4770_usb_otg_device.dev.platform_data;
 	otg_platform_data->board_data = &gcw0_otg_board_data;
 
-	jz4770_adc_device.dev.platform_data = &gcw0_battery_pdata;
 	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
 	jz4770_msc1_device.dev.platform_data = &gcw_external_sd_data;
 	jz4770_icdc_device.dev.platform_data = &gcw0_icdc_pdata;
