@@ -236,6 +236,37 @@ static void jz_battery_work(struct work_struct *work)
 	schedule_delayed_work(&jz_battery->work, interval);
 }
 
+static struct jz_battery_platform_data * jz_battery_of_probe(struct device *dev)
+{
+	int ret;
+	struct device_node *node = dev->of_node;
+	struct jz_battery_platform_data *pdata = devm_kzalloc(dev,
+			sizeof(*pdata), GFP_KERNEL);
+	if (!pdata)
+		return ERR_PTR(-ENOMEM);
+
+	ret = of_property_read_string(node, "battery-name", &pdata->info.name);
+	if (ret)
+		return ERR_PTR(ret);
+
+	ret = of_property_read_u32(node, "max-uV",
+			&pdata->info.voltage_max_design);
+	if (ret)
+		return ERR_PTR(ret);
+
+	ret = of_property_read_u32(node, "min-uV",
+			&pdata->info.voltage_min_design);
+	if (ret)
+		return ERR_PTR(ret);
+
+	ret = of_property_read_u32(node, "technology",
+			&pdata->info.technology);
+	if (ret)
+		return ERR_PTR(ret);
+
+	return pdata;
+}
+
 static int jz_battery_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -243,6 +274,12 @@ static int jz_battery_probe(struct platform_device *pdev)
 	struct jz_battery *jz_battery;
 	struct power_supply *battery;
 	struct resource *mem;
+
+	if (!pdata && pdev->dev.of_node) {
+		pdata = jz_battery_of_probe(&pdev->dev);
+		if (IS_ERR(pdata))
+			return PTR_ERR(pdata);
+	}
 
 	if (!pdata) {
 		dev_err(&pdev->dev, "No platform_data supplied\n");
@@ -390,12 +427,19 @@ static const struct dev_pm_ops jz_battery_pm_ops = {
 #define JZ_BATTERY_PM_OPS NULL
 #endif
 
+static const struct of_device_id jz_battery_of_match[] = {
+	{ .compatible = "ingenic,jz4770-battery", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz_battery_of_match);
+
 static struct platform_driver jz_battery_driver = {
 	.probe		= jz_battery_probe,
 	.remove		= jz_battery_remove,
 	.driver = {
 		.name = "jz4770-battery",
 		.pm = JZ_BATTERY_PM_OPS,
+		.of_match_table = jz_battery_of_match,
 	},
 };
 
