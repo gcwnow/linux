@@ -31,7 +31,7 @@
 			clock-frequency = <12000000>;
 		};
 
-		rtc: rtc {
+		rtc_clk: rtc {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <32768>;
@@ -48,7 +48,7 @@
 			compatible = "ingenic,jz4770-cgu";
 			reg = <0x10000000 0x100>;
 
-			clocks = <&ext>, <&rtc>;
+			clocks = <&ext>, <&rtc_clk>;
 			clock-names = "ext", "rtc";
 
 			#clock-cells = <1>;
@@ -58,6 +58,14 @@
 			compatible = "ingenic,jz4770-pwm";
 			reg = <0x10002010 0x4B>;
 			#pwm-cells = <3>;
+		};
+
+		rtc: jz4740-rtc@10003000 {
+			compatible = "ingenic,jz4770-rtc";
+			reg = <0x10003000 0x3F>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <32>;
 		};
 
 		pinctrl: jz4770-pinctrl@10010000 {
