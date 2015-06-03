@@ -339,7 +339,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
 	&jz4770_icdc_device,
-	&jz4770_rtc_device,
 	&gcw0_lcd_device,
 	&gcw0_audio_device,
 	&jz4770_msc0_device,
