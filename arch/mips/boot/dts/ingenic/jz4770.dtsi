@@ -247,6 +247,106 @@
 					ingenic,pins = <>;
 				};
 			};
+
+			pinfunc_uart0: uart0 {
+				pins_uart0_data: uart0-data {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart0_dataplusflow: uart0-dataplusflow {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  1 0 &pincfg_nobias   /* cts */
+							&gpf  2 0 &pincfg_nobias   /* rts */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+			};
+
+			pinfunc_uart1: uart1 {
+				pins_uart1_data: uart1-data {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up   /* rxd */
+							&gpd 28 0 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart1_dataplusflow: uart1-dataplusflow {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up  /* rxd */
+							&gpd 28 0 &pincfg_nobias   /* txd */
+							&gpd 27 0 &pincfg_nobias   /* cts */
+							&gpd 29 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart2: uart2 {
+				pins_uart2_data: uart2-data {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart2_dataplusflow: uart2-dataplusflow {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias   /* txd */
+							&gpc 29 0 &pincfg_nobias   /* cts */
+							&gpc 31 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart3: uart3 {
+				pins_uart3_data: uart3-data {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart3_dataplusflow: uart3-dataplusflow {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias    /* txd */
+							&gpe  8 0 &pincfg_nobias    /* cts */
+							&gpe  9 0 &pincfg_nobias>;  /* rts */
+				};
+			};
+		};
+
+		uart0: serial@10030000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10030000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART0>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <5>;
+		};
+
+		uart1: serial@10031000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10031000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART1>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <4>;
+		};
+
+		uart2: serial@10032000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10032000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART2>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <3>;
+		};
+
+		uart3: serial@10033000 {
+			compatible = "ingenic,jz4770-uart";
+			reg = <0x10033000 0x100>;
+
+			clocks = <&ext>, <&cgu JZ4770_CLK_UART3>;
+			clock-names = "baud", "module";
+
+			interrupt-parent = <&intc>;
+			interrupts = <2>;
 		};
 
 		adc: jz4770-adc@10070000 {

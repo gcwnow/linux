@@ -29,11 +29,6 @@
 #include <linux/of_fdt.h>
 #include <linux/of_platform.h>
 #include <linux/tty.h>
-#include <linux/serial.h>
-#include <linux/serial_core.h>
-#include <linux/serial_8250.h>
-
-#include <uapi/linux/serial_reg.h>
 
 #include <asm/cpu.h>
 #include <asm/bootinfo.h>
@@ -53,68 +48,7 @@
 #endif
 
 #include "reset.h"
-#include "uart.h"
 
-
-/* XXX: We really should just merge with jz4740. */
-void jz4740_serial_out(struct uart_port *p, int offset, int value)
-{
-	switch (offset) {
-	case UART_FCR:
-		value |= UART_JZ_FCR_UME; /* enable UART module */
-		break;
-	/* XXX: Define a port type, set UART_CAP_RTOIE. */
-	case UART_IER:
-		value |= (value & UART_IER_RLSI) << 2;
-		break;
-	default:
-		break;
-	}
-	writeb(value, p->membase + (offset << p->regshift));
-}
-
-static void __init jz_serial_setup(void)
-{
-#ifdef CONFIG_SERIAL_8250
-	struct uart_port s;
-
-	REG8(UART0_FCR) |= UART_JZ_FCR_UME; /* enable UART module */
-	memset(&s, 0, sizeof(s));
-	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
-	s.iotype = SERIAL_IO_MEM;
-	s.regshift = 2;
-	s.uartclk = JZ_EXTAL;
-	s.serial_out = jz4740_serial_out;
-
-	s.line = 0;
-	s.membase = (u8 *)UART0_BASE;
-	s.irq = IRQ_UART0;
-	if (early_serial_setup(&s) != 0) {
-		printk(KERN_ERR "Serial ttyS0 setup failed!\n");
-	}
-
-	s.line = 1;
-	s.membase = (u8 *)UART1_BASE;
-	s.irq = IRQ_UART1;
-	if (early_serial_setup(&s) != 0) {
-		printk(KERN_ERR "Serial ttyS1 setup failed!\n");
-	}
-
-	s.line = 2;
-	s.membase = (u8 *)UART2_BASE;
-	s.irq = IRQ_UART2;
-	if (early_serial_setup(&s) != 0) {
-		printk(KERN_ERR "Serial ttyS2 setup failed!\n");
-	}
-
-	s.line = 3;
-	s.membase = (u8 *)UART3_BASE;
-	s.irq = IRQ_UART3;
-	if (early_serial_setup(&s) != 0) {
-		printk(KERN_ERR "Serial ttyS3 setup failed!\n");
-	}
-#endif
-}
 
 void __init plat_mem_setup(void)
 {
@@ -134,8 +68,6 @@ void __init plat_mem_setup(void)
 
 	jz_reset_init();
 	__dt_setup_arch(__dtb_start);
-
-	jz_serial_setup();
 }
 
 /*

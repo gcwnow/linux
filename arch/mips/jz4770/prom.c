@@ -39,11 +39,7 @@
 #include <linux/init.h>
 #include <linux/string.h>
 
-#include <uapi/linux/serial_reg.h>
-
 #include <asm/bootinfo.h>
-
-#include "uart.h"
 
 
 static void __init prom_init_cmdline(int prom_argc, char **prom_argv)
@@ -75,18 +71,6 @@ void __init prom_init(void)
 {
 	prom_init_cmdline((int)fw_arg0, (char **)fw_arg1);
 	mips_machtype = MACH_INGENIC_JZ4770;
-}
-
-/* used by early printk */
-void prom_putchar(char c)
-{
-	volatile u8 *uart_lsr = (volatile u8 *)(UART2_BASE + OFF_LSR);
-	volatile u8 *uart_tdr = (volatile u8 *)(UART2_BASE + OFF_TDR);
-
-	/* Wait for fifo to shift out some bytes */
-	while ( !((*uart_lsr & (UART_LSR_THRE | UART_LSR_TEMT)) == 0x60) );
-
-	*uart_tdr = (u8)c;
 }
 
 const char *get_system_type(void)

@@ -14,7 +14,6 @@
  *
  */
 
-#include <linux/clk.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
 
@@ -75,14 +74,3 @@ int jz_clk_init(void)
 	iounmap(ost_tcsr);
 	return 0;
 }
-
-/* Keep the UART2 clock enabled for now, until we have a working driver */
-static int __init jz_setup_uart_clk(void)
-{
-	struct clk *clk = clk_get(NULL, "uart2");
-	clk_prepare_enable(clk);
-	clk_put(clk);
-	return 0;
-}
-
-arch_initcall(jz_setup_uart_clk);
