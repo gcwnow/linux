@@ -9,6 +9,17 @@
 / {
 	compatible = "gcw,zero", "ingenic,jz4770";
 
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+	};
+
+	chosen {
+		stdout-path = &uart2;
+	};
+
 	board {
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -277,4 +288,9 @@
 &uhc {
 	/* The WiFi module is connected to the UHC. */
 	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart2_data>;
 };
