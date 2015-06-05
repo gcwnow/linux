@@ -14,6 +14,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/clk.h>
+#include <linux/of_device.h>
 #include <linux/regulator/consumer.h>
 
 struct jz4740_ohci_hcd {
@@ -234,11 +235,21 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id jz4740_ohci_of_match[] = {
+	{ .compatible = "ingenic,jz4740-ohci", },
+	{ .compatible = "ingenic,jz4770-ohci", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz4740_ohci_of_match);
+#endif
+
 static struct platform_driver ohci_hcd_jz4740_driver = {
 	.probe = jz4740_ohci_probe,
 	.remove = jz4740_ohci_remove,
 	.driver = {
 		.name = "jz4740-ohci",
+		.of_match_table = of_match_ptr(jz4740_ohci_of_match),
 	},
 };
 
