@@ -402,17 +402,19 @@ static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->lock, flags);
+
 	if (enabled)
 		host->irq_mask &= ~irq;
 	else
 		host->irq_mask |= irq;
-	spin_unlock_irqrestore(&host->lock, flags);
 
 	/* In the 4750 onwards, IMASK is expanded to 32 bits. */
 	if (host->version >= JZ_MMC_JZ4750)
 		writel(host->irq_mask, host->base + JZ_REG_MMC_IMASK);
 	else
 		writew(host->irq_mask, host->base + JZ_REG_MMC_IMASK);
+
+	spin_unlock_irqrestore(&host->lock, flags);
 }
 
 static void jz4740_mmc_clock_enable(struct jz4740_mmc_host *host,
