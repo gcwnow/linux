@@ -101,6 +101,7 @@
 
 enum jz47xx_i2s_version {
 	JZ_I2S_JZ4740,
+	JZ_I2S_JZ4770,
 	JZ_I2S_JZ4780,
 };
 
@@ -286,7 +287,7 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 		else
 			ctrl &= ~JZ_AIC_CTRL_MONO_TO_STEREO;
 
-		if (i2s->version >= JZ_I2S_JZ4780) {
+		if (i2s->version >= JZ_I2S_JZ4770) {
 			ctrl &= ~JZ_AIC_CTRL_CHANNELS_MASK;
 			ctrl |= (params_channels(params) - 1) <<
 				JZ_AIC_CTRL_CHANNELS_OFFSET;
@@ -298,7 +299,7 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 		ctrl &= ~JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK;
 		ctrl |= sample_size << JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET;
 
-		if (i2s->version >= JZ_I2S_JZ4780) {
+		if (i2s->version >= JZ_I2S_JZ4770) {
 			div_reg &= ~I2SDIV_IDV_MASK;
 			div_reg |= (div - 1) << I2SDIV_IDV_SHIFT;
 		} else {
@@ -463,6 +464,27 @@ static struct snd_soc_dai_driver jz4740_i2s_dai = {
 	.resume = jz4740_i2s_resume,
 };
 
+static struct snd_soc_dai_driver jz4770_i2s_dai = {
+	.probe = jz4740_i2s_dai_probe,
+	.remove = jz4740_i2s_dai_remove,
+	.playback = {
+		.channels_min	= 1,
+		.channels_max	= 2,
+		.rates		= SNDRV_PCM_RATE_8000_96000,
+		.formats	= JZ4740_I2S_FMTS,
+	},
+	.capture = {
+		.channels_min	= 2,
+		.channels_max	= 2,
+		.rates		= SNDRV_PCM_RATE_8000_96000,
+		.formats	= JZ4740_I2S_FMTS,
+	},
+	.symmetric_rates	= 1,
+	.ops = &jz4740_i2s_dai_ops,
+	.suspend = jz4740_i2s_suspend,
+	.resume = jz4740_i2s_resume,
+};
+
 static struct snd_soc_dai_driver jz4780_i2s_dai = {
 	.probe = jz4740_i2s_dai_probe,
 	.remove = jz4740_i2s_dai_remove,
@@ -490,6 +512,7 @@ static const struct snd_soc_component_driver jz4740_i2s_component = {
 #ifdef CONFIG_OF
 static const struct of_device_id jz4740_of_matches[] = {
 	{ .compatible = "ingenic,jz4740-i2s", .data = (void *)JZ_I2S_JZ4740 },
+	{ .compatible = "ingenic,jz4770-i2s", .data = (void *)JZ_I2S_JZ4770 },
 	{ .compatible = "ingenic,jz4780-i2s", .data = (void *)JZ_I2S_JZ4780 },
 	{ /* sentinel */ }
 };
@@ -531,6 +554,9 @@ static int jz4740_i2s_dev_probe(struct platform_device *pdev)
 	if (i2s->version == JZ_I2S_JZ4780)
 		ret = devm_snd_soc_register_component(&pdev->dev,
 			&jz4740_i2s_component, &jz4780_i2s_dai, 1);
+	else if (i2s->version == JZ_I2S_JZ4770)
+		ret = devm_snd_soc_register_component(&pdev->dev,
+			&jz4740_i2s_component, &jz4770_i2s_dai, 1);
 	else
 		ret = devm_snd_soc_register_component(&pdev->dev,
 			&jz4740_i2s_component, &jz4740_i2s_dai, 1);
