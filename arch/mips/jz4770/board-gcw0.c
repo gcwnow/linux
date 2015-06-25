@@ -201,18 +201,6 @@ static struct platform_device gcw0_lcd_device = {
 };
 
 
-/* Audio */
-
-static struct jz4770_icdc_platform_data gcw0_icdc_pdata = {
-	.mic_mode = JZ4770_MIC_1,
-};
-
-static struct platform_device gcw0_audio_device = {
-	.name = "gcw0-audio",
-	.id = -1,
-};
-
-
 static const char * gcw0_joystick_gpiokeys_whitelist[] = {
 	"evdev",
 };
@@ -345,11 +333,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4770_usb_otg_xceiv_device,
 	&jz4770_usb_otg_device,
 	&jz4770_lcd_device,
-	&jz4770_i2s_device,
-	&jz4770_pcm_device,
-	&jz4770_icdc_device,
 	&gcw0_lcd_device,
-	&gcw0_audio_device,
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
@@ -361,7 +345,6 @@ static int __init gcw0_init_platform_devices(void)
 	struct musb_hdrc_platform_data *otg_platform_data =
 			jz4770_usb_otg_device.dev.platform_data;
 	otg_platform_data->board_data = &gcw0_otg_board_data;
-	jz4770_icdc_device.dev.platform_data = &gcw0_icdc_pdata;
 
 	return platform_add_devices(jz_platform_devices,
 				    ARRAY_SIZE(jz_platform_devices));
