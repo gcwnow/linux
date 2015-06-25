@@ -26,6 +26,8 @@
 #include <linux/serial_core.h>
 #include <linux/serial_reg.h>
 
+#include "8250.h"
+
 struct ingenic_uart_data {
 	struct clk	*clk_module;
 	struct clk	*clk_baud;
@@ -33,6 +35,9 @@ struct ingenic_uart_data {
 };
 
 #define UART_FCR_UME	BIT(4)
+
+#define UART_MCR_MDCE	BIT(7)
+#define UART_MCR_FCM	BIT(6)
 
 static struct earlycon_device *early_device;
 
@@ -129,6 +134,8 @@ OF_EARLYCON_DECLARE(jz4780_uart, "ingenic,jz4780-uart",
 
 static void ingenic_uart_serial_out(struct uart_port *p, int offset, int value)
 {
+	int mcr, orig;
+
 	switch (offset) {
 	case UART_FCR:
 		/* UART module enable */
@@ -136,6 +143,18 @@ static void ingenic_uart_serial_out(struct uart_port *p, int offset, int value)
 		break;
 
 	case UART_IER:
+		/* If we have enabled modem status IRQs we should enable modem
+		 * mode. */
+		mcr = orig = p->serial_in(p, UART_MCR);
+		if (value & UART_IER_MSI) {
+			mcr |= UART_MCR_MDCE | UART_MCR_FCM;
+		} else {
+			mcr &= ~(UART_MCR_MDCE | UART_MCR_FCM);
+		}
+
+		if (mcr != orig)
+			ingenic_uart_serial_out(p, UART_MCR, mcr);
+
 		value |= (value & 0x4) << 2;
 		break;
 
