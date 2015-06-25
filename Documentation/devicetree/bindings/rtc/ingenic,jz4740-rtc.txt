@@ -1,0 +1,20 @@
+JZ4740 and similar SoCs real-time clock driver
+
+Required properties:
+
+- compatible: One of:
+  - "ingenic,jz4740-rtc" - for use with the JZ4740 SoC
+  - "ingenic,jz4770-rtc" - for use with the JZ4770 SoC
+- reg: Address range of rtc register set
+- interrupts: IRQ number for the alarm interrupt
+- interrupt-parent: phandle of the interrupt controller
+
+Example:
+
+rtc@10003000 {
+	compatible = "ingenic,jz4740-rtc";
+	reg = <0x10003000 0x3F>;
+
+	interrupt-parent = <&intc>;
+	interrupts = <32>;
+};
