@@ -360,6 +360,26 @@
 			interrupts = <2>;
 		};
 
+		i2s: i2s@10020000 {
+			compatible = "ingenic,jz4770-i2s";
+			reg = <0x10020000 0x94>;
+
+			clocks = <&cgu JZ4770_CLK_AIC>, <&cgu JZ4770_CLK_I2S>;
+			clock-names = "aic", "i2s";
+
+			dmas = <&dmac1 3>, <&dmac1 4>;
+			dma-names = "rx" , "tx";
+
+		};
+
+		codec: codec@100200A0 {
+			compatible = "ingenic,jz4770-codec";
+			reg = <0x100200A0 0xF>;
+
+			clocks = <&cgu JZ4770_CLK_AIC>;
+			clock-names = "aic";
+		};
+
 		mmc0: jz4770-mmc@10021000 {
 			compatible = "ingenic,jz4770-mmc";
 			reg = <0x10021000 0xFFF>;
