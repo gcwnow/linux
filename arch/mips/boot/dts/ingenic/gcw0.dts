@@ -72,6 +72,13 @@
 			};
 		};
 
+		audio {
+			compatible = "ingenic,gcw0-audio";
+			ingenic,i2s-controller = <&i2s>;
+			ingenic,codec = <&codec>;
+			ingenic,mic-mode = <1>;
+		};
+
 		rfkill {
 			compatible = "rfkill-regulator";
 			vrfkill-supply = <&usb_power>;
