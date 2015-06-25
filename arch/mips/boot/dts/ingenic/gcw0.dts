@@ -246,9 +246,25 @@
 };
 
 &cgu {
-	/* Set the PLL1 to 432 MHz */
-	assigned-clocks = <&cgu JZ4770_CLK_PLL1>;
-	assigned-clock-rates = <432000000>;
+	/* Put high-speed peripherals under PLL1, such that we can change the
+	 * PLL0 frequency on demand without having to suspend peripherals.
+	 * We use a rate of 432 MHz, which is the least common multiple of
+	 * 27 MHz (required by TV encoder) and 48 MHz (required by USB host).
+	 */
+	assigned-clocks =
+		<&cgu JZ4770_CLK_PLL1>,
+		<&cgu JZ4770_CLK_UHC>,
+		<&cgu JZ4770_CLK_LPCLK_MUX>,
+		<&cgu JZ4770_CLK_MMC0_MUX>,
+		<&cgu JZ4770_CLK_MMC1_MUX>;
+	assigned-clock-parents =
+		<0>,
+		<&cgu JZ4770_CLK_PLL1>,
+		<&cgu JZ4770_CLK_PLL1>,
+		<&cgu JZ4770_CLK_PLL1>,
+		<&cgu JZ4770_CLK_PLL1>;
+	assigned-clock-rates =
+		<432000000>;
 };
 
 &battery {
