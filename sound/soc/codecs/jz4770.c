@@ -978,6 +978,11 @@ static struct regmap_config jz_icdc_regmap_config = {
 	.cache_type = REGCACHE_FLAT,
 };
 
+static const struct of_device_id jz4770_icdc_of_matches[] = {
+	{ .compatible = "ingenic,jz4770-codec", },
+	{ /* sentinel */ }
+};
+
 static int jz_icdc_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -1009,6 +1014,9 @@ static int jz_icdc_probe(struct platform_device *pdev)
 
 	if (pdata)
 		jz_icdc->mic_mode = pdata->mic_mode;
+	else if (&pdev->dev.of_node)
+		of_property_read_u32(pdev->dev.of_node, "ingenic,mic-mode",
+				&jz_icdc->mic_mode);
 	else
 		dev_warn(&pdev->dev, "No pdata, assuming no mics\n");
 
@@ -1042,6 +1050,7 @@ static struct platform_driver jz4770_icdc_driver = {
 	.remove			= jz_icdc_remove,
 	.driver			= {
 		.name		= "jz4770-icdc",
+		.of_match_table = of_match_ptr(jz4770_icdc_of_matches),
 	},
 };
 
