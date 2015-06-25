@@ -33,7 +33,7 @@
 #include <asm/div64.h>
 #include <asm/types.h>
 
-#include "../jz4770/jz4770-aic.h"
+#include "jz4770-aic.h"
 #include "jz4770.h"
 
 
