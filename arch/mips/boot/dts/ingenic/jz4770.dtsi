@@ -54,6 +54,11 @@
 			#clock-cells = <1>;
 		};
 
+		wdt: jz4740-wdt@10002000 {
+			compatible = "ingenic,jz4770-watchdog";
+			reg = <0x10002000 0x0B>;
+		};
+
 		pwm: jz4740-pwm@10002010 {
 			compatible = "ingenic,jz4770-pwm";
 			reg = <0x10002010 0x4B>;
