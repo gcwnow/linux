@@ -346,7 +346,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_usb_charger_device,
 	&jz4770_vpu_device,
 	&gcw0_joystick_device,
-	&jz4770_wdt_device,
 };
 
 static int __init gcw0_init_platform_devices(void)
