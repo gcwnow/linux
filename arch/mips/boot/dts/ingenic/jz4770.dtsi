@@ -264,11 +264,12 @@
 		};
 
 		uhc: uhc@13430000 {
-			compatible = "ingenic,jz4770-ohci";
+			compatible = "ingenic,jz4770-ohci", "generic-ohci";
 			reg = <0x13430000 0xFFF>;
 
-			clocks = <&cgu JZ4770_CLK_UHC_PHY>;
-			clock-names = "uhc";
+			clocks = <&cgu JZ4770_CLK_UHC>, <&cgu JZ4770_CLK_UHC_PHY>;
+			assigned-clocks = <&cgu JZ4770_CLK_UHC>;
+			assigned-clock-rates = <48000000>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <20>;
