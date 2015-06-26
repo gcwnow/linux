@@ -55,5 +55,6 @@
 #define JZ4770_CLK_AIC		41
 #define JZ4770_CLK_AUX		42
 #define JZ4770_CLK_VPU		43
+#define JZ4770_CLK_UHC_PHY	44
 
 #endif /* __DT_BINDINGS_CLOCK_JZ4770_CGU_H__ */

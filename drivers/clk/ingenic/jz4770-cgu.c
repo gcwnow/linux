@@ -21,6 +21,7 @@
  * MA 02111-1307 USA
  */
 
+#include <linux/bitops.h>
 #include <linux/clk-provider.h>
 #include <linux/delay.h>
 #include <linux/of.h>
@@ -34,8 +35,10 @@
 #define CGU_REG_LCR		0x04
 #define CGU_REG_CPPCR0		0x10
 #define CGU_REG_CLKGR0		0x20
+#define CGU_REG_OPCR		0x24
 #define CGU_REG_CLKGR1		0x28
 #define CGU_REG_CPPCR1		0x30
+#define CGU_REG_USBPCR1		0x48
 #define CGU_REG_USBCDR		0x50
 #define CGU_REG_I2SCDR		0x60
 #define CGU_REG_LPCDR		0x64
@@ -50,7 +53,38 @@
 #define CGU_REG_MSC2CDR		0xA8
 #define CGU_REG_BCHCDR		0xAC
 
+/* bits within the OPCR register */
+#define OPCR_SPENDH		BIT(5)		/* UHC PHY suspend */
+
+/* bits within the USBPCR1 register */
+#define USBPCR1_UHC_POWER	BIT(5)		/* UHC PHY power down */
+
 static struct ingenic_cgu *cgu;
+
+int jz4770_uhc_phy_enable(struct clk_hw *hw)
+{
+	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
+	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
+
+	writel(readl(reg_opcr) & ~OPCR_SPENDH, reg_opcr);
+	writel(readl(reg_usbpcr1) | USBPCR1_UHC_POWER, reg_usbpcr1);
+
+	return 0;
+}
+
+void jz4770_uhc_phy_disable(struct clk_hw *hw)
+{
+	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
+	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
+
+	writel(readl(reg_usbpcr1) & ~USBPCR1_UHC_POWER, reg_usbpcr1);
+	writel(readl(reg_opcr) | OPCR_SPENDH, reg_opcr);
+}
+
+struct clk_ops jz4770_uhc_phy_ops = {
+	.enable = jz4770_uhc_phy_enable,
+	.disable = jz4770_uhc_phy_disable,
+};
 
 static const s8 pll_od_encoding[8] = {
 	0x0, 0x1, -1, 0x2, -1, -1, -1, 0x3,
@@ -348,6 +382,14 @@ static const struct ingenic_cgu_clk_info jz4770_cgu_clocks[] = {
 		"mmc2", CGU_CLK_GATE,
 		.parents = { JZ4770_CLK_MMC2_MUX, },
 		.gate = { CGU_REG_CLKGR0, 12 },
+	},
+
+	/* Custom clocks */
+
+	[JZ4770_CLK_UHC_PHY] = {
+		"uhc_phy", CGU_CLK_CUSTOM,
+		.parents = { JZ4770_CLK_UHC, -1, -1, -1 },
+		.custom = { &jz4770_uhc_phy_ops },
 	},
 };
 
