@@ -225,7 +225,7 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	irq_base = platform_get_irq(pdev, 1);
+	irq_base = irq_alloc_descs(-1, 0, JZ4740_IRQ_ADC_COUNT, 0);
 	if (irq_base < 0) {
 		dev_err(&pdev->dev, "Failed to get irq base: %d\n", irq_base);
 		return irq_base;
