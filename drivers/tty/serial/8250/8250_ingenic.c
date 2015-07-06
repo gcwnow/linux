@@ -21,6 +21,7 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/serial_8250.h>
 #include <linux/serial_core.h>
@@ -28,11 +29,19 @@
 
 #include "8250.h"
 
+/** ingenic_uart_config: SOC specific config data. */
+struct ingenic_uart_config {
+	int tx_loadsz;
+	int fifosize;
+};
+
 struct ingenic_uart_data {
 	struct clk	*clk_module;
 	struct clk	*clk_baud;
 	int		line;
 };
+
+static const struct of_device_id ingenic_uart_match[];
 
 #define UART_FCR_UME	BIT(4)
 
@@ -191,12 +200,20 @@ static unsigned int ingenic_uart_serial_in(struct uart_port *p, int offset)
 
 static int ingenic_uart_probe(struct platform_device *pdev)
 {
-	struct device_node *np = pdev->dev.of_node;
 	struct uart_8250_port uart = {};
 	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	struct resource *irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	struct ingenic_uart_data *data;
+	const struct ingenic_uart_config *cdata;
+	const struct of_device_id *match;
 	int err, line;
+
+	match = of_match_device(ingenic_uart_match, &pdev->dev);
+	if (!match) {
+		dev_err(&pdev->dev, "Error: No device match found\n");
+		return -ENODEV;
+	}
+	cdata = match->data;
 
 	if (!regs || !irq) {
 		dev_err(&pdev->dev, "no registers/irq defined\n");
@@ -208,8 +225,8 @@ static int ingenic_uart_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	spin_lock_init(&uart.port.lock);
-	uart.port.type = PORT_16550;
-	uart.port.flags = UPF_SKIP_TEST | UPF_IOREMAP;
+	uart.port.type = PORT_16550A;
+	uart.port.flags = UPF_SKIP_TEST | UPF_IOREMAP | UPF_FIXED_TYPE;
 	uart.port.iotype = UPIO_MEM;
 	uart.port.mapbase = regs->start;
 	uart.port.regshift = 2;
@@ -217,15 +234,9 @@ static int ingenic_uart_probe(struct platform_device *pdev)
 	uart.port.serial_in = ingenic_uart_serial_in;
 	uart.port.irq = irq->start;
 	uart.port.dev = &pdev->dev;
-	if (of_device_is_compatible(np, "ingenic,jz4780-uart")) {
-		uart.port.fifosize = 64;
-		uart.tx_loadsz = 32;
-		uart.fcr = UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10;
-		uart.capabilities = UART_CAP_FIFO | UART_CAP_RTOIE;
-	} else {
-		/* Use defaults */
-		uart.port.flags |= UPF_FIXED_TYPE;
-	}
+	uart.port.fifosize = cdata->fifosize;
+	uart.tx_loadsz = cdata->tx_loadsz;
+	uart.capabilities = UART_CAP_FIFO | UART_CAP_RTOIE;
 
 	/* Check for a fixed line number */
 	line = of_alias_get_id(pdev->dev.of_node, "serial");
@@ -295,19 +306,34 @@ static int ingenic_uart_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id of_match[] = {
-	{ .compatible = "ingenic,jz4740-uart" },
-	{ .compatible = "ingenic,jz4775-uart" },
-	{ .compatible = "ingenic,jz4780-uart" },
+static const struct ingenic_uart_config jz4740_uart_config = {
+	.tx_loadsz = 8,
+	.fifosize = 16,
+};
+
+static const struct ingenic_uart_config jz4775_uart_config = {
+	.tx_loadsz = 16,
+	.fifosize = 32,
+};
+
+static const struct ingenic_uart_config jz4780_uart_config = {
+	.tx_loadsz = 32,
+	.fifosize = 64,
+};
+
+static const struct of_device_id ingenic_uart_match[] = {
+	{ .compatible = "ingenic,jz4740-uart", .data = &jz4740_uart_config },
+	{ .compatible = "ingenic,jz4775-uart", .data = &jz4775_uart_config },
+	{ .compatible = "ingenic,jz4780-uart", .data = &jz4780_uart_config },
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, of_match);
+MODULE_DEVICE_TABLE(of, ingenic_uart_match);
 
 static struct platform_driver ingenic_uart_platform_driver = {
 	.driver = {
 		.name		= "ingenic-uart",
 		.owner		= THIS_MODULE,
-		.of_match_table	= of_match,
+		.of_match_table	= ingenic_uart_match,
 	},
 	.probe			= ingenic_uart_probe,
 	.remove			= ingenic_uart_remove,
