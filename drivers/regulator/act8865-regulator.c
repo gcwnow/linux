@@ -56,6 +56,7 @@
 #define ACT8600_APCH_STAT	0xAA
 #define ACT8600_OTG0		0xB0
 #define ACT8600_OTG1		0xB2
+#define ACT8600_INT		0xC1
 
 /*
  * ACT8846 Global Register Map.
@@ -139,10 +140,58 @@ struct act8865 {
 	int off_mask;
 };
 
-static const struct regmap_config act8865_regmap_config = {
-	.reg_bits = 8,
-	.val_bits = 8,
+#ifdef CONFIG_DEBUG_FS
+
+static const struct regmap_range act8600_reg_ranges[] = {
+	{ 0x00, 0x01 },
+	{ 0x10, 0x10 }, { 0x12, 0x12 },
+	{ 0x20, 0x20 }, { 0x22, 0x22 },
+	{ 0x30, 0x30 }, { 0x32, 0x32 },
+	{ 0x40, 0x41 },
+	{ 0x50, 0x51 },
+	{ 0x60, 0x61 },
+	{ 0x70, 0x71 },
+	{ 0x80, 0x81 },
+	{ 0x91, 0x91 },
+	{ 0xA1, 0xA1 }, { 0xA8, 0xAA },
+	{ 0xB0, 0xB0 }, { 0xB2, 0xB2 },
+	{ 0xC1, 0xC1 },
 };
+static const struct regmap_range act8600_reg_ro_ranges[] = {
+	{ 0xAA, 0xAA },
+	{ 0xC1, 0xC1 },
+};
+static const struct regmap_range act8600_reg_volatile_ranges[] = {
+	{ 0x00, 0x01 },
+	{ 0x12, 0x12 },
+	{ 0x22, 0x22 },
+	{ 0x32, 0x32 },
+	{ 0x41, 0x41 },
+	{ 0x51, 0x51 },
+	{ 0x61, 0x61 },
+	{ 0x71, 0x71 },
+	{ 0x81, 0x81 },
+	{ 0xA8, 0xA8 }, { 0xAA, 0xAA },
+	{ 0xB0, 0xB0 },
+	{ 0xC1, 0xC1 },
+};
+
+static const struct regmap_access_table act8600_write_ranges_table = {
+	.yes_ranges = act8600_reg_ranges,
+	.n_yes_ranges = ARRAY_SIZE(act8600_reg_ranges),
+	.no_ranges = act8600_reg_ro_ranges,
+	.n_no_ranges = ARRAY_SIZE(act8600_reg_ro_ranges),
+};
+static const struct regmap_access_table act8600_read_ranges_table = {
+	.yes_ranges = act8600_reg_ranges,
+	.n_yes_ranges = ARRAY_SIZE(act8600_reg_ranges),
+};
+static const struct regmap_access_table act8600_volatile_ranges_table = {
+	.yes_ranges = act8600_reg_volatile_ranges,
+	.n_yes_ranges = ARRAY_SIZE(act8600_reg_volatile_ranges),
+};
+
+#endif
 
 static const struct regulator_linear_range act8865_voltage_ranges[] = {
 	REGULATOR_LINEAR_RANGE(600000, 0, 23, 25000),
@@ -421,6 +470,11 @@ static int act8865_pmic_probe(struct i2c_client *client,
 	struct device_node **of_node;
 	int i, ret, num_regulators;
 	struct act8865 *act8865;
+	struct regmap_config regmap_config = {
+		.reg_bits = 8,
+		.val_bits = 8,
+		.max_register = 0xFF,
+	};
 	unsigned long type;
 	int off_reg, off_mask;
 	int voltage_select = 0;
@@ -449,6 +503,11 @@ static int act8865_pmic_probe(struct i2c_client *client,
 		num_regulators = ARRAY_SIZE(act8600_regulators);
 		off_reg = -1;
 		off_mask = -1;
+#ifdef CONFIG_DEBUG_FS
+		regmap_config.wr_table = &act8600_write_ranges_table;
+		regmap_config.rd_table = &act8600_read_ranges_table;
+		regmap_config.volatile_table = &act8600_volatile_ranges_table;
+#endif
 		break;
 	case ACT8846:
 		regulators = act8846_regulators;
@@ -495,7 +554,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
 	if (!act8865)
 		return -ENOMEM;
 
-	act8865->regmap = devm_regmap_init_i2c(client, &act8865_regmap_config);
+	act8865->regmap = devm_regmap_init_i2c(client, &regmap_config);
 	if (IS_ERR(act8865->regmap)) {
 		ret = PTR_ERR(act8865->regmap);
 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
