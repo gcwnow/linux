@@ -65,6 +65,7 @@
 #define JZ4780_AIC_CONF_FIFO_TX_THRESHOLD_MASK \
 			(0x1f <<  JZ4780_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET)
 
+#define JZ_AIC_CTRL_CHANNELS_MASK (0x7 << 24)
 #define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK (0x7 << 19)
 #define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK (0x7 << 16)
 #define JZ_AIC_CTRL_ENABLE_RX_DMA BIT(15)
@@ -81,6 +82,7 @@
 #define JZ_AIC_CTRL_ENABLE_PLAYBACK BIT(1)
 #define JZ_AIC_CTRL_ENABLE_CAPTURE BIT(0)
 
+#define JZ_AIC_CTRL_CHANNELS_OFFSET 24
 #define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET 19
 #define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET  16
 
@@ -286,6 +288,12 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 			ctrl |= JZ_AIC_CTRL_MONO_TO_STEREO;
 		else
 			ctrl &= ~JZ_AIC_CTRL_MONO_TO_STEREO;
+
+		if (i2s->version >= JZ_I2S_JZ4780) {
+			ctrl &= ~JZ_AIC_CTRL_CHANNELS_MASK;
+			ctrl |= (params_channels(params) - 1) <<
+				JZ_AIC_CTRL_CHANNELS_OFFSET;
+		}
 
 		div_reg &= ~I2SDIV_DV_MASK;
 		div_reg |= (div - 1) << I2SDIV_DV_SHIFT;
