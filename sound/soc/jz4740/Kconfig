@@ -2,6 +2,7 @@ config SND_JZ4740_SOC
 	tristate "SoC Audio for Ingenic JZ4740 SoC"
 	depends on MACH_INGENIC || COMPILE_TEST
 	select SND_SOC_GENERIC_DMAENGINE_PCM
+	default y
 	help
 	  Say Y or M if you want to add support for codecs attached to
 	  the JZ4740 I2S interface. You will also need to select the audio
@@ -21,7 +22,8 @@ config SND_JZ4740_SOC_QI_LB60
 	depends on HAS_IOMEM
 	depends on JZ4740_QI_LB60 || COMPILE_TEST
 	select SND_JZ4740_SOC_I2S
-    select SND_SOC_JZ4740_CODEC
+	select SND_SOC_JZ4740_CODEC
+	default y
 	help
 	  Say Y if you want to add support for ASoC audio on the Qi LB60 board
 	  a.k.a Qi Ben NanoNote.
