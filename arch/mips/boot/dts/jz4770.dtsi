@@ -254,7 +254,7 @@
 			clocks = <&cgu JZ4770_CLK_AIC>, <&cgu JZ4770_CLK_I2S>;
 			clock-names = "aic", "i2s";
 
-			dmas = <&dmac1 2>, <&dmac1 3>;
+			dmas = <&dmac1 3>, <&dmac1 4>;
 			dma-names = "rx" , "tx";
 
 		};
@@ -338,6 +338,10 @@
 			clocks = <&cgu JZ4770_CLK_DMA>;
 			interrupt-parent = <&intc>;
 			interrupts = <24>;
+
+			/* Disable dmac0 until we have something
+			 * that uses it */
+			status = "disabled";
 		};
 
 		dmac1: jz4770-dma@13420100 {
