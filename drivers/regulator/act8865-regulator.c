@@ -368,7 +368,6 @@ static struct of_regulator_match act8600_matches[] = {
 };
 
 static int act8865_pdata_from_dt(struct device *dev,
-				 struct device_node **of_node,
 				 struct act8865_platform_data *pdata,
 				 unsigned long type)
 {
@@ -419,7 +418,7 @@ static int act8865_pdata_from_dt(struct device *dev,
 		regulator->id = i;
 		regulator->name = matches[i].name;
 		regulator->init_data = matches[i].init_data;
-		of_node[i] = matches[i].of_node;
+		regulator->of_node = matches[i].of_node;
 		regulator++;
 	}
 
@@ -427,7 +426,6 @@ static int act8865_pdata_from_dt(struct device *dev,
 }
 #else
 static inline int act8865_pdata_from_dt(struct device *dev,
-					struct device_node **of_node,
 					struct act8865_platform_data *pdata,
 					unsigned long type)
 {
@@ -435,8 +433,8 @@ static inline int act8865_pdata_from_dt(struct device *dev,
 }
 #endif
 
-static struct regulator_init_data
-*act8865_get_init_data(int id, struct act8865_platform_data *pdata)
+static struct act8865_regulator_data *act8865_get_regulator_data(
+		int id, struct act8865_platform_data *pdata)
 {
 	int i;
 
@@ -445,7 +443,7 @@ static struct regulator_init_data
 
 	for (i = 0; i < pdata->num_regulators; i++) {
 		if (pdata->regulators[i].id == id)
-			return pdata->regulators[i].init_data;
+			return &pdata->regulators[i];
 	}
 
 	return NULL;
@@ -467,7 +465,6 @@ static int act8865_pmic_probe(struct i2c_client *client,
 	const struct regulator_desc *regulators;
 	struct act8865_platform_data pdata_of, *pdata;
 	struct device *dev = &client->dev;
-	struct device_node **of_node;
 	int i, ret, num_regulators;
 	struct act8865 *act8865;
 	struct regmap_config regmap_config = {
@@ -531,23 +528,12 @@ static int act8865_pmic_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	of_node = devm_kzalloc(dev, sizeof(struct device_node *) *
-			       num_regulators, GFP_KERNEL);
-	if (!of_node)
-		return -ENOMEM;
-
 	if (dev->of_node && !pdata) {
-		ret = act8865_pdata_from_dt(dev, of_node, &pdata_of, type);
+		ret = act8865_pdata_from_dt(dev, &pdata_of, type);
 		if (ret < 0)
 			return ret;
 
 		pdata = &pdata_of;
-	}
-
-	if (pdata->num_regulators > num_regulators) {
-		dev_err(dev, "too many regulators: %d\n",
-			pdata->num_regulators);
-		return -EINVAL;
 	}
 
 	act8865 = devm_kzalloc(dev, sizeof(struct act8865), GFP_KERNEL);
@@ -575,14 +561,19 @@ static int act8865_pmic_probe(struct i2c_client *client,
 	/* Finally register devices */
 	for (i = 0; i < num_regulators; i++) {
 		const struct regulator_desc *desc = &regulators[i];
-		struct regulator_config config = { };
+		struct regulator_config config = {
+			.dev = dev,
+			.regmap = act8865->regmap,
+			.driver_data = act8865,
+		};
+		struct act8865_regulator_data *rdata;
 		struct regulator_dev *rdev;
 
-		config.dev = dev;
-		config.init_data = act8865_get_init_data(desc->id, pdata);
-		config.of_node = of_node[i];
-		config.driver_data = act8865;
-		config.regmap = act8865->regmap;
+		rdata = act8865_get_regulator_data(desc->id, pdata);
+		if (rdata) {
+			config.init_data = rdata->init_data;
+			config.of_node = rdata->of_node;
+		}
 
 		rdev = devm_regulator_register(dev, desc, &config);
 		if (IS_ERR(rdev)) {
@@ -592,7 +583,6 @@ static int act8865_pmic_probe(struct i2c_client *client,
 	}
 
 	i2c_set_clientdata(client, act8865);
-	devm_kfree(dev, of_node);
 
 	return 0;
 }
