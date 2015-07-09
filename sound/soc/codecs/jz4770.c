@@ -1014,6 +1014,9 @@ static int jz_icdc_probe(struct platform_device *pdev)
 
 	if (pdata)
 		jz_icdc->mic_mode = pdata->mic_mode;
+	else if (&pdev->dev.of_node)
+		of_property_read_u32(pdev->dev.of_node, "ingenic,mic-mode",
+				&jz_icdc->mic_mode);
 	else
 		dev_warn(&pdev->dev, "No pdata, assuming no mics\n");
 
