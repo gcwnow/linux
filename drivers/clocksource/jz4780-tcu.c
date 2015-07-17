@@ -10,6 +10,7 @@
 
 #include <linux/clocksource.h>
 #include <linux/err.h>
+#include <linux/sched_clock.h>
 
 #include "jz47xx-tcu.h"
 
@@ -51,6 +52,11 @@ static cycle_t jz4780_tcu_clocksource_read(struct clocksource *cs)
 	return jz47xx_tcu_read_channel_count(jz4780_tcu_clocksource.channel);
 }
 
+static u64 notrace jz4780_tcu_sched_read(void)
+{
+	return jz47xx_tcu_read_channel_count(jz4780_tcu_clocksource.channel);
+}
+
 static void __init jz4780_tcu_init(struct device_node *np)
 {
 	struct jz47xx_tcu *tcu;
@@ -72,6 +78,7 @@ static void __init jz4780_tcu_init(struct device_node *np)
 
 	err = clocksource_register_hz(&jz4780_tcu_clocksource.cs, rate);
 	BUG_ON(err);
+	sched_clock_register(jz4780_tcu_sched_read, 64, rate);
 
 	/* For local clock events */
 	err = jz47xx_tcu_setup_cevt(tcu, 5);
