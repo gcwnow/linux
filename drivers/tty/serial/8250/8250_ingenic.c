@@ -133,6 +133,10 @@ EARLYCON_DECLARE(jz4740_uart, ingenic_early_console_setup);
 OF_EARLYCON_DECLARE(jz4740_uart, "ingenic,jz4740-uart",
 		    ingenic_early_console_setup);
 
+EARLYCON_DECLARE(jz4770_uart, ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(jz4770_uart, "ingenic,jz4770-uart",
+		    ingenic_early_console_setup);
+
 EARLYCON_DECLARE(jz4775_uart, ingenic_early_console_setup);
 OF_EARLYCON_DECLARE(jz4775_uart, "ingenic,jz4775-uart",
 		    ingenic_early_console_setup);
@@ -311,7 +315,7 @@ static const struct ingenic_uart_config jz4740_uart_config = {
 	.fifosize = 16,
 };
 
-static const struct ingenic_uart_config jz4775_uart_config = {
+static const struct ingenic_uart_config jz4770_uart_config = {
 	.tx_loadsz = 16,
 	.fifosize = 32,
 };
@@ -323,7 +327,8 @@ static const struct ingenic_uart_config jz4780_uart_config = {
 
 static const struct of_device_id ingenic_uart_match[] = {
 	{ .compatible = "ingenic,jz4740-uart", .data = &jz4740_uart_config },
-	{ .compatible = "ingenic,jz4775-uart", .data = &jz4775_uart_config },
+	{ .compatible = "ingenic,jz4770-uart", .data = &jz4770_uart_config },
+	{ .compatible = "ingenic,jz4775-uart", .data = &jz4770_uart_config },
 	{ .compatible = "ingenic,jz4780-uart", .data = &jz4780_uart_config },
 	{ /* sentinel */ }
 };
