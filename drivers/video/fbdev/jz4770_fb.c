@@ -113,6 +113,7 @@ static void *lcd_frame1;
 
 static bool keep_aspect_ratio = true;
 static bool allow_downscaling = false;
+static bool integer_scaling = false;
 
 static void ctrl_enable(struct jzfb *jzfb)
 {
@@ -492,8 +493,14 @@ static void jzfb_ipu_configure(struct jzfb *jzfb)
 		unsigned int numW = panel->dw, denomW = fb->var.xres,
 			     numH = panel->dh, denomH = fb->var.yres;
 
-		BUG_ON(reduce_fraction(&numW, &denomW) < 0);
-		BUG_ON(reduce_fraction(&numH, &denomH) < 0);
+		if (integer_scaling && (denomW <= numW) && (denomH <= numH)) {
+			numW /= denomW;
+			numH /= denomH;
+			denomW = denomH = 1;
+		} else {
+			BUG_ON(reduce_fraction(&numW, &denomW) < 0);
+			BUG_ON(reduce_fraction(&numH, &denomH) < 0);
+		}
 
 		if (keep_aspect_ratio) {
 			unsigned int ratioW = (UINT_MAX >> 6) * numW / denomW,
@@ -844,22 +851,13 @@ static irqreturn_t jzfb_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static ssize_t keep_aspect_ratio_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%c\n", keep_aspect_ratio ? 'Y' : 'N');
-}
-
-static ssize_t keep_aspect_ratio_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t jzfb_boolean_store(struct device *dev,
+		const char *buf, size_t count, bool *bool_ptr)
 {
 	struct jzfb *jzfb = dev_get_drvdata(dev);
-	bool new_value = false;
 
-	if (strtobool(buf, &new_value) < 0)
+	if (strtobool(buf, bool_ptr) < 0)
 		return -EINVAL;
-
-	keep_aspect_ratio = new_value;
 
 	if (jzfb->is_enabled && scaling_required(jzfb)) {
 		ctrl_disable(jzfb);
@@ -872,7 +870,32 @@ static ssize_t keep_aspect_ratio_store(struct device *dev,
 	return count;
 }
 
+static ssize_t keep_aspect_ratio_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%c\n", keep_aspect_ratio ? 'Y' : 'N');
+}
+
+static ssize_t keep_aspect_ratio_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	return jzfb_boolean_store(dev, buf, count, &keep_aspect_ratio);
+}
+
+static ssize_t integer_scaling_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%c\n", integer_scaling ? 'Y' : 'N');
+}
+
+static ssize_t integer_scaling_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	return jzfb_boolean_store(dev, buf, count, &integer_scaling);
+}
+
 static DEVICE_ATTR_RW(keep_aspect_ratio);
+static DEVICE_ATTR_RW(integer_scaling);
 static DEVICE_BOOL_ATTR(allow_downscaling, 0644, allow_downscaling);
 
 static int jzfb_probe(struct platform_device *pdev)
@@ -1009,10 +1032,16 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_remove_keep_aspect_ratio_file;
 	}
 
+	ret = device_create_file(&pdev->dev, &dev_attr_integer_scaling);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
+		goto err_remove_allow_downscaling_file;
+	}
+
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
-		goto err_remove_allow_downscaling_file;
+		goto err_remove_integer_scaling_file;
 	}
 	dev_info(&pdev->dev,
 		"fb%d: %s frame buffer device, using %dK of video memory\n",
@@ -1022,6 +1051,8 @@ static int jzfb_probe(struct platform_device *pdev)
 	fb_show_logo(jzfb->fb, 0);
 	return 0;
 
+err_remove_integer_scaling_file:
+	device_remove_file(&pdev->dev, &dev_attr_integer_scaling);
 err_remove_allow_downscaling_file:
 	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
 err_remove_keep_aspect_ratio_file:
@@ -1041,6 +1072,7 @@ static int jzfb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
 
+	device_remove_file(&pdev->dev, &dev_attr_integer_scaling);
 	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
 	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
 
