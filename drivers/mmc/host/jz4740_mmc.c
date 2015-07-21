@@ -230,7 +230,7 @@ static void jz4740_mmc_dma_unmap(struct jz4740_mmc_host *host,
 	if (dir == DMA_TO_DEVICE)
 		chan = host->dma_tx;
 	else
-		chan = host->dma_rx;
+		chan = host->dma_rx ?: host->dma_tx;
 
 	dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
 }
