@@ -89,7 +89,7 @@ struct jz47xx_tcu {
 	struct jz47xx_tcu_irq irqs[NUM_TCU_IRQS];
 };
 
-static inline u32 tcu_readl(struct jz47xx_tcu *tcu, enum jz47xx_tcu_reg reg)
+static inline u32 notrace tcu_readl(struct jz47xx_tcu *tcu, enum jz47xx_tcu_reg reg)
 {
 	return readl(tcu->base + reg);
 }
@@ -468,7 +468,7 @@ unsigned jz47xx_tcu_get_channel_rate(struct jz47xx_tcu_channel *channel)
 	return src_rate / div;
 }
 
-u64 jz47xx_tcu_read_channel_count(struct jz47xx_tcu_channel *channel)
+u64 notrace jz47xx_tcu_read_channel_count(struct jz47xx_tcu_channel *channel)
 {
 	struct jz47xx_tcu *tcu = channel->tcu;
 	u64 count;
