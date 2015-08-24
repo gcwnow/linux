@@ -42,7 +42,6 @@ struct jz_battery {
 
 	const struct mfd_cell *cell;
 
-	int status;
 	long voltage;
 
 	struct completion read_completion;
@@ -50,7 +49,6 @@ struct jz_battery {
 	struct power_supply *battery, *charger;
 	struct power_supply_desc battery_desc;
 	struct delayed_work work;
-	struct notifier_block nb;
 
 	struct mutex lock;
 };
@@ -135,8 +133,13 @@ static int jz_battery_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
-		val->intval = jz_battery->status;
-		break;
+		if (jz_battery->charger)
+			return power_supply_get_property(
+						jz_battery->charger,
+						POWER_SUPPLY_PROP_STATUS,
+						val);
+		else
+			return POWER_SUPPLY_STATUS_UNKNOWN;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = jz_battery->pdata->info.technology;
 		break;
@@ -182,38 +185,10 @@ static void jz_battery_external_power_changed(struct power_supply *psy)
 	schedule_delayed_work(&jz_battery->work, 0);
 }
 
-static int jz_battery_psy_notifier(struct notifier_block *nb,
-				   unsigned long action, void *data)
-{
-	struct jz_battery *jz_battery = container_of(nb, struct jz_battery, nb);
-
-	if (action != PSY_EVENT_PROP_CHANGED)
-		return NOTIFY_DONE;
-
-	if (data != jz_battery->charger)
-		return NOTIFY_DONE;
-
-	cancel_delayed_work(&jz_battery->work);
-	schedule_delayed_work(&jz_battery->work, 0);
-
-	return NOTIFY_OK;
-}
-
 static void jz_battery_update(struct jz_battery *jz_battery)
 {
-	union power_supply_propval status;
 	long voltage;
 	bool has_changed = false;
-
-	if (jz_battery->charger && !power_supply_get_property(
-						jz_battery->charger,
-						POWER_SUPPLY_PROP_STATUS,
-						&status)) {
-		if (status.intval != jz_battery->status) {
-			jz_battery->status = status.intval;
-			has_changed = true;
-		}
-	}
 
 	voltage = jz_battery_read_voltage(jz_battery);
 	if (voltage >= 0 && abs(voltage - jz_battery->voltage) < 50000) {
@@ -378,23 +353,12 @@ static int jz_battery_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, jz_battery);
 	schedule_delayed_work(&jz_battery->work, 0);
 
-	if (charger) {
-		jz_battery->nb.notifier_call = jz_battery_psy_notifier;
-		ret = power_supply_reg_notifier(&jz_battery->nb);
-		if (ret) {
-			dev_err(&pdev->dev,
-				"Failed to register notifier: %d\n", ret);
-		}
-	}
-
 	return 0;
 }
 
 static int jz_battery_remove(struct platform_device *pdev)
 {
 	struct jz_battery *jz_battery = platform_get_drvdata(pdev);
-
-	power_supply_unreg_notifier(&jz_battery->nb);
 
 	cancel_delayed_work_sync(&jz_battery->work);
 
@@ -409,7 +373,6 @@ static int jz_battery_suspend(struct device *dev)
 	struct jz_battery *jz_battery = dev_get_drvdata(dev);
 
 	cancel_delayed_work_sync(&jz_battery->work);
-	jz_battery->status = POWER_SUPPLY_STATUS_UNKNOWN;
 
 	return 0;
 }
