@@ -18,12 +18,12 @@
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/io.h>
 
 #include <linux/delay.h>
-#include <linux/gpio.h>
 #include <linux/mfd/core.h>
 #include <linux/power_supply.h>
 
@@ -39,7 +39,6 @@ struct jz_battery {
 	void __iomem *base;
 
 	int irq;
-	int charge_irq;
 
 	const struct mfd_cell *cell;
 
@@ -48,9 +47,10 @@ struct jz_battery {
 
 	struct completion read_completion;
 
-	struct power_supply *battery;
+	struct power_supply *battery, *charger;
 	struct power_supply_desc battery_desc;
 	struct delayed_work work;
+	struct notifier_block nb;
 
 	struct mutex lock;
 };
@@ -182,27 +182,37 @@ static void jz_battery_external_power_changed(struct power_supply *psy)
 	schedule_delayed_work(&jz_battery->work, 0);
 }
 
-static irqreturn_t jz_battery_charge_irq(int irq, void *data)
+static int jz_battery_psy_notifier(struct notifier_block *nb,
+				   unsigned long action, void *data)
 {
-	struct jz_battery *jz_battery = data;
+	struct jz_battery *jz_battery = container_of(nb, struct jz_battery, nb);
+
+	if (action != PSY_EVENT_PROP_CHANGED)
+		return NOTIFY_DONE;
+
+	if (data != jz_battery->charger)
+		return NOTIFY_DONE;
 
 	cancel_delayed_work(&jz_battery->work);
 	schedule_delayed_work(&jz_battery->work, 0);
 
-	return IRQ_HANDLED;
+	return NOTIFY_OK;
 }
 
 static void jz_battery_update(struct jz_battery *jz_battery)
 {
-	int status;
+	union power_supply_propval status;
 	long voltage;
 	bool has_changed = false;
 
-	status = act8600_get_battery_state();
-
-	if (status != jz_battery->status) {
-		jz_battery->status = status;
-		has_changed = true;
+	if (jz_battery->charger && !power_supply_get_property(
+						jz_battery->charger,
+						POWER_SUPPLY_PROP_STATUS,
+						&status)) {
+		if (status.intval != jz_battery->status) {
+			jz_battery->status = status.intval;
+			has_changed = true;
+		}
 	}
 
 	voltage = jz_battery_read_voltage(jz_battery);
@@ -275,6 +285,7 @@ static int jz_battery_probe(struct platform_device *pdev)
 	struct power_supply_config psy_cfg = {};
 	struct jz_battery *jz_battery;
 	struct power_supply_desc *battery_desc;
+	struct power_supply *charger;
 	struct resource *mem;
 
 	if (!pdata && pdev->dev.of_node) {
@@ -288,11 +299,22 @@ static int jz_battery_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
+	charger = devm_power_supply_get_by_phandle(&pdev->dev, "charger");
+	if (!charger) {
+		dev_dbg(&pdev->dev, "Charger not found; deferring probe\n");
+		return -EPROBE_DEFER;
+	} else if (IS_ERR(charger)) {
+		dev_info(&pdev->dev, "No charger: %ld\n", PTR_ERR(charger));
+		charger = NULL;
+	}
+
 	jz_battery = devm_kzalloc(&pdev->dev, sizeof(*jz_battery), GFP_KERNEL);
 	if (!jz_battery) {
 		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
 		return -ENOMEM;
 	}
+
+	jz_battery->charger = charger;
 
 	jz_battery->cell = mfd_get_cell(pdev);
 
@@ -344,40 +366,6 @@ static int jz_battery_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	if (gpio_is_valid(pdata->gpio_charge)) {
-		ret = devm_gpio_request(&pdev->dev, pdata->gpio_charge,
-					dev_name(&pdev->dev));
-		if (ret) {
-			dev_err(&pdev->dev,
-				"Failed to request charger GPIO: %d\n", ret);
-			return ret;
-		}
-		ret = gpio_direction_input(pdata->gpio_charge);
-		if (ret) {
-			dev_err(&pdev->dev,
-				"Failed to make charger GPIO input: %d\n", ret);
-			return ret;
-		}
-
-		jz_battery->charge_irq = gpio_to_irq(pdata->gpio_charge);
-
-		if (jz_battery->charge_irq >= 0) {
-			ret = devm_request_irq(&pdev->dev,
-				    jz_battery->charge_irq,
-				    jz_battery_charge_irq,
-				    IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-				    dev_name(&pdev->dev), jz_battery);
-			if (ret) {
-				dev_err(&pdev->dev,
-					"Failed to request charge IRQ: %d\n",
-					ret);
-				return ret;
-			}
-		}
-	} else {
-		jz_battery->charge_irq = -1;
-	}
-
 	jz_battery->battery = power_supply_register(&pdev->dev, battery_desc,
 							&psy_cfg);
 	if (IS_ERR(jz_battery->battery)) {
@@ -390,12 +378,23 @@ static int jz_battery_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, jz_battery);
 	schedule_delayed_work(&jz_battery->work, 0);
 
+	if (charger) {
+		jz_battery->nb.notifier_call = jz_battery_psy_notifier;
+		ret = power_supply_reg_notifier(&jz_battery->nb);
+		if (ret) {
+			dev_err(&pdev->dev,
+				"Failed to register notifier: %d\n", ret);
+		}
+	}
+
 	return 0;
 }
 
 static int jz_battery_remove(struct platform_device *pdev)
 {
 	struct jz_battery *jz_battery = platform_get_drvdata(pdev);
+
+	power_supply_unreg_notifier(&jz_battery->nb);
 
 	cancel_delayed_work_sync(&jz_battery->work);
 
