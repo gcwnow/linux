@@ -244,9 +244,62 @@
 &i2c3 {
 	i2c-gpio,delay-us = <2>;		/* 250 kHz */
 
-	act8600@5a {				/* power management unit */
-		compatible = "act8600";
+	act8600: act8600@5a {			/* power management unit */
+		compatible = "active-semi,act8600";
 		reg = <0x5a>;
+
+		regulators {
+			/* USB OTG */
+			SUDCDC_REG4 {
+				/*
+				 * 5.3V instead of 5.0V to compensate for the
+				 * voltage drop of a diode between the regulator
+				 * and the connector.
+				 */
+				regulator-min-microvolt = <5300000>;
+				regulator-max-microvolt = <5300000>;
+			};
+
+			/* When this is off, there is no sound, but also no USB networking. */
+			LDO_REG5 {
+				regulator-min-microvolt = <2500000>;
+				regulator-max-microvolt = <2500000>;
+				regulator-always-on;
+			};
+
+			/* LCD panel and FM radio */
+			LDO_REG6 {
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+			};
+
+			/* ??? */
+			LDO_REG7 {
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				/*regulator-always-on;*/
+			};
+
+			/*
+			 * The colors on the LCD are wrong when this is off.
+			 * Which is strange, since the LCD panel data sheet
+			 * only mentions a 3.3V input.
+			 */
+			LDO_REG8 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+			};
+
+			/* RTC fixed 3.3V */
+			LDO_REG9 {
+				regulator-always-on;
+			};
+
+			/* Unused fixed 1.2V */
+			LDO_REG10 { };
+		};
+
+		CHARGER { };
 	};
 };
 
@@ -283,6 +336,8 @@
 	technology = <3>; /* Lithium polymer */
 	max-uV = <5700000>;
 	min-uV = <4600000>;
+	charger = <&act8600>;
+	power-supplies = <&act8600>;
 };
 
 &uhc {
