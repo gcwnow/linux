@@ -31,7 +31,6 @@
 #include <asm/reboot.h>
 
 #include <linux/mmc/host.h>
-#include <linux/act8600_power.h>
 #include <linux/platform_data/jz4770_mmc.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
@@ -133,7 +132,10 @@ static struct jz_otg_board_data gcw0_otg_board_data = {
 /* LCD panel */
 
 static struct platform_device gcw0_lcd_device;
+static struct regulator *gcw0_lcd_regulator_33v;
+static struct regulator *gcw0_lcd_regulator_18v;
 static void *gcw0_lcd_panel;
+static bool gcw0_lcd_powered;
 
 static struct nt39016_platform_data gcw0_panel_pdata = {
 	.gpio_reset		= JZ_GPIO_PORTE(2),
@@ -146,9 +148,30 @@ static struct nt39016_platform_data gcw0_panel_pdata = {
 
 static int gcw0_lcd_probe(struct plat_lcd_data *pdata)
 {
+	struct device *dev = &gcw0_lcd_device.dev;
 	int ret;
 
-	struct device *dev = &gcw0_lcd_device.dev;
+	gcw0_lcd_regulator_33v = devm_regulator_get_optional(dev, "LDO6");
+	if (IS_ERR(gcw0_lcd_regulator_33v)) {
+		ret = PTR_ERR(gcw0_lcd_regulator_33v);
+		if (ret == -ENODEV) {
+			return -EPROBE_DEFER;
+		} else {
+			dev_err(dev, "Regulator LD06 missing: %d\n", ret);
+			return ret;
+		}
+	}
+
+	gcw0_lcd_regulator_18v = devm_regulator_get_optional(dev, "LDO8");
+	if (IS_ERR(gcw0_lcd_regulator_18v)) {
+		ret = PTR_ERR(gcw0_lcd_regulator_18v);
+		if (ret == -ENODEV) {
+			return -EPROBE_DEFER;
+		} else {
+			dev_err(dev, "Regulator LD08 missing: %d\n", ret);
+			return ret;
+		}
+	}
 
 	ret = nt39016_panel_ops.init(&gcw0_lcd_panel, dev, &gcw0_panel_pdata);
 	if (ret)
@@ -168,13 +191,26 @@ static int gcw0_lcd_probe(struct plat_lcd_data *pdata)
 
 static void gcw0_lcd_set_power(struct plat_lcd_data *pdata, unsigned int power)
 {
+	struct device *dev = &gcw0_lcd_device.dev;
+
+	if (power == gcw0_lcd_powered)
+		return;
+
 	if (power) {
-		act8600_output_enable(6, true);
+		if (regulator_enable(gcw0_lcd_regulator_33v))
+			dev_err(dev, "Failed to enable 3.3V regulator\n");
+		if (regulator_enable(gcw0_lcd_regulator_18v))
+			dev_err(dev, "Failed to enable 1.8V regulator\n");
 		nt39016_panel_ops.enable(gcw0_lcd_panel);
 	} else {
 		nt39016_panel_ops.disable(gcw0_lcd_panel);
-		act8600_output_enable(6, false);
+		if (regulator_disable(gcw0_lcd_regulator_18v))
+			dev_err(dev, "Failed to disable 1.8V regulator\n");
+		if (regulator_disable(gcw0_lcd_regulator_33v))
+			dev_err(dev, "Failed to disable 3.3V regulator\n");
 	}
+
+	gcw0_lcd_powered = power;
 }
 
 static struct plat_lcd_data gcw0_lcd_pdata = {
