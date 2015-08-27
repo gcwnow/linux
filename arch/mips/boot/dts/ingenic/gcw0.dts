@@ -349,3 +349,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_uart2_data>;
 };
+
+&rtc {
+	clocks = <&rtc_clk>;
+	clock-names = "rtc";
+
+	system-power-controller;
+};
