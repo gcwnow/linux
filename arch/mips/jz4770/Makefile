@@ -4,7 +4,7 @@
 
 # Object file lists.
 
-obj-y += prom.o reset.o setup.o platform.o
+obj-y += prom.o setup.o platform.o
 obj-y += irq.o gpio.o dma.o time.o clock.o
 
 # board specific support

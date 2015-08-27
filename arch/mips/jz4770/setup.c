@@ -47,8 +47,15 @@
 #include <asm/keyboard.h>
 #endif
 
-#include "reset.h"
+static void jz_halt(void)
+{
+	printk(KERN_NOTICE "\n** You can safely turn off the power\n");
 
+	while (1)
+		__asm__(".set\tmips3\n\t"
+	                "wait\n\t"
+			".set\tmips0");
+}
 
 void __init plat_mem_setup(void)
 {
@@ -66,7 +73,7 @@ void __init plat_mem_setup(void)
 	iomem_resource.start	= 0x00000000;
 	iomem_resource.end	= 0xffffffff;
 
-	jz_reset_init();
+	_machine_halt = jz_halt;
 	__dt_setup_arch(__dtb_start);
 }
 
