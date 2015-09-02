@@ -112,6 +112,7 @@ config USB_MUSB_JZ4740
 
 config USB_MUSB_JZ4770
 	tristate "JZ4770"
+	depends on NOP_USB_XCEIV
 	depends on MACH_JZ4770 || COMPILE_TEST
 
 config USB_MUSB_AM335X_CHILD

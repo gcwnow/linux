@@ -28,6 +28,7 @@
 struct jz_musb_glue {
 	struct device *dev;
 	struct platform_device *musb;
+	struct platform_device *phy;
 	struct clk *clk;
 	struct timer_list gpio_id_debounce_timer;
 	unsigned long gpio_id_debounce_jiffies;
@@ -266,7 +267,6 @@ static int jz_musb_platform_init(struct musb *musb)
 	struct jz_musb_glue *glue = dev_get_drvdata(dev->parent);
 	struct clk *clk;
 
-	usb_phy_generic_register();
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
 	if (!musb->xceiv) {
 		pr_err("HS USB OTG: no transceiver configured\n");
@@ -340,10 +340,14 @@ static int jz_musb_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
+	glue->phy = usb_phy_generic_register();
+	if (IS_ERR(glue->phy))
+		goto err0;
+
 	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
 	if (!musb) {
 		dev_err(&pdev->dev, "failed to allocate musb device\n");
-		goto err0;
+		goto err1;
 	}
 
 	musb->dev.parent		= &pdev->dev;
@@ -361,25 +365,28 @@ static int jz_musb_probe(struct platform_device *pdev)
 			pdev->num_resources);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to add resources\n");
-		goto err1;
+		goto err2;
 	}
 
 	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
 	if (ret) {
 		dev_err(&pdev->dev, "failed to add platform_data\n");
-		goto err1;
+		goto err2;
 	}
 
 	ret = platform_device_add(musb);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register musb device\n");
-		goto err1;
+		goto err2;
 	}
 
 	return 0;
 
-err1:
+err2:
 	platform_device_put(musb);
+
+err1:
+	usb_phy_generic_unregister(glue->phy);
 
 err0:
 	return ret;
@@ -390,7 +397,7 @@ static int jz_musb_remove(struct platform_device *pdev)
 	struct jz_musb_glue *glue = platform_get_drvdata(pdev);
 
 	platform_device_unregister(glue->musb);
-	usb_phy_generic_unregister(pdev);
+	usb_phy_generic_unregister(glue->phy);
 
 	return 0;
 }
