@@ -315,11 +315,16 @@ static void jz_musb_platform_disable(struct musb *musb)
 }
 
 static const struct musb_platform_ops jz_musb_ops = {
-	.quirks		= MUSB_INDEXED_EP,
+	.quirks		= MUSB_DMA_INVENTRA | MUSB_INDEXED_EP,
 	.fifo_mode	= 2,
 
 	.init		= jz_musb_platform_init,
 	.exit		= jz_musb_platform_exit,
+
+#ifdef CONFIG_USB_INVENTRA_DMA
+	.dma_init	= musbhs_dma_controller_create,
+	.dma_exit	= musbhs_dma_controller_destroy,
+#endif
 
 	.enable		= jz_musb_platform_enable,
 	.disable	= jz_musb_platform_disable,
