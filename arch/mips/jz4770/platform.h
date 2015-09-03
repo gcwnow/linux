@@ -11,7 +11,6 @@ extern struct platform_device jz4770_msc1_device;
 extern struct platform_device jz4770_msc2_device;
 extern struct platform_device jz4770_pcm_device;
 extern struct platform_device jz4770_usb_otg_device;
-extern struct platform_device jz4770_usb_otg_xceiv_device;
 extern struct platform_device jz4770_vpu_device;
 
 #endif /* __JZ4770_PLATFORM_H__ */

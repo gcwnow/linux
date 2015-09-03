@@ -69,11 +69,6 @@ struct platform_device jz4770_lcd_device = {
 };
 
 /* USB OTG Controller */
-struct platform_device jz4770_usb_otg_xceiv_device = {
-	.name	= "usb_phy_generic",
-	.id	= 0,
-};
-
 static struct musb_hdrc_config jz_usb_otg_config = {
 	.multipoint	= 1,
 /* Max EPs scanned. Driver will decide which EP can be used automatically. */
