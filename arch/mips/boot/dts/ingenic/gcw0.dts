@@ -215,6 +215,10 @@
 				default-state = "on";
 			};
 		};
+
+		otg_phy: otg_phy {
+			compatible = "usb-nop-xceiv";
+		};
 	};
 };
 

@@ -368,7 +368,6 @@ static struct platform_device gcw0_joystick_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-	&jz4770_usb_otg_xceiv_device,
 	&jz4770_usb_otg_device,
 	&jz4770_lcd_device,
 	&jz4770_i2s_device,
