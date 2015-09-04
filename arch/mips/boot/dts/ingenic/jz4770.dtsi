@@ -382,6 +382,17 @@
 			status = "disabled";
 		};
 
+		usb_otg: usb_otg@0x13440000 {
+			compatible = "ingenic,jz4770-musb";
+			reg = <0x13440000 0xFFFF>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <21>;
+			interrupt-names = "mc";
+
+			status = "disabled";
+		};
+
 		i2c0: i2c@0 {
 			#address-cells = <1>;
 			#size-cells = <0>;

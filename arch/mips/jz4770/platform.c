@@ -68,46 +68,6 @@ struct platform_device jz4770_lcd_device = {
 	.resource       = jz_lcd_resources,
 };
 
-/* USB OTG Controller */
-static struct musb_hdrc_config jz_usb_otg_config = {
-	.multipoint	= 1,
-/* Max EPs scanned. Driver will decide which EP can be used automatically. */
-	.num_eps	= 6,
-};
-
-static struct musb_hdrc_platform_data jz_usb_otg_platform_data = {
-	.mode           = MUSB_OTG,
-	.config		= &jz_usb_otg_config,
-};
-
-static struct resource jz_usb_otg_resources[] = {
-	[0] = {
-		.start		= JZ4770_UDC_BASE_ADDR,
-		.end		= JZ4770_UDC_BASE_ADDR + 0x10000 - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	[1] = {
-		.start		= IRQ_OTG,
-		.end		= IRQ_OTG,
-		.flags		= IORESOURCE_IRQ,
-		.name		= "mc",
-	},
-};
-
-static u64  usb_otg_dmamask = ~(u32)0;
-
-struct platform_device jz4770_usb_otg_device = {
-	.name	= "musb-jz",
-	.id	= 0,
-	.dev = {
-		.dma_mask		= &usb_otg_dmamask,
-		.coherent_dma_mask	= 0xffffffff,
-		.platform_data		= &jz_usb_otg_platform_data,
-	},
-	.num_resources	= ARRAY_SIZE(jz_usb_otg_resources),
-	.resource	= jz_usb_otg_resources,
-};
-
 /** MMC/SD/SDIO controllers**/
 
 #define JZ_MSC_PLATFORM_DEV(msc_id)					\
