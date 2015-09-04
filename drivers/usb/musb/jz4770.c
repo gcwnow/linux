@@ -261,14 +261,17 @@ static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
 
 static int jz_musb_platform_init(struct musb *musb)
 {
-	struct device *dev = musb->controller;
-	struct jz_musb_glue *glue = dev_get_drvdata(dev->parent);
+	struct device *dev = musb->controller->parent;
+	struct jz_musb_glue *glue = dev_get_drvdata(dev);
 	struct clk *clk;
 
-	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-	if (!musb->xceiv) {
-		pr_err("HS USB OTG: no transceiver configured\n");
-		return -ENODEV;
+	musb->xceiv = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+	if (IS_ERR(musb->xceiv))
+		musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+	if (IS_ERR(musb->xceiv)) {
+		int ret = PTR_ERR(musb->xceiv);
+		dev_err(dev, "Failed to get PHY: %d\n", ret);
+		return ret;
 	}
 
 	musb->b_dma_share_usb_irq = 1;
