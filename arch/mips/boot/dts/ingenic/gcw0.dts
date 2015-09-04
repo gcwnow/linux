@@ -350,7 +350,7 @@
 };
 
 &usb_otg {
-	/* TODO: Link to PHY. */
+	usb-phy = <&otg_phy>;
 	mode = <3>; /* MUSB_OTG */
 	status = "okay";
 };
