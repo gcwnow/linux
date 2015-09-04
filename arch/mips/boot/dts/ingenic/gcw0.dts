@@ -349,6 +349,12 @@
 	status = "okay";
 };
 
+&usb_otg {
+	/* TODO: Link to PHY. */
+	mode = <3>; /* MUSB_OTG */
+	status = "okay";
+};
+
 &uart2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_uart2_data>;

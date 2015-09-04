@@ -34,14 +34,12 @@
 #include <linux/platform_data/jz4770_mmc.h>
 #include <linux/platform_data/linkdev.h>
 #include <linux/platform_data/mxc6225.h>
-#include <linux/platform_data/usb-musb-jz4770.h>
 #include <linux/pinctrl/machine.h>
 #include <linux/pinctrl/pinconf-generic.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
-#include <linux/usb/musb.h>
 #include <sound/jz4770.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
@@ -118,16 +116,6 @@ static struct platform_device gcw0_usb_charger_device = {
 		.platform_data = &gcw0_usb_charger_pdata,
 	},
 };
-
-/* USB OTG (musb) */
-
-#define GPIO_USB_OTG_ID_PIN	JZ_GPIO_PORTF(18)
-
-static struct jz_otg_board_data gcw0_otg_board_data = {
-	.gpio_id_pin = GPIO_USB_OTG_ID_PIN,
-	.gpio_id_debounce_ms = 500,
-};
-
 
 /* LCD panel */
 
@@ -368,7 +356,6 @@ static struct platform_device gcw0_joystick_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-	&jz4770_usb_otg_device,
 	&jz4770_lcd_device,
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
@@ -385,10 +372,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 
 static int __init gcw0_init_platform_devices(void)
 {
-	struct musb_hdrc_platform_data *otg_platform_data =
-			jz4770_usb_otg_device.dev.platform_data;
-	otg_platform_data->board_data = &gcw0_otg_board_data;
-
 	jz4770_msc0_device.dev.platform_data = &gcw_internal_sd_data;
 	jz4770_msc1_device.dev.platform_data = &gcw_external_sd_data;
 	jz4770_icdc_device.dev.platform_data = &gcw0_icdc_pdata;
@@ -406,7 +389,7 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
-	PIN_MAP_MUX_GROUP("musb-jz.0", PINCTRL_STATE_DEFAULT,
+	PIN_MAP_MUX_GROUP("13440000.usb_otg", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", NULL, "otg"),
 	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "lcd_rgb888", "lcd"),
