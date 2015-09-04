@@ -330,17 +330,39 @@ static const struct musb_platform_ops jz_musb_ops = {
 	.set_vbus	= jz_musb_set_vbus,
 };
 
+static struct musb_hdrc_config jz_musb_config = {
+	.multipoint	= 1,
+/* Max EPs scanned. Driver will decide which EP can be used automatically. */
+	.num_eps	= 6,
+};
+
+static struct jz_otg_board_data gcw0_otg_board_data = {
+	.gpio_id_pin = JZ_GPIO_PORTF(18),
+	.gpio_id_debounce_ms = 500,
+};
+
 static int jz_musb_probe(struct platform_device *pdev)
 {
 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
 	struct platform_device		*musb;
 	struct jz_musb_glue		*glue;
+	struct device_node		*node = pdev->dev.of_node;
 
 	int				ret = -ENOMEM;
 
 	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
-	if (!glue) {
+	if (!glue)
 		goto err0;
+
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata)
+			goto err0;
+		/* TODO: Read the board data from the device tree.
+		 *       Alternatively, use the ID pin support from the generic
+		 *       PHY driver and remove glue code using the board data.
+		 */
+		pdata->board_data = &gcw0_otg_board_data;
 	}
 
 	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
@@ -357,6 +379,14 @@ static int jz_musb_probe(struct platform_device *pdev)
 	glue->musb			= musb;
 
 	pdata->platform_ops		= &jz_musb_ops;
+	if (!pdata->config)
+		pdata->config = &jz_musb_config;
+
+	if (node) {
+		u32 mode;
+		if (!of_property_read_u32(node, "mode", &mode))
+			pdata->mode = mode;
+	}
 
 	platform_set_drvdata(pdev, glue);
 
@@ -397,11 +427,18 @@ static int jz_musb_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id jz_musb_of_match[] = {
+	{ .compatible = "ingenic,jz4770-musb", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz_musb_of_match);
+
 static struct platform_driver jz_musb_driver = {
 	.probe		= jz_musb_probe,
 	.remove		= jz_musb_remove,
 	.driver		= {
 		.name	= "musb-jz",
+		.of_match_table = jz_musb_of_match,
 	},
 };
 
