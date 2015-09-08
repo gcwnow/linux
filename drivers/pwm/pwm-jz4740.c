@@ -128,7 +128,7 @@ static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	tmp = (unsigned long long)period * duty_ns;
 	do_div(tmp, period_ns);
-	duty = tmp;
+	duty = period - tmp;
 
 	if (duty >= period)
 		duty = period - 1;
