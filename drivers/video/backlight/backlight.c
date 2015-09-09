@@ -46,7 +46,9 @@ static int fb_notifier_callback(struct notifier_block *self,
 	int fb_blank = 0;
 
 	/* If we aren't interested in this event, skip it immediately ... */
-	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK)
+	if (event != FB_EVENT_BLANK && event != FB_EVENT_CONBLANK
+			&& event != FB_EVENT_FB_REGISTERED
+			&& event != FB_EVENT_FB_UNREGISTERED)
 		return 0;
 
 	bd = container_of(self, struct backlight_device, fb_notif);
@@ -54,7 +56,12 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (bd->ops)
 		if (!bd->ops->check_fb ||
 		    bd->ops->check_fb(bd, evdata->info)) {
-			fb_blank = *(int *)evdata->data;
+			if (event == FB_EVENT_FB_REGISTERED)
+				fb_blank = FB_BLANK_UNBLANK;
+			else if (event == FB_EVENT_FB_UNREGISTERED)
+				fb_blank = FB_BLANK_POWERDOWN;
+			else
+				fb_blank = *(int *)evdata->data;
 			if (fb_blank == FB_BLANK_UNBLANK &&
 			    !bd->fb_bl_on[node]) {
 				bd->fb_bl_on[node] = true;
