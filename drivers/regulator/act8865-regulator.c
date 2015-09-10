@@ -686,7 +686,17 @@ static struct i2c_driver act8865_pmic_driver = {
 	.id_table	= act8865_ids,
 };
 
-module_i2c_driver(act8865_pmic_driver);
+static int __init act8865_pmic_driver_init(void)
+{
+	return i2c_add_driver(&act8865_pmic_driver);
+}
+subsys_initcall(act8865_pmic_driver_init);
+
+static void __exit act8865_pmic_driver_exit(void)
+{
+	i2c_del_driver(&act8865_pmic_driver);
+}
+module_exit(act8865_pmic_driver_exit);
 
 MODULE_DESCRIPTION("active-semi act88xx voltage regulator driver");
 MODULE_AUTHOR("Wenyou Yang <wenyou.yang@atmel.com>");
