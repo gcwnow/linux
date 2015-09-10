@@ -366,3 +366,9 @@
 
 	system-power-controller;
 };
+
+&lcdc {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinfunc_lcd_rgb888>;
+	pinctrl-1 = <&pinfunc_lcd_nopins>;
+};

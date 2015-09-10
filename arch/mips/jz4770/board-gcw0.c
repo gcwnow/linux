@@ -201,7 +201,13 @@ static void gcw0_lcd_set_power(struct plat_lcd_data *pdata, unsigned int power)
 	gcw0_lcd_powered = power;
 }
 
+static int jz4770_lcd_match(struct plat_lcd_data *pdata, struct fb_info *info)
+{
+	return 1;
+}
+
 static struct plat_lcd_data gcw0_lcd_pdata = {
+	.match_fb = jz4770_lcd_match,
 	.probe = gcw0_lcd_probe,
 	.set_power = gcw0_lcd_set_power,
 };
@@ -210,7 +216,6 @@ static struct platform_device gcw0_lcd_device = {
 	.name = "platform-lcd",
 	.dev = {
 		.platform_data = &gcw0_lcd_pdata,
-		.parent = &jz4770_lcd_device.dev,
 	},
 };
 
@@ -356,7 +361,6 @@ static struct platform_device gcw0_joystick_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-	&jz4770_lcd_device,
 	&jz4770_i2s_device,
 	&jz4770_pcm_device,
 	&jz4770_icdc_device,
@@ -391,10 +395,6 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
 	PIN_MAP_MUX_GROUP("13440000.usb_otg", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", NULL, "otg"),
-	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", "lcd_rgb888", "lcd"),
-	PIN_MAP_MUX_GROUP("jz-lcd.0", PINCTRL_STATE_SLEEP,
-			  "10010000.jz4770-pinctrl", "no_pins", "lcd"),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.0", "10010000.jz4770-pinctrl",
 			  "PF5", gpio_charger_pin_cfg),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.1", "10010000.jz4770-pinctrl",
