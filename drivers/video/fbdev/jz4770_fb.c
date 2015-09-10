@@ -1112,12 +1112,21 @@ static int jzfb_resume(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(jzfb_pm_ops, jzfb_suspend, jzfb_resume);
 
+#ifdef CONFIG_OF
+static const struct of_device_id jzfb_dt_ids[] = {
+	{ .compatible = "ingenic,jz4770-fb", },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, jzfb_dt_ids);
+#endif
+
 static struct platform_driver jzfb_driver = {
 	.probe	= jzfb_probe,
 	.remove = jzfb_remove,
 	.driver = {
-		.name  = "jz-lcd",
-		.pm    = &jzfb_pm_ops,
+		.name		= "jz-lcd",
+		.of_match_table	= of_match_ptr(jzfb_dt_ids),
+		.pm		= &jzfb_pm_ops,
 	},
 };
 
