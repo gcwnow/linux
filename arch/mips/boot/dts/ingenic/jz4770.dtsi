@@ -213,7 +213,7 @@
 
 			pinfunc_lcd: lcd {
 				pinfunc_lcd_rgb888: lcd_rgb888 {
-					ingenic,pins = <&gpc 8 0 &pincfg_nobias
+					ingenic,pins = <&gpc  8 0 &pincfg_nobias
 							&gpc  9 0 &pincfg_nobias
 							&gpc 18 0 &pincfg_nobias
 							&gpc 19 0 &pincfg_nobias
@@ -366,6 +366,19 @@
 			joystick: jz4770-touchscreen {
 				compatible = "ingenic,jz4770-adc,touchscreen", "ingenic,jz4770-touchscreen";
 			};
+		};
+
+		lcdc: jz4770-fb@13050000 {
+			compatible = "ingenic,jz4770-fb";
+			reg = <0x13050000 0x2FF /* LCDC, TVE, LCDC PART2 */
+			       0x13080000 0x09B /* IPU */
+			      >;
+
+			clocks = <&cgu JZ4770_CLK_LPCLK_MUX>, <&cgu JZ4770_CLK_IPU>;
+			clock-names = "lpclk", "ipu";
+
+			interrupt-parent = <&intc>;
+			interrupts = <31>;
 		};
 
 		uhc: uhc@13430000 {

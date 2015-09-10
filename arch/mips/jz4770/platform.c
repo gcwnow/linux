@@ -24,50 +24,6 @@
 #include "platform.h"
 
 
-/*** LCD controller ***/
-static struct resource jz_lcd_resources[] = {
-	[0] = {
-		.start          = JZ4770_LCD_BASE_ADDR,
-		.end            = JZ4770_LCD_BASE_ADDR + 0x13F,
-		.flags          = IORESOURCE_MEM,
-	},
-	[1] = {
-		.start          = JZ4770_IPU_BASE_ADDR,
-		.end            = JZ4770_IPU_BASE_ADDR + 0x9B,
-		.flags          = IORESOURCE_MEM,
-	},
-	{
-		.name           = "tve",
-		.start          = JZ4770_LCD_BASE_ADDR + 0x140,
-		.end            = JZ4770_LCD_BASE_ADDR + 0x1BF,
-		.flags          = IORESOURCE_MEM,
-	},
-	{
-		.name           = "part2",
-		.start          = JZ4770_LCD_BASE_ADDR + 0x1C0,
-		.end            = JZ4770_LCD_BASE_ADDR + 0x2FF,
-		.flags          = IORESOURCE_MEM,
-	},
-	{
-		.start          = IRQ_LCD,
-		.end            = IRQ_LCD,
-		.flags          = IORESOURCE_IRQ,
-	}
-};
-
-static u64 jz_lcd_dmamask = ~(u32)0;
-
-struct platform_device jz4770_lcd_device = {
-	.name           = "jz-lcd",
-	.id             = 0,
-	.dev = {
-		.dma_mask               = &jz_lcd_dmamask,
-		.coherent_dma_mask      = 0xffffffff,
-	},
-	.num_resources  = ARRAY_SIZE(jz_lcd_resources),
-	.resource       = jz_lcd_resources,
-};
-
 /** MMC/SD/SDIO controllers**/
 
 #define JZ_MSC_PLATFORM_DEV(msc_id)					\

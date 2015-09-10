@@ -5,7 +5,6 @@
 
 extern struct platform_device jz4770_i2s_device;
 extern struct platform_device jz4770_icdc_device;
-extern struct platform_device jz4770_lcd_device;
 extern struct platform_device jz4770_msc0_device;
 extern struct platform_device jz4770_msc1_device;
 extern struct platform_device jz4770_msc2_device;
