@@ -1038,6 +1038,18 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_remove_allow_downscaling_file;
 	}
 
+	/*
+	 * Wait for at least one full frame to have been sent to the LCD
+	 * before registering the frame buffer, since that is the trigger
+	 * to turn on the backlight. Turning on the backlight before the LCD
+	 * contains an image will make the screen flash white.
+	 */
+	ret = jzfb_wait_for_vsync(jzfb);
+	if (!ret)
+		ret = jzfb_wait_for_vsync(jzfb);
+	if (ret)
+		dev_warn(&pdev->dev, "Wait for vsync failed: %d\n", ret);
+
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
