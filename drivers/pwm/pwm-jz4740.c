@@ -91,12 +91,15 @@ static void jz4740_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
 	u16 tcsr;
 
-	/* Stop counter */
-	writew(BIT(pwm->hwpwm), jz->base + TCU_TECR_OFFSET);
-
-	/* Disable PWM output */
+	/* Disable PWM output.
+	 * In TCU2 mode (channel 1/2 on JZ4750+), this must be done before the
+	 * counter is stopped, while in TCU1 mode the order does not matter.
+	 */
 	tcsr = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
 	writew(tcsr & ~TCU_TCSR_PWM_EN, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+
+	/* Stop counter */
+	writew(BIT(pwm->hwpwm), jz->base + TCU_TECR_OFFSET);
 }
 
 static bool tcu_counter_enabled(struct jz4740_pwm_chip *jz, unsigned int pwm)
