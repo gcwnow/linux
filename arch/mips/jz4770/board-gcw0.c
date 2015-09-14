@@ -393,8 +393,6 @@ static struct pinctrl_map pin_map[] __initdata = {
 			  "10010000.jz4770-pinctrl", "msc0_4bit", "msc0"),
 	PIN_MAP_MUX_GROUP("jz-msc.1", PINCTRL_STATE_DEFAULT,
 			  "10010000.jz4770-pinctrl", "msc1_4bit", "msc1"),
-	PIN_MAP_MUX_GROUP("13440000.usb_otg", PINCTRL_STATE_DEFAULT,
-			  "10010000.jz4770-pinctrl", NULL, "otg"),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.0", "10010000.jz4770-pinctrl",
 			  "PF5", gpio_charger_pin_cfg),
 	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.1", "10010000.jz4770-pinctrl",
