@@ -198,38 +198,31 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	drvdata->base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(drvdata->base)) {
-		ret = PTR_ERR(drvdata->base);
-		goto err_out;
-	}
+	if (IS_ERR(drvdata->base))
+		return PTR_ERR(drvdata->base);
 
-	drvdata->rtc_clk = clk_get(&pdev->dev, "rtc");
+	drvdata->rtc_clk = devm_clk_get(&pdev->dev, "rtc");
 	if (IS_ERR(drvdata->rtc_clk)) {
 		dev_err(&pdev->dev, "cannot find RTC clock\n");
-		ret = PTR_ERR(drvdata->rtc_clk);
-		goto err_out;
+		return PTR_ERR(drvdata->rtc_clk);
 	}
 
 	drvdata->restart_nb.notifier_call = jz4740_wdt_restart_handler;
 	ret = register_restart_handler(&drvdata->restart_nb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "cannot register restart handler\n");
-		goto err_disable_clk;
+		return ret;
 	}
 
 	ret = watchdog_register_device(&drvdata->wdt);
-	if (ret < 0)
-		goto err_unregister_restart_handler;
+	if (ret < 0) {
+		unregister_restart_handler(&drvdata->restart_nb);
+		return ret;
+	}
 
 	platform_set_drvdata(pdev, drvdata);
-	return 0;
 
-err_unregister_restart_handler:
-	unregister_restart_handler(&drvdata->restart_nb);
-err_disable_clk:
-	clk_put(drvdata->rtc_clk);
-err_out:
-	return ret;
+	return 0;
 }
 
 static int jz4740_wdt_remove(struct platform_device *pdev)
@@ -239,7 +232,6 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
 	unregister_restart_handler(&drvdata->restart_nb);
-	clk_put(drvdata->rtc_clk);
 
 	return 0;
 }
