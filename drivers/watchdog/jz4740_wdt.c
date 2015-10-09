@@ -63,12 +63,11 @@ MODULE_PARM_DESC(heartbeat,
 		__MODULE_STRING(MAX_HEARTBEAT) ", default "
 		__MODULE_STRING(DEFAULT_HEARTBEAT));
 
-static struct watchdog_device *jz4740_wdt;
-
 struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
 	void __iomem *base;
 	struct clk *rtc_clk;
+	struct notifier_block restart_nb;
 };
 
 static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
@@ -136,15 +135,13 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 static int jz4740_wdt_restart_handler(struct notifier_block *nb,
 		unsigned long mode, void *cmd)
 {
-	jz4740_wdt->timeout = 0;
-	jz4740_wdt_start(jz4740_wdt);
+	struct jz4740_wdt_drvdata *drvdata = container_of(nb,
+			struct jz4740_wdt_drvdata, restart_nb);
+
+	drvdata->wdt.timeout = 0;
+	jz4740_wdt_start(&drvdata->wdt);
 	return NOTIFY_DONE;
 }
-
-static struct notifier_block jz4740_wdt_restart_nb = {
-	.notifier_call = jz4740_wdt_restart_handler,
-	.priority = 128,
-};
 
 static const struct watchdog_info jz4740_wdt_info = {
 	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
@@ -170,6 +167,7 @@ MODULE_DEVICE_TABLE(of, jz4740_wdt_of_matches)
 static int jz4740_wdt_probe(struct platform_device *pdev)
 {
 	struct jz4740_wdt_drvdata *drvdata;
+	struct watchdog_device *jz4740_wdt;
 	struct resource	*res;
 	int ret;
 
@@ -207,7 +205,8 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
-	ret = register_restart_handler(&jz4740_wdt_restart_nb);
+	drvdata->restart_nb.notifier_call = jz4740_wdt_restart_handler;
+	ret = register_restart_handler(&drvdata->restart_nb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "cannot register restart handler\n");
 		goto err_disable_clk;
@@ -221,7 +220,7 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 	return 0;
 
 err_unregister_restart_handler:
-	unregister_restart_handler(&jz4740_wdt_restart_nb);
+	unregister_restart_handler(&drvdata->restart_nb);
 err_disable_clk:
 	clk_put(drvdata->rtc_clk);
 err_out:
@@ -234,7 +233,7 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
-	unregister_restart_handler(&jz4740_wdt_restart_nb);
+	unregister_restart_handler(&drvdata->restart_nb);
 	clk_put(drvdata->rtc_clk);
 
 	return 0;
