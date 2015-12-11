@@ -37,8 +37,14 @@
 #define JZ_REG_ADC_STATUS	0x0c
 
 #define JZ_REG_ADC_TOUCHSCREEN_BASE	0x10
-#define JZ_REG_ADC_BATTERY_BASE	0x1c
-#define JZ_REG_ADC_HWMON_BASE	0x20
+#define JZ_REG_ADC_BATTERY_BASE		0x1c
+#define JZ_REG_ADC_HWMON_BASE		0x20
+#define JZ_REG_ADC_CMD			0x24
+#define JZ_REG_ADC_CLKDIV		0x28
+
+#define JZ_ADC_CLKDIV		120
+#define JZ_ADC_CLKDIV_US	2
+#define JZ_ADC_CLKDIV_MS	200
 
 #define JZ_ADC_ENABLE_TOUCH	BIT(2)
 #define JZ_ADC_ENABLE_BATTERY	BIT(1)
@@ -64,6 +70,18 @@ struct jz4740_adc {
 
 	spinlock_t lock;
 };
+
+static void jz4740_adc_set_clk_div(struct jz4740_adc *adc, const u8 clkdiv,
+		const u8 clkdiv_us, const u16 clkdiv_ms)
+{
+	unsigned int val;
+
+	if (adc->version < JZ_ADC_JZ4780)
+		return;
+
+	val = clkdiv | (clkdiv_us << 8) | (clkdiv_ms << 16);
+	writel(val, adc->base + JZ_REG_ADC_CLKDIV);
+}
 
 static void jz4740_adc_irq_demux(struct irq_desc *desc)
 {
@@ -282,6 +300,10 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 
 	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
 	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
+
+	jz4740_adc_set_clk_div(adc, JZ_ADC_CLKDIV - 1,
+				JZ_ADC_CLKDIV_US - 1,
+				JZ_ADC_CLKDIV_MS - 1);
 
 	ret = mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
 			      ARRAY_SIZE(jz4740_adc_cells), mem_base,
