@@ -1,0 +1,35 @@
+Ingenic SoC TCU binding
+
+The TCU is the Timer/Counter Unit present in all Ingenic SoCs. It features 8
+channels, each one having its own clock, that can be started and stopped,
+reparented, and reclocked.
+
+Required properties:
+- compatible : One of:
+  * ingenic,jz4740-tcu-clocks,
+  * ingenic,jz4770-tcu-clocks,
+  * ingenic,jz4780-tcu-clocks.
+- clocks : List of phandle & clock specifiers for clocks external to the TCU.
+  The "pclk", "rtc" and "ext" clocks should be provided.
+- clock-names : List of name strings for the external clocks.
+- #clock-cells: Should be 1.
+  Clock consumers specify this argument to identify a clock. The valid values
+  may be found in <dt-bindings/clock/ingenic,tcu.h>.
+
+Example:
+
+/ {
+	regmap {
+		compatible = "simple-mfd", "syscon";
+		reg = <0x10002000 0x1000>;
+
+		tcu: clocks {
+			compatible = "ingenic,jz4740-tcu-clocks";
+
+			clocks = <&ext>, <&rtc>, <&pclk>;
+			clock-names = "ext", "rtc", "pclk";
+
+			#clock-cells = <1>;
+		};
+	};
+};
