@@ -1,5 +1,6 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/clock/jz4770-cgu.h>
+#include <dt-bindings/clock/ingenic,jz4740-tcu.h>
 
 / {
 	#address-cells = <1>;
@@ -54,15 +55,48 @@
 			#clock-cells = <1>;
 		};
 
+		tcu: jz4770-tcu@10002010 {
+			compatible = "ingenic,jz4770-tcu-clocks";
+			reg = <0x10002010 0x128		/* TCU regs */
+					0x10002000 0xF		/* WDT regs */
+					0x100020e0 0xF>;	/* OST regs */
+
+			#clock-cells = <1>;
+		};
+
 		wdt: jz4740-wdt@10002000 {
 			compatible = "ingenic,jz4770-watchdog";
 			reg = <0x10002000 0x0B>;
+
+			clocks = <&tcu JZ4740_CLK_WDT>;
+			clock-names = "wdt";
 		};
 
 		pwm: jz4740-pwm@10002010 {
 			compatible = "ingenic,jz4770-pwm";
 			reg = <0x10002010 0x4B>;
 			#pwm-cells = <3>;
+
+			clocks = <&tcu JZ4740_CLK_TIMER0
+					&tcu JZ4740_CLK_TIMER1
+					&tcu JZ4740_CLK_TIMER2
+					&tcu JZ4740_CLK_TIMER3
+					&tcu JZ4740_CLK_TIMER4
+					&tcu JZ4740_CLK_TIMER5
+					&tcu JZ4740_CLK_TIMER6
+					&tcu JZ4740_CLK_TIMER7
+					&tcu JZ4740_COUNTER0
+					&tcu JZ4740_COUNTER1
+					&tcu JZ4740_COUNTER2
+					&tcu JZ4740_COUNTER3
+					&tcu JZ4740_COUNTER4
+					&tcu JZ4740_COUNTER5
+					&tcu JZ4740_COUNTER6
+					&tcu JZ4740_COUNTER7>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+					"timer4", "timer5", "timer6", "timer7",
+					"counter0", "counter1", "counter2", "counter3",
+					"counter4", "counter5", "counter6", "counter7";
 		};
 
 		rtc: jz4740-rtc@10003000 {
