@@ -15,6 +15,8 @@
  */
 
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
+#include <linux/clk/jz4740-tcu.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/kernel.h>
@@ -22,16 +24,9 @@
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
+#include <linux/spinlock.h>
 
 #define NUM_PWM 8
-
-#define TCU_TSR_OFFSET	0x0C /* Timer Stop register */
-#define TCU_TSSR_OFFSET	0x1C
-#define TCU_TSCR_OFFSET	0x2C
-
-#define TCU_TER_OFFSET	0x00 /* Timer Counter Enable register */
-#define TCU_TESR_OFFSET	0x04
-#define TCU_TECR_OFFSET	0x08
 
 #define TCU_TDFR_OFFSET(pwm)	(0x30 + (pwm) * 0x10) /* Timer Data Full reg */
 #define TCU_TDHR_OFFSET(pwm)	(0x34 + (pwm) * 0x10) /* Timer Data Half reg */
@@ -47,7 +42,10 @@
 struct jz4740_pwm_chip {
 	struct pwm_chip chip;
 	void __iomem *base;
-	struct clk *clk;
+	struct clk * clks[NUM_PWM];
+	struct clk * counters[NUM_PWM];
+
+	spinlock_t lock;
 };
 
 static inline struct jz4740_pwm_chip *to_jz4740(struct pwm_chip *chip)
@@ -59,77 +57,74 @@ static int jz4740_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
 
-	/* Start clock */
-	writel(BIT(pwm->hwpwm), jz->base + TCU_TSCR_OFFSET);
-	return 0;
+	return clk_prepare_enable(jz->clks[pwm->hwpwm]);
 }
 
 static void jz4740_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
 
-	/* Stop clock */
-	writel(BIT(pwm->hwpwm), jz->base + TCU_TSSR_OFFSET);
+	clk_disable_unprepare(jz->clks[pwm->hwpwm]);
 }
 
 static int jz4740_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
-	u16 tcsr;
+	struct clk *clk = jz->clks[pwm->hwpwm];
 
 	/* Enable PWM output */
-	tcsr = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
-	writew(tcsr | TCU_TCSR_PWM_EN, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	jz4740_tcu_write_tcsr(clk, TCU_TCSR_PWM_EN, TCU_TCSR_PWM_EN);
 
 	/* Start counter */
-	writew(BIT(pwm->hwpwm), jz->base + TCU_TESR_OFFSET);
+	clk_prepare_enable(jz->counters[pwm->hwpwm]);
 	return 0;
 }
 
 static void jz4740_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
-	u16 tcsr;
+	struct clk *clk = jz->clks[pwm->hwpwm];
 
 	/* Disable PWM output.
 	 * In TCU2 mode (channel 1/2 on JZ4750+), this must be done before the
 	 * counter is stopped, while in TCU1 mode the order does not matter.
 	 */
-	tcsr = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
-	writew(tcsr & ~TCU_TCSR_PWM_EN, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	jz4740_tcu_write_tcsr(clk, TCU_TCSR_PWM_EN, 0);
 
 	/* Stop counter */
-	writew(BIT(pwm->hwpwm), jz->base + TCU_TECR_OFFSET);
+	clk_disable_unprepare(jz->counters[pwm->hwpwm]);
 }
 
 static bool tcu_counter_enabled(struct jz4740_pwm_chip *jz, unsigned int pwm)
 {
-	return readw(jz->base + TCU_TER_OFFSET) & BIT(pwm);
+	return __clk_is_enabled(jz->counters[pwm]);
 }
 
 static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 			     int duty_ns, int period_ns)
 {
 	struct jz4740_pwm_chip *jz4740 = to_jz4740(pwm->chip);
+	struct clk *clk = jz4740->clks[pwm->hwpwm];
 	unsigned long long tmp;
-	unsigned long period, duty;
-	unsigned int prescaler = 0;
+	unsigned long rate, period, duty;
 	bool is_enabled;
-	u16 tcsr;
 
-	tmp = (unsigned long long)clk_get_rate(jz4740->clk) * period_ns;
-	do_div(tmp, 1000000000);
-	period = tmp;
+	rate = clk_get_rate(clk);
 
-	while (period > 0xffff && prescaler < 6) {
-		period >>= 2;
-		++prescaler;
+	for (;;) {
+		tmp = (unsigned long long) rate * period_ns;
+		do_div(tmp, 1000000000);
+
+		if (tmp <= 0xffff) {
+			break;
+		} else {
+			rate = clk_round_rate(clk, rate / 2);
+		}
 	}
 
-	if (prescaler == 6)
-		return -EINVAL;
+	period = tmp;
 
-	tmp = (unsigned long long)period * duty_ns;
+	tmp = (unsigned long long) period * duty_ns;
 	do_div(tmp, period_ns);
 	duty = period - tmp;
 
@@ -140,11 +135,8 @@ static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	if (is_enabled)
 		jz4740_pwm_disable(chip, pwm);
 
-	/* Set abrupt shutdown, clock divider */
-	tcsr = readw(jz4740->base + TCU_TCSR_OFFSET(pwm->hwpwm));
-	tcsr &= ~TCU_TCSR_PRESCALE_MASK;
-	tcsr |= TCU_TCSR_PWM_SD | (prescaler << TCU_TCSR_PRESCALE_SHIFT);
-	writew(tcsr, jz4740->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	/* Set abrupt shutdown */
+	jz4740_tcu_write_tcsr(clk, TCU_TCSR_PWM_SD, TCU_TCSR_PWM_SD);
 
 	/* Reset counter to 0 */
 	writew(0, jz4740->base + TCU_TCNT_OFFSET(pwm->hwpwm));
@@ -165,18 +157,18 @@ static int jz4740_pwm_set_polarity(struct pwm_chip *chip,
 		struct pwm_device *pwm, enum pwm_polarity polarity)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
-	u16 reg = readw(jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	struct clk *clk = jz->clks[pwm->hwpwm];
+	u16 value = 0;
 
 	switch (polarity) {
 	case PWM_POLARITY_NORMAL:
-		reg &= ~TCU_TCSR_PWM_INITL_HIGH;
 		break;
 	case PWM_POLARITY_INVERSED:
-		reg |= TCU_TCSR_PWM_INITL_HIGH;
+		value = TCU_TCSR_PWM_INITL_HIGH;
 		break;
 	}
 
-	writew(reg, jz->base + TCU_TCSR_OFFSET(pwm->hwpwm));
+	jz4740_tcu_write_tcsr(clk, TCU_TCSR_PWM_INITL_HIGH, value);
 	return 0;
 }
 
@@ -194,6 +186,7 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 {
 	struct jz4740_pwm_chip *jz4740;
 	struct resource *res;
+	unsigned int i;
 
 	jz4740 = devm_kzalloc(&pdev->dev, sizeof(*jz4740), GFP_KERNEL);
 	if (!jz4740)
@@ -204,9 +197,21 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	if (IS_ERR(jz4740->base))
 		return PTR_ERR(jz4740->base);
 
-	jz4740->clk = devm_clk_get(&pdev->dev, "ext");
-	if (IS_ERR(jz4740->clk))
-		return PTR_ERR(jz4740->clk);
+	for (i = 0; i < NUM_PWM; i++) {
+		char clk_name[16];
+
+		snprintf(clk_name, sizeof(clk_name), "timer%u", i);
+
+		jz4740->clks[i] = devm_clk_get(&pdev->dev, clk_name);
+		if (IS_ERR(jz4740->clks[i]))
+			return PTR_ERR(jz4740->clks[i]);
+
+		snprintf(clk_name, sizeof(clk_name), "counter%u", i);
+
+		jz4740->counters[i] = devm_clk_get(&pdev->dev, clk_name);
+		if (IS_ERR(jz4740->counters[i]))
+			return PTR_ERR(jz4740->counters[i]);
+	}
 
 	jz4740->chip.dev = &pdev->dev;
 	jz4740->chip.ops = &jz4740_pwm_ops;
@@ -219,6 +224,8 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, jz4740);
+
+	spin_lock_init(&jz4740->lock);
 
 	return pwmchip_add(&jz4740->chip);
 }
