@@ -20,6 +20,8 @@
  *
  */
 
+#include <linux/clk-provider.h>
+#include <linux/clocksource.h>
 #include <linux/init.h>
 #include <linux/string.h>
 #include <linux/kernel.h>
@@ -110,6 +112,12 @@ void __init device_tree_init(void)
 void __init arch_init_irq(void)
 {
 	irqchip_init();
+}
+
+void __init plat_time_init(void)
+{
+	of_clk_init(NULL);
+	clocksource_of_init();
 }
 
 static int __init populate_machine(void)

@@ -4,7 +4,7 @@
 
 # Object file lists.
 
-obj-y += prom.o setup.o platform.o gpio.o time.o clock.o
+obj-y += prom.o setup.o platform.o gpio.o
 
 # board specific support
 obj-$(CONFIG_JZ4770_GCW0)	+= board-gcw0.o
