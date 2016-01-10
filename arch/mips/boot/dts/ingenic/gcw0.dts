@@ -363,8 +363,9 @@
 };
 
 &tcu {
-	assigned-clocks = <&tcu JZ4740_CLK_WDT>;
-	assigned-clock-parents = <&rtc_clk>;
+	assigned-clocks = <&tcu JZ4770_CLK_OST>, <&tcu JZ4740_CLK_WDT>;
+	assigned-clock-parents = <0>, <&rtc_clk>;
+	assigned-clock-rates = <1000000>;
 };
 
 
