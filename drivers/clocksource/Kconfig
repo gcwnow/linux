@@ -297,7 +297,7 @@ config JZ47XX_TCU
 	bool
 
 config JZ4780_TCU
-	def_bool y if MACH_JZ4780
+	def_bool y if MACH_JZ4780 || MACH_JZ4770
 	select JZ47XX_TCU
 	select CLKSRC_OF if OF
 	help
