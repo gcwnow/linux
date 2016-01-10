@@ -39,12 +39,6 @@ struct jz47xx_tcu_channel;
 typedef void (jz47xx_tcu_irq_callback)(struct jz47xx_tcu_channel *channel,
 				       void *data);
 
-enum jz47xx_tcu_source {
-	JZ47XX_TCU_SRC_PCLK,
-	JZ47XX_TCU_SRC_RTCCLK,
-	JZ47XX_TCU_SRC_EXTAL,
-};
-
 /**
  * jz47xx_tcu_init - initialise Ingenic jz47xx timer/counter unit (TCU)
  * desc: a description of the TCU in this SoC
@@ -77,24 +71,11 @@ extern int jz47xx_tcu_setup_cevt(struct jz47xx_tcu *tcu, int idx);
 /**
  * jz47xx_tcu_set_channel_rate - set the count rate of a channel
  * channel: the TCU channel reference returned by jz47xx_tcu_req_channel
- * source: the source clock to be used
- * rate: the target count frequency in Hz
- *
- * Sets the channel up to use the specified source clock and count at a
- * frequency as close as possible to rate. Returns the actual frequency that
- * was set, or 0 on error.
- */
-extern unsigned jz47xx_tcu_set_channel_rate(struct jz47xx_tcu_channel *channel,
-					    enum jz47xx_tcu_source source,
-					    unsigned rate);
-
-/**
- * jz47xx_tcu_set_channel_rate - set the count rate of a channel
- * channel: the TCU channel reference returned by jz47xx_tcu_req_channel
  *
  * Returns the rate at which the channel is configured to count, or 0 on error.
  */
-extern unsigned jz47xx_tcu_get_channel_rate(struct jz47xx_tcu_channel *channel);
+extern unsigned long jz47xx_tcu_get_channel_rate(
+		const struct jz47xx_tcu_channel *channel);
 
 /**
  * jz47xx_tcu_enable_channel - start a channel counting
