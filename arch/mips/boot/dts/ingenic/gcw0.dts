@@ -362,6 +362,12 @@
 		<432000000>;
 };
 
+&tcu {
+	assigned-clocks = <&tcu JZ4740_CLK_WDT>;
+	assigned-clock-parents = <&rtc_clk>;
+};
+
+
 &battery {
 	battery-name = "battery";
 	technology = <3>; /* Lithium polymer */
