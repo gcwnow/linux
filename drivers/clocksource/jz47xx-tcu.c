@@ -16,6 +16,8 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 
+#include <linux/clk/jz4740-tcu.h>
+
 #include "jz47xx-tcu.h"
 
 #define NUM_TCU_IRQS 3
@@ -73,6 +75,7 @@ struct jz47xx_tcu_channel {
 	void *full_cb_data, *half_cb_data;
 	unsigned stopped: 1;
 	unsigned enabled: 1;
+	struct clk *timer_clk, *counter_clk;
 };
 
 struct jz47xx_tcu_irq {
@@ -100,41 +103,31 @@ static inline void tcu_writel(struct jz47xx_tcu *tcu, u32 val,
 	writel(val, tcu->base + reg);
 }
 
-static enum jz47xx_tcu_reg tcu_csr(struct jz47xx_tcu_channel *channel)
-{
-	struct jz47xx_tcu *tcu = channel->tcu;
-
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST)
-		return REG_OSTCSR;
-
-	return REG_TCSRc(channel->idx);
-}
-
 static void jz47xx_tcu_stop_channel(struct jz47xx_tcu_channel *channel)
 {
-	struct jz47xx_tcu *tcu = channel->tcu;
-	tcu_writel(tcu, 1 << channel->idx, REG_TSSR);
+	if (!channel->stopped)
+		clk_disable_unprepare(channel->counter_clk);
 	channel->stopped = true;
 }
 
 static void jz47xx_tcu_start_channel(struct jz47xx_tcu_channel *channel)
 {
-	struct jz47xx_tcu *tcu = channel->tcu;
-	tcu_writel(tcu, 1 << channel->idx, REG_TSCR);
+	if (channel->stopped)
+		clk_prepare_enable(channel->counter_clk);
 	channel->stopped = false;
 }
 
 void jz47xx_tcu_enable_channel(struct jz47xx_tcu_channel *channel)
 {
-	struct jz47xx_tcu *tcu = channel->tcu;
-	tcu_writel(tcu, 1 << channel->idx, REG_TESR);
+	if (!channel->enabled)
+		clk_prepare_enable(channel->timer_clk);
 	channel->enabled = true;
 }
 
 void jz47xx_tcu_disable_channel(struct jz47xx_tcu_channel *channel)
 {
-	struct jz47xx_tcu *tcu = channel->tcu;
-	tcu_writel(tcu, 1 << channel->idx, REG_TECR);
+	if (channel->enabled)
+		clk_disable_unprepare(channel->timer_clk);
 	channel->enabled = false;
 }
 
@@ -301,9 +294,39 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 
 	/* Initialise all channels as stopped & calculate IRQ maps */
 	for (i = 0; i < tcu->desc->num_channels; i++) {
+		struct clk *clk;
+		char buf[16];
+
+		if (!tcu->desc->channels[i].present)
+			continue;
+
+		if (tcu->desc->channels[i].flags & JZ47XX_TCU_CHANNEL_OST)
+			snprintf(buf, sizeof(buf), "ost");
+		else
+			snprintf(buf, sizeof(buf), "timer%u", i);
+		clk = clk_get(NULL, buf);
+		if (IS_ERR(clk)) {
+			err = PTR_ERR(clk);
+			goto out_clk_put;
+		}
+
+		tcu->channels[i].timer_clk = clk;
+
+		if (tcu->desc->channels[i].flags & JZ47XX_TCU_CHANNEL_OST)
+			snprintf(buf, sizeof(buf), "counter_ost");
+		else
+			snprintf(buf, sizeof(buf), "counter%u", i);
+		clk = clk_get(NULL, buf);
+		if (IS_ERR(clk)) {
+			err = PTR_ERR(clk);
+			goto out_clk_put;
+		}
+
+		tcu->channels[i].counter_clk = clk;
+
 		tcu->channels[i].tcu = tcu;
 		tcu->channels[i].idx = i;
-		jz47xx_tcu_stop_channel(&tcu->channels[i]);
+		tcu->channels[i].stopped = true;
 		set_bit(i, &tcu->irqs[tcu->desc->channels[i].irq].channel_map);
 	}
 
@@ -327,6 +350,13 @@ out_irq_dispose:
 	for (i = 0; i < ARRAY_SIZE(tcu->irqs); i++) {
 		remove_irq(tcu->irqs[i].virq, &jz47xx_tcu_irqaction[i]);
 		irq_dispose_mapping(tcu->irqs[i].virq);
+	}
+out_clk_put:
+	for (i = 0; i < tcu->desc->num_channels; i++) {
+		if (tcu->channels[i].timer_clk)
+			clk_put(tcu->channels[i].timer_clk);
+		if (tcu->channels[i].counter_clk)
+			clk_put(tcu->channels[i].counter_clk);
 	}
 	iounmap(tcu->base);
 out_free:
@@ -360,15 +390,17 @@ struct jz47xx_tcu_channel *jz47xx_tcu_req_channel(struct jz47xx_tcu *tcu,
 	if (!channel->stopped)
 		return ERR_PTR(-EBUSY);
 
+	jz47xx_tcu_enable_channel(channel);
 	jz47xx_tcu_mask_channel_half(channel);
 	jz47xx_tcu_mask_channel_full(channel);
 	jz47xx_tcu_start_channel(channel);
 	jz47xx_tcu_disable_channel(channel);
 
 	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST)
-		tcu_writel(tcu, OSTCSR_CNT_MD, tcu_csr(channel));
+		jz4740_tcu_write_tcsr(channel->timer_clk,
+				0xffff, OSTCSR_CNT_MD);
 	else
-		tcu_writel(tcu, 0, tcu_csr(channel));
+		jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
 
 	return channel;
 }
@@ -376,96 +408,6 @@ struct jz47xx_tcu_channel *jz47xx_tcu_req_channel(struct jz47xx_tcu *tcu,
 void jz47xx_tcu_release_channel(struct jz47xx_tcu_channel *channel)
 {
 	jz47xx_tcu_stop_channel(channel);
-}
-
-unsigned jz47xx_tcu_set_channel_rate(struct jz47xx_tcu_channel *channel,
-				     enum jz47xx_tcu_source source,
-				     unsigned rate)
-{
-	struct jz47xx_tcu *tcu = channel->tcu;
-	enum jz47xx_tcu_reg csr_reg;
-	struct clk *src_clk;
-	unsigned long src_rate;
-	u32 csr, div, div_log2;
-
-	/*
-	 * Source & prescale can only be changed whilst the counter isn't
-	 * counting.
-	 */
-	if (channel->enabled)
-		return 0;
-
-	csr_reg = tcu_csr(channel);
-	csr = tcu_readl(tcu, csr_reg);
-	csr &= ~(TCSR_PRESCALE_MASK | TCSR_SRC_MASK);
-
-	switch (source) {
-	case JZ47XX_TCU_SRC_PCLK:
-		src_clk = clk_get(NULL, "pclk");
-		csr |= TCSR_PCK_EN;
-		break;
-	case JZ47XX_TCU_SRC_RTCCLK:
-		src_clk = clk_get(NULL, "rtc");
-		csr |= TCSR_RTC_EN;
-		break;
-	case JZ47XX_TCU_SRC_EXTAL:
-		src_clk = clk_get(NULL, "ext");
-		csr |= TCSR_EXT_EN;
-		break;
-	default:
-		return 0;
-	}
-
-	if (IS_ERR(src_clk)) {
-		pr_info("%s failed to get src_clk: %ld\n", __func__,
-			PTR_ERR(src_clk));
-		return 0;
-	}
-
-	src_rate = clk_get_rate(src_clk);
-	clk_put(src_clk);
-
-	div = DIV_ROUND_CLOSEST(src_rate, rate);
-	div_log2 = min(ilog2(div) & ~0x1, 10);
-	div = 1 << div_log2;
-	csr |= (div_log2 >> 1) << TCSR_PRESCALE_SHIFT;
-
-	tcu_writel(tcu, csr, csr_reg);
-
-	return src_rate / div;
-}
-
-unsigned jz47xx_tcu_get_channel_rate(struct jz47xx_tcu_channel *channel)
-{
-	struct jz47xx_tcu *tcu = channel->tcu;
-	struct clk *src_clk;
-	unsigned long src_rate;
-	u32 csr, prescale, div;
-
-	csr = tcu_readl(tcu, tcu_csr(channel));
-
-	if (csr & TCSR_PCK_EN)
-		src_clk = clk_get(NULL, "pclk");
-	else if (csr & TCSR_RTC_EN)
-		src_clk = clk_get(NULL, "rtc");
-	else if (csr & TCSR_EXT_EN)
-		src_clk = clk_get(NULL, "ext");
-	else
-		return 0;
-
-	if (IS_ERR(src_clk)) {
-		pr_info("%s failed to get src_clk: %ld\n", __func__,
-			PTR_ERR(src_clk));
-		return 0;
-	}
-
-	src_rate = clk_get_rate(src_clk);
-	clk_put(src_clk);
-
-	prescale = (csr & TCSR_PRESCALE_MASK) >> TCSR_PRESCALE_SHIFT;
-	div = 1 << (prescale * 2);
-
-	return src_rate / div;
 }
 
 u64 notrace jz47xx_tcu_read_channel_count(struct jz47xx_tcu_channel *channel)
@@ -600,7 +542,7 @@ int jz47xx_tcu_setup_cevt(struct jz47xx_tcu *tcu, int idx)
 {
 	struct jz47xx_tcu_channel *channel;
 	struct jz47xx_clock_event_device *jzcevt;
-	unsigned rate;
+	unsigned long rate;
 	int err;
 
 	channel = jz47xx_tcu_req_channel(tcu, idx);
@@ -609,8 +551,7 @@ int jz47xx_tcu_setup_cevt(struct jz47xx_tcu *tcu, int idx)
 		goto err_out;
 	}
 
-	rate = jz47xx_tcu_set_channel_rate(channel, JZ47XX_TCU_SRC_EXTAL,
-					   1000000);
+	rate = clk_get_rate(channel->timer_clk);
 	if (!rate) {
 		err = -EINVAL;
 		goto err_out_release;
@@ -644,4 +585,9 @@ err_out_release:
 	jz47xx_tcu_release_channel(channel);
 err_out:
 	return err;
+}
+
+unsigned long jz47xx_tcu_get_channel_rate(const struct jz47xx_tcu_channel *chan)
+{
+	return clk_get_rate(chan->timer_clk);
 }
