@@ -261,9 +261,9 @@ static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 	}
 
 	if (type & IRQ_TYPE_EDGE_BOTH)
-		__irq_set_handler_locked(irqd->irq, handle_edge_irq);
+		irq_set_handler_locked(irqd, handle_edge_irq);
 	else
-		__irq_set_handler_locked(irqd->irq, handle_level_irq);
+		irq_set_handler_locked(irqd, handle_level_irq);
 
 	jz4780_gpio_writel(jzgc, 1 << irqd->hwirq,
 			   (pat & 0x2) ? GPIO_PAT1S : GPIO_PAT1C);
@@ -274,11 +274,11 @@ static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 	return 0;
 }
 
-static void jz4780_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+static void jz4780_gpio_irq_handler(struct irq_desc *desc)
 {
-	struct gpio_chip *gc = irq_get_handler_data(irq);
+	struct gpio_chip *gc = irq_desc_get_handler_data(desc);
 	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
-	struct irq_chip *irq_chip = irq_get_chip(irq);
+	struct irq_chip *irq_chip = irq_data_get_irq_chip(&desc->irq_data);
 	unsigned long flag, i;
 
 	chained_irq_enter(irq_chip, desc);
