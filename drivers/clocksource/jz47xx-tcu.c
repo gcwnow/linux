@@ -508,21 +508,13 @@ static void jz47xx_tcu_cevt_cb(struct jz47xx_tcu_channel *channel, void *data)
 		cevt->event_handler(cevt);
 }
 
-static void jz47xx_tcu_cevt_set_mode(enum clock_event_mode mode,
-				     struct clock_event_device *evt)
+static int jz47xx_tcu_cevt_set_state_shutdown(struct clock_event_device *evt)
 {
 	struct jz47xx_clock_event_device *jzcevt = jz47xx_cevt(evt);
 	struct jz47xx_tcu_channel *channel = jzcevt->channel;
 
-	switch (mode) {
-	case CLOCK_EVT_MODE_UNUSED:
-	case CLOCK_EVT_MODE_SHUTDOWN:
-		jz47xx_tcu_disable_channel(channel);
-		break;
-
-	default:
-		break;
-	}
+        jz47xx_tcu_disable_channel(channel);
+        return 0;
 }
 
 static int jz47xx_tcu_cevt_set_next(unsigned long next,
@@ -571,7 +563,7 @@ int jz47xx_tcu_setup_cevt(struct jz47xx_tcu *tcu, int idx)
 	jzcevt->cevt.features = CLOCK_EVT_FEAT_ONESHOT;
 	jzcevt->cevt.name = jzcevt->name;
 	jzcevt->cevt.rating = 200;
-	jzcevt->cevt.set_mode = jz47xx_tcu_cevt_set_mode;
+	jzcevt->cevt.set_state_shutdown = jz47xx_tcu_cevt_set_state_shutdown;
 	jzcevt->cevt.set_next_event = jz47xx_tcu_cevt_set_next;
 
 	jz47xx_tcu_set_channel_full_cb(channel, jz47xx_tcu_cevt_cb,
