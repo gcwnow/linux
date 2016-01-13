@@ -343,6 +343,11 @@ static int jz4740_tcu_register_clock(struct jz4740_tcu *tcu, unsigned idx,
 		jz4740_tcu_set_parent(&tcu_clk->hw, 2);
 	}
 
+	if (timer)
+		jz4740_tcu_disable(&tcu_clk->hw);
+	else
+		jz4740_tcu_counter_disable(&tcu_clk->hw);
+
 	clk = clk_register(NULL, &tcu_clk->hw);
 	if (IS_ERR(clk)) {
 		err = PTR_ERR(clk);
