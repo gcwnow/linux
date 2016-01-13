@@ -146,11 +146,23 @@ static int jz4740_tcu_set_parent(struct clk_hw *hw, u8 idx)
 {
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
+	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
 	unsigned long flags;
+	int disabled;
 
 	spin_lock_irqsave(&tcu->lock, flags);
+	disabled = readl(tcu->base + TCU_REG_TIMER_STOP) & BIT(info->gate_bit);
+
+	if (disabled)
+		writel(BIT(info->gate_bit),
+				tcu->base + TCU_REG_TIMER_STOP_CLEAR);
+
 	writew((readw(reg) & ~TCSR_PARENT_CLOCK_MASK) | BIT(idx), reg);
+
+	if (disabled)
+		writel(BIT(info->gate_bit),
+				tcu->base + TCU_REG_TIMER_STOP_SET);
 	spin_unlock_irqrestore(&tcu->lock, flags);
 	return 0;
 }
