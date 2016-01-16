@@ -67,11 +67,11 @@ struct jz4780_gpio_chip {
 	char name[3];
 	unsigned idx;
 	struct gpio_chip gc;
+	struct irq_chip irq_chip;
 	struct jz4780_pinctrl *pinctrl;
 	uint32_t pull_ups;
 	uint32_t pull_downs;
 	unsigned int irq;
-	struct irq_domain *irq_domain;
 	struct pinctrl_gpio_range grange;
 };
 
@@ -183,33 +183,26 @@ static int jz4780_gpio_direction_output(struct gpio_chip *gc, unsigned offset,
 	return pinctrl_gpio_direction_output(gc->base + offset);
 }
 
-static int jz4780_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-{
-	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
-	int virq;
-
-	if (!jzgc->irq_domain)
-		return -ENXIO;
-
-	virq = irq_create_mapping(jzgc->irq_domain, offset);
-	return (virq) ? : -ENXIO;
-}
-
 static void jz4780_gpio_irq_mask(struct irq_data *irqd)
 {
-	struct jz4780_gpio_chip *jzgc = irq_data_get_irq_chip_data(irqd);
+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
+	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
+
 	jz4780_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_MSKS);
 }
 
 static void jz4780_gpio_irq_unmask(struct irq_data *irqd)
 {
-	struct jz4780_gpio_chip *jzgc = irq_data_get_irq_chip_data(irqd);
+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
+	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
+
 	jz4780_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_MSKC);
 }
 
 static void jz4780_gpio_irq_ack(struct irq_data *irqd)
 {
-	struct jz4780_gpio_chip *jzgc = irq_data_get_irq_chip_data(irqd);
+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
+	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
 	unsigned pin;
 
 	if (irqd_get_trigger_type(irqd) == IRQ_TYPE_EDGE_BOTH) {
@@ -229,7 +222,8 @@ static void jz4780_gpio_irq_ack(struct irq_data *irqd)
 
 static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 {
-	struct jz4780_gpio_chip *jzgc = irq_data_get_irq_chip_data(irqd);
+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
+	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
 	unsigned pin;
 	enum {
 		PAT_EDGE_RISING		= 0x3,
@@ -280,23 +274,19 @@ static int jz4780_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 	return 0;
 }
 
-static struct irq_chip jz4780_gpio_irq_chip = {
-	.name		= "GPIO",
-	.irq_unmask	= jz4780_gpio_irq_unmask,
-	.irq_mask	= jz4780_gpio_irq_mask,
-	.irq_ack	= jz4780_gpio_irq_ack,
-	.irq_set_type	= jz4780_gpio_irq_set_type,
-};
-
 static void jz4780_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
 {
-	struct jz4780_gpio_chip *jzgc = irq_get_handler_data(irq);
+	struct gpio_chip *gc = irq_get_handler_data(irq);
+	struct jz4780_gpio_chip *jzgc = gc_to_jzgc(gc);
+	struct irq_chip *irq_chip = irq_get_chip(irq);
 	unsigned long flag, i;
 
+	chained_irq_enter(irq_chip, desc);
 	flag = jz4780_gpio_readl(jzgc, GPIO_FLG);
 
 	for_each_set_bit(i, &flag, 32)
-		generic_handle_irq(irq_find_mapping(jzgc->irq_domain, i));
+		generic_handle_irq(irq_linear_revmap(gc->irqdomain, i));
+	chained_irq_exit(irq_chip, desc);
 }
 
 static int jz4780_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
@@ -566,8 +556,7 @@ static int jz4780_pinctrl_parse_dt_gpio(struct jz4780_pinctrl *jzpc,
 					struct jz4780_gpio_chip *jzgc,
 					struct device_node *np)
 {
-	unsigned gpio;
-	int err, irq;
+	int err;
 
 	jzgc->pinctrl = jzpc;
 	snprintf(jzgc->name, sizeof(jzgc->name), "P%c", 'A' + jzgc->idx);
@@ -583,7 +572,6 @@ static int jz4780_pinctrl_parse_dt_gpio(struct jz4780_pinctrl *jzpc,
 	jzgc->gc.get = jz4780_gpio_get;
 	jzgc->gc.direction_input = jz4780_gpio_direction_input;
 	jzgc->gc.direction_output = jz4780_gpio_direction_output;
-	jzgc->gc.to_irq = jz4780_gpio_to_irq;
 
 	if (of_property_read_u32_index(np, "ingenic,pull-ups", 0,
 				&jzgc->pull_ups))
@@ -609,23 +597,19 @@ static int jz4780_pinctrl_parse_dt_gpio(struct jz4780_pinctrl *jzpc,
 	if (!jzgc->irq)
 		return -EINVAL;
 
-	/* register IRQ domain */
-	jzgc->irq_domain = irq_domain_add_linear(np, jzgc->gc.ngpio,
-						 &irq_domain_simple_ops, NULL);
-	if (!jzgc->irq_domain)
-		return -EINVAL;
+	jzgc->irq_chip.name = jzgc->name;
+	jzgc->irq_chip.irq_unmask = jz4780_gpio_irq_unmask;
+	jzgc->irq_chip.irq_mask = jz4780_gpio_irq_mask;
+	jzgc->irq_chip.irq_ack = jz4780_gpio_irq_ack;
+	jzgc->irq_chip.irq_set_type = jz4780_gpio_irq_set_type;
 
-	for (gpio = 0; gpio < jzgc->gc.ngpio; gpio++) {
-		irq = irq_create_mapping(jzgc->irq_domain, gpio);
+	err = gpiochip_irqchip_add(&jzgc->gc, &jzgc->irq_chip, 0,
+			handle_level_irq, IRQ_TYPE_NONE);
+	if (err)
+		return err;
 
-		irq_set_chip_data(irq, jzgc);
-		irq_set_chip_and_handler(irq, &jz4780_gpio_irq_chip,
-					 handle_level_irq);
-	}
-
-	irq_set_chained_handler(jzgc->irq, jz4780_gpio_irq_handler);
-	irq_set_handler_data(jzgc->irq, jzgc);
-
+	gpiochip_set_chained_irqchip(&jzgc->gc, &jzgc->irq_chip,
+			jzgc->irq, jz4780_gpio_irq_handler);
 	return 0;
 }
 
