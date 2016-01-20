@@ -43,9 +43,6 @@
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 
-#include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/jz4770misc.h>
-
 #include "jz4770_ipu.h"
 #include "jz4770_lcdc.h"
 
@@ -736,9 +733,6 @@ static void jzfb_set_panel_mode(struct jzfb *jzfb)
 
 static void jzfb_change_clock(struct jzfb *jzfb, unsigned int rate)
 {
-	/* Use pixel clock for LCD panel (as opposed to TV encoder). */
-	__cpm_select_pixclk_lcd();
-
 	rate = clk_round_rate(jzfb->lpclk, rate);
 	clk_set_rate(jzfb->lpclk, rate);
 
