@@ -43,8 +43,6 @@
 #include <asm/time.h>
 #include <asm/page.h>
 
-#include <asm/mach-jz4770/jz4770cpm.h>
-
 #ifdef CONFIG_PC_KEYB
 #include <asm/keyboard.h>
 #endif
