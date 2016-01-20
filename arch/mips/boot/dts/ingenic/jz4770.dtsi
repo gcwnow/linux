@@ -587,6 +587,9 @@
 			compatible = "ingenic,jz4770-musb";
 			reg = <0x13440000 0xFFFF>;
 
+			clocks = <&cgu JZ4770_CLK_OTG>;
+			clock-names = "usb";
+
 			interrupt-parent = <&intc>;
 			interrupts = <21>;
 			interrupt-names = "mc";
