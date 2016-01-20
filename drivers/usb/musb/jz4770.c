@@ -20,12 +20,64 @@
 #include <linux/platform_data/usb-musb-jz4770.h>
 
 #include <asm/mach-jz4770/gpio.h>
-#include <asm/mach-jz4770/jz4770cpm.h>
 
 #include "musb_core.h"
 
+#define REG_USBPCR_OFFSET	0x00
+#define REG_USBRDT_OFFSET	0x04
+#define REG_USBVBFIL_OFFSET	0x08
+#define REG_USBPCR1_OFFSET	0x0c
+
+/* USBPCR */
+#define USBPCR_USB_MODE		BIT(31)
+#define USBPCR_AVLD_REG		BIT(30)
+#define USBPCR_INCRM		BIT(27)	/* INCR_MASK bit */
+#define USBPCR_CLK12_EN		BIT(26)
+#define USBPCR_COMMONONN	BIT(25)
+#define USBPCR_VBUSVLDEXT	BIT(24)
+#define USBPCR_VBUSVLDEXTSEL	BIT(23)
+#define USBPCR_POR		BIT(22)
+#define USBPCR_SIDDQ		BIT(21)
+#define USBPCR_OTG_DISABLE	BIT(20)
+#define USBPCR_TXPREEMPHTUNE	BIT(6)
+
+#define USBPCR_IDPULLUP_LSB	28	/* IDPULLUP_MASK bit */
+#define USBPCR_IDPULLUP_MASK	GENMASK(29, USBPCR_IDPULLUP_LSB)
+#define USBPCR_IDPULLUP_ALWAYS	(3 << USBPCR_IDPULLUP_LSB)
+#define USBPCR_IDPULLUP_SUSPEND	(1 << USBPCR_IDPULLUP_LSB)
+#define USBPCR_IDPULLUP_OTG	(0 << USBPCR_IDPULLUP_LSB)
+
+#define USBPCR_COMPDISTUNE_LSB	17
+#define USBPCR_COMPDISTUNE_MASK	GENMASK(19, USBPCR_COMPDISTUNE_LSB)
+
+#define USBPCR_OTGTUNE_LSB	14
+#define USBPCR_OTGTUNE_MASK	GENMASK(16, USBPCR_OTGTUNE_LSB)
+
+#define USBPCR_SQRXTUNE_LSB	11
+#define USBPCR_SQRXTUNE_MASK	GENMASK(13, USBPCR_SQRXTUNE_LSB)
+
+#define USBPCR_TXFSLSTUNE_LSB	7
+#define USBPCR_TXFSLSTUNE_MASK	GENMASK(10, USBPCR_TXFSLSTUNE_LSB)
+
+#define USBPCR_TXRISETUNE_LSB	4
+#define USBPCR_TXRISETUNE_MASK	GENMASK(5, USBPCR_TXRISETUNE_LSB)
+
+#define USBPCR_TXVREFTUNE_LSB	0
+#define USBPCR_TXVREFTUNE_MASK	GENMASK(3, USBPCR_TXVREFTUNE_LSB)
+
+/* USBRDT */
+#define USBRDT_VBFIL_LD_EN	BIT(25)
+#define USBRDT_IDDIG_EN		BIT(24)
+#define USBRDT_IDDIG_REG	BIT(23)
+
+#define USBRDT_USBRDT_LSB	0
+#define USBRDT_USBRDT_MASK	GENMASK(22, USBRDT_USBRDT_LSB)
+
+/* USBPCR1 */
+#define USBPCR1_UHC_POWON	BIT(5)
 
 struct jz_musb_glue {
+	void __iomem *base;
 	struct device *dev;
 	struct platform_device *musb;
 	struct clk *clk;
@@ -33,76 +85,63 @@ struct jz_musb_glue {
 	unsigned long gpio_id_debounce_jiffies;
 };
 
-static inline void jz_musb_phy_enable(void)
+static inline void jz_musb_phy_reset(struct jz_musb_glue *glue)
 {
-	printk(KERN_INFO "jz4760: Enable USB PHY.\n");
+	u32 reg = readl(glue->base + REG_USBPCR_OFFSET);
 
-	__cpm_enable_otg_phy();
-
-	/* Wait PHY Clock Stable. */
-	udelay(300);
-}
-
-static inline void jz_musb_phy_disable(void)
-{
-	printk(KERN_INFO "jz4760: Disable USB PHY.\n");
-
-	__cpm_suspend_otg_phy();
-}
-
-static inline void jz_musb_phy_reset(void)
-{
-	REG_CPM_USBPCR |= USBPCR_POR;
+	writel(reg | USBPCR_POR, glue->base + REG_USBPCR_OFFSET);
 	udelay(30);
-	REG_CPM_USBPCR &= ~USBPCR_POR;
+	writel(reg & ~USBPCR_POR, glue->base + REG_USBPCR_OFFSET);
 
 	udelay(300);
 }
 
-static inline void jz_musb_set_device_only_mode(void)
+static inline void jz_musb_set_device_only_mode(struct jz_musb_glue *glue)
 {
+	u32 reg = readl(glue->base + REG_USBPCR_OFFSET);
+
 	printk(KERN_INFO "jz4760: Device only mode.\n");
 
 	/* Device Mode. */
-	REG_CPM_USBPCR &= ~USBPCR_USB_MODE;
-
-	REG_CPM_USBPCR |= USBPCR_VBUSVLDEXT;
+	reg = (reg | USBPCR_VBUSVLDEXT) & ~USBPCR_USB_MODE;
+	writel(reg, glue->base + REG_USBPCR_OFFSET);
 }
 
-static inline void jz_musb_set_normal_mode(void)
+static inline void jz_musb_set_normal_mode(struct jz_musb_glue *glue)
 {
+	u32 reg = readl(glue->base + REG_USBPCR_OFFSET);
+
 	printk(KERN_INFO "jz4760: Normal mode.\n");
 
-	/* OTG Mode. */
-	REG_CPM_USBPCR |= USBPCR_USB_MODE;
+	reg = (reg & ~(
+			USBPCR_VBUSVLDEXT |
+			USBPCR_VBUSVLDEXTSEL |
+			USBPCR_OTG_DISABLE |
+			USBPCR_IDPULLUP_MASK)) |
+		USBPCR_USB_MODE | USBPCR_IDPULLUP_ALWAYS;
 
-	REG_CPM_USBPCR &= ~(USBPCR_VBUSVLDEXT |
-			    USBPCR_VBUSVLDEXTSEL |
-			    USBPCR_OTG_DISABLE);
-
-	REG_CPM_USBPCR = (REG_CPM_USBPCR & ~USBPCR_IDPULLUP_MASK)
-		       | USBPCR_IDPULLUP_ALWAYS;
+	writel(reg, glue->base + REG_USBPCR_OFFSET);
 }
 
-static inline void jz_musb_init_regs(struct musb *musb)
+static inline void jz_musb_init_regs(struct jz_musb_glue *glue)
 {
+	u32 reg;
+
 	/* fil */
-	REG_CPM_USBVBFIL = 0x80;
+	writel(0x80, glue->base + REG_USBVBFIL_OFFSET);
 
 	/* rdt */
-	REG_CPM_USBRDT = 0x96;
-
-	/* rdt - filload_en */
-	REG_CPM_USBRDT |= (1 << 25);
+	writel(0x02000096, glue->base + REG_USBRDT_OFFSET);
 
 	/* TXRISETUNE & TXVREFTUNE. */
-	REG_CPM_USBPCR &= ~(USBPCR_TXRISETUNE_MASK | USBPCR_TXVREFTUNE_MASK);
-	REG_CPM_USBPCR |= (3 << USBPCR_TXRISETUNE_LSB)
-			| (5 << USBPCR_TXVREFTUNE_LSB);
+	reg = readl(glue->base + REG_USBPCR_OFFSET);
+	reg = (reg & ~(USBPCR_TXRISETUNE_MASK | USBPCR_TXVREFTUNE_MASK)) |
+		(3 << USBPCR_TXRISETUNE_LSB) |
+		(5 << USBPCR_TXVREFTUNE_LSB);
+	writel(reg, glue->base + REG_USBPCR_OFFSET);
 
-	jz_musb_set_normal_mode();
-
-	jz_musb_phy_reset();
+	jz_musb_set_normal_mode(glue);
+	jz_musb_phy_reset(glue);
 }
 
 static void jz_musb_set_vbus(struct musb *musb, int is_on)
@@ -260,10 +299,24 @@ static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
 	return rv;
 }
 
+static void jz_musb_platform_enable(struct musb *musb)
+{
+	dev_info(musb->controller, "Enable USB PHY.\n");
+	usb_phy_init(musb->xceiv);
+}
+
+static void jz_musb_platform_disable(struct musb *musb)
+{
+	dev_info(musb->controller, "Disable USB PHY.\n");
+	usb_phy_shutdown(musb->xceiv);
+}
+
 static int jz_musb_platform_init(struct musb *musb)
 {
 	struct device *dev = musb->controller->parent;
+	struct platform_device *pdev = to_platform_device(dev);
 	struct jz_musb_glue *glue = dev_get_drvdata(dev);
+	struct resource *mem;
 	struct clk *clk;
 
 	musb->xceiv = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
@@ -278,16 +331,25 @@ static int jz_musb_platform_init(struct musb *musb)
 	musb->b_dma_share_usb_irq = 1;
 	musb->isr = jz_musb_interrupt;
 
+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	glue->base = devm_ioremap_resource(dev, mem);
+	if (IS_ERR(glue->base)) {
+		int ret = PTR_ERR(glue->base);
+		dev_err(dev, "Failed to map registers: %d\n", ret);
+		return ret;
+	}
+
 	clk = devm_clk_get(dev, "usb");
 	if (IS_ERR(clk)) {
 		int ret = PTR_ERR(clk);
 		dev_err(dev, "Failed to get clock: %d\n", ret);
 		return ret;
 	}
-	glue->clk = clk;
-	clk_prepare_enable(clk);
 
-	jz_musb_init_regs(musb);
+	glue->clk = clk;
+
+	clk_prepare_enable(glue->clk);
+	jz_musb_init_regs(glue);
 
 	/* host mode and otg(host) depend on the id pin */
 	return otg_id_pin_setup(musb);
@@ -297,23 +359,13 @@ static int jz_musb_platform_exit(struct musb *musb)
 {
 	struct jz_musb_glue *glue = dev_get_drvdata(musb->controller->parent);
 
-	jz_musb_phy_disable();
+	jz_musb_platform_disable(musb);
 
 	clk_disable_unprepare(glue->clk);
 
 	otg_id_pin_cleanup(musb);
 
 	return 0;
-}
-
-static void jz_musb_platform_enable(struct musb *musb)
-{
-	jz_musb_phy_enable();
-}
-
-static void jz_musb_platform_disable(struct musb *musb)
-{
-	jz_musb_phy_disable();
 }
 
 static const struct musb_platform_ops jz_musb_ops = {
