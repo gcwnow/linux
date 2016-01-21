@@ -9,12 +9,6 @@
 #ifndef __JZ4770LCDC_H__
 #define __JZ4770LCDC_H__
 
-#include <asm/addrspace.h>
-#include <asm/mach-jz4770/base.h>
-#include <asm/mach-jz4770/jz4770misc.h>
-
-#define	LCD_BASE	CKSEG1ADDR(JZ4770_LCD_BASE_ADDR)
-
 /*************************************************************************
  * LCD (LCD Controller)
  *************************************************************************/
