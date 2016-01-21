@@ -536,7 +536,7 @@
 			clock-names = "lpclk", "ipu";
 
 			interrupt-parent = <&intc>;
-			interrupts = <31>;
+			interrupts = <29>;
 		};
 
 		dmac0: jz4770-dma@13420000 {
