@@ -54,6 +54,8 @@
 #define JZ_ADC_CLKDIV_US		8
 #define JZ_ADC_CLKDIV_BIT		0
 
+#define SADC_IRQ_NUM			6
+
 enum {
 	JZ_ADC_IRQ_ADCIN = 0,
 	JZ_ADC_IRQ_BATTERY,
