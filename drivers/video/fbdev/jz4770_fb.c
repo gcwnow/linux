@@ -37,7 +37,6 @@
 #include <linux/wait.h>
 
 #include <asm/addrspace.h>
-#include <asm/irq.h>
 #include <asm/page.h>
 #include <asm/pgtable.h>
 #include <asm/uaccess.h>
@@ -88,6 +87,7 @@ struct jzfb {
 	wait_queue_head_t wait_vsync;
 
 	struct clk *lpclk, *ipuclk;
+	int irq;
 
 	struct mutex lock;
 	bool is_enabled;
@@ -923,6 +923,13 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_release_fb;
 	}
 
+	jzfb->irq = platform_get_irq(pdev, 0);
+	if (jzfb->irq < 0) {
+		dev_err(&pdev->dev, "Failed to get platform IRQ\n");
+		ret = jzfb->irq;
+		goto err_release_fb;
+	}
+
 	jzfb->panel = &jz4770_lcd_panel;
 	jzfb->pdev = pdev;
 	jzfb->bpp = 32;
@@ -976,8 +983,8 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_unmap;
 	}
 
-	if (request_irq(IRQ_IPU, jzfb_interrupt_handler, 0,
-				"ipu", jzfb)) {
+	if (devm_request_irq(&pdev->dev, jzfb->irq,
+				jzfb_interrupt_handler, 0, "ipu", jzfb)) {
 		dev_err(&pdev->dev, "Failed to request IRQ.\n");
 		ret = -EBUSY;
 		goto err_unmap;
