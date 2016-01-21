@@ -33,10 +33,6 @@
 #include <asm/div64.h>
 #include <asm/types.h>
 
-#include "jz4770-aic.h"
-#include "jz4770.h"
-
-
 /*
  * Note: On the GCW Zero, left and right are the wrong way around. This define
  *       toggles the code that compensates for it. However, I don't know where
@@ -57,6 +53,71 @@
 #define PCM_MIXER_DAPM 1
 
 
+#define ICDC_CKCFG_OFFSET	0x00
+#define ICDC_RGADW_OFFSET	0x04
+#define ICDC_RGDATA_OFFSET	0x08
+
+/* ICDC internal register access control register(RGADW) */
+#define ICDC_RGADW_RGWR		BIT(16)
+
+#define ICDC_RGADW_RGADDR_LSB	8
+#define	ICDC_RGADW_RGADDR_MASK	GENMASK(14, ICDC_RGADW_RGADDR_LSB)
+
+#define ICDC_RGADW_RGDIN_LSB	0
+#define	ICDC_RGADW_RGDIN_MASK	GENMASK(7, ICDC_RGADW_RGDIN_LSB)
+
+/* ICDC internal register data output register (RGDATA)*/
+#define ICDC_RGDATA_IRQ		BIT(8)
+
+#define ICDC_RGDATA_RGDOUT_LSB	0
+#define ICDC_RGDATA_RGDOUT_MASK	GENMASK(7, ICDC_RGDATA_RGDOUT_LSB)
+
+/* JZ internal register space */
+enum {
+	JZ_ICDC_SR		= 0x00,
+	JZ_ICDC_AICR_DAC	= 0x01,
+	JZ_ICDC_AICR_ADC	= 0x02,
+	JZ_ICDC_CR_LO		= 0x03,
+	JZ_ICDC_CR_HP		= 0x04,
+
+	JZ_ICDC_MISSING_REG1,
+
+	JZ_ICDC_CR_DAC		= 0x06,
+	JZ_ICDC_CR_MIC		= 0x07,
+	JZ_ICDC_CR_LI		= 0x08,
+	JZ_ICDC_CR_ADC		= 0x09,
+	JZ_ICDC_CR_MIX		= 0x0a,
+	JZ_ICDC_CR_VIC		= 0x0b,
+	JZ_ICDC_CCR		= 0x0c,
+	JZ_ICDC_FCR_DAC		= 0x0d,
+	JZ_ICDC_FCR_ADC		= 0x0e,
+	JZ_ICDC_ICR		= 0x0f,
+	JZ_ICDC_IMR		= 0x10,
+	JZ_ICDC_IFR		= 0x11,
+	JZ_ICDC_GCR_HPL		= 0x12,
+	JZ_ICDC_GCR_HPR		= 0x13,
+	JZ_ICDC_GCR_LIBYL	= 0x14,
+	JZ_ICDC_GCR_LIBYR	= 0x15,
+	JZ_ICDC_GCR_DACL	= 0x16,
+	JZ_ICDC_GCR_DACR	= 0x17,
+	JZ_ICDC_GCR_MIC1	= 0x18,
+	JZ_ICDC_GCR_MIC2	= 0x19,
+	JZ_ICDC_GCR_ADCL	= 0x1a,
+	JZ_ICDC_GCR_ADCR	= 0x1b,
+
+	JZ_ICDC_MISSING_REG2,
+
+	JZ_ICDC_GCR_MIXADC	= 0x1d,
+	JZ_ICDC_GCR_MIXDAC	= 0x1e,
+	JZ_ICDC_AGC1		= 0x1f,
+	JZ_ICDC_AGC2		= 0x20,
+	JZ_ICDC_AGC3		= 0x21,
+	JZ_ICDC_AGC4		= 0x22,
+	JZ_ICDC_AGC5		= 0x23,
+
+	JZ_ICDC_MAX_NUM
+};
+
 /* codec private data */
 struct jz_icdc {
 	struct regmap *regmap;
@@ -64,20 +125,6 @@ struct jz_icdc {
 	enum jz4770_icdc_mic_mode mic_mode;
 	struct clk *clk;
 };
-
-__attribute__((__unused__)) static void dump_aic_regs(const char *func, int line)
-{
-	char *regname[] = {"aicfr","aiccr","aiccr1","aiccr2","i2scr","aicsr","acsr","i2ssr",
-				"accar", "accdr", "acsar", "acsdr", "i2sdiv"};
-	int i;
-	unsigned int addr;
-
-	printk("AIC regs dump, %s:%d:\n", func, line);
-	for (i = 0; i <= 0x30; i += 4) {
-		addr = AIC_BASE + i;
-		printk("%s\t0x%08x -> 0x%08x\n", regname[i/4], addr, *(unsigned int *)addr);
-	}
-}
 
 static unsigned int jz_icdc_read_reg(struct snd_soc_codec *codec,
 				     unsigned int reg)
@@ -246,8 +293,6 @@ static int jz_icdc_pcm_trigger(struct snd_pcm_substream *substream,
 		if (substream->stream != SNDRV_PCM_STREAM_PLAYBACK) {
 			jz_icdc_set_bias_level(codec, SND_SOC_BIAS_ON);
 			msleep(2);
-
-			//dump_aic_regs(__func__, __LINE__);
 		}
 
 		break;
@@ -731,8 +776,6 @@ static void jz_icdc_codec_init_regs(struct snd_soc_codec *codec)
 	/* Collect updates for later sending. */
 	regcache_cache_only(regmap, true);
 
-	//dump_aic_regs(__func__, __LINE__);
-
 	/* default: DAC */
 	jz_icdc_update_reg(codec, JZ_ICDC_CR_HP, 0, 0x3, 0x3);
 
@@ -921,33 +964,46 @@ static bool jz_icdc_writeable(struct device *dev, unsigned int reg)
 	       reg != JZ_ICDC_MISSING_REG1 && reg != JZ_ICDC_MISSING_REG2;
 }
 
+static bool jz_icdc_io_busy(struct jz_icdc *icdc)
+{
+	u32 reg = readl(icdc->base + ICDC_RGADW_OFFSET);
+
+	return reg & ICDC_RGADW_RGWR;
+}
+
 static int jz_icdc_reg_read(void *context, unsigned int reg, unsigned int *val)
 {
-	volatile unsigned int dummy;
+	struct jz_icdc *icdc = context;
+	unsigned int i;
+	u32 tmp;
 
-	while (__icdc_rgwr_ready());
+	while (jz_icdc_io_busy(icdc))
+		msleep(1);
 
-	__icdc_set_addr(reg);
+	tmp = readl(icdc->base + ICDC_RGADW_OFFSET);
+	tmp = (tmp & ~ICDC_RGADW_RGADDR_MASK) | (reg << ICDC_RGADW_RGADDR_LSB);
+	writel(tmp, icdc->base + ICDC_RGADW_OFFSET);
 
-	/* wait 4+ cycle */
-	dummy = __icdc_get_value();
-	dummy = __icdc_get_value();
-	dummy = __icdc_get_value();
-	dummy = __icdc_get_value();
-	dummy = __icdc_get_value();
-
-	*val = __icdc_get_value();
+	/* wait 5 cycles */
+	for (i = 0; i < 6; i++)
+		*val = readl(icdc->base + ICDC_RGDATA_OFFSET) &
+			ICDC_RGDATA_RGDOUT_MASK;
 
 	return 0;
 }
 
 static int jz_icdc_reg_write(void *context, unsigned int reg, unsigned int val)
 {
-	while (__icdc_rgwr_ready());
+	struct jz_icdc *icdc = context;
 
-	REG_ICDC_RGADW = ICDC_RGADW_RGWR | (reg << ICDC_RGADW_RGADDR_LSB) | val;
+	while (jz_icdc_io_busy(icdc))
+		msleep(1);
 
-	while (__icdc_rgwr_ready());
+	writel(ICDC_RGADW_RGWR | (reg << ICDC_RGADW_RGADDR_LSB) | val,
+			icdc->base + ICDC_RGADW_OFFSET);
+
+	while (jz_icdc_io_busy(icdc))
+		msleep(1);
 
 	return 0;
 }
@@ -1007,7 +1063,7 @@ static int jz_icdc_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	jz_icdc->regmap = devm_regmap_init(&pdev->dev, NULL, NULL,
+	jz_icdc->regmap = devm_regmap_init(&pdev->dev, NULL, jz_icdc,
 					   &jz_icdc_regmap_config);
 	if (IS_ERR(jz_icdc->regmap))
 		return PTR_ERR(jz_icdc->regmap);
