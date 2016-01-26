@@ -65,7 +65,7 @@
 
 static struct ingenic_cgu *cgu;
 
-int jz4770_uhc_phy_enable(struct clk_hw *hw)
+static int jz4770_uhc_phy_enable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
@@ -76,7 +76,7 @@ int jz4770_uhc_phy_enable(struct clk_hw *hw)
 	return 0;
 }
 
-void jz4770_uhc_phy_disable(struct clk_hw *hw)
+static void jz4770_uhc_phy_disable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
