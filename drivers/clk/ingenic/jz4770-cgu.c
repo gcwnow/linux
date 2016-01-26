@@ -91,9 +91,25 @@ static void jz4770_uhc_phy_disable(struct clk_hw *hw)
 	spin_unlock_irqrestore(&cgu->lock, flags);
 }
 
+static int jz4770_uhc_phy_is_enabled(struct clk_hw *hw)
+{
+	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
+	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
+	unsigned long flags;
+	bool enabled;
+
+	spin_lock_irqsave(&cgu->lock, flags);
+	enabled = !(readl(reg_opcr) & OPCR_SPENDH) &&
+		(readl(reg_usbpcr1) & USBPCR1_UHC_POWER);
+	spin_unlock_irqrestore(&cgu->lock, flags);
+
+	return enabled;
+}
+
 struct clk_ops jz4770_uhc_phy_ops = {
 	.enable = jz4770_uhc_phy_enable,
 	.disable = jz4770_uhc_phy_disable,
+	.is_enabled = jz4770_uhc_phy_is_enabled,
 };
 
 static const s8 pll_od_encoding[8] = {
