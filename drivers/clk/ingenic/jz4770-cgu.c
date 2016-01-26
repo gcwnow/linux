@@ -69,9 +69,12 @@ static int jz4770_uhc_phy_enable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
+	unsigned long flags;
 
+	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_opcr) & ~OPCR_SPENDH, reg_opcr);
 	writel(readl(reg_usbpcr1) | USBPCR1_UHC_POWER, reg_usbpcr1);
+	spin_unlock_irqrestore(&cgu->lock, flags);
 
 	return 0;
 }
@@ -80,9 +83,12 @@ static void jz4770_uhc_phy_disable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
+	unsigned long flags;
 
+	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_usbpcr1) & ~USBPCR1_UHC_POWER, reg_usbpcr1);
 	writel(readl(reg_opcr) | OPCR_SPENDH, reg_opcr);
+	spin_unlock_irqrestore(&cgu->lock, flags);
 }
 
 struct clk_ops jz4770_uhc_phy_ops = {
