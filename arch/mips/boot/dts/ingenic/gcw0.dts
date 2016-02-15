@@ -77,6 +77,10 @@
 			ingenic,i2s-controller = <&i2s>;
 			ingenic,codec = <&codec>;
 			ingenic,mic-mode = <1>;
+
+			avout-gpios = <&gpf 3 GPIO_ACTIVE_HIGH>;
+			speaker-gpios = <&gpf 20 GPIO_ACTIVE_LOW>;
+			detect-gpios = <&gpf 21 GPIO_ACTIVE_LOW>;
 		};
 
 		rfkill {
