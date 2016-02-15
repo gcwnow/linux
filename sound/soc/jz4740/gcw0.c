@@ -30,10 +30,10 @@
 #include <asm/mach-jz4770/gpio.h>
 
 
-#define GCW0_AVOUT_DETECT_GPIO	JZ_GPIO_PORTF(21)
-#define GCW0_AVOUT_GPIO		JZ_GPIO_PORTF(3)
-#define GCW0_SPEAKER_GPIO	JZ_GPIO_PORTF(20)
-
+struct gcw0 {
+	struct gpio_desc *spk_gpio;
+	struct gpio_desc *av_gpio;
+};
 
 /* Headphone jack: plug insert detection */
 
@@ -54,9 +54,8 @@ static struct snd_soc_jack_pin gcw0_avout_jack_pins[] = {
 
 static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 	{
-		.name		= "Headphone Detect",
+		.name		= "detect",
 		.report		= SND_JACK_HEADPHONE,
-		.gpio		= GCW0_AVOUT_DETECT_GPIO,
 		.invert		= 1,
 		.debounce_time	= 200,
 	},
@@ -67,18 +66,22 @@ static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 static int gcw0_avout_event(struct snd_soc_dapm_widget *widget,
 			    struct snd_kcontrol *ctrl, int event)
 {
+	struct gcw0 *gcw0 = snd_soc_card_get_drvdata(widget->dapm->card);
+
 	/* Delay the amp power up to reduce pops. */
 	if (SND_SOC_DAPM_EVENT_ON(event))
 		msleep(50);
 
-	gpio_set_value(GCW0_AVOUT_GPIO, !SND_SOC_DAPM_EVENT_ON(event));
+	gpiod_set_value_cansleep(gcw0->av_gpio, SND_SOC_DAPM_EVENT_OFF(event));
 	return 0;
 }
 
 static int gcw0_speaker_event(struct snd_soc_dapm_widget *widget,
 			      struct snd_kcontrol *ctrl, int event)
 {
-	gpio_set_value(GCW0_SPEAKER_GPIO, SND_SOC_DAPM_EVENT_ON(event));
+	struct gcw0 *gcw0 = snd_soc_card_get_drvdata(widget->dapm->card);
+
+	gpiod_set_value_cansleep(gcw0->spk_gpio, SND_SOC_DAPM_EVENT_ON(event));
 	return 0;
 }
 
@@ -136,9 +139,10 @@ static int gcw0_codec_init(struct snd_soc_pcm_runtime *rtd)
 		dev_err(codec->dev,
 			"Failed to create headphone jack: %d\n", ret);
 	} else {
-		ret = snd_soc_jack_add_gpios(&gcw0_avout_jack,
-					     ARRAY_SIZE(gcw0_avout_jack_gpios),
-					     gcw0_avout_jack_gpios);
+		ret = snd_soc_jack_add_gpiods(gcw0_card.dev,
+				&gcw0_avout_jack,
+				ARRAY_SIZE(gcw0_avout_jack_gpios),
+				gcw0_avout_jack_gpios);
 		if (ret < 0)
 			dev_err(codec->dev,
 				"Failed to add headphone jack GPIO: %d\n", ret);
@@ -192,7 +196,12 @@ static int gcw0_probe(struct platform_device *pdev)
 	struct snd_soc_card *card = &gcw0_card;
 	struct device_node *np = pdev->dev.of_node;
 	struct device_node *codec, *i2s;
+	struct gcw0 *gcw0;
 	int ret;
+
+	gcw0 = devm_kzalloc(&pdev->dev, sizeof(*gcw0), GFP_KERNEL);
+	if (!gcw0)
+		return -ENOMEM;
 
 	i2s = of_parse_phandle(np, "ingenic,i2s-controller", 0);
 	codec = of_parse_phandle(np, "ingenic,codec", 0);
@@ -210,24 +219,24 @@ static int gcw0_probe(struct platform_device *pdev)
 		gcw0_dai.codec_name = NULL;
 	}
 
-	ret = devm_gpio_request(&pdev->dev, GCW0_AVOUT_GPIO, "Headphone");
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to request headphone GPIO(%d): %d\n",
-			GCW0_AVOUT_GPIO, ret);
+	gcw0->av_gpio = devm_gpiod_get(&pdev->dev, "avout", GPIOD_OUT_HIGH);
+	if (IS_ERR(gcw0->av_gpio)) {
+		ret = PTR_ERR(gcw0->av_gpio);
+		dev_err(&pdev->dev, "Failed to request avout GPIO: %d\n", ret);
 		return ret;
 	}
 
-	ret = devm_gpio_request(&pdev->dev, GCW0_SPEAKER_GPIO, "Speaker");
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to request speaker GPIO(%d): %d\n",
-			GCW0_SPEAKER_GPIO, ret);
+	gcw0->spk_gpio = devm_gpiod_get(&pdev->dev, "speaker", GPIOD_OUT_LOW);
+	if (IS_ERR(gcw0->spk_gpio)) {
+		ret = PTR_ERR(gcw0->spk_gpio);
+		dev_err(&pdev->dev,
+				"Failed to request speaker GPIO: %d\n", ret);
 		return ret;
 	}
-
-	gpio_direction_output(GCW0_AVOUT_GPIO, 1);
-	gpio_direction_output(GCW0_SPEAKER_GPIO, 0);
 
 	card->dev = &pdev->dev;
+
+	snd_soc_card_set_drvdata(card, gcw0);
 
 	ret = snd_soc_register_card(card);
 	if (ret) {
