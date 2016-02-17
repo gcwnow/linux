@@ -28,10 +28,11 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
-#include <sound/jz4770.h>
 
 #include <asm/div64.h>
 #include <asm/types.h>
+
+#include <dt-bindings/sound/ingenic,jz4770-codec.h>
 
 /*
  * Note: On the GCW Zero, left and right are the wrong way around. This define
@@ -122,7 +123,7 @@ enum {
 struct jz_icdc {
 	struct regmap *regmap;
 	void __iomem *base;
-	enum jz4770_icdc_mic_mode mic_mode;
+	unsigned int mic_mode;
 	struct clk *clk;
 };
 
@@ -1044,7 +1045,6 @@ static int jz_icdc_probe(struct platform_device *pdev)
 	int ret;
 	struct jz_icdc *jz_icdc;
 	struct resource *mem;
-	struct jz4770_icdc_platform_data *pdata = pdev->dev.platform_data;
 
 	jz_icdc = devm_kzalloc(&pdev->dev, sizeof(*jz_icdc), GFP_KERNEL);
 	if (!jz_icdc)
@@ -1068,13 +1068,8 @@ static int jz_icdc_probe(struct platform_device *pdev)
 	if (IS_ERR(jz_icdc->regmap))
 		return PTR_ERR(jz_icdc->regmap);
 
-	if (pdata)
-		jz_icdc->mic_mode = pdata->mic_mode;
-	else if (&pdev->dev.of_node)
-		of_property_read_u32(pdev->dev.of_node, "ingenic,mic-mode",
-				&jz_icdc->mic_mode);
-	else
-		dev_warn(&pdev->dev, "No pdata, assuming no mics\n");
+	device_property_read_u32(&pdev->dev, "ingenic,mic-mode",
+			&jz_icdc->mic_mode);
 
 	jz_icdc->clk = devm_clk_get(&pdev->dev, "aic");
 	if (IS_ERR(jz_icdc->clk))
@@ -1095,8 +1090,6 @@ static int jz_icdc_probe(struct platform_device *pdev)
 static int jz_icdc_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_codec(&pdev->dev);
-
-	platform_set_drvdata(pdev, NULL);
 
 	return 0;
 }
