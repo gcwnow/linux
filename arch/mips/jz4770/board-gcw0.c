@@ -38,7 +38,6 @@
 #include <linux/power/jz4770-battery.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
-#include <sound/jz4770.h>
 #include <video/jzpanel.h>
 #include <video/panel-nt39016.h>
 #include <video/platform_lcd.h>
