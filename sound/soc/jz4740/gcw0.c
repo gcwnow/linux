@@ -44,11 +44,11 @@ static struct snd_soc_jack_pin gcw0_avout_jack_pins[] = {
 	{
 		.pin		= "Headphone",
 		.mask		= SND_JACK_HEADPHONE,
+		.invert		= 1,
 	},
 	{
 		.pin		= "Speakers",
 		.mask		= SND_JACK_HEADPHONE,
-		.invert		= 1,
 	},
 };
 
@@ -56,7 +56,6 @@ static struct snd_soc_jack_gpio gcw0_avout_jack_gpios[] = {
 	{
 		.name		= "detect",
 		.report		= SND_JACK_HEADPHONE,
-		.invert		= 1,
 		.debounce_time	= 200,
 	},
 };
@@ -72,7 +71,7 @@ static int gcw0_avout_event(struct snd_soc_dapm_widget *widget,
 	if (SND_SOC_DAPM_EVENT_ON(event))
 		msleep(50);
 
-	gpiod_set_value_cansleep(gcw0->av_gpio, SND_SOC_DAPM_EVENT_OFF(event));
+	gpiod_set_value_cansleep(gcw0->av_gpio, SND_SOC_DAPM_EVENT_ON(event));
 	return 0;
 }
 
@@ -226,7 +225,7 @@ static int gcw0_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	gcw0->spk_gpio = devm_gpiod_get(&pdev->dev, "speaker", GPIOD_OUT_LOW);
+	gcw0->spk_gpio = devm_gpiod_get(&pdev->dev, "speaker", GPIOD_OUT_HIGH);
 	if (IS_ERR(gcw0->spk_gpio)) {
 		ret = PTR_ERR(gcw0->spk_gpio);
 		dev_err(&pdev->dev,
