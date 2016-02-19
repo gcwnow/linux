@@ -11,7 +11,10 @@
 
 #include <linux/bitops.h>
 #include <asm/addrspace.h>
-#include <asm/mach-jz4770/jz4770misc.h>
+
+#define REG32(addr)	*((volatile unsigned int *)(addr))
+#define REG16(addr)	*((volatile unsigned short *)(addr))
+#define REG8(addr)	*((volatile unsigned char *)(addr))
 
 #ifndef JZ_EXTAL
 #define JZ_EXTAL		12000000   /* 3.6864 MHz */
