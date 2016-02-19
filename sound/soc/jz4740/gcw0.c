@@ -27,8 +27,6 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 
-#include <asm/mach-jz4770/gpio.h>
-
 
 struct gcw0 {
 	struct gpio_desc *spk_gpio;
