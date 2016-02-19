@@ -9,15 +9,11 @@
  */
 
 #include <linux/device.h>
-#include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/resource.h>
 
-#include <linux/usb/musb.h>
-
-#include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/irq.h>
 
 #include "platform.h"
