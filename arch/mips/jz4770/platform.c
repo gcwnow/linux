@@ -17,12 +17,14 @@
 
 #include <linux/usb/musb.h>
 
-#include <asm/mach-jz4770/base.h>
 #include <asm/mach-jz4770/dma.h>
 #include <asm/mach-jz4770/irq.h>
 
 #include "platform.h"
 
+#define JZ4770_AUX_BASE_ADDR	0x132A0000
+#define JZ4770_TCSM0_BASE_ADDR	0x132B0000
+#define JZ4770_TCSM1_BASE_ADDR	0x132C0000
 
 /* VPU */
 
