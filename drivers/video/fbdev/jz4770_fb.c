@@ -18,7 +18,7 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/mutex.h>
+#include <linux/spinlock.h>
 #include <linux/errno.h>
 #include <linux/string.h>
 #include <linux/mm.h>
@@ -89,7 +89,7 @@ struct jzfb {
 	struct clk *lpclk, *ipuclk;
 	int irq;
 
-	struct mutex lock;
+	spinlock_t lock;
 	bool is_enabled;
 	/*
 	 * Number of frames to wait until doing a forced foreground flush.
@@ -598,7 +598,7 @@ static int jzfb_blank(int blank_mode, struct fb_info *info)
 {
 	struct jzfb *jzfb = info->par;
 
-	mutex_lock(&jzfb->lock);
+	spin_lock_irq(&jzfb->lock);
 
 	if (blank_mode == FB_BLANK_UNBLANK) {
 		if (!jzfb->is_enabled) {
@@ -612,7 +612,7 @@ static int jzfb_blank(int blank_mode, struct fb_info *info)
 		}
 	}
 
-	mutex_unlock(&jzfb->lock);
+	spin_unlock_irq(&jzfb->lock);
 
 	return 0;
 }
@@ -628,12 +628,16 @@ static int jzfb_pan_display(struct fb_var_screeninfo *var,
 		return -EINVAL;
 	}
 
+	spin_lock_irq(&jzfb->lock);
+
 	jzfb->pan_offset = fb->fix.line_length * vpan;
 	dev_dbg(&jzfb->pdev->dev, "var.yoffset: %d\n", vpan);
 
 	jzfb->delay_flush = 8;
 	dma_cache_wback_inv((unsigned long)(lcd_frame1 + jzfb->pan_offset),
 			    fb->fix.line_length * var->yres);
+
+	spin_unlock_irq(&jzfb->lock);
 
 	/*
 	 * The primary use of this function is to implement double buffering.
@@ -758,6 +762,8 @@ static int jzfb_set_par(struct fb_info *info)
 	struct fb_fix_screeninfo *fix = &info->fix;
 	struct jzfb *jzfb = info->par;
 
+	spin_lock_irq(&jzfb->lock);
+
 	if (jzfb->is_enabled) {
 		ctrl_disable(jzfb);
 		jzfb_ipu_disable(jzfb);
@@ -778,9 +784,13 @@ static int jzfb_set_par(struct fb_info *info)
 		void *page_virt = lcd_frame1;
 		unsigned int size = fix->line_length * var->yres * 3;
 
+		spin_unlock_irq(&jzfb->lock);
+
 		for (; page_virt < lcd_frame1 + size; page_virt += PAGE_SIZE)
 			clear_page(page_virt);
 		dma_cache_wback_inv((unsigned long) lcd_frame1, size);
+
+		spin_lock_irq(&jzfb->lock);
 	}
 
 	if (jzfb->is_enabled) {
@@ -790,6 +800,8 @@ static int jzfb_set_par(struct fb_info *info)
 		clk_disable(jzfb->lpclk);
 		clk_disable(jzfb->ipuclk);
 	}
+
+	spin_lock_irq(&jzfb->lock);
 
 	return 0;
 }
@@ -838,6 +850,10 @@ static irqreturn_t jzfb_interrupt_handler(int irq, void *dev_id)
 {
 	struct jzfb *jzfb = dev_id;
 
+	spin_lock(&jzfb->lock);
+
+	writel(0, jzfb->ipu_base + IPU_STATUS);
+
 	if (jzfb->delay_flush == 0) {
 		struct fb_info *fb = jzfb->fb;
 		dma_cache_wback_inv((unsigned long)(lcd_frame1 +
@@ -849,9 +865,11 @@ static irqreturn_t jzfb_interrupt_handler(int irq, void *dev_id)
 
 	jzfb_update_frame_address(jzfb);
 	jzfb->vsync_count++;
+
+	spin_unlock(&jzfb->lock);
+
 	wake_up_interruptible_all(&jzfb->wait_vsync);
 
-	writel(0, jzfb->ipu_base + IPU_STATUS);
 	return IRQ_HANDLED;
 }
 
@@ -999,8 +1017,6 @@ static int jzfb_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto err_unmap;
 	}
-
-	mutex_init(&jzfb->lock);
 
 	platform_set_drvdata(pdev, jzfb);
 	jzfb->fb = fb;
