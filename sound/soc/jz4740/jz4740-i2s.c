@@ -381,13 +381,13 @@ static void jz4740_i2c_init_pcm_config(struct jz4740_i2s *i2s)
 
 	/* Playback */
 	dma_data = &i2s->playback_dma_data;
-	dma_data->maxburst = 4;
+	dma_data->maxburst = 16;
 	dma_data->slave_id = JZ4740_DMA_TYPE_AIC_TRANSMIT;
 	dma_data->addr = i2s->phys_base + JZ_REG_AIC_FIFO;
 
 	/* Capture */
 	dma_data = &i2s->capture_dma_data;
-	dma_data->maxburst = 4;
+	dma_data->maxburst = 16;
 	dma_data->slave_id = JZ4740_DMA_TYPE_AIC_RECEIVE;
 	dma_data->addr = i2s->phys_base + JZ_REG_AIC_FIFO;
 }
