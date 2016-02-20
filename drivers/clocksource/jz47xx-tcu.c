@@ -106,28 +106,28 @@ static inline void tcu_writel(struct jz47xx_tcu *tcu, u32 val,
 static void jz47xx_tcu_stop_channel(struct jz47xx_tcu_channel *channel)
 {
 	if (!channel->stopped)
-		clk_disable_unprepare(channel->counter_clk);
+		clk_disable(channel->counter_clk);
 	channel->stopped = true;
 }
 
 static void jz47xx_tcu_start_channel(struct jz47xx_tcu_channel *channel)
 {
 	if (channel->stopped)
-		clk_prepare_enable(channel->counter_clk);
+		clk_enable(channel->counter_clk);
 	channel->stopped = false;
 }
 
 void jz47xx_tcu_enable_channel(struct jz47xx_tcu_channel *channel)
 {
 	if (!channel->enabled)
-		clk_prepare_enable(channel->timer_clk);
+		clk_enable(channel->timer_clk);
 	channel->enabled = true;
 }
 
 void jz47xx_tcu_disable_channel(struct jz47xx_tcu_channel *channel)
 {
 	if (channel->enabled)
-		clk_disable_unprepare(channel->timer_clk);
+		clk_disable(channel->timer_clk);
 	channel->enabled = false;
 }
 
@@ -311,6 +311,7 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 		}
 
 		tcu->channels[i].timer_clk = clk;
+		clk_prepare(clk);
 
 		if (tcu->desc->channels[i].flags & JZ47XX_TCU_CHANNEL_OST)
 			snprintf(buf, sizeof(buf), "counter_ost");
@@ -323,6 +324,7 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 		}
 
 		tcu->channels[i].counter_clk = clk;
+		clk_prepare(clk);
 
 		tcu->channels[i].tcu = tcu;
 		tcu->channels[i].idx = i;
