@@ -791,7 +791,6 @@ static int jzfb_set_par(struct fb_info *info)
 		clk_disable(jzfb->ipuclk);
 	}
 
-	fix->visual = FB_VISUAL_TRUECOLOR;
 	return 0;
 }
 
