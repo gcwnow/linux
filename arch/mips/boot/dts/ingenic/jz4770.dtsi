@@ -104,7 +104,7 @@
 			reg = <0x10002000 0x140>;
 
 			interrupt-parent = <&intc>;
-			interrupts = <27 26 25>;
+			interrupts = <26 25>;
 
 			clocks = <&tcu JZ4740_CLK_TIMER0
 					&tcu JZ4740_CLK_TIMER1
@@ -114,7 +114,6 @@
 					&tcu JZ4740_CLK_TIMER5
 					&tcu JZ4740_CLK_TIMER6
 					&tcu JZ4740_CLK_TIMER7
-					&tcu JZ4770_CLK_OST
 					&tcu JZ4740_COUNTER0
 					&tcu JZ4740_COUNTER1
 					&tcu JZ4740_COUNTER2
@@ -122,13 +121,22 @@
 					&tcu JZ4740_COUNTER4
 					&tcu JZ4740_COUNTER5
 					&tcu JZ4740_COUNTER6
-					&tcu JZ4740_COUNTER7
-					&tcu JZ4770_COUNTER_OST>;
+					&tcu JZ4740_COUNTER7>;
 			clock-names = "timer0", "timer1", "timer2", "timer3",
-					"timer4", "timer5", "timer6", "timer7", "ost",
+					"timer4", "timer5", "timer6", "timer7",
 					"counter0", "counter1", "counter2", "counter3",
-					"counter4", "counter5", "counter6", "counter7",
-					"counter_ost";
+					"counter4", "counter5", "counter6", "counter7";
+		};
+
+		ost@0x10002000 {
+			compatible = "ingenic,jz4770-ost";
+			reg = <0x100020E0 0x1F>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <27>;
+
+			clocks = <&tcu JZ4770_CLK_OST &tcu JZ4770_COUNTER_OST>;
+			clock-names = "timer", "counter";
 		};
 
 		rtc: jz4740-rtc@10003000 {
