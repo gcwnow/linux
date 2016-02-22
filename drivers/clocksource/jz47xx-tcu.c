@@ -20,7 +20,7 @@
 
 #include "jz47xx-tcu.h"
 
-#define NUM_TCU_IRQS 3
+#define NUM_TCU_IRQS 2
 
 enum jz47xx_tcu_reg {
 	REG_TER		= 0x10,
@@ -39,14 +39,9 @@ enum jz47xx_tcu_reg {
 	REG_TDHR0	= 0x44,
 	REG_TCNT0	= 0x48,
 	REG_TCSR0	= 0x4c,
-	REG_OSTDR	= 0xe0,
-	REG_OSTCNTL	= 0xe4,
-	REG_OSTCNTH	= 0xe8,
-	REG_OSTCSR	= 0xec,
 	REG_TSTR	= 0xf0,
 	REG_TSTSR	= 0xf4,
 	REG_TSTCR	= 0xf8,
-	REG_OSTCNTHBUF	= 0xfc,
 };
 
 #define CHANNEL_STRIDE		0x10
@@ -65,8 +60,6 @@ enum jz47xx_tcu_reg {
 #define TCSR_RTC_EN		(1 << 1)
 #define TCSR_PCK_EN		(1 << 0)
 #define TCSR_SRC_MASK		(TCSR_EXT_EN | TCSR_RTC_EN | TCSR_PCK_EN)
-
-#define OSTCSR_CNT_MD		(1 << 15)
 
 struct jz47xx_tcu_channel {
 	struct jz47xx_tcu *tcu;
@@ -92,7 +85,7 @@ struct jz47xx_tcu {
 	struct jz47xx_tcu_irq irqs[NUM_TCU_IRQS];
 };
 
-static inline u32 notrace tcu_readl(struct jz47xx_tcu *tcu, enum jz47xx_tcu_reg reg)
+static inline u32 tcu_readl(struct jz47xx_tcu *tcu, enum jz47xx_tcu_reg reg)
 {
 	return readl(tcu->base + reg);
 }
@@ -237,10 +230,6 @@ static struct irqaction jz47xx_tcu_irqaction[NUM_TCU_IRQS] = {
 		.flags = IRQF_TIMER,
 		.name = "jz47xx-tcu-irq1",
 	},
-	{
-		.flags = IRQF_TIMER,
-		.name = "jz47xx-tcu-irq2",
-	},
 };
 
 static int setup_tcu_irq(struct jz47xx_tcu *tcu, unsigned i)
@@ -300,10 +289,7 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 		if (!tcu->desc->channels[i].present)
 			continue;
 
-		if (tcu->desc->channels[i].flags & JZ47XX_TCU_CHANNEL_OST)
-			snprintf(buf, sizeof(buf), "ost");
-		else
-			snprintf(buf, sizeof(buf), "timer%u", i);
+		snprintf(buf, sizeof(buf), "timer%u", i);
 		clk = clk_get(NULL, buf);
 		if (IS_ERR(clk)) {
 			err = PTR_ERR(clk);
@@ -313,10 +299,7 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 		tcu->channels[i].timer_clk = clk;
 		clk_prepare(clk);
 
-		if (tcu->desc->channels[i].flags & JZ47XX_TCU_CHANNEL_OST)
-			snprintf(buf, sizeof(buf), "counter_ost");
-		else
-			snprintf(buf, sizeof(buf), "counter%u", i);
+		snprintf(buf, sizeof(buf), "counter%u", i);
 		clk = clk_get(NULL, buf);
 		if (IS_ERR(clk)) {
 			err = PTR_ERR(clk);
@@ -397,12 +380,7 @@ struct jz47xx_tcu_channel *jz47xx_tcu_req_channel(struct jz47xx_tcu *tcu,
 	jz47xx_tcu_mask_channel_full(channel);
 	jz47xx_tcu_start_channel(channel);
 	jz47xx_tcu_disable_channel(channel);
-
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST)
-		jz4740_tcu_write_tcsr(channel->timer_clk,
-				0xffff, OSTCSR_CNT_MD);
-	else
-		jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
+	jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
 
 	return channel;
 }
@@ -412,17 +390,12 @@ void jz47xx_tcu_release_channel(struct jz47xx_tcu_channel *channel)
 	jz47xx_tcu_stop_channel(channel);
 }
 
-u64 notrace jz47xx_tcu_read_channel_count(struct jz47xx_tcu_channel *channel)
+u64 jz47xx_tcu_read_channel_count(struct jz47xx_tcu_channel *channel)
 {
 	struct jz47xx_tcu *tcu = channel->tcu;
 	u64 count;
 
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST) {
-		count = tcu_readl(tcu, REG_OSTCNTL);
-		count |= (u64)tcu_readl(tcu, REG_OSTCNTHBUF) << 32;
-	} else {
-		count = tcu_readl(tcu, REG_TCNTc(channel->idx));
-	}
+	count = tcu_readl(tcu, REG_TCNTc(channel->idx));
 
 	return count;
 }
@@ -431,12 +404,6 @@ int jz47xx_tcu_set_channel_count(struct jz47xx_tcu_channel *channel,
 				 u64 count)
 {
 	struct jz47xx_tcu *tcu = channel->tcu;
-
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST) {
-		tcu_writel(tcu, count, REG_OSTCNTL);
-		tcu_writel(tcu, count >> 32, REG_OSTCNTH);
-		return 0;
-	}
 
 	if (count > 0xffff)
 		return -EINVAL;
@@ -450,11 +417,6 @@ int jz47xx_tcu_set_channel_full(struct jz47xx_tcu_channel *channel,
 {
 	struct jz47xx_tcu *tcu = channel->tcu;
 
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST) {
-		tcu_writel(tcu, data, REG_OSTDR);
-		return 0;
-	}
-
 	if (data > 0xffff)
 		return -EINVAL;
 
@@ -466,9 +428,6 @@ int jz47xx_tcu_set_channel_half(struct jz47xx_tcu_channel *channel,
 				unsigned data)
 {
 	struct jz47xx_tcu *tcu = channel->tcu;
-
-	if (tcu->desc->channels[channel->idx].flags & JZ47XX_TCU_CHANNEL_OST)
-		return -EINVAL;
 
 	if (data > 0xffff)
 		return -EINVAL;
