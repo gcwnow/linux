@@ -19,7 +19,6 @@ struct jz47xx_tcu_channel_desc {
 	u8 present: 1;
 	unsigned flags;
 #define JZ47XX_TCU_CHANNEL_FIFO	(1 << 0)
-#define JZ47XX_TCU_CHANNEL_OST	(1 << 1)
 };
 
 #define JZ47XX_TCU_CHANNEL(_irq, _flags) {	\
