@@ -70,13 +70,9 @@ static int jz4770_uhc_phy_enable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
-	unsigned long flags;
 
-	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_opcr) & ~OPCR_SPENDH, reg_opcr);
 	writel(readl(reg_usbpcr1) | USBPCR1_UHC_POWER, reg_usbpcr1);
-	spin_unlock_irqrestore(&cgu->lock, flags);
-
 	return 0;
 }
 
@@ -84,27 +80,18 @@ static void jz4770_uhc_phy_disable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
-	unsigned long flags;
 
-	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_usbpcr1) & ~USBPCR1_UHC_POWER, reg_usbpcr1);
 	writel(readl(reg_opcr) | OPCR_SPENDH, reg_opcr);
-	spin_unlock_irqrestore(&cgu->lock, flags);
 }
 
 static int jz4770_uhc_phy_is_enabled(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr1	= cgu->base + CGU_REG_USBPCR1;
-	unsigned long flags;
-	bool enabled;
 
-	spin_lock_irqsave(&cgu->lock, flags);
-	enabled = !(readl(reg_opcr) & OPCR_SPENDH) &&
+	return !(readl(reg_opcr) & OPCR_SPENDH) &&
 		(readl(reg_usbpcr1) & USBPCR1_UHC_POWER);
-	spin_unlock_irqrestore(&cgu->lock, flags);
-
-	return enabled;
 }
 
 struct clk_ops jz4770_uhc_phy_ops = {
@@ -116,26 +103,19 @@ struct clk_ops jz4770_uhc_phy_ops = {
 static int jz4770_otg_phy_enable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
-	unsigned long flags;
 
-	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_opcr) | OPCR_SPENDN, reg_opcr);
-	spin_unlock_irqrestore(&cgu->lock, flags);
 
-	/* Wait until the clock is stable. */
-	msleep(1);
-
+	/* Wait for the clock to be stable */
+	udelay(10);
 	return 0;
 }
 
 static void jz4770_otg_phy_disable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr		= cgu->base + CGU_REG_OPCR;
-	unsigned long flags;
 
-	spin_lock_irqsave(&cgu->lock, flags);
 	writel(readl(reg_opcr) & ~OPCR_SPENDN, reg_opcr);
-	spin_unlock_irqrestore(&cgu->lock, flags);
 }
 
 static int jz4770_otg_phy_is_enabled(struct clk_hw *hw)
