@@ -83,6 +83,7 @@ struct jz_musb_glue {
 	struct clk *clk;
 	struct timer_list gpio_id_debounce_timer;
 	unsigned long gpio_id_debounce_jiffies;
+	bool enabled;
 };
 
 static inline void jz_musb_phy_reset(struct jz_musb_glue *glue)
@@ -100,7 +101,7 @@ static inline void jz_musb_set_device_only_mode(struct jz_musb_glue *glue)
 {
 	u32 reg = readl(glue->base + REG_USBPCR_OFFSET);
 
-	printk(KERN_INFO "jz4760: Device only mode.\n");
+	dev_info(glue->dev, "Device only mode.\n");
 
 	/* Device Mode. */
 	reg = (reg | USBPCR_VBUSVLDEXT) & ~USBPCR_USB_MODE;
@@ -111,7 +112,7 @@ static inline void jz_musb_set_normal_mode(struct jz_musb_glue *glue)
 {
 	u32 reg = readl(glue->base + REG_USBPCR_OFFSET);
 
-	printk(KERN_INFO "jz4760: Normal mode.\n");
+	dev_info(glue->dev, "Normal mode.\n");
 
 	reg = (reg & ~(
 			USBPCR_VBUSVLDEXT |
@@ -195,7 +196,8 @@ static void do_otg_id_pin_state(struct musb *musb)
 
 	unsigned int default_a = !gpio_get_value(board_data->gpio_id_pin);
 
-	dev_info(dev, "USB OTG default mode: %s\n", default_a ? "A" : "B");
+	dev_info(dev->parent, "USB OTG default mode: %s\n",
+			default_a ? "A" : "B");
 
 	musb->xceiv->otg->default_a = default_a;
 
@@ -301,14 +303,28 @@ static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
 
 static void jz_musb_platform_enable(struct musb *musb)
 {
-	dev_info(musb->controller, "Enable USB PHY.\n");
-	usb_phy_init(musb->xceiv);
+	struct device *dev = musb->controller->parent;
+	struct jz_musb_glue *glue = dev_get_drvdata(dev);
+
+	if (!glue->enabled) {
+		dev_info(dev, "Enable USB PHY.\n");
+		usb_phy_init(musb->xceiv);
+
+		glue->enabled = true;
+	}
 }
 
 static void jz_musb_platform_disable(struct musb *musb)
 {
-	dev_info(musb->controller, "Disable USB PHY.\n");
-	usb_phy_shutdown(musb->xceiv);
+	struct device *dev = musb->controller->parent;
+	struct jz_musb_glue *glue = dev_get_drvdata(dev);
+
+	if (glue->enabled) {
+		dev_info(dev, "Disable USB PHY.\n");
+		usb_phy_shutdown(musb->xceiv);
+
+		glue->enabled = false;
+	}
 }
 
 static int jz_musb_platform_init(struct musb *musb)
