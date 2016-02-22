@@ -250,6 +250,8 @@
 
 		otg_phy: otg_phy {
 			compatible = "usb-nop-xceiv";
+			clocks = <&cgu JZ4770_CLK_OTG_PHY>;
+			clock-names = "main_clk";
 		};
 	};
 };
