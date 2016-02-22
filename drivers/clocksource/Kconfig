@@ -420,4 +420,26 @@ config JZ4780_TCU
 	help
 	  Support for the timer/counter unit of the Ingenic jz4780 SoC.
 
+config JZ4770_OST
+	bool "Ingenic JZ47xx Operating System Timer"
+	default y if MACH_JZ4770 || MACH_JZ4780
+	depends on MACH_INGENIC
+	select CLKSRC_OF
+	help
+	  Support for the OS Timer of the Ingenic JZ4770 or similar SoC.
+
+config JZ4770_OST_CLOCKSOURCE
+	bool "Register as clocksource"
+	default y
+	depends on JZ4770_OST
+	help
+	  Provides a 64-bit clocksource using the OS Timer.
+
+config JZ4770_OST_SCHED_CLOCK
+	bool "Register as sched_clock"
+	default y
+	depends on JZ4770_OST
+	help
+	  Provides a 32-bit sched_clock using the OS Timer.
+
 endmenu
