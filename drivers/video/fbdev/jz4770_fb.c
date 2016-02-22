@@ -962,6 +962,7 @@ static int jzfb_probe(struct platform_device *pdev)
 	jzfb->pdev = pdev;
 	jzfb->bpp = 32;
 	init_waitqueue_head(&jzfb->wait_vsync);
+	spin_lock_init(&jzfb->lock);
 
 	strcpy(fb->fix.id, "jz-lcd");
 	fb->fix.type	= FB_TYPE_PACKED_PIXELS;
