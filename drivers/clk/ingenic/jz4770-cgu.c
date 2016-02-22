@@ -107,7 +107,7 @@ static int jz4770_otg_phy_enable(struct clk_hw *hw)
 	writel(readl(reg_opcr) | OPCR_SPENDN, reg_opcr);
 
 	/* Wait for the clock to be stable */
-	udelay(10);
+	udelay(50);
 	return 0;
 }
 
