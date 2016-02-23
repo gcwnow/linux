@@ -86,11 +86,8 @@ static int jz4740_tcu_enable(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	unsigned long flags;
 
-	spin_lock_irqsave(&tcu->lock, flags);
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_CLEAR);
-	spin_unlock_irqrestore(&tcu->lock, flags);
 	return 0;
 }
 
@@ -99,11 +96,8 @@ static void jz4740_tcu_disable(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	unsigned long flags;
 
-	spin_lock_irqsave(&tcu->lock, flags);
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_SET);
-	spin_unlock_irqrestore(&tcu->lock, flags);
 }
 
 static int jz4740_tcu_is_enabled(struct clk_hw *hw)
@@ -111,14 +105,8 @@ static int jz4740_tcu_is_enabled(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	unsigned long flags;
-	int disabled;
 
-	spin_lock_irqsave(&tcu->lock, flags);
-	disabled = readl(tcu->base + TCU_REG_TIMER_STOP) & BIT(info->gate_bit);
-	spin_unlock_irqrestore(&tcu->lock, flags);
-
-	return !disabled;
+	return !(readl(tcu->base + TCU_REG_TIMER_STOP) & BIT(info->gate_bit));
 }
 
 static void __iomem * jz4740_tcu_get_tcsr(struct jz4740_tcu_clk *tcu_clk)
@@ -148,22 +136,19 @@ static int jz4740_tcu_set_parent(struct clk_hw *hw, u8 idx)
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
-	unsigned long flags;
-	int disabled;
 
-	spin_lock_irqsave(&tcu->lock, flags);
-	disabled = readl(tcu->base + TCU_REG_TIMER_STOP) & BIT(info->gate_bit);
+	/*
+	 * Our clock provider has the CLK_SET_PARENT_GATE flag set, so we know
+	 * that the clk is in unprepared state. To be able to access TCSR
+	 * we must ungate the clock supply and we gate it again when done.
+	 */
 
-	if (disabled)
-		writel(BIT(info->gate_bit),
-				tcu->base + TCU_REG_TIMER_STOP_CLEAR);
+	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_CLEAR);
 
 	writew((readw(reg) & ~TCSR_PARENT_CLOCK_MASK) | BIT(idx), reg);
 
-	if (disabled)
-		writel(BIT(info->gate_bit),
-				tcu->base + TCU_REG_TIMER_STOP_SET);
-	spin_unlock_irqrestore(&tcu->lock, flags);
+	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_SET);
+
 	return 0;
 }
 
@@ -197,14 +182,22 @@ static int jz4740_tcu_set_rate(struct clk_hw *hw, unsigned long req_rate,
 		unsigned long parent_rate)
 {
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
+	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
 	u8 prescale = (ffs(parent_rate / req_rate) / 2) << TCSR_PRESCALE_LSB;
-	unsigned long flags;
 
-	spin_lock_irqsave(&tcu->lock, flags);
+	/*
+	 * Our clock provider has the CLK_SET_RATE_GATE flag set, so we know
+	 * that the clk is in unprepared state. To be able to access TCSR
+	 * we must ungate the clock supply and we gate it again when done.
+	 */
+
+	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_CLEAR);
+
 	writew((readw(reg) & ~TCSR_PRESCALE_MASK) | prescale, reg);
-	spin_unlock_irqrestore(&tcu->lock, flags);
+
+	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_SET);
 
 	return 0;
 }
@@ -214,11 +207,8 @@ static int jz4740_tcu_counter_enable(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	unsigned long flags;
 
-	spin_lock_irqsave(&tcu->lock, flags);
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_COUNTER_EN_SET);
-	spin_unlock_irqrestore(&tcu->lock, flags);
 	return 0;
 }
 
@@ -227,11 +217,8 @@ static void jz4740_tcu_counter_disable(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	unsigned long flags;
 
-	spin_lock_irqsave(&tcu->lock, flags);
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_COUNTER_EN_CLEAR);
-	spin_unlock_irqrestore(&tcu->lock, flags);
 }
 
 static int jz4740_tcu_counter_is_enabled(struct clk_hw *hw)
@@ -239,14 +226,8 @@ static int jz4740_tcu_counter_is_enabled(struct clk_hw *hw)
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	unsigned long flags;
-	int enabled;
 
-	spin_lock_irqsave(&tcu->lock, flags);
-	enabled = readl(tcu->base + TCU_REG_COUNTER_EN) & BIT(info->gate_bit);
-	spin_unlock_irqrestore(&tcu->lock, flags);
-
-	return enabled;
+	return readl(tcu->base + TCU_REG_COUNTER_EN) & BIT(info->gate_bit);
 }
 
 static const struct clk_ops jz4740_tcu_clk_ops = {
@@ -282,6 +263,7 @@ static const struct jz4740_tcu_clk_info jz4740_tcu_clk_info[] = {
 			.parent_names = jz4740_tcu_timer_parents,	\
 			.num_parents = ARRAY_SIZE(jz4740_tcu_timer_parents),\
 			.ops = &jz4740_tcu_clk_ops,			\
+			.flags = CLK_SET_RATE_GATE | CLK_SET_PARENT_GATE, \
 		},							\
 		.gate_bit = _gate_bit,					\
 		.is_ost = _is_ost,					\
