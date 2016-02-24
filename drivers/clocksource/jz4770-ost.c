@@ -54,20 +54,30 @@ static cycle_t jz4770_ost_clocksource_read(struct clocksource *cs)
 	s64 diff;
 
 	/*
-	 * The buffering of the higher 32 bits of the timer prevents wrong
-	 * results from the lower 32 bits overflowing due to the timer ticking
+	 * The buffering of the upper 32 bits of the timer prevents wrong
+	 * results from the bottom 32 bits overflowing due to the timer ticking
 	 * along. However, it does not prevent wrong results from simultaneous
 	 * reads of the timer, which could reset the buffer mid-read.
+	 * Since this kind of wrong read can happen only when the bottom bits
+	 * overflow, there will be minutes between wrong reads, so if we read
+	 * twice in succession, at least one of the reads will be correct.
 	 */
-	do {
-		count = readl(base + REG_OSTCNTL);
-		count |= (u64)readl(base + REG_OSTCNTHBUF) << 32;
 
-		recount = readl(base + REG_OSTCNTL);
-		recount |= (u64)readl(base + REG_OSTCNTHBUF) << 32;
+	count = readl(base + REG_OSTCNTL);
+	count |= (u64)readl(base + REG_OSTCNTHBUF) << 32;
 
-		diff = (s64)(recount - count);
-	} while (unlikely(diff < 0));
+	recount = readl(base + REG_OSTCNTL);
+	recount |= (u64)readl(base + REG_OSTCNTHBUF) << 32;
+
+	/*
+	 * A wrong read will produce a result that is 1<<32 too high: the bottom
+	 * part from before overflow and the upper part from after overflow.
+	 * Therefore, the lower value of the two reads is the correct value.
+	 */
+
+	diff = (s64)(recount - count);
+	if (unlikely(diff < 0))
+		count = recount;
 
 	return count;
 }
