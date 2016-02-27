@@ -681,12 +681,14 @@ OnError:
     return -ENOTTY;
 }
 
-#if !USE_PLATFORM_DRIVER
-static int __init drv_init(void)
-#else
-static int drv_init(void)
-#endif
+#if USE_PLATFORM_DRIVER
+static int drv_init(struct device *dev)
 {
+#else
+static int __init drv_init(void)
+{
+    struct device *dev = NULL;
+#endif
     int ret;
     int result = -EINVAL;
     gceSTATUS status;
@@ -696,7 +698,7 @@ static int drv_init(void)
 
     gcmkHEADER();
 
-    clk = clk_get(NULL, "gpu");
+    clk = clk_get(dev, "gpu");
     if (IS_ERR(clk)) {
         pr_err(DEVICE_NAME ": cannot get \"gpu\" clock: %ld\n", PTR_ERR(clk));
         gcmkONERROR(gcvSTATUS_NOT_FOUND);
@@ -740,6 +742,7 @@ static int drv_init(void)
         bankSize, fastClear, compression, baseAddress, physSize, signal,
         &device
         ));
+    device->dev = dev;
     device->clk = clk;
 
     /* Start the GAL device. */
@@ -916,13 +919,12 @@ static int gpu_probe(struct platform_device *pdev)
 
     dev_info(&pdev->dev, "driver v4.6.6, initializing\n");
 
-    ret = drv_init();
+    ret = drv_init(&pdev->dev);
     if (ret)
     {
         goto gpu_probe_fail;
     }
 
-    galDevice->dev = &pdev->dev;
     platform_set_drvdata(pdev, galDevice);
 
     dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
