@@ -42,6 +42,12 @@
 MODULE_DESCRIPTION("Vivante Graphics Driver");
 MODULE_LICENSE("GPL");
 
+#ifdef CONFIG_DOVE_GPU
+#   define DEVICE_NAME "dove_gpu"
+#else
+#   define DEVICE_NAME "galcore"
+#endif
+
 static struct class* gpuClass;
 
 static gckGALDEVICE galDevice;
@@ -50,7 +56,6 @@ static int major = 199;
 module_param(major, int, 0644);
 
 #ifdef CONFIG_MACH_JZ4770
-#include <asm/mach-jz4770/jz4770cpm.h>
 
 #ifndef IRQ_GPU
 #define IRQ_GPU 6
@@ -675,15 +680,6 @@ OnError:
     return -ENOTTY;
 }
 
-#ifdef CONFIG_MACH_INGENIC
-static void enable_jzsoc_gpu_clock(void)
-{
-	struct clk *clk = clk_get(NULL, "gpu");
-	clk_set_rate(clk, 800000000UL);
-	clk_prepare_enable(clk);
-}
-#endif
-
 #if !USE_PLATFORM_DRIVER
 static int __init drv_init(void)
 #else
@@ -695,14 +691,19 @@ static int drv_init(void)
     gceSTATUS status;
     gckGALDEVICE device = NULL;
     struct class* device_class = NULL;
+    struct clk *clk;
 
     gcmkHEADER();
 
-#ifdef CONFIG_MACH_INGENIC
-    enable_jzsoc_gpu_clock();
-#else
-    clk_enable(clk);
+    clk = clk_get(NULL, "gpu");
+    if (IS_ERR(clk)) {
+        pr_err(DEVICE_NAME ": cannot get \"gpu\" clock: %ld\n", PTR_ERR(clk));
+        gcmkONERROR(gcvSTATUS_NOT_FOUND);
+    }
+#if !USE_PLATFORM_DRIVER
+    clk_set_rate(clk, 800000000UL);
 #endif
+    clk_prepare_enable(clk);
 
     if (showArgs)
     {
@@ -738,6 +739,7 @@ static int drv_init(void)
         bankSize, fastClear, compression, baseAddress, physSize, signal,
         &device
         ));
+    device->clk = clk;
 
     /* Start the GAL device. */
     gcmkONERROR(gckGALDEVICE_Start(device));
@@ -812,6 +814,12 @@ static int drv_init(void)
     return 0;
 
 OnError:
+    if (!IS_ERR(clk))
+    {
+        clk_disable_unprepare(clk);
+        clk_put(clk);
+    }
+
     /* Roll back. */
     if (device_class != NULL)
     {
@@ -863,17 +871,10 @@ static void drv_exit(void)
     module_exit(drv_exit);
 #else
 
-#ifdef CONFIG_DOVE_GPU
-#   define DEVICE_NAME "dove_gpu"
-#else
-#   define DEVICE_NAME "galcore"
-#endif
-
-static int  gpu_probe(struct platform_device *pdev)
+static int gpu_probe(struct platform_device *pdev)
 {
     int ret = -ENODEV;
     struct resource* res;
-    struct clk *clk;
 
     gcmkHEADER();
 
@@ -911,33 +912,22 @@ static int  gpu_probe(struct platform_device *pdev)
 
     dev_info(&pdev->dev, "driver v4.6.6, initializing\n");
 
-    clk = clk_get(&pdev->dev, NULL);
-    if (IS_ERR(clk)) {
-        dev_err(&pdev->dev, "cannot get clock\n");
-        ret = PTR_ERR(clk);
-        goto gpu_probe_fail;
-    }
-
     ret = drv_init();
     galDevice->dev = &pdev->dev;
 
     if (!ret)
     {
         platform_set_drvdata(pdev, galDevice);
-        galDevice->clk = clk;
         galDevice->clk_enabled = 0;
 
         dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
-                 clk_get_rate(clk) / 1000000);
+                 clk_get_rate(galDevice->clk) / 1000000);
 
-        clk_disable(clk);
+        clk_disable(galDevice->clk);
 
         gcmkFOOTER_NO();
         return ret;
     }
-
-    clk_disable_unprepare(clk);
-    clk_put(clk);
 
 gpu_probe_fail:
     gcmkFOOTER_ARG(KERN_INFO "Failed to register gpu driver: %d\n", ret);
@@ -958,10 +948,9 @@ static int gpu_suspend(struct platform_device *dev, pm_message_t state)
     gckGALDEVICE device;
     int i;
 
-#ifdef CONFIG_MACH_INGENIC
-    cpm_stop_clock(CGM_GPU);
-#endif
     device = platform_get_drvdata(dev);
+
+    clk_disable(device->clk);
 
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
@@ -992,10 +981,9 @@ static int gpu_resume(struct platform_device *dev)
     int i;
     gceCHIPPOWERSTATE   statesStored;
 
-#ifdef CONFIG_MACH_INGENIC
-    cpm_start_clock(CGM_GPU);
-#endif
     device = platform_get_drvdata(dev);
+
+    clk_enable(device->clk);
 
     for (i = 0; i < gcdCORE_COUNT; i++)
     {
