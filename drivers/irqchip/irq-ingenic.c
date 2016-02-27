@@ -30,6 +30,7 @@
 
 struct ingenic_intc_data {
 	void __iomem *base;
+	struct irq_domain *domain;
 	unsigned num_chips;
 };
 
@@ -53,7 +54,8 @@ static irqreturn_t intc_cascade(int irq, void *data)
 		if (!irq_reg)
 			continue;
 
-		generic_handle_irq(__fls(irq_reg) + (i * 32) + IRQ_BASE);
+		generic_handle_irq(irq_find_mapping(intc->domain,
+					__fls(irq_reg) + (i * 32)));
 	}
 
 	return IRQ_HANDLED;
@@ -90,7 +92,6 @@ static int __init ingenic_intc_of_init(struct device_node *node,
 	struct ingenic_intc_data *intc;
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
-	struct irq_domain *domain;
 	int parent_irq, err = 0;
 	unsigned i;
 
@@ -142,9 +143,9 @@ static int __init ingenic_intc_of_init(struct device_node *node,
 				       IRQ_NOPROBE | IRQ_LEVEL);
 	}
 
-	domain = irq_domain_add_legacy(node, num_chips * 32, IRQ_BASE, 0,
+	intc->domain = irq_domain_add_legacy(node, num_chips * 32, IRQ_BASE, 0,
 				       &irq_domain_simple_ops, NULL);
-	if (!domain)
+	if (!intc->domain)
 		pr_warn("unable to register IRQ domain\n");
 
 	setup_irq(parent_irq, &intc_cascade_action);
