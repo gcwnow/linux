@@ -49,8 +49,6 @@ static const struct of_device_id of_match[];
 #define UART_MCR_FCM	BIT(6)
 
 #ifdef CONFIG_SERIAL_EARLYCON
-static struct earlycon_device *early_device;
-
 static uint8_t __init early_in(struct uart_port *port, int offset)
 {
 	return readl(port->membase + (offset << 2));
@@ -75,6 +73,8 @@ static void __init ingenic_early_console_putc(struct uart_port *port, int c)
 static void __init ingenic_early_console_write(struct console *console,
 					      const char *s, unsigned int count)
 {
+	struct earlycon_device *early_device = console->data;
+
 	uart_console_write(&early_device->port, s, count,
 			   ingenic_early_console_putc);
 }
@@ -124,7 +124,7 @@ static int __init ingenic_early_console_setup(struct earlycon_device *dev,
 	early_out(port, UART_DLM, (divisor >> 8) & 0xff);
 	early_out(port, UART_LCR, UART_LCR_WLEN8);
 
-	early_device = dev;
+	dev->con->data = dev;
 	dev->con->write = ingenic_early_console_write;
 
 	return 0;
