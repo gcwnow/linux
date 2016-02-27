@@ -45,47 +45,6 @@
 #include <asm/mach-jz4740/gpio.h>
 
 
-/* Charger */
-
-#define GPIO_DC_CHARGER		JZ_GPIO_PORTF(5)
-#define GPIO_USB_CHARGER	JZ_GPIO_PORTB(5)
-
-static char *gcw0_batteries[] = {
-	"battery",
-};
-
-static struct gpio_charger_platform_data gcw0_dc_charger_pdata = {
-	.name = "dc",
-	.type = POWER_SUPPLY_TYPE_MAINS,
-	.gpio = GPIO_DC_CHARGER,
-	.supplied_to = gcw0_batteries,
-	.num_supplicants = ARRAY_SIZE(gcw0_batteries),
-};
-
-static struct platform_device gcw0_dc_charger_device = {
-	.name = "gpio-charger",
-	.id = 0,
-	.dev = {
-		.platform_data = &gcw0_dc_charger_pdata,
-	},
-};
-
-static struct gpio_charger_platform_data gcw0_usb_charger_pdata = {
-	.name = "usb",
-	.type = POWER_SUPPLY_TYPE_USB,
-	.gpio = GPIO_USB_CHARGER,
-	.supplied_to = gcw0_batteries,
-	.num_supplicants = ARRAY_SIZE(gcw0_batteries),
-};
-
-static struct platform_device gcw0_usb_charger_device = {
-	.name = "gpio-charger",
-	.id = 1,
-	.dev = {
-		.platform_data = &gcw0_usb_charger_pdata,
-	},
-};
-
 /* LCD panel */
 
 static struct platform_device gcw0_lcd_device;
@@ -319,8 +278,6 @@ static struct platform_device gcw0_joystick_device = {
 
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_lcd_device,
-	&gcw0_dc_charger_device,
-	&gcw0_usb_charger_device,
 	&gcw0_joystick_device,
 };
 
@@ -330,27 +287,9 @@ static int __init gcw0_init_platform_devices(void)
 				    ARRAY_SIZE(jz_platform_devices));
 }
 
-static unsigned long gpio_charger_pin_cfg[] = {
-	PIN_CONFIG_BIAS_DISABLE,
-};
-
-static struct pinctrl_map pin_map[] __initdata = {
-	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.0", "10010000.jz4770-pinctrl",
-			  "PF5", gpio_charger_pin_cfg),
-	PIN_MAP_CONFIGS_PIN_DEFAULT("gpio-charger.1", "10010000.jz4770-pinctrl",
-			  "PB5", gpio_charger_pin_cfg),
-};
-
-static void __init board_init_pins(void)
-{
-	pinctrl_register_mappings(pin_map, ARRAY_SIZE(pin_map));
-}
-
 static int __init gcw0_board_setup(void)
 {
 	printk(KERN_INFO "GCW Zero JZ4770 setup\n");
-
-	board_init_pins();
 
 	if (gcw0_init_platform_devices())
 		panic("Failed to initialize platform devices");
