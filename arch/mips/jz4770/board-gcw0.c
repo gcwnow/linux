@@ -42,7 +42,6 @@
 #include <video/panel-nt39016.h>
 #include <video/platform_lcd.h>
 
-#include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/gpio.h>
 
 
