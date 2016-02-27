@@ -73,6 +73,22 @@
 			};
 		};
 
+		usb_charger: usb {
+			compatible = "gpio-charger";
+			charger-type = "usb-sdp";
+			gpios = <&gpb 5 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pins_usb_charger>;
+		};
+
+		dc_charger: dc {
+			compatible = "gpio-charger";
+			charger-type = "mains";
+			gpios = <&gpf 5 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pins_dc_charger>;
+		};
+
 		audio {
 			compatible = "ingenic,gcw0-audio";
 			ingenic,i2s-controller = <&i2s>;
@@ -256,6 +272,20 @@
 	};
 };
 
+&pinctrl {
+	pinfunc_usb_charger: usb {
+		pins_usb_charger: usb-charger {
+			ingenic,pins = <&gpb 5 0 &pincfg_nobias>;
+		};
+	};
+
+	pinfunc_dc_charger: dc {
+		pins_dc_charger: dc-charger {
+			ingenic,pins = <&gpf 5 0 &pincfg_nobias>;
+		};
+	};
+};
+
 &i2c0 {
 	status = "okay";
 	i2c-gpio,delay-us = <2>;		/* 250 kHz */
@@ -381,7 +411,7 @@
 	max-uV = <5700000>;
 	min-uV = <4600000>;
 	charger = <&act8600>;
-	power-supplies = <&act8600>;
+	power-supplies = <&act8600>, <&usb_charger>, <&dc_charger>;
 };
 
 &uhc {
