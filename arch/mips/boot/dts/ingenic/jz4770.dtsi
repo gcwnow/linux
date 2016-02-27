@@ -57,16 +57,16 @@
 
 		tcu: jz4770-tcu@10002010 {
 			compatible = "ingenic,jz4770-tcu-clocks";
-			reg = <0x10002010 0x128		/* TCU regs */
-					0x10002000 0xF		/* WDT regs */
-					0x100020e0 0xF>;	/* OST regs */
+			reg = <0x10002010 0x12C			/* TCU regs */
+					0x10002000 0x10		/* WDT regs */
+					0x100020E0 0x10>;	/* OST regs */
 
 			#clock-cells = <1>;
 		};
 
 		wdt: jz4740-wdt@10002000 {
 			compatible = "ingenic,jz4770-watchdog";
-			reg = <0x10002000 0x0B>;
+			reg = <0x10002000 0x0C>;
 
 			clocks = <&tcu JZ4740_CLK_WDT>;
 			clock-names = "wdt";
@@ -74,7 +74,7 @@
 
 		pwm: jz4740-pwm@10002010 {
 			compatible = "ingenic,jz4770-pwm";
-			reg = <0x10002010 0x4B>;
+			reg = <0x10002010 0x4C>;
 			#pwm-cells = <3>;
 
 			clocks = <&tcu JZ4740_CLK_TIMER0
@@ -130,7 +130,7 @@
 
 		ost@0x10002000 {
 			compatible = "ingenic,jz4770-ost";
-			reg = <0x100020E0 0x1F>;
+			reg = <0x100020E0 0x20>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <27>;
@@ -141,7 +141,7 @@
 
 		rtc: jz4740-rtc@10003000 {
 			compatible = "ingenic,jz4770-rtc";
-			reg = <0x10003000 0x3F>;
+			reg = <0x10003000 0x40>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <32>;
@@ -149,7 +149,7 @@
 
 		pinctrl: jz4770-pinctrl@10010000 {
 			compatible = "ingenic,jz4770-pinctrl";
-			reg = <0x10010000 0x5AB>;
+			reg = <0x10010000 0x5AC>;
 
 			gpa: gpa {
 				gpio-controller;
@@ -449,7 +449,7 @@
 
 		codec: codec@100200A0 {
 			compatible = "ingenic,jz4770-codec";
-			reg = <0x100200A0 0xF>;
+			reg = <0x100200A0 0x10>;
 
 			clocks = <&cgu JZ4770_CLK_AIC>;
 			clock-names = "aic";
@@ -457,7 +457,7 @@
 
 		mmc0: jz4770-mmc@10021000 {
 			compatible = "ingenic,jz4770-mmc";
-			reg = <0x10021000 0xFFF>;
+			reg = <0x10021000 0x1000>;
 
 			clocks = <&cgu JZ4770_CLK_MMC0>;
 			clock-names = "mmc";
@@ -477,7 +477,7 @@
 
 		mmc1: jz4770-mmc@10022000 {
 			compatible = "ingenic,jz4770-mmc";
-			reg = <0x10022000 0xFFF>;
+			reg = <0x10022000 0x1000>;
 
 			clocks = <&cgu JZ4770_CLK_MMC1>;
 			clock-names = "mmc";
@@ -497,7 +497,7 @@
 
 		mmc2: jz4770-mmc@10023000 {
 			compatible = "ingenic,jz4770-mmc";
-			reg = <0x10023000 0xFFF>;
+			reg = <0x10023000 0x1000>;
 
 			clocks = <&cgu JZ4770_CLK_MMC2>;
 			clock-names = "mmc";
@@ -517,7 +517,7 @@
 
 		adc: jz4770-adc@10070000 {
 			compatible = "ingenic,jz4770-adc";
-			reg = <0x10070000 0x2F>;
+			reg = <0x10070000 0x30>;
 			#address-cells = <0>;
 			#size-cells = <0>;
 
@@ -536,8 +536,8 @@
 
 		lcdc: jz4770-fb@13050000 {
 			compatible = "ingenic,jz4770-fb";
-			reg = <0x13050000 0x2FF /* LCDC, TVE, LCDC PART2 */
-			       0x13080000 0x09B /* IPU */
+			reg = <0x13050000 0x300 /* LCDC, TVE, LCDC PART2 */
+			       0x13080000 0x09C /* IPU */
 			      >;
 
 			clocks = <&cgu JZ4770_CLK_LPCLK_MUX>, <&cgu JZ4770_CLK_IPU>;
@@ -562,7 +562,7 @@
 
 		dmac0: jz4770-dma@13420000 {
 			compatible = "ingenic,jz4770-dma";
-			reg = <0x13420000 0xBF
+			reg = <0x13420000 0xC0
 				   0x13420300 0x20>;
 
 			dma-channels = <6>;
@@ -579,7 +579,7 @@
 
 		dmac1: jz4770-dma@13420100 {
 			compatible = "ingenic,jz4770-dma";
-			reg = <0x13420100 0xBF
+			reg = <0x13420100 0xC0
 				   0x13420400 0x20>;
 
 			dma-channels = <6>;
@@ -592,7 +592,7 @@
 
 		uhc: uhc@13430000 {
 			compatible = "ingenic,jz4770-ohci", "generic-ohci";
-			reg = <0x13430000 0xFFF>;
+			reg = <0x13430000 0x1000>;
 
 			clocks = <&cgu JZ4770_CLK_UHC>, <&cgu JZ4770_CLK_UHC_PHY>;
 			assigned-clocks = <&cgu JZ4770_CLK_UHC>;
@@ -606,8 +606,8 @@
 
 		usb_otg: usb_otg@0x13440000 {
 			compatible = "ingenic,jz4770-musb";
-			reg = <0x13440000 0xFFFF
-			       0x1000003c 0xF>;
+			reg = <0x13440000 0x10000
+			       0x1000003C 0x10>;
 
 			clocks = <&cgu JZ4770_CLK_OTG>;
 			clock-names = "usb";
