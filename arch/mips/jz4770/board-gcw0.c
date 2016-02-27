@@ -45,8 +45,6 @@
 #include <asm/mach-jz4770/board-gcw0.h>
 #include <asm/mach-jz4770/gpio.h>
 
-#include "platform.h"
-
 
 /* Charger */
 
@@ -324,7 +322,6 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&gcw0_lcd_device,
 	&gcw0_dc_charger_device,
 	&gcw0_usb_charger_device,
-	&jz4770_vpu_device,
 	&gcw0_joystick_device,
 };
 
