@@ -547,6 +547,19 @@
 			interrupts = <29>;
 		};
 
+		gpu: jz4770-gpu@13040000 {
+			compatible = "ingenic,jz4770-gpu-subsystem";
+			reg = <0x13040000 0x40000>;
+
+			clocks = <&cgu JZ4770_CLK_GPU>;
+			clock-names = "gpu";
+			assigned-clocks = <&cgu JZ4770_CLK_GPU>;
+			assigned-clock-rates = <800000000>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <6>;
+		};
+
 		dmac0: jz4770-dma@13420000 {
 			compatible = "ingenic,jz4770-dma";
 			reg = <0x13420000 0xBF
