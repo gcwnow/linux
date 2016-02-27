@@ -27,6 +27,7 @@
 #include "gc_hal_kernel_linux.h"
 
 #if USE_PLATFORM_DRIVER
+#   include <linux/of.h>
 #   include <linux/platform_device.h>
 #endif
 
@@ -878,7 +879,7 @@ static int gpu_probe(struct platform_device *pdev)
 
     gcmkHEADER();
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "gpu_irq");
+    res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 
     if (!res)
     {
@@ -888,7 +889,7 @@ static int gpu_probe(struct platform_device *pdev)
 
     irqLine = res->start;
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpu_base");
+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
     if (!res)
     {
@@ -899,35 +900,39 @@ static int gpu_probe(struct platform_device *pdev)
     registerMemBase = res->start;
     registerMemSize = res->end - res->start + 1;
 
-    res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "gpu_mem");
+    res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
 
-    if (!res)
+    if (res)
     {
-        printk(KERN_ERR "%s: No memory base supplied.\n",__FUNCTION__);
-        goto gpu_probe_fail;
+        contiguousBase = res->start;
+        contiguousSize = res->end - res->start + 1;
     }
-
-    contiguousBase = res->start;
-    contiguousSize = res->end - res->start + 1;
+    else
+    {
+        printk(KERN_INFO "%s: Auto-configuring video memory.\n",__FUNCTION__);
+        contiguousBase = 0;
+        contiguousSize = 0x400000;
+    }
 
     dev_info(&pdev->dev, "driver v4.6.6, initializing\n");
 
     ret = drv_init();
-    galDevice->dev = &pdev->dev;
-
-    if (!ret)
+    if (ret)
     {
-        platform_set_drvdata(pdev, galDevice);
-        galDevice->clk_enabled = 0;
-
-        dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
-                 clk_get_rate(galDevice->clk) / 1000000);
-
-        clk_disable(galDevice->clk);
-
-        gcmkFOOTER_NO();
-        return ret;
+        goto gpu_probe_fail;
     }
+
+    galDevice->dev = &pdev->dev;
+    platform_set_drvdata(pdev, galDevice);
+
+    dev_info(&pdev->dev, "GPU initialized, clocked at %luMHz\n",
+             clk_get_rate(galDevice->clk) / 1000000);
+
+    //galDevice->clk_enabled = 0;
+    //clk_disable(galDevice->clk);
+
+    gcmkFOOTER_NO();
+    return 0;
 
 gpu_probe_fail:
     gcmkFOOTER_ARG(KERN_INFO "Failed to register gpu driver: %d\n", ret);
@@ -1027,6 +1032,14 @@ static int gpu_resume(struct platform_device *dev)
     return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id gpu_dt_ids[] = {
+	{ .compatible = "ingenic,jz4770-gpu-subsystem", },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, gpu_dt_ids);
+#endif
+
 static struct platform_driver gpu_driver = {
     .probe      = gpu_probe,
     .remove     = gpu_remove,
@@ -1035,7 +1048,8 @@ static struct platform_driver gpu_driver = {
     .resume     = gpu_resume,
 
     .driver     = {
-        .name   = DEVICE_NAME,
+        .name           = DEVICE_NAME,
+        .of_match_table = of_match_ptr(gpu_dt_ids),
     }
 };
 
