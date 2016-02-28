@@ -399,6 +399,8 @@ gckGALDEVICE_Release_ISR_2D(
 */
 gceSTATUS
 gckGALDEVICE_Construct(
+    IN struct device *dev,
+    IN struct clk *clk,
     IN int IrqLine,
     IN u32 RegisterMemBase,
     IN size_t RegisterMemSize,
@@ -446,6 +448,9 @@ gckGALDEVICE_Construct(
     }
 
     memset(device, 0, sizeof(struct _gckGALDEVICE));
+
+    device->dev = dev;
+    device->clk = clk;
 
     if (IrqLine != -1)
     {

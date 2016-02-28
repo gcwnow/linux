@@ -734,6 +734,7 @@ static int __init drv_init(void)
 
     /* Create the GAL device. */
     gcmkONERROR(gckGALDEVICE_Construct(
+        dev, clk,
         irqLine,
         registerMemBase, registerMemSize,
         irqLine2D,
@@ -742,8 +743,6 @@ static int __init drv_init(void)
         bankSize, fastClear, compression, baseAddress, physSize, signal,
         &device
         ));
-    device->dev = dev;
-    device->clk = clk;
 
     /* Start the GAL device. */
     gcmkONERROR(gckGALDEVICE_Start(device));

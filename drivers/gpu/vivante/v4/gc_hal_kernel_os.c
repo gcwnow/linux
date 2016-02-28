@@ -989,7 +989,7 @@ _FreeAllNonPagedMemoryCache(
         }
 
 #ifndef NO_DMA_COHERENT
-    dma_free_coherent(NULL,
+    dma_free_coherent(Os->device->dev,
                     cache->size,
                     cache->addr,
                     cache->dmaHandle);
@@ -1914,7 +1914,7 @@ gckOS_AllocateNonPagedMemory(
 
     /* Cache invalidate. */
     dma_sync_single_for_device(
-                NULL,
+                Os->device->dev,
                 page_to_phys(page),
                 bytes,
                 DMA_FROM_DEVICE);
@@ -5546,7 +5546,7 @@ gckOS_CacheClean(
 
 #else
     dma_sync_single_for_device(
-              NULL,
+              Os->device->dev,
               Physical,
               Bytes,
               DMA_TO_DEVICE);
@@ -5619,7 +5619,7 @@ gckOS_CacheInvalidate(
     dma_cache_inv((unsigned long) Logical, Bytes);
 #else
     dma_sync_single_for_device(
-              NULL,
+              Os->device->dev,
               Physical,
               Bytes,
               DMA_FROM_DEVICE);
@@ -5691,7 +5691,7 @@ gckOS_CacheFlush(
     dma_cache_wback_inv((unsigned long) Logical, Bytes);
 #else
     dma_sync_single_for_device(
-              NULL,
+              Os->device->dev,
               Physical,
               Bytes,
               DMA_BIDIRECTIONAL);

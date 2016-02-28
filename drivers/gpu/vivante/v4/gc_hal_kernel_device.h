@@ -104,6 +104,8 @@ gceSTATUS gckGALDEVICE_Stop(
     );
 
 gceSTATUS gckGALDEVICE_Construct(
+    IN struct device *dev,
+    IN struct clk *clk,
     IN int IrqLine,
     IN u32 RegisterMemBase,
     IN size_t RegisterMemSize,
