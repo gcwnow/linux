@@ -1194,6 +1194,13 @@ static void check_sync(struct device *dev,
 	struct hash_bucket *bucket;
 	unsigned long flags;
 
+	if (!ref->dev) {
+		err_printk(dev, NULL, "DMA-API: device driver passes NULL "
+				"for device to DMA sync function; "
+				"cannot check usage\n");
+		return;
+	}
+
 	bucket = get_hash_bucket(ref, &flags);
 
 	entry = bucket_find_contain(&bucket, ref, &flags);
