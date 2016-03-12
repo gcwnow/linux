@@ -18,6 +18,7 @@
 #include <linux/err.h>
 #include <linux/io.h>
 #include <linux/irq.h>
+#include <linux/irqchip/chained_irq.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -68,8 +69,11 @@ struct jz4740_adc {
 static void jz4740_adc_irq_demux(struct irq_desc *desc)
 {
 	struct irq_chip_generic *gc = irq_desc_get_handler_data(desc);
+	struct irq_chip *irq_chip = irq_data_get_irq_chip(&desc->irq_data);
 	uint8_t status;
 	unsigned int i;
+
+	chained_irq_enter(irq_chip, desc);
 
 	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
 
@@ -77,6 +81,8 @@ static void jz4740_adc_irq_demux(struct irq_desc *desc)
 		if (status & BIT(i))
 			generic_handle_irq(gc->irq_base + i);
 	}
+
+	chained_irq_exit(irq_chip, desc);
 }
 
 static inline void jz4740_adc_set_enabled(struct jz4740_adc *adc, int engine,
