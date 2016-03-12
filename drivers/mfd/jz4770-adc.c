@@ -19,6 +19,7 @@
 #include <linux/err.h>
 #include <linux/io.h>
 #include <linux/irq.h>
+#include <linux/irqchip/chained_irq.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -80,8 +81,11 @@ struct jz4770_adc {
 static void jz4770_adc_irq_demux(struct irq_desc *desc)
 {
 	struct irq_chip_generic *gc = irq_desc_get_handler_data(desc);
+	struct irq_chip *irq_chip = irq_data_get_irq_chip(&desc->irq_data);
 	uint8_t status;
 	unsigned int i;
+
+	chained_irq_enter(irq_chip, desc);
 
 	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
 	status &= ~readb(gc->reg_base + JZ_REG_ADC_CTRL);
@@ -90,6 +94,8 @@ static void jz4770_adc_irq_demux(struct irq_desc *desc)
 		if (status & BIT(i))
 			generic_handle_irq(gc->irq_base + i);
 	}
+
+	chained_irq_exit(irq_chip, desc);
 }
 
 /*
@@ -411,8 +417,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	adc->gc = gc;
 
-	irq_set_handler_data(adc->irq, gc);
-	irq_set_chained_handler(adc->irq, jz4770_adc_irq_demux);
+	irq_set_chained_handler_and_data(adc->irq, jz4770_adc_irq_demux, gc);
 
 	err = mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
 			       ARRAY_SIZE(jz4770_adc_cells), mem_base,
