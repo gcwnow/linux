@@ -40,7 +40,6 @@ struct ingenic_intc_data {
 #define JZ_REG_INTC_CLEAR_MASK	0x0c
 #define JZ_REG_INTC_PENDING	0x10
 #define CHIP_SIZE		0x20
-#define IRQ_BASE		8
 
 static irqreturn_t intc_cascade(int irq, void *data)
 {
@@ -49,12 +48,14 @@ static irqreturn_t intc_cascade(int irq, void *data)
 	unsigned i;
 
 	for (i = 0; i < intc->num_chips; i++) {
-		irq_reg = readl(intc->base + (i * CHIP_SIZE) +
-				JZ_REG_INTC_PENDING);
+		struct irq_chip_generic *gc = irq_get_domain_generic_chip(
+				intc->domain, i * 32);
+
+		irq_reg = irq_reg_readl(gc, JZ_REG_INTC_PENDING);
 		if (!irq_reg)
 			continue;
 
-		generic_handle_irq(irq_find_mapping(intc->domain,
+		generic_handle_irq(irq_linear_revmap(intc->domain,
 					__fls(irq_reg) + (i * 32)));
 	}
 
@@ -90,8 +91,6 @@ static int __init ingenic_intc_of_init(struct device_node *node,
 				       unsigned num_chips)
 {
 	struct ingenic_intc_data *intc;
-	struct irq_chip_generic *gc;
-	struct irq_chip_type *ct;
 	int parent_irq, err = 0;
 	unsigned i;
 
@@ -118,18 +117,27 @@ static int __init ingenic_intc_of_init(struct device_node *node,
 		goto out_unmap_irq;
 	}
 
-	for (i = 0; i < num_chips; i++) {
-		/* Mask all irqs */
-		writel(0xffffffff, intc->base + (i * CHIP_SIZE) +
-		       JZ_REG_INTC_SET_MASK);
+	intc->domain = irq_domain_add_linear(node, num_chips * 32,
+				       &irq_generic_chip_ops, NULL);
+	if (!intc->domain) {
+		err = -ENOMEM;
+		goto out_unmap_base;
+	}
 
-		gc = irq_alloc_generic_chip("INTC", 1, IRQ_BASE + (i * 32),
-					    intc->base + (i * CHIP_SIZE),
-					    handle_level_irq);
+	err = irq_alloc_domain_generic_chips(intc->domain, 32, 1,
+			"INTC", handle_level_irq, 0, IRQ_NOPROBE | IRQ_LEVEL,
+			0);
+	if (err)
+		goto out_domain_remove;
+
+	for (i = 0; i < num_chips; i++) {
+		struct irq_chip_generic *gc = irq_get_domain_generic_chip(
+				intc->domain, i * 32);
+		struct irq_chip_type *ct = gc->chip_types;
 
 		gc->wake_enabled = IRQ_MSK(32);
+		gc->reg_base = intc->base + (i * CHIP_SIZE);
 
-		ct = gc->chip_types;
 		ct->regs.enable = JZ_REG_INTC_CLEAR_MASK;
 		ct->regs.disable = JZ_REG_INTC_SET_MASK;
 		ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
@@ -139,18 +147,17 @@ static int __init ingenic_intc_of_init(struct device_node *node,
 		ct->chip.irq_suspend = ingenic_intc_irq_suspend;
 		ct->chip.irq_resume = ingenic_intc_irq_resume;
 
-		irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0,
-				       IRQ_NOPROBE | IRQ_LEVEL);
+		/* Mask all irqs */
+		irq_reg_writel(gc, 0xffffffff, JZ_REG_INTC_SET_MASK);
 	}
-
-	intc->domain = irq_domain_add_legacy(node, num_chips * 32, IRQ_BASE, 0,
-				       &irq_domain_simple_ops, NULL);
-	if (!intc->domain)
-		pr_warn("unable to register IRQ domain\n");
 
 	setup_irq(parent_irq, &intc_cascade_action);
 	return 0;
 
+out_domain_remove:
+	irq_domain_remove(intc->domain);
+out_unmap_base:
+	iounmap(intc->base);
 out_unmap_irq:
 	irq_dispose_mapping(parent_irq);
 out_free:
