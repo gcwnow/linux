@@ -37,7 +37,6 @@
 #include <asm/bootinfo.h>
 #include <asm/irq.h>
 #include <asm/mipsregs.h>
-#include <asm/reboot.h>
 #include <asm/pgtable.h>
 #include <asm/prom.h>
 #include <asm/time.h>
@@ -46,16 +45,6 @@
 #ifdef CONFIG_PC_KEYB
 #include <asm/keyboard.h>
 #endif
-
-static void jz_halt(void)
-{
-	printk(KERN_NOTICE "\n** You can safely turn off the power\n");
-
-	while (1)
-		__asm__(".set\tmips3\n\t"
-	                "wait\n\t"
-			".set\tmips0");
-}
 
 void __init plat_mem_setup(void)
 {
@@ -73,7 +62,6 @@ void __init plat_mem_setup(void)
 	iomem_resource.start	= 0x00000000;
 	iomem_resource.end	= 0xffffffff;
 
-	_machine_halt = jz_halt;
 	__dt_setup_arch(__dtb_start);
 }
 

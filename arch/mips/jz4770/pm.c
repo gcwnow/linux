@@ -15,11 +15,34 @@
 
 #include <linux/suspend.h>
 
+#include <asm/reboot.h>
+
+static void jz4770_wait(void)
+{
+	__asm__(".set push;\n"
+		".set mips3;\n"
+		"wait;\n"
+		".set pop;\n"
+	);
+}
+
+static void jz4770_halt(void)
+{
+	while (1)
+		jz4770_wait();
+}
+
+static int __init jz4770_halt_init(void)
+{
+	_machine_halt = jz4770_halt;
+	return 0;
+}
+core_initcall(jz4770_halt_init);
+
+#ifdef CONFIG_PM_SUSPEND
 static int jz4740_pm_enter(suspend_state_t state)
 {
-	__asm__(".set\tmips3\n\t"
-		"wait\n\t"
-		".set\tmips0");
+	jz4770_wait();
 	return 0;
 }
 
@@ -35,3 +58,4 @@ static int __init jz4740_pm_init(void)
 
 }
 late_initcall(jz4740_pm_init);
+#endif /* CONFIG_PM_SUSPEND */
