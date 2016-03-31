@@ -4,10 +4,7 @@
 
 # Object file lists.
 
-obj-y += prom.o setup.o
+obj-y += prom.o setup.o pm.o
 
 # board specific support
 obj-$(CONFIG_JZ4770_GCW0)	+= board-gcw0.o
-
-# Suspend/resume support
-obj-$(CONFIG_PM_SLEEP)		+= pm.o
