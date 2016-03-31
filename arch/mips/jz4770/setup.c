@@ -48,12 +48,6 @@
 
 void __init plat_mem_setup(void)
 {
-	__asm__ (
-		"li    $2, 0xa9000000 \n\t"
-		"mtc0  $2, $5, 4      \n\t"
-		"nop                  \n\t"
-		::"r"(2));
-
 	/* IO/MEM resources. Which will be the addtion value in `inX' and
 	 * `outX' macros defined in asm/io.h */
 	set_io_port_base(0);
