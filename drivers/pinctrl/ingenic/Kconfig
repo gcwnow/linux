@@ -1,0 +1,8 @@
+#
+# Ingenic SoCs pin control drivers
+#
+config PINCTRL_INGENIC
+	bool
+	select PINMUX
+	select GPIOLIB_IRQCHIP
+	select GENERIC_PINCONF
