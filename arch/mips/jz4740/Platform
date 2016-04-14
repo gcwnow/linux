@@ -1,4 +1,9 @@
+ifeq ($(CONFIG_MACH_JZ4770),)
 platform-$(CONFIG_MACH_INGENIC)	+= jz4740/
 cflags-$(CONFIG_MACH_INGENIC)	+= -I$(srctree)/arch/mips/include/asm/mach-jz4740
+else
+platform-$(CONFIG_MACH_JZ4770)	+= jz4770/
+cflags-$(CONFIG_MACH_JZ4770)	+= -I$(srctree)/arch/mips/include/asm/mach-jz4770
+endif
 load-$(CONFIG_MACH_INGENIC)	+= 0xffffffff80010000
 zload-$(CONFIG_MACH_INGENIC)	+= 0xffffffff80600000
