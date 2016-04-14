@@ -26,7 +26,11 @@
 
 void __init prom_init(void)
 {
+#ifdef CONFIG_MACH_JZ4770
+	mips_machtype = MACH_INGENIC_JZ4770;
+#else
 	mips_machtype = MACH_INGENIC_JZ4740;
+#endif
 	fw_init_cmdline();
 }
 

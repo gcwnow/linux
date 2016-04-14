@@ -127,6 +127,14 @@ static struct irqaction timer_irqaction = {
 
 void __init plat_time_init(void)
 {
+#ifdef CONFIG_MACH_JZ4770
+	(void)jz4740_clocksource;
+	(void)jz4740_read_sched_clock;
+	(void)timer_irqaction;
+
+	of_clk_init(NULL);
+	clocksource_probe();
+#else
 	int ret;
 	uint32_t clk_rate;
 	uint16_t ctrl;
@@ -171,4 +179,5 @@ void __init plat_time_init(void)
 
 	jz4740_timer_enable(TIMER_CLOCKEVENT);
 	jz4740_timer_enable(TIMER_CLOCKSOURCE);
+#endif
 }

@@ -121,7 +121,13 @@ static void jz4740_power_off(void)
 
 void jz4740_reset_init(void)
 {
+#ifdef CONFIG_MACH_JZ4770
+	(void)jz4740_restart;
+	(void)jz4740_power_off;
+	_machine_halt = jz4740_halt;
+#else
 	_machine_restart = jz4740_restart;
 	_machine_halt = jz4740_halt;
 	pm_power_off = jz4740_power_off;
+#endif
 }

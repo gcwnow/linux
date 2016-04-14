@@ -21,8 +21,10 @@
 
 #ifdef CONFIG_MACH_JZ4740
 # define NR_INTC_IRQS	32
+# define NR_GPIO_PORTS	4
 #else
 # define NR_INTC_IRQS	64
+# define NR_GPIO_PORTS	6
 #endif
 
 /* 1st-level interrupts */
@@ -58,7 +60,7 @@
 #define JZ4740_IRQ_INTC_GPIO(x) (JZ4740_IRQ_GPIO0 - (x))
 #define JZ4740_IRQ_GPIO(x)	(JZ4740_IRQ(NR_INTC_IRQS + 16) + (x))
 
-#define JZ4740_IRQ_ADC_BASE	JZ4740_IRQ(NR_INTC_IRQS + 144)
+#define JZ4740_IRQ_ADC_BASE	JZ4740_IRQ_GPIO(NR_GPIO_PORTS * 32)
 
 #define NR_IRQS (JZ4740_IRQ_ADC_BASE + 6)
 
