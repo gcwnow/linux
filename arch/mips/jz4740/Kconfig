@@ -17,9 +17,6 @@ config JZ4780_CI20
 
 endchoice
 
-config JZRISC
-	bool
-
 config MACH_JZ4740
 	bool
 	select SYS_HAS_CPU_MIPS32_R1
@@ -27,7 +24,6 @@ config MACH_JZ4740
 config MACH_JZ4770
 	bool
 	select CPU_SUPPORTS_CPUFREQ
-	select JZRISC
 	select MIPS_EXTERNAL_TIMER
 	select PINCTRL
 	select SYS_HAS_CPU_MIPS32_R2
