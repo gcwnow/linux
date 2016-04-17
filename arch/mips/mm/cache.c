@@ -79,38 +79,6 @@ SYSCALL_DEFINE3(cacheflush, unsigned long, addr, unsigned long, bytes,
 	return 0;
 }
 
-void __flush_kernel_dcache_page(struct vm_area_struct *vma, struct page *page)
-{
-	struct address_space *mapping = page_mapping(page);
-	void *addr;
-	int exec = (vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc;
-
-	if (!exec)
-		return;
-
-	if (PageHighMem(page)) {
-		addr = kmap_atomic(page);
-		if (addr) {
-			flush_data_cache_page((unsigned long)addr);
-			kunmap_atomic(addr);
-		}
-		return;
-	}
-
-	if (mapping && !mapping_mapped(mapping)) {
-		SetPageDcacheDirty(page);
-		return;
-	}
-
-	/*
-	 * We could delay the flush for the !page_mapping case too.  But that
-	 * case is for exec env/arg pages and those are %99 certainly going to
-	 * get faulted into the tlb (and thus flushed) anyways.
-	 */
-	addr = page_address(page);
-	flush_data_cache_page((unsigned long)addr);
-}
-
 void __flush_dcache_page(struct page *page)
 {
 	struct address_space *mapping = page_mapping(page);
@@ -156,8 +124,14 @@ void __flush_icache_page(struct vm_area_struct *vma, struct page *page)
 {
 	unsigned long addr;
 
-	if (PageHighMem(page))
+	if (PageHighMem(page)) {
+		void *kaddr = kmap_atomic(page);
+		if (kaddr) {
+			flush_data_cache_page((unsigned long)kaddr);
+			kunmap_atomic(kaddr);
+		}
 		return;
+	}
 
 	addr = (unsigned long) page_address(page);
 	flush_data_cache_page(addr);
