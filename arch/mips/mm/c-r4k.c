@@ -1165,36 +1165,6 @@ static void probe_pcache(void)
 		c->options |= MIPS_CPU_PREFETCH;
 		break;
 
-	case CPU_JZRISC:
-		config1 = read_c0_config1();
-		config1 = (config1 >> 22) & 0x07;
-		if (config1 == 0x07)
-			config1 = 10;
-		else
-			config1 = config1 + 11;
-		config1 += 2;
-		icache_size = (1 << config1);
-		c->icache.linesz = 32;
-		c->icache.ways = 4;
-		c->icache.waybit = __ffs(icache_size / c->icache.ways);
-
-		config1 = read_c0_config1();
-		config1 = (config1 >> 13) & 0x07;
-		if (config1 == 0x07)
-			config1 = 10;
-		else
-			config1 = config1 + 11;
-		config1 += 2;
-		dcache_size = (1 << config1);
-		c->dcache.linesz = 32;
-		c->dcache.ways = 4;
-		c->dcache.waybit = __ffs(dcache_size / c->dcache.ways);
-
-		c->dcache.flags = 0;
-		c->options |= MIPS_CPU_PREFETCH;
-
-		break;
-
 	default:
 		if (!(config & MIPS_CONF_M))
 			panic("Don't know how to probe P-caches on this cpu.");
