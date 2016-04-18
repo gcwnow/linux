@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/sched.h>
 #include <linux/syscalls.h>
+#include <linux/highmem.h>
 #include <linux/mm.h>
 
 #include <asm/cacheflush.h>
@@ -123,8 +124,14 @@ void __flush_icache_page(struct vm_area_struct *vma, struct page *page)
 {
 	unsigned long addr;
 
-	if (PageHighMem(page))
+	if (PageHighMem(page)) {
+		void *kaddr = kmap_atomic(page);
+		if (kaddr) {
+			flush_data_cache_page((unsigned long)kaddr);
+			kunmap_atomic(kaddr);
+		}
 		return;
+	}
 
 	addr = (unsigned long) page_address(page);
 	flush_data_cache_page(addr);
