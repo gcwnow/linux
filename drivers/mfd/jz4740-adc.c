@@ -38,14 +38,14 @@
 
 #define JZ_REG_ADC_TOUCHSCREEN_BASE	0x10
 #define JZ_REG_ADC_BATTERY_BASE	0x1c
-#define JZ_REG_ADC_HWMON_BASE	0x20
+#define JZ_REG_ADC_AUX_BASE	0x20
 
 #define JZ_ADC_ENABLE_TOUCH	BIT(2)
 #define JZ_ADC_ENABLE_BATTERY	BIT(1)
-#define JZ_ADC_ENABLE_ADCIN	BIT(0)
+#define JZ_ADC_ENABLE_AUX	BIT(0)
 
 enum {
-	JZ_ADC_IRQ_ADCIN = 0,
+	JZ_ADC_IRQ_AUX = 0,
 	JZ_ADC_IRQ_BATTERY,
 	JZ_ADC_IRQ_TOUCH,
 	JZ_ADC_IRQ_PENUP,
@@ -156,14 +156,14 @@ int jz4740_adc_set_config(struct device *dev, uint32_t mask, uint32_t val)
 }
 EXPORT_SYMBOL_GPL(jz4740_adc_set_config);
 
-static struct resource jz4740_hwmon_resources[] = {
+static struct resource jz4740_aux_resources[] = {
 	{
-		.start = JZ_ADC_IRQ_ADCIN,
+		.start = JZ_ADC_IRQ_AUX,
 		.flags = IORESOURCE_IRQ,
 	},
 	{
-		.start	= JZ_REG_ADC_HWMON_BASE,
-		.end	= JZ_REG_ADC_HWMON_BASE + 3,
+		.start	= JZ_REG_ADC_AUX_BASE,
+		.end	= JZ_REG_ADC_AUX_BASE + 3,
 		.flags	= IORESOURCE_MEM,
 	},
 };
@@ -184,8 +184,8 @@ static const struct mfd_cell jz4740_adc_cells[] = {
 	{
 		.id = 0,
 		.name = "jz4740-hwmon",
-		.num_resources = ARRAY_SIZE(jz4740_hwmon_resources),
-		.resources = jz4740_hwmon_resources,
+		.num_resources = ARRAY_SIZE(jz4740_aux_resources),
+		.resources = jz4740_aux_resources,
 
 		.enable = jz4740_adc_cell_enable,
 		.disable = jz4740_adc_cell_disable,
