@@ -1,7 +1,6 @@
+
 #ifndef __LINUX_JZ4770_ADC
 #define __LINUX_JZ4770_ADC
-
-#include <linux/bitops.h>
 
 struct device;
 
@@ -28,5 +27,17 @@ int jz4770_adc_set_config(struct device *dev, uint32_t mask, uint32_t val);
 #define JZ_ADC_CONFIG_SAMPLE_NUM_MASK	JZ_ADC_CONFIG_SAMPLE_NUM(0x7)
 #define JZ_ADC_CONFIG_CMD(x)		(x)
 #define JZ_ADC_CONFIG_CMD_MASK		JZ_ADC_CONFIG_CMD(0x3)
+
+struct jz4770_adc {
+	void __iomem *base;
+
+	int irq;
+	struct irq_chip_generic *gc;
+
+	struct clk *clk;
+	atomic_t clk_ref;
+
+	spinlock_t lock;
+};
 
 #endif

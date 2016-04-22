@@ -33,87 +33,37 @@
 #include <linux/jz4770-adc.h>
 
 
-#define JZ_REG_ADC_ENABLE		0x00
-#define JZ_REG_ADC_CFG			0x04
-#define JZ_REG_ADC_CTRL			0x08
-#define JZ_REG_ADC_STATUS		0x0C
+#define JZ_REG_ADC_ENABLE	0x00
+#define JZ_REG_ADC_CFG		0x04
+#define JZ_REG_ADC_CTRL		0x08
+#define JZ_REG_ADC_STATUS	0x0c
 
 #define JZ_REG_ADC_TOUCHSCREEN_BASE	0x10
-#define JZ_REG_ADC_BATTERY_BASE		0x1C
+#define JZ_REG_ADC_BATTERY_BASE		0x1c
 #define JZ_REG_ADC_AUX_BASE		0x20
-
 #define JZ_REG_ADC_CMD			0x24
 #define JZ_REG_ADC_CLKDIV		0x28
 
-#define JZ_ADC_ENABLE_POWER		BIT(7)
-#define JZ_ADC_ENABLE_PENDOWN		BIT(3)
-#define JZ_ADC_ENABLE_TOUCHSCREEN	BIT(2)
-#define JZ_ADC_ENABLE_BATTERY		BIT(1)
-#define JZ_ADC_ENABLE_AUX		BIT(0)
+#define JZ_ADC_ENABLE_POWER	BIT(7)
+#define JZ_ADC_ENABLE_PENDOWN	BIT(3)
+#define JZ_ADC_ENABLE_TOUCH	BIT(2)
+#define JZ_ADC_ENABLE_BATTERY	BIT(1)
+#define JZ_ADC_ENABLE_AUX	BIT(0)
 
 #define JZ_ADC_CLKDIV_MS		16
 #define JZ_ADC_CLKDIV_US		8
 #define JZ_ADC_CLKDIV_BIT		0
 
-#define SADC_IRQ_NUM			6
-
 enum {
-	JZ_ADC_IRQ_ADCIN = 0,
+	JZ_ADC_IRQ_AUX = 0,
 	JZ_ADC_IRQ_BATTERY,
-	JZ_ADC_IRQ_TOUCHSCREEN,
+	JZ_ADC_IRQ_TOUCH,
 	JZ_ADC_IRQ_PENUP,
 	JZ_ADC_IRQ_PENDOWN,
 	JZ_ADC_IRQ_SLEEPPENDOWN,
+
+	JZ_ADC_IRQ_NUM
 };
-
-struct jz4770_adc {
-	void __iomem *base;
-
-	int irq;
-	struct irq_chip_generic *gc;
-
-	struct clk *clk;
-	atomic_t clk_ref;
-
-	spinlock_t lock;
-};
-
-static void jz4770_adc_irq_demux(struct irq_desc *desc)
-{
-	struct irq_chip_generic *gc = irq_desc_get_handler_data(desc);
-	struct irq_chip *irq_chip = irq_data_get_irq_chip(&desc->irq_data);
-	uint8_t status;
-	unsigned int i;
-
-	chained_irq_enter(irq_chip, desc);
-
-	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
-	status &= ~readb(gc->reg_base + JZ_REG_ADC_CTRL);
-
-	for (i = 0; i < SADC_IRQ_NUM; ++i) {
-		if (status & BIT(i))
-			generic_handle_irq(gc->irq_base + i);
-	}
-
-	chained_irq_exit(irq_chip, desc);
-}
-
-/*
- * Refcounting for the ADC clock is done in here instead of in the clock
- * framework, because it is the only clock which is shared between multiple
- * devices and thus is the only clock which needs refcounting.
- */
-static inline void jz4770_adc_clk_enable(struct jz4770_adc *adc)
-{
-	if (atomic_inc_return(&adc->clk_ref) == 1)
-		clk_enable(adc->clk);
-}
-
-static inline void jz4770_adc_clk_disable(struct jz4770_adc *adc)
-{
-	if (atomic_dec_return(&adc->clk_ref) == 0)
-		clk_disable(adc->clk);
-}
 
 static int jz4770_adc_set_clock(struct jz4770_adc *adc, unsigned int freq)
 {
@@ -138,6 +88,41 @@ static int jz4770_adc_set_clock(struct jz4770_adc *adc, unsigned int freq)
 	writel(val, adc->base + JZ_REG_ADC_CLKDIV);
 
 	return 0;
+}
+
+static void jz4770_adc_irq_demux(struct irq_desc *desc)
+{
+	struct irq_chip_generic *gc = irq_desc_get_handler_data(desc);
+	struct irq_chip *irq_chip = irq_data_get_irq_chip(&desc->irq_data);
+	uint8_t status;
+	unsigned int i;
+
+	chained_irq_enter(irq_chip, desc);
+
+	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
+	status &= ~readb(gc->reg_base + JZ_REG_ADC_CTRL);
+
+	for (i = 0; i < JZ_ADC_IRQ_NUM; ++i) {
+		if (status & BIT(i))
+			generic_handle_irq(gc->irq_base + i);
+	}
+
+	chained_irq_exit(irq_chip, desc);
+}
+
+/* Refcounting for the ADC clock is done in here instead of in the clock
+ * framework, because it is the only clock which is shared between multiple
+ * devices and thus is the only clock which needs refcounting */
+static inline void jz4770_adc_clk_enable(struct jz4770_adc *adc)
+{
+	if (atomic_inc_return(&adc->clk_ref) == 1)
+		clk_enable(adc->clk);
+}
+
+static inline void jz4770_adc_clk_disable(struct jz4770_adc *adc)
+{
+	if (atomic_dec_return(&adc->clk_ref) == 0)
+		clk_disable(adc->clk);
 }
 
 static int jz4770_adc_cell_enable(struct platform_device *pdev)
@@ -221,8 +206,8 @@ EXPORT_SYMBOL_GPL(jz4770_adc_set_config);
 
 static struct resource jz4770_aux_resources[] = {
 	{
-		.start	= JZ_ADC_IRQ_ADCIN,
-		.flags	= IORESOURCE_IRQ,
+		.start = JZ_ADC_IRQ_AUX,
+		.flags = IORESOURCE_IRQ,
 	},
 	{
 		.start	= JZ_REG_ADC_AUX_BASE,
@@ -233,8 +218,8 @@ static struct resource jz4770_aux_resources[] = {
 
 static struct resource jz4770_battery_resources[] = {
 	{
-		.start	= JZ_ADC_IRQ_BATTERY,
-		.flags	= IORESOURCE_IRQ,
+		.start = JZ_ADC_IRQ_BATTERY,
+		.flags = IORESOURCE_IRQ,
 	},
 	{
 		.start	= JZ_REG_ADC_BATTERY_BASE,
@@ -245,7 +230,7 @@ static struct resource jz4770_battery_resources[] = {
 
 static struct resource jz4770_touchscreen_resources[] = {
 	{
-		.start	= JZ_ADC_IRQ_TOUCHSCREEN,
+		.start	= JZ_ADC_IRQ_TOUCH,
 		.end	= JZ_ADC_IRQ_SLEEPPENDOWN,
 		.flags	= IORESOURCE_IRQ,
 	},
@@ -294,12 +279,11 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
 	struct jz4770_adc *adc;
-	struct resource *mem_base;
-	struct resource *mem;
+	struct resource *mem_base, *mem;
 	void __iomem *base2;
 	struct irq_domain *irq_domain;
+	int ret;
 	int irq_base;
-	int err;
 
 	adc = devm_kzalloc(&pdev->dev, sizeof(*adc), GFP_KERNEL);
 	if (!adc) {
@@ -307,13 +291,11 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	/* Get multiplexed SADC IRQ. */
-
 	adc->irq = platform_get_irq(pdev, 0);
 	if (adc->irq < 0) {
-		dev_err(&pdev->dev, "Failed to get platform irq: %d\n",
-			adc->irq);
-		return adc->irq;
+		ret = adc->irq;
+		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+		return ret;
 	}
 
 	/*
@@ -360,7 +342,7 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	}
 
 	irq_domain = irq_domain_add_linear(pdev->dev.of_node,
-			SADC_IRQ_NUM, &irq_domain_simple_ops, NULL);
+			JZ_ADC_IRQ_NUM, &irq_domain_simple_ops, NULL);
 	if (!irq_domain)
 		return -EINVAL;
 
@@ -368,16 +350,16 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	adc->clk = devm_clk_get(&pdev->dev, "adc");
 	if (IS_ERR(adc->clk)) {
-		dev_err(&pdev->dev,
-			"Failed to get clock: %ld\n", PTR_ERR(adc->clk));
+		dev_err(&pdev->dev, "Failed to get clock: %ld\n",
+			PTR_ERR(adc->clk));
 		return PTR_ERR(adc->clk);
 	}
 
 	/* Register writes have no effect unless clock is running. */
-	err = clk_prepare_enable(adc->clk);
-	if (err) {
-		dev_err(&pdev->dev, "Unable to enable clock: %i\n", err);
-		return err;
+	ret = clk_prepare_enable(adc->clk);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to enable clock: %i\n", ret);
+		return ret;
 	}
 
 	/* Disable all cells and power off. */
@@ -385,12 +367,12 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	/* Mask all interrupts. */
 	writeb(0xFF, adc->base + JZ_REG_ADC_CTRL);
 
-	err = jz4770_adc_set_clock(adc, 100000);
+	ret = jz4770_adc_set_clock(adc, 100000);
 
 	clk_disable(adc->clk);
 
-	if (err) {
-		dev_err(&pdev->dev, "Failed to configure clock: %d\n", err);
+	if (ret) {
+		dev_err(&pdev->dev, "Failed to configure clock: %d\n", ret);
 		goto err_clk_unprepare;
 	}
 
@@ -411,25 +393,25 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
 	ct->chip.irq_ack = irq_gc_ack_set_bit;
 
-	irq_setup_generic_chip(gc, IRQ_MSK(SADC_IRQ_NUM),
-			       IRQ_GC_INIT_MASK_CACHE,
-			       0, IRQ_NOPROBE | IRQ_NOAUTOEN | IRQ_LEVEL);
+	irq_setup_generic_chip(gc, IRQ_MSK(JZ_ADC_IRQ_NUM),
+			       IRQ_GC_INIT_MASK_CACHE, 0,
+			       IRQ_NOPROBE | IRQ_NOAUTOEN | IRQ_LEVEL);
 
 	adc->gc = gc;
 
 	irq_set_chained_handler_and_data(adc->irq, jz4770_adc_irq_demux, gc);
 
-	err = mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
+	ret = mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
 			       ARRAY_SIZE(jz4770_adc_cells), mem_base,
 			       irq_base, NULL);
-	if (err)
+	if (ret)
 		goto err_clk_unprepare;
 
 	return 0;
 
 err_clk_unprepare:
 	clk_unprepare(adc->clk);
-	return err;
+	return ret;
 }
 
 static int jz4770_adc_remove(struct platform_device *pdev)
@@ -438,13 +420,10 @@ static int jz4770_adc_remove(struct platform_device *pdev)
 
 	mfd_remove_devices(&pdev->dev);
 
-	irq_remove_generic_chip(adc->gc, IRQ_MSK(SADC_IRQ_NUM),
+	irq_remove_generic_chip(adc->gc, IRQ_MSK(JZ_ADC_IRQ_NUM),
 				IRQ_NOPROBE | IRQ_LEVEL, 0);
 	kfree(adc->gc);
-	irq_set_handler_data(adc->irq, NULL);
-	irq_set_chained_handler(adc->irq, NULL);
-
-	platform_set_drvdata(pdev, NULL);
+	irq_set_chained_handler_and_data(adc->irq, NULL, NULL);
 
 	return 0;
 }
