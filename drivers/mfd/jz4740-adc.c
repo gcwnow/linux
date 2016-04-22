@@ -50,6 +50,8 @@ enum {
 	JZ_ADC_IRQ_TOUCH,
 	JZ_ADC_IRQ_PENUP,
 	JZ_ADC_IRQ_PENDOWN,
+
+	JZ_ADC_IRQ_NUM
 };
 
 struct jz4740_adc {
@@ -72,7 +74,7 @@ static void jz4740_adc_irq_demux(struct irq_desc *desc)
 
 	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
 
-	for (i = 0; i < 5; ++i) {
+	for (i = 0; i < JZ_ADC_IRQ_NUM; ++i) {
 		if (status & BIT(i))
 			generic_handle_irq(gc->irq_base + i);
 	}
@@ -272,8 +274,9 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
 	ct->chip.irq_ack = irq_gc_ack_set_bit;
 
-	irq_setup_generic_chip(gc, IRQ_MSK(5), IRQ_GC_INIT_MASK_CACHE, 0,
-				IRQ_NOPROBE | IRQ_LEVEL);
+	irq_setup_generic_chip(gc, IRQ_MSK(JZ_ADC_IRQ_NUM),
+			       IRQ_GC_INIT_MASK_CACHE, 0,
+			       IRQ_NOPROBE | IRQ_LEVEL);
 
 	adc->gc = gc;
 
@@ -301,7 +304,8 @@ static int jz4740_adc_remove(struct platform_device *pdev)
 
 	mfd_remove_devices(&pdev->dev);
 
-	irq_remove_generic_chip(adc->gc, IRQ_MSK(5), IRQ_NOPROBE | IRQ_LEVEL, 0);
+	irq_remove_generic_chip(adc->gc, IRQ_MSK(JZ_ADC_IRQ_NUM),
+				IRQ_NOPROBE | IRQ_LEVEL, 0);
 	kfree(adc->gc);
 	irq_set_chained_handler_and_data(adc->irq, NULL, NULL);
 
