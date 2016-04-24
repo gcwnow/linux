@@ -246,7 +246,7 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, adc);
 
-	gc = irq_alloc_generic_chip("INTC", 1, irq_base, adc->base,
+	gc = irq_alloc_generic_chip("ADC", 1, irq_base, adc->base,
 		handle_level_irq);
 
 	ct = gc->chip_types;
