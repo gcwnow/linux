@@ -235,7 +235,7 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 
-	adc->clk = clk_get(&pdev->dev, "adc");
+	adc->clk = devm_clk_get(&pdev->dev, "adc");
 	if (IS_ERR(adc->clk)) {
 		dev_err(&pdev->dev, "Failed to get clock: %ld\n",
 			PTR_ERR(adc->clk));
@@ -267,17 +267,9 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
 	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
 
-	ret = mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
-			      ARRAY_SIZE(jz4740_adc_cells), mem_base,
-			      irq_base, NULL);
-	if (ret < 0)
-		goto err_clk_put;
-
-	return 0;
-
-err_clk_put:
-	clk_put(adc->clk);
-	return ret;
+	return mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
+			       ARRAY_SIZE(jz4740_adc_cells), mem_base,
+			       irq_base, NULL);
 }
 
 static int jz4740_adc_remove(struct platform_device *pdev)
@@ -290,8 +282,6 @@ static int jz4740_adc_remove(struct platform_device *pdev)
 				IRQ_NOPROBE | IRQ_LEVEL, 0);
 	kfree(adc->gc);
 	irq_set_chained_handler_and_data(adc->irq, NULL, NULL);
-
-	clk_put(adc->clk);
 
 	return 0;
 }
