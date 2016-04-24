@@ -61,7 +61,6 @@ struct jz4740_adc {
 	struct irq_chip_generic *gc;
 
 	struct clk *clk;
-	atomic_t clk_ref;
 
 	spinlock_t lock;
 };
@@ -78,22 +77,6 @@ static void jz4740_adc_irq_demux(struct irq_desc *desc)
 		if (status & BIT(i))
 			generic_handle_irq(gc->irq_base + i);
 	}
-}
-
-
-/* Refcounting for the ADC clock is done in here instead of in the clock
- * framework, because it is the only clock which is shared between multiple
- * devices and thus is the only clock which needs refcounting */
-static inline void jz4740_adc_clk_enable(struct jz4740_adc *adc)
-{
-	if (atomic_inc_return(&adc->clk_ref) == 1)
-		clk_prepare_enable(adc->clk);
-}
-
-static inline void jz4740_adc_clk_disable(struct jz4740_adc *adc)
-{
-	if (atomic_dec_return(&adc->clk_ref) == 0)
-		clk_disable_unprepare(adc->clk);
 }
 
 static inline void jz4740_adc_set_enabled(struct jz4740_adc *adc, int engine,
@@ -118,7 +101,7 @@ static int jz4740_adc_cell_enable(struct platform_device *pdev)
 {
 	struct jz4740_adc *adc = dev_get_drvdata(pdev->dev.parent);
 
-	jz4740_adc_clk_enable(adc);
+	clk_prepare_enable(adc->clk);
 	jz4740_adc_set_enabled(adc, pdev->id, true);
 
 	return 0;
@@ -129,7 +112,7 @@ static int jz4740_adc_cell_disable(struct platform_device *pdev)
 	struct jz4740_adc *adc = dev_get_drvdata(pdev->dev.parent);
 
 	jz4740_adc_set_enabled(adc, pdev->id, false);
-	jz4740_adc_clk_disable(adc);
+	clk_disable_unprepare(adc->clk);
 
 	return 0;
 }
@@ -260,7 +243,6 @@ static int jz4740_adc_probe(struct platform_device *pdev)
 	}
 
 	spin_lock_init(&adc->lock);
-	atomic_set(&adc->clk_ref, 0);
 
 	platform_set_drvdata(pdev, adc);
 
