@@ -110,28 +110,13 @@ static void jz4770_adc_irq_demux(struct irq_desc *desc)
 	chained_irq_exit(irq_chip, desc);
 }
 
-/* Refcounting for the ADC clock is done in here instead of in the clock
- * framework, because it is the only clock which is shared between multiple
- * devices and thus is the only clock which needs refcounting */
-static inline void jz4770_adc_clk_enable(struct jz4770_adc *adc)
-{
-	if (atomic_inc_return(&adc->clk_ref) == 1)
-		clk_enable(adc->clk);
-}
-
-static inline void jz4770_adc_clk_disable(struct jz4770_adc *adc)
-{
-	if (atomic_dec_return(&adc->clk_ref) == 0)
-		clk_disable(adc->clk);
-}
-
 static int jz4770_adc_cell_enable(struct platform_device *pdev)
 {
 	struct jz4770_adc *adc = dev_get_drvdata(pdev->dev.parent);
 	uint8_t val, mask = BIT(pdev->id);
 	unsigned long flags;
 
-	jz4770_adc_clk_enable(adc);
+	clk_prepare_enable(adc->clk);
 
 	spin_lock_irqsave(&adc->lock, flags);
 
@@ -175,7 +160,7 @@ static int jz4770_adc_cell_disable(struct platform_device *pdev)
 
 	spin_unlock_irqrestore(&adc->lock, flags);
 
-	jz4770_adc_clk_disable(adc);
+	clk_disable_unprepare(adc->clk);
 
 	return 0;
 }
@@ -274,6 +259,12 @@ static struct mfd_cell jz4770_adc_cells[] = {
 	},
 };
 
+static const struct of_device_id jz4770_adc_of_match[] = {
+	{ .compatible = "ingenic,jz4770-adc", },
+	{ },
+};
+MODULE_DEVICE_TABLE(of, jz4770_adc_of_match);
+
 static int jz4770_adc_probe(struct platform_device *pdev)
 {
 	struct irq_chip_generic *gc;
@@ -369,22 +360,20 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	ret = jz4770_adc_set_clock(adc, 100000);
 
-	clk_disable(adc->clk);
+	clk_disable_unprepare(adc->clk);
 
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to configure clock: %d\n", ret);
-		goto err_clk_unprepare;
+		return ret;
 	}
 
-
 	spin_lock_init(&adc->lock);
-	atomic_set(&adc->clk_ref, 0);
 
 	platform_set_drvdata(pdev, adc);
 
 	irq_base = irq_create_mapping(irq_domain, 0);
 	gc = irq_alloc_generic_chip("ADC", 1, irq_base, adc->base,
-				    handle_level_irq);
+		handle_level_irq);
 
 	ct = gc->chip_types;
 	ct->regs.mask = JZ_REG_ADC_CTRL;
@@ -395,23 +384,15 @@ static int jz4770_adc_probe(struct platform_device *pdev)
 
 	irq_setup_generic_chip(gc, IRQ_MSK(JZ_ADC_IRQ_NUM),
 			       IRQ_GC_INIT_MASK_CACHE, 0,
-			       IRQ_NOPROBE | IRQ_NOAUTOEN | IRQ_LEVEL);
+			       IRQ_NOPROBE | IRQ_LEVEL);
 
 	adc->gc = gc;
 
 	irq_set_chained_handler_and_data(adc->irq, jz4770_adc_irq_demux, gc);
 
-	ret = mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
+	return mfd_add_devices(&pdev->dev, 0, jz4770_adc_cells,
 			       ARRAY_SIZE(jz4770_adc_cells), mem_base,
 			       irq_base, NULL);
-	if (ret)
-		goto err_clk_unprepare;
-
-	return 0;
-
-err_clk_unprepare:
-	clk_unprepare(adc->clk);
-	return ret;
 }
 
 static int jz4770_adc_remove(struct platform_device *pdev)
@@ -427,12 +408,6 @@ static int jz4770_adc_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static const struct of_device_id jz4770_adc_of_match[] = {
-	{ .compatible = "ingenic,jz4770-adc", },
-	{ },
-};
-MODULE_DEVICE_TABLE(of, jz4770_adc_of_match);
 
 static struct platform_driver jz4770_adc_driver = {
 	.probe	= jz4770_adc_probe,

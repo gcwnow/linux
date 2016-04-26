@@ -35,7 +35,6 @@ struct jz4770_adc {
 	struct irq_chip_generic *gc;
 
 	struct clk *clk;
-	atomic_t clk_ref;
 
 	spinlock_t lock;
 };
