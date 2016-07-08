@@ -424,7 +424,7 @@ config JZ4780_TCU
 config JZ4770_OST
 	bool "Ingenic JZ47xx Operating System Timer"
 	default y if MACH_JZ4770 || MACH_JZ4780
-	depends on MACH_INGENIC
+	depends on MACH_INGENIC && (MACH_JZ4770 || MACH_JZ4780 || COMPILE_TEST)
 	select CLKSRC_OF
 	help
 	  Support for the OS Timer of the Ingenic JZ4770 or similar SoC.
