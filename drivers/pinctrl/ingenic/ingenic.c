@@ -1,5 +1,5 @@
 /*
- * ingenic pinctrl driver
+ * Ingenic SoCs pinctrl driver
  *
  * Copyright (c) 2013 Imagination Technologies
  * Author: Paul Burton <paul.burton@imgtec.com>
@@ -25,6 +25,7 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/pinctrl/pinmux.h>
@@ -35,6 +36,9 @@
 
 #include "../core.h"
 #include "../pinconf.h"
+#include "ingenic.h"
+
+#define GPIO_REGS_SIZE	0x100
 
 struct ingenic_pinctrl;
 
@@ -66,9 +70,11 @@ struct ingenic_pinctrl_func {
 struct ingenic_gpio_chip {
 	char name[3];
 	unsigned idx;
+	void __iomem *base;
 	struct gpio_chip gc;
 	struct irq_chip irq_chip;
 	struct ingenic_pinctrl *pinctrl;
+	const struct ingenic_pinctrl_ops *ops;
 	uint32_t pull_ups;
 	uint32_t pull_downs;
 	unsigned int irq;
@@ -95,27 +101,6 @@ struct ingenic_pinctrl {
 #define gc_to_jzgc(gpiochip) \
 	container_of(gpiochip, struct ingenic_gpio_chip, gc)
 
-/* GPIO port register offsets */
-#define GPIO_PIN	0x00
-#define GPIO_INT	0x10
-#define GPIO_INTS	0x14
-#define GPIO_INTC	0x18
-#define GPIO_MSK	0x20
-#define GPIO_MSKS	0x24
-#define GPIO_MSKC	0x28
-#define GPIO_PAT1	0x30
-#define GPIO_PAT1S	0x34
-#define GPIO_PAT1C	0x38
-#define GPIO_PAT0	0x40
-#define GPIO_PAT0S	0x44
-#define GPIO_PAT0C	0x48
-#define GPIO_FLG	0x50
-#define GPIO_FLGC	0x58
-#define GPIO_PEN	0x70
-#define GPIO_PENS	0x74
-#define GPIO_PENC	0x78
-#define GPIO_REGS_SIZE	0x100
-
 #define PINS_PER_GPIO_PORT 32
 
 static struct ingenic_pinctrl_group *find_group_by_of_node(
@@ -140,35 +125,18 @@ static struct ingenic_pinctrl_func *find_func_by_of_node(
 	return NULL;
 }
 
-static u32 ingenic_gpio_readl(struct ingenic_gpio_chip *jzgc, unsigned offset)
-{
-	void __iomem *base = jzgc->pinctrl->io_base +
-		(jzgc->idx * GPIO_REGS_SIZE);
-	return readl(base + offset);
-}
-
-static void ingenic_gpio_writel(struct ingenic_gpio_chip *jzgc,
-		u32 value, unsigned offset)
-{
-	void __iomem *base = jzgc->pinctrl->io_base +
-		(jzgc->idx * GPIO_REGS_SIZE);
-	writel(value, base + offset);
-}
-
 static void ingenic_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
 {
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
 
-	if (value)
-		ingenic_gpio_writel(jzgc, 1 << offset, GPIO_PAT0S);
-	else
-		ingenic_gpio_writel(jzgc, 1 << offset, GPIO_PAT0C);
+	jzgc->ops->gpio_set_value(jzgc->base, offset, value);
 }
 
 static int ingenic_gpio_get(struct gpio_chip *gc, unsigned offset)
 {
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
-	return (ingenic_gpio_readl(jzgc, GPIO_PIN) >> offset) & 0x1;
+
+	return jzgc->ops->gpio_get_value(jzgc->base, offset);
 }
 
 static int ingenic_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
@@ -188,7 +156,7 @@ static void ingenic_gpio_irq_mask(struct irq_data *irqd)
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
 
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_MSKS);
+	jzgc->ops->irq_mask(jzgc->base, irqd->hwirq, true);
 }
 
 static void ingenic_gpio_irq_unmask(struct irq_data *irqd)
@@ -196,64 +164,44 @@ static void ingenic_gpio_irq_unmask(struct irq_data *irqd)
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
 
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_MSKC);
+	jzgc->ops->irq_mask(jzgc->base, irqd->hwirq, false);
 }
 
 static void ingenic_gpio_irq_ack(struct irq_data *irqd)
 {
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
-	unsigned pin;
+	unsigned high;
+	int irq = irqd->hwirq;
 
 	if (irqd_get_trigger_type(irqd) == IRQ_TYPE_EDGE_BOTH) {
 		/*
 		 * Switch to an interrupt for the opposite edge to the one that
 		 * triggered the interrupt being ACKed.
 		 */
-		pin = ingenic_gpio_readl(jzgc, GPIO_PIN);
-		pin &= 1 << irqd->hwirq;
-
-		ingenic_gpio_writel(jzgc, 1 << irqd->hwirq,
-				   pin ? GPIO_PAT0C : GPIO_PAT0S);
+		high = jzgc->ops->gpio_get_value(jzgc->base, irq);
+		if (high)
+			jzgc->ops->irq_set_type(jzgc->base, irq,
+					IRQ_TYPE_EDGE_FALLING);
+		else
+			jzgc->ops->irq_set_type(jzgc->base, irq,
+					IRQ_TYPE_EDGE_RISING);
 	}
 
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_FLGC);
+	jzgc->ops->irq_ack(jzgc->base, irq);
 }
 
 static int ingenic_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 {
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
 	struct ingenic_gpio_chip *jzgc = gc_to_jzgc(gc);
-	unsigned pin;
-	enum {
-		PAT_EDGE_RISING		= 0x3,
-		PAT_EDGE_FALLING	= 0x2,
-		PAT_LEVEL_HIGH		= 0x1,
-		PAT_LEVEL_LOW		= 0x0,
-	} pat;
 
 	switch (type) {
 	case IRQ_TYPE_EDGE_BOTH:
-		/*
-		 * The hardware does not support interrupts on both edges. The
-		 * best we can do is to set up a single-edge interrupt and then
-		 * switch to the opposing edge when ACKing the interrupt.
-		 */
-		pin = ingenic_gpio_readl(jzgc, GPIO_PIN);
-		pin &= 1 << irqd->hwirq;
-		pat = pin ? PAT_EDGE_FALLING : PAT_EDGE_RISING;
-		break;
 	case IRQ_TYPE_EDGE_RISING:
-		pat = PAT_EDGE_RISING;
-		break;
 	case IRQ_TYPE_EDGE_FALLING:
-		pat = PAT_EDGE_FALLING;
-		break;
 	case IRQ_TYPE_LEVEL_HIGH:
-		pat = PAT_LEVEL_HIGH;
-		break;
 	case IRQ_TYPE_LEVEL_LOW:
-		pat = PAT_LEVEL_LOW;
 		break;
 	default:
 		pr_err("unsupported external interrupt type\n");
@@ -265,12 +213,18 @@ static int ingenic_gpio_irq_set_type(struct irq_data *irqd, unsigned int type)
 	else
 		irq_set_handler_locked(irqd, handle_level_irq);
 
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq,
-			   (pat & 0x2) ? GPIO_PAT1S : GPIO_PAT1C);
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq,
-			   (pat & 0x1) ? GPIO_PAT0S : GPIO_PAT0C);
-	ingenic_gpio_writel(jzgc, 1 << irqd->hwirq, GPIO_INTS);
+	if (type == IRQ_TYPE_EDGE_BOTH) {
+		/*
+		 * The hardware does not support interrupts on both edges. The
+		 * best we can do is to set up a single-edge interrupt and then
+		 * switch to the opposing edge when ACKing the interrupt.
+		 */
+		int value = jzgc->ops->gpio_get_value(jzgc->base, irqd->hwirq);
 
+		type = value ? IRQ_TYPE_EDGE_FALLING : IRQ_TYPE_EDGE_RISING;
+	}
+
+	jzgc->ops->irq_set_type(jzgc->base, irqd->hwirq, type);
 	return 0;
 }
 
@@ -282,7 +236,7 @@ static void ingenic_gpio_irq_handler(struct irq_desc *desc)
 	unsigned long flag, i;
 
 	chained_irq_enter(irq_chip, desc);
-	flag = ingenic_gpio_readl(jzgc, GPIO_FLG);
+	flag = jzgc->ops->irq_read(gc);
 
 	for_each_set_bit(i, &flag, 32)
 		generic_handle_irq(irq_linear_revmap(gc->irqdomain, i));
@@ -335,7 +289,7 @@ static int ingenic_pinctrl_dt_node_to_map(
 
 	map_num = 1 + group->num_pins;
 	new_map = devm_kzalloc(jzpc->dev,
-			sizeof(*new_map) * map_num, GFP_KERNEL);
+				sizeof(*new_map) * map_num, GFP_KERNEL);
 	if (!new_map)
 		return -ENOMEM;
 
@@ -382,9 +336,9 @@ static const char *ingenic_pinmux_get_function_name(
 	return jzpc->funcs[selector].name;
 }
 
-static int ingenic_pinmux_get_function_groups(
-		struct pinctrl_dev *pctldev, unsigned selector,
-		const char * const **groups, unsigned * const num_groups)
+static int ingenic_pinmux_get_function_groups(struct pinctrl_dev *pctldev,
+		unsigned selector, const char * const **groups,
+		unsigned * const num_groups)
 {
 	struct ingenic_pinctrl *jzpc = pinctrl_dev_get_drvdata(pctldev);
 
@@ -400,20 +354,14 @@ static int ingenic_pinmux_get_function_groups(
 static int ingenic_pinmux_set_pin_fn(struct ingenic_pinctrl *jzpc,
 		struct ingenic_pinctrl_pin *pin)
 {
+	struct ingenic_gpio_chip *jzgc = &jzpc->gpio_chips[
+		pin->idx / PINS_PER_GPIO_PORT];
 	unsigned idx = pin->idx % PINS_PER_GPIO_PORT;
 
 	dev_dbg(jzpc->dev, "set pin P%c%u to function %u\n",
 		'A' + pin->gpio_chip->idx, idx, pin->func);
 
-	if (pin->func > 3)
-		return -EINVAL;
-
-	ingenic_gpio_writel(pin->gpio_chip, 1 << idx, GPIO_INTC);
-	ingenic_gpio_writel(pin->gpio_chip, 1 << idx, GPIO_MSKC);
-	ingenic_gpio_writel(pin->gpio_chip, 1 << idx,
-			(pin->func & 0x2) ? GPIO_PAT1S : GPIO_PAT1C);
-	ingenic_gpio_writel(pin->gpio_chip, 1 << idx,
-			(pin->func & 0x1) ? GPIO_PAT0S : GPIO_PAT0C);
+	jzgc->ops->set_function(jzgc->base, idx, pin->func);
 	return 0;
 }
 
@@ -445,10 +393,7 @@ static int ingenic_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 
 	idx = offset - (jzgc->idx * PINS_PER_GPIO_PORT);
 
-	ingenic_gpio_writel(jzgc, 1 << offset, GPIO_INTC);
-	ingenic_gpio_writel(jzgc, 1 << offset, GPIO_MSKS);
-	ingenic_gpio_writel(jzgc, 1 << offset, input ? GPIO_PAT1S : GPIO_PAT1C);
-
+	jzgc->ops->set_gpio(jzgc->base, idx, !input);
 	return 0;
 }
 
@@ -473,7 +418,7 @@ static int ingenic_pinconf_get(struct pinctrl_dev *pctldev,
 	jzgc = &jzpc->gpio_chips[pin / PINS_PER_GPIO_PORT];
 	idx = pin % PINS_PER_GPIO_PORT;
 
-	pull = !((ingenic_gpio_readl(jzgc, GPIO_PEN) >> idx) & 0x1);
+	pull = jzgc->ops->get_bias(jzgc->base, idx);
 
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
@@ -516,19 +461,19 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev,
 
 		switch (pinconf_to_config_param(configs[cfg])) {
 		case PIN_CONFIG_BIAS_DISABLE:
-			ingenic_gpio_writel(jzgc, 1 << idx, GPIO_PENS);
+			jzgc->ops->set_bias(jzgc->base, idx, false);
 			break;
 
 		case PIN_CONFIG_BIAS_PULL_UP:
 			if (!(jzgc->pull_ups & (1 << idx)))
 				return -EINVAL;
-			ingenic_gpio_writel(jzgc, 1 << idx, GPIO_PENC);
+			jzgc->ops->set_bias(jzgc->base, idx, true);
 			break;
 
 		case PIN_CONFIG_BIAS_PULL_DOWN:
 			if (!(jzgc->pull_downs & (1 << idx)))
 				return -EINVAL;
-			ingenic_gpio_writel(jzgc, 1 << idx, GPIO_PENC);
+			jzgc->ops->set_bias(jzgc->base, idx, true);
 			break;
 
 		default:
@@ -552,6 +497,8 @@ static int ingenic_pinctrl_parse_dt_gpio(struct ingenic_pinctrl *jzpc,
 
 	jzgc->pinctrl = jzpc;
 	snprintf(jzgc->name, sizeof(jzgc->name), "P%c", 'A' + jzgc->idx);
+
+	jzgc->base = jzpc->io_base + (jzgc->idx * GPIO_REGS_SIZE);
 
 	jzgc->gc.base = jzpc->base + (jzgc->idx * PINS_PER_GPIO_PORT);
 	jzgc->gc.ngpio = PINS_PER_GPIO_PORT;
@@ -732,6 +679,11 @@ static int ingenic_pinctrl_parse_dt_func(struct ingenic_pinctrl *jzpc,
 	return 0;
 }
 
+static const struct of_device_id ingenic_pinctrl_dt_match[] = {
+	{},
+};
+MODULE_DEVICE_TABLE(of, ingenic_pinctrl_dt_match);
+
 static int ingenic_pinctrl_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -739,6 +691,8 @@ static int ingenic_pinctrl_probe(struct platform_device *pdev)
 	struct ingenic_gpio_chip *jzgc;
 	struct pinctrl_desc *pctl_desc;
 	struct device_node *np, *group_node;
+	const struct of_device_id *of_id = of_match_device(
+			ingenic_pinctrl_dt_match, &pdev->dev);
 	unsigned i, j;
 	int err;
 
@@ -815,6 +769,7 @@ static int ingenic_pinctrl_probe(struct platform_device *pdev)
 			continue;
 
 		jzpc->gpio_chips[i].idx = i;
+		jzpc->gpio_chips[i].ops = of_id->data;
 
 		err = ingenic_pinctrl_parse_dt_gpio(jzpc,
 				&jzpc->gpio_chips[i++], np);
@@ -894,13 +849,6 @@ static int ingenic_pinctrl_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id ingenic_pinctrl_dt_match[] = {
-	{ .compatible = "ingenic,jz4770-pinctrl", .data = NULL },
-	{ .compatible = "ingenic,jz4780-pinctrl", .data = NULL },
-	{},
-};
-MODULE_DEVICE_TABLE(of, ingenic_pinctrl_dt_match);
-
 static struct platform_driver ingenic_pinctrl_driver = {
 	.probe		= ingenic_pinctrl_probe,
 	.driver = {
@@ -923,5 +871,5 @@ static void __exit ingenic_pinctrl_drv_unregister(void)
 module_exit(ingenic_pinctrl_drv_unregister);
 
 MODULE_AUTHOR("Paul Burton <paul.burton@imgtec.com>");
-MODULE_DESCRIPTION("Ingenic jz47xx pinctrl driver");
+MODULE_DESCRIPTION("Ingenic pinctrl driver");
 MODULE_LICENSE("GPL v2");
