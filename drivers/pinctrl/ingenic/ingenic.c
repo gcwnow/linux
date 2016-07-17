@@ -680,6 +680,14 @@ static int ingenic_pinctrl_parse_dt_func(struct ingenic_pinctrl *jzpc,
 }
 
 static const struct of_device_id ingenic_pinctrl_dt_match[] = {
+	{
+		.compatible = "ingenic,jz4770-pinctrl",
+		.data = &ingenic_pinctrl_ops,
+	},
+	{
+		.compatible = "ingenic,jz4780-pinctrl",
+		.data = &ingenic_pinctrl_ops,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, ingenic_pinctrl_dt_match);
