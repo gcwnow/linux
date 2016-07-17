@@ -44,6 +44,26 @@
 		#clock-cells = <1>;
 	};
 
+	mmc: jz4770-mmc@10021000 {
+		compatible = "ingenic,jz4740-mmc";
+		reg = <0x10021000 0x1000>;
+
+		clocks = <&cgu JZ4740_CLK_MMC>;
+		clock-names = "mmc";
+
+		interrupt-parent = <&intc>;
+		interrupts = <14>;
+
+		dmas = <&dmac 0>;
+		dma-names = "rx-tx";
+		dma-tx-id = <26>;
+		dma-rx-id = <27>;
+
+		cap-sd-highspeed;
+		cap-mmc-highspeed;
+		cap-sdio-irq;
+	};
+
 	uart0: serial@10030000 {
 		compatible = "ingenic,jz4740-uart";
 		reg = <0x10030000 0x100>;
