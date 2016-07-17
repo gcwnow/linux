@@ -65,4 +65,105 @@
 		clocks = <&ext>, <&cgu JZ4740_CLK_UART1>;
 		clock-names = "baud", "module";
 	};
+
+	pinctrl: jz4770-pinctrl@10010000 {
+		compatible = "ingenic,jz4740-pinctrl";
+		reg = <0x10010000 0x384>;
+
+		gpa: gpa {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <28>;
+
+			ingenic,pull-ups = <0xffffffff>;
+		};
+
+		gpb: gpb {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <27>;
+
+			ingenic,pull-ups   = <0xffffffff>;
+		};
+
+		gpc: gpc {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <26>;
+
+			ingenic,pull-ups = <0xffffffff>;
+		};
+
+		gpd: gpd {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <25>;
+
+			ingenic,pull-ups   = <0xdfffffff>;
+		};
+
+		pincfg_nobias: nobias {
+			bias-disable;
+		};
+
+		pincfg_pull_up: pull_up {
+			bias-pull-up;
+		};
+
+		pincfg_pull_down: pull_down {
+			bias-pull-down;
+		};
+
+		pinfunc_msc: msc {
+			pins_msc_4bit: msc_4bit {
+				ingenic,pins = <&gpd 8 0 &pincfg_nobias
+						&gpa 9 0 &pincfg_nobias
+						&gpa 10 0 &pincfg_nobias
+						&gpa 11 0 &pincfg_nobias
+						&gpa 12 0 &pincfg_nobias
+						&gpa 13 0 &pincfg_nobias>;
+			};
+		};
+
+		pinfunc_uart0: uart0 {
+			pins_uart0_data: uart0-data {
+				ingenic,pins = <&gpd 26 1 &pincfg_pull_up  /* rxd */
+						&gpd 25 1 &pincfg_nobias>; /* txd */
+			};
+
+			pins_uart0_dataplusflow: uart0-dataplusflow {
+				ingenic,pins = <&gpd 26 1 &pincfg_pull_up  /* rxd */
+						&gpd 25 1 &pincfg_nobias   /* txd */
+						&gpd 31 0 &pincfg_nobias   /* rts */
+						&gpd 30 0 &pincfg_nobias>; /* cts */
+			};
+		};
+
+		pinfunc_uart1: uart1 {
+			pins_uart1_data: uart1-data {
+				ingenic,pins = <&gpd 30 2 &pincfg_pull_up   /* rxd */
+						&gpd 31 2 &pincfg_nobias>;  /* txd */
+			};
+		};
+	};
 };
