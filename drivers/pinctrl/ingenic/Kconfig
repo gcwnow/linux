@@ -6,3 +6,7 @@ config PINCTRL_INGENIC
 	select PINMUX
 	select GPIOLIB_IRQCHIP
 	select GENERIC_PINCONF
+
+config PINCTRL_JZ4780
+	def_bool y if MACH_JZ4770 || MACH_JZ4780
+	select PINCTRL_INGENIC
