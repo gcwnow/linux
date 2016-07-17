@@ -88,31 +88,6 @@ struct platform_device jz4740_udc_device = {
 	.resource      = jz4740_udc_resources,
 };
 
-/* MMC/SD controller */
-static struct resource jz4740_mmc_resources[] = {
-	{
-		.start	= JZ4740_MSC_BASE_ADDR,
-		.end	= JZ4740_MSC_BASE_ADDR + 0x1000 - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.start	= JZ4740_IRQ_MSC,
-		.end	= JZ4740_IRQ_MSC,
-		.flags	= IORESOURCE_IRQ,
-	}
-};
-
-struct platform_device jz4740_mmc_device = {
-	.name		= "jz4740-mmc",
-	.id		= 0,
-	.dev = {
-		.dma_mask = &jz4740_mmc_device.dev.coherent_dma_mask,
-		.coherent_dma_mask = DMA_BIT_MASK(32),
-	},
-	.num_resources	= ARRAY_SIZE(jz4740_mmc_resources),
-	.resource	= jz4740_mmc_resources,
-};
-
 /* RTC controller */
 static struct resource jz4740_rtc_resources[] = {
 	{
