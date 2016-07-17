@@ -66,6 +66,19 @@
 		clock-names = "baud", "module";
 	};
 
+	dmac: jz4770-dma@13020000 {
+		compatible = "ingenic,jz4740-dma";
+		reg = <0x13020000 0xC0
+			   0x13020300 0x20>;
+
+		dma-channels = <6>;
+		#dma-cells = <1>;
+
+		clocks = <&cgu JZ4740_CLK_DMA>;
+		interrupt-parent = <&intc>;
+		interrupts = <20>;
+	};
+
 	pinctrl: jz4770-pinctrl@10010000 {
 		compatible = "ingenic,jz4740-pinctrl";
 		reg = <0x10010000 0x384>;
