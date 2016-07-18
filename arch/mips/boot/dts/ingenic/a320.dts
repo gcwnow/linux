@@ -53,3 +53,12 @@
 &timer_ingenic {
 	timers = <0 1>;
 };
+
+&tcu {
+	assigned-clocks = <&tcu JZ4740_CLK_WDT>;
+	assigned-clock-parents = <&rtc>;
+};
+
+&wdt {
+	system-power-controller;
+};
