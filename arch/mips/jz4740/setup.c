@@ -28,9 +28,6 @@
 #include <asm/prom.h>
 
 #include <asm/mach-jz4740/base.h>
-#include <asm/mach-jz4740/timer.h>
-
-#include "reset.h"
 
 
 #define JZ4740_EMC_SDRAM_CTRL 0x80
@@ -61,7 +58,6 @@ void __init plat_mem_setup(void)
 {
 	int offset;
 
-	jz4740_reset_init();
 	__dt_setup_arch(__dtb_start);
 
 	offset = fdt_path_offset(__dtb_start, "/memory");
@@ -99,7 +95,6 @@ void __init arch_init_irq(void)
 
 void __init plat_time_init(void)
 {
-	jz4740_timer_init();
 	of_clk_init(NULL);
 	clocksource_probe();
 }
