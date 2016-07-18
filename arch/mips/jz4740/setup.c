@@ -26,11 +26,9 @@
 
 #include <asm/bootinfo.h>
 #include <asm/prom.h>
+#include <asm/reboot.h>
 
 #include <asm/mach-jz4740/base.h>
-#include <asm/mach-jz4740/timer.h>
-
-#include "reset.h"
 
 
 #define JZ4740_EMC_SDRAM_CTRL 0x80
@@ -57,11 +55,22 @@ static void __init jz4740_detect_mem(void)
 	add_memory_region(0, size, BOOT_MEM_RAM);
 }
 
+static void jz4740_halt(void)
+{
+	while (1) {
+		__asm__(".set push;\n"
+			".set mips3;\n"
+			"wait;\n"
+			".set pop;\n"
+		);
+	}
+}
+
 void __init plat_mem_setup(void)
 {
 	int offset;
 
-	jz4740_reset_init();
+	_machine_halt = jz4740_halt;
 	__dt_setup_arch(__dtb_start);
 
 	offset = fdt_path_offset(__dtb_start, "/memory");
@@ -99,7 +108,37 @@ void __init arch_init_irq(void)
 
 void __init plat_time_init(void)
 {
-	jz4740_timer_init();
 	of_clk_init(NULL);
 	clocksource_probe();
+}
+
+static __init void jz4740_init_cmdline(int argc, char *argv[])
+{
+	unsigned int count = COMMAND_LINE_SIZE - 1;
+	int i;
+	char *dst = &(arcs_cmdline[0]);
+	char *src;
+
+	for (i = 1; i < argc && count; ++i) {
+		src = argv[i];
+		while (*src && count) {
+			*dst++ = *src++;
+			--count;
+		}
+		*dst++ = ' ';
+	}
+	if (i > 1)
+		--dst;
+
+	*dst = 0;
+}
+
+void __init prom_init(void)
+{
+	jz4740_init_cmdline((int)fw_arg0, (char **)fw_arg1);
+	mips_machtype = MACH_INGENIC_JZ4740;
+}
+
+void __init prom_free_prom_memory(void)
+{
 }
