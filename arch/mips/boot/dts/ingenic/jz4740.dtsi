@@ -53,6 +53,14 @@
 		#clock-cells = <1>;
 	};
 
+	wdt: jz4740-wdt@10002000 {
+		compatible = "ingenic,jz4740-watchdog";
+		reg = <0x10002000 0x0C>;
+
+		clocks = <&tcu JZ4740_CLK_WDT>;
+		clock-names = "wdt";
+	};
+
 	timer_ingenic: timer-ingenic@0x10002000 {
 		compatible = "ingenic,jz4740-tcu";
 		reg = <0x10002000 0xc0>;
