@@ -68,7 +68,7 @@ static void jz4740_gpio_set_value(void __iomem *base,
 
 static int jz4740_gpio_get_value(void __iomem *base, unsigned offset)
 {
-	return readl(base + GPIO_DATA);
+	return (readl(base + GPIO_DATA) >> offset) & 0x1;
 }
 
 static u32 jz4740_irq_read(void __iomem *base)
