@@ -563,4 +563,10 @@ config JZ4770_OST_SCHED_CLOCK
 	help
 	  Provides a 32-bit sched_clock using the OS Timer.
 
+config INGENIC_TIMER
+	def_bool y if MACH_INGENIC
+	select CLKSRC_OF if OF
+	help
+	  Support for the timer/counter unit of the Ingenic JZ SoCs.
+
 endmenu
