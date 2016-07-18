@@ -1,4 +1,5 @@
 #include <dt-bindings/clock/jz4740-cgu.h>
+#include <dt-bindings/clock/ingenic,jz4740-tcu.h>
 
 / {
 	#address-cells = <1>;
@@ -42,6 +43,43 @@
 		clock-names = "ext", "rtc";
 
 		#clock-cells = <1>;
+	};
+
+	tcu: jz4740-tcu@10002010 {
+		compatible = "ingenic,jz4740-tcu-clocks";
+		reg = <0x10002010 0xb0		/* TCU regs */
+				0x10002000 0x10>;	/* WDT regs */
+
+		#clock-cells = <1>;
+	};
+
+	timer_ingenic: timer-ingenic@0x10002000 {
+		compatible = "ingenic,jz4740-tcu";
+		reg = <0x10002000 0xc0>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <23 22 21>;
+
+		clocks = <&tcu JZ4740_CLK_TIMER0
+				&tcu JZ4740_CLK_TIMER1
+				&tcu JZ4740_CLK_TIMER2
+				&tcu JZ4740_CLK_TIMER3
+				&tcu JZ4740_CLK_TIMER4
+				&tcu JZ4740_CLK_TIMER5
+				&tcu JZ4740_CLK_TIMER6
+				&tcu JZ4740_CLK_TIMER7
+				&tcu JZ4740_COUNTER0
+				&tcu JZ4740_COUNTER1
+				&tcu JZ4740_COUNTER2
+				&tcu JZ4740_COUNTER3
+				&tcu JZ4740_COUNTER4
+				&tcu JZ4740_COUNTER5
+				&tcu JZ4740_COUNTER6
+				&tcu JZ4740_COUNTER7>;
+		clock-names = "timer0", "timer1", "timer2", "timer3",
+				"timer4", "timer5", "timer6", "timer7",
+				"counter0", "counter1", "counter2", "counter3",
+				"counter4", "counter5", "counter6", "counter7";
 	};
 
 	mmc: jz4770-mmc@10021000 {

@@ -14,6 +14,8 @@
  *
  */
 
+#include <linux/clk-provider.h>
+#include <linux/clocksource.h>
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/irqchip.h>
@@ -26,6 +28,7 @@
 #include <asm/prom.h>
 
 #include <asm/mach-jz4740/base.h>
+#include <asm/mach-jz4740/timer.h>
 
 #include "reset.h"
 
@@ -92,4 +95,11 @@ const char *get_system_type(void)
 void __init arch_init_irq(void)
 {
 	irqchip_init();
+}
+
+void __init plat_time_init(void)
+{
+	jz4740_timer_init();
+	of_clk_init(NULL);
+	clocksource_probe();
 }
