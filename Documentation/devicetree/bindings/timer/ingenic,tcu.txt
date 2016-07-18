@@ -1,0 +1,34 @@
+Ingenic JZ47xx SoCs Timer/Counter Unit driver
+---------------------------------------------
+
+Required properties:
+
+- compatible : should be "ingenic,<socname>-tcu". Valid strings are:
+  * ingenic,jz4740-tcu
+  * ingenic,jz4770-tcu
+  * ingenic,jz4780-tcu
+- interrupt-parent : phandle of the TCU interrupt controller.
+- interrupts : Specifies the interrupts the controller is connected to.
+- clocks : List of phandle & clock specifiers for the TCU clocks.
+- clock-names : List of name strings for the TCU clocks.
+
+Example:
+
+/ {
+	regmap {
+		compatible = "simple-mfd", "syscon";
+		reg = <0x10002000 0x1000>;
+
+		tcu: timer {
+			compatible = "ingenic,jz4740-tcu";
+
+			clocks = <&tcu 0>, <&tcu 1>, <&tcu 2>, <&tcu 3>,
+					 <&tcu 4>, <&tcu 5>, <&tcu 6>, <&tcu 7>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+						  "timer4", "timer5", "timer6", "timer7";
+
+			interrupt-parent = <&tcu>;
+			interrupts = <0 1 2 3 4 5 6 7>;
+		};
+	};
+};
