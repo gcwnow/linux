@@ -91,6 +91,17 @@
 				"counter4", "counter5", "counter6", "counter7";
 	};
 
+	rtc_dev: jz4740-rtc@10003000 {
+		compatible = "ingenic,jz4740-rtc";
+		reg = <0x10003000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <15>;
+
+		clocks = <&rtc>;
+		clock-names = "rtc";
+	};
+
 	mmc: jz4740-mmc@10021000 {
 		compatible = "ingenic,jz4740-mmc";
 		reg = <0x10021000 0x1000>;
