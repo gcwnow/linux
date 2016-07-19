@@ -18,6 +18,7 @@
 
 #include <linux/clk/jz4740-tcu.h>
 
+#define MIN_NUM_TCU_IRQS 2
 #define MAX_NUM_TCU_IRQS 3
 
 enum ingenic_soc_id {
@@ -64,21 +65,6 @@ enum ingenic_tcu_reg {
 #define TCSR_PCK_EN		(1 << 0)
 #define TCSR_SRC_MASK		(TCSR_EXT_EN | TCSR_RTC_EN | TCSR_PCK_EN)
 
-struct ingenic_tcu_channel_desc {
-	u8 irq;
-	u8 present: 1;
-};
-
-#define INGENIC_TCU_CHANNEL(_irq) {		\
-	.irq = _irq,				\
-	.present = 1,				\
-}
-
-struct ingenic_tcu_desc {
-	struct ingenic_tcu_channel_desc *channels;
-	unsigned num_channels;
-};
-
 struct ingenic_tcu;
 struct ingenic_tcu_channel;
 
@@ -103,8 +89,8 @@ struct ingenic_tcu_irq {
 };
 
 struct ingenic_tcu {
-	const struct ingenic_tcu_desc *desc;
 	void __iomem *base;
+	unsigned num_channels;
 	struct ingenic_tcu_channel *channels;
 	struct ingenic_tcu_irq irqs[MAX_NUM_TCU_IRQS];
 };
@@ -220,9 +206,7 @@ static irqreturn_t ingenic_tcu_irq(int irq, void *dev_id)
 	ack = 0;
 
 	/* Callbacks for any pending half full interrupts */
-	for_each_set_bit(c, &pending_h, tcu->desc->num_channels) {
-		WARN_ON_ONCE(!tcu->desc->channels[c].present);
-
+	for_each_set_bit(c, &pending_h, tcu->num_channels) {
 		chan = &tcu->channels[c];
 		ack |= 1 << (TFR_HMASK_SHIFT + c);
 
@@ -231,9 +215,7 @@ static irqreturn_t ingenic_tcu_irq(int irq, void *dev_id)
 	}
 
 	/* Callbacks for any pending full interrupts */
-	for_each_set_bit(c, &pending_f, tcu->desc->num_channels) {
-		WARN_ON_ONCE(!tcu->desc->channels[c].present);
-
+	for_each_set_bit(c, &pending_f, tcu->num_channels) {
 		chan = &tcu->channels[c];
 		ack |= 1 << c;
 
@@ -258,11 +240,11 @@ static int setup_tcu_irq(struct ingenic_tcu *tcu, unsigned i)
 	irq_handler_t handler;
 
 	channel_count = bitmap_weight(&irq->channel_map,
-				      tcu->desc->num_channels);
+				      tcu->num_channels);
 	if (channel_count == 1) {
 		handler = ingenic_tcu_single_channel_irq;
 		irq->channel = find_first_bit(&irq->channel_map,
-				tcu->desc->num_channels);
+				tcu->num_channels);
 	} else {
 		handler = ingenic_tcu_irq;
 	}
@@ -271,13 +253,11 @@ static int setup_tcu_irq(struct ingenic_tcu *tcu, unsigned i)
 			ingenic_tcu_irq_names[i], irq);
 }
 
-static struct ingenic_tcu * __init ingenic_tcu_init_tcu(
-		const struct ingenic_tcu_desc *desc, struct device_node *np,
-		unsigned int num_tcu_irqs)
+static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np)
 {
 	struct ingenic_tcu *tcu;
-	unsigned i;
-	int err;
+	unsigned i, irq;
+	int err, num_channels, num_irqs;
 
 	tcu = kzalloc(sizeof(*tcu), GFP_KERNEL);
 	if (!tcu) {
@@ -285,14 +265,26 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(
 		goto out;
 	}
 
-	tcu->channels = kzalloc(sizeof(*tcu->channels) * desc->num_channels,
+	num_channels = of_property_count_elems_of_size(np, "interrupts-map", 4);
+	if (num_channels < 0) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	num_irqs = of_property_count_elems_of_size(np, "interrupts", 4);
+	if (num_irqs < MIN_NUM_TCU_IRQS || num_irqs > MAX_NUM_TCU_IRQS) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	tcu->num_channels = num_channels;
+
+	tcu->channels = kzalloc(sizeof(*tcu->channels) * tcu->num_channels,
 				GFP_KERNEL);
 	if (!tcu->channels) {
 		err = -ENOMEM;
 		goto out_free;
 	}
-
-	tcu->desc = desc;
 
 	/* Map TCU registers */
 	tcu->base = of_iomap(np, 0);
@@ -302,12 +294,9 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(
 	}
 
 	/* Initialise all channels as stopped & calculate IRQ maps */
-	for (i = 0; i < tcu->desc->num_channels; i++) {
+	for (i = 0; i < tcu->num_channels; i++) {
 		struct clk *clk;
 		char buf[16];
-
-		if (!tcu->desc->channels[i].present)
-			continue;
 
 		snprintf(buf, sizeof(buf), "timer%u", i);
 		clk = clk_get(NULL, buf);
@@ -332,11 +321,16 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(
 		tcu->channels[i].tcu = tcu;
 		tcu->channels[i].idx = i;
 		tcu->channels[i].stopped = true;
-		set_bit(i, &tcu->irqs[tcu->desc->channels[i].irq].channel_map);
+
+		err = of_property_read_u32_index(np, "interrupts-map", i, &irq);
+		if (err)
+			goto out_clk_put;
+
+		set_bit(i, &tcu->irqs[irq].channel_map);
 	}
 
 	/* Map IRQs */
-	for (i = 0; i < num_tcu_irqs; i++) {
+	for (i = 0; i < (unsigned) num_irqs; i++) {
 		tcu->irqs[i].tcu = tcu;
 
 		tcu->irqs[i].virq = irq_of_parse_and_map(np, i);
@@ -357,7 +351,7 @@ out_irq_dispose:
 		irq_dispose_mapping(tcu->irqs[i].virq);
 	}
 out_clk_put:
-	for (i = 0; i < tcu->desc->num_channels; i++) {
+	for (i = 0; i < tcu->num_channels; i++) {
 		if (tcu->channels[i].timer_clk)
 			clk_put(tcu->channels[i].timer_clk);
 		if (tcu->channels[i].counter_clk)
@@ -378,9 +372,7 @@ static struct ingenic_tcu_channel * __init ingenic_tcu_req_channel(
 	unsigned c;
 
 	if (idx == -1) {
-		for (c = 0; c < tcu->desc->num_channels; c++) {
-			if (!tcu->desc->channels[c].present)
-				continue;
+		for (c = 0; c < tcu->num_channels; c++) {
 			if (!tcu->channels[c].stopped)
 				continue;
 			idx = c;
@@ -574,57 +566,13 @@ static unsigned long ingenic_tcu_get_channel_rate(
 }
 */
 
-static struct ingenic_tcu_channel_desc jz4740_tcu_channels[8] = {
-	[0] = INGENIC_TCU_CHANNEL(0),
-	[1] = INGENIC_TCU_CHANNEL(1),
-	[2] = INGENIC_TCU_CHANNEL(2),
-	[3] = INGENIC_TCU_CHANNEL(2),
-	[4] = INGENIC_TCU_CHANNEL(2),
-	[5] = INGENIC_TCU_CHANNEL(2),
-	[6] = INGENIC_TCU_CHANNEL(2),
-	[7] = INGENIC_TCU_CHANNEL(2),
-};
-
-static struct ingenic_tcu_channel_desc jz4780_tcu_channels[8] = {
-	[0] = INGENIC_TCU_CHANNEL(1),
-	[1] = INGENIC_TCU_CHANNEL(1),
-	[2] = INGENIC_TCU_CHANNEL(1),
-	[3] = INGENIC_TCU_CHANNEL(1),
-	[4] = INGENIC_TCU_CHANNEL(1),
-	[5] = INGENIC_TCU_CHANNEL(0),
-	[6] = INGENIC_TCU_CHANNEL(1),
-	[7] = INGENIC_TCU_CHANNEL(1),
-};
-
-static struct ingenic_tcu_desc ingenic_tcu_descs[] = {
-	[ID_JZ4740] = {
-		.channels = jz4740_tcu_channels,
-		.num_channels = ARRAY_SIZE(jz4740_tcu_channels),
-	},
-	[ID_JZ4780] = {
-		.channels = jz4780_tcu_channels,
-		.num_channels = ARRAY_SIZE(jz4780_tcu_channels),
-	},
-};
-
-static void __init ingenic_tcu_init(struct device_node *np,
-		enum ingenic_soc_id id)
+static void __init ingenic_tcu_init(struct device_node *np)
 {
 	struct ingenic_tcu *tcu;
-	unsigned num_tcu_irqs;
+	unsigned int i;
 	int err;
-	u32 i;
 
-	switch (id) {
-	case ID_JZ4740:
-		num_tcu_irqs = 3;
-		break;
-	default:
-		num_tcu_irqs = 2;
-		break;
-	}
-
-	tcu = ingenic_tcu_init_tcu(&ingenic_tcu_descs[id], np, num_tcu_irqs);
+	tcu = ingenic_tcu_init_tcu(np);
 	BUG_ON(IS_ERR(tcu));
 
 	for (i = 0; ; i++) {
@@ -640,15 +588,6 @@ static void __init ingenic_tcu_init(struct device_node *np,
 	}
 }
 
-static void __init jz4740_tcu_init(struct device_node *np)
-{
-	ingenic_tcu_init(np, ID_JZ4740);
-}
-CLOCKSOURCE_OF_DECLARE(jz4740_tcu, "ingenic,jz4740-tcu", jz4740_tcu_init);
-
-static void __init jz4780_tcu_init(struct device_node *np)
-{
-	ingenic_tcu_init(np, ID_JZ4780);
-}
-CLOCKSOURCE_OF_DECLARE(jz4770_tcu, "ingenic,jz4770-tcu", jz4780_tcu_init);
-CLOCKSOURCE_OF_DECLARE(jz4780_tcu, "ingenic,jz4780-tcu", jz4780_tcu_init);
+CLOCKSOURCE_OF_DECLARE(jz4740_tcu, "ingenic,jz4740-tcu", ingenic_tcu_init);
+CLOCKSOURCE_OF_DECLARE(jz4770_tcu, "ingenic,jz4770-tcu", ingenic_tcu_init);
+CLOCKSOURCE_OF_DECLARE(jz4780_tcu, "ingenic,jz4780-tcu", ingenic_tcu_init);
