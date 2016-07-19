@@ -67,6 +67,7 @@
 
 		interrupt-parent = <&intc>;
 		interrupts = <23 22 21>;
+		interrupts-map = <0 1 2 2 2 2 2 2>;
 
 		clocks = <&tcu JZ4740_CLK_TIMER0
 				&tcu JZ4740_CLK_TIMER1
