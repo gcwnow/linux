@@ -34,6 +34,8 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
+#include <dt-bindings/pinctrl/ingenic.h>
+
 #include "../core.h"
 #include "../pinconf.h"
 #include "ingenic.h"
@@ -358,10 +360,20 @@ static int ingenic_pinmux_set_pin_fn(struct ingenic_pinctrl *jzpc,
 		pin->idx / PINS_PER_GPIO_PORT];
 	unsigned idx = pin->idx % PINS_PER_GPIO_PORT;
 
-	dev_dbg(jzpc->dev, "set pin P%c%u to function %u\n",
-		'A' + pin->gpio_chip->idx, idx, pin->func);
+	if (pin->func == PIN_MODE_GPIO) {
+		dev_dbg(jzpc->dev, "set pin P%c%u to GPIO\n",
+				'A' + pin->gpio_chip->idx, idx);
 
-	jzgc->ops->set_function(jzgc->base, idx, pin->func);
+		jzgc->ops->set_gpio(jzgc->base, idx, false);
+	} else if (pin->func >= jzgc->ops->nb_functions) {
+		return -EINVAL;
+	} else {
+		dev_dbg(jzpc->dev, "set pin P%c%u to function %u\n",
+				'A' + pin->gpio_chip->idx, idx, pin->func);
+
+		jzgc->ops->set_function(jzgc->base, idx, pin->func);
+	}
+
 	return 0;
 }
 
