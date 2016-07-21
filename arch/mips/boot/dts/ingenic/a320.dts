@@ -5,8 +5,12 @@
 / {
 	compatible = "dingoo,a320", "ingenic,jz4740";
 
+	aliases {
+		serial0 = &uart0;
+	};
+
 	chosen {
-		stdout-path = &uart0;
+		stdout-path = "serial0:57600n8";
 	};
 
 	regulators {
