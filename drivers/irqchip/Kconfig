@@ -237,6 +237,11 @@ config INGENIC_IRQ
 	depends on MACH_INGENIC
 	default y
 
+config INGENIC_TCU_IRQ
+	bool
+	depends on MACH_INGENIC
+	default y
+
 config RENESAS_H8300H_INTC
         bool
 	select IRQ_DOMAIN
