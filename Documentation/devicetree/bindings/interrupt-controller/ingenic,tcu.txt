@@ -1,0 +1,32 @@
+Ingenic SoCs Timer/Counter Unit Interrupt Controller
+
+Required properties:
+
+- compatible : should be "ingenic,<socname>-tcu-intc". Valid strings are:
+  * ingenic,jz4740-tcu-intc
+  * ingenic,jz4770-tcu-intc
+  * ingenic,jz4780-tcu-intc
+- interrupt-controller : Identifies the node as an interrupt controller
+- #interrupt-cells : Specifies the number of cells needed to encode an
+  interrupt source. The value shall be 1.
+- interrupt-parent : phandle of the interrupt controller.
+- interrupts : Specifies the interrupt the controller is connected to.
+
+Example:
+
+/ {
+	regmap {
+		compatible = "simple-mfd", "syscon";
+		reg = <0x10002000 0x1000>;
+
+		tcu: interrupt-controller {
+			compatible = "ingenic,jz4740-tcu-intc";
+
+			interrupt-controller;
+			#interrupt-cells = <1>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <15>;
+		};
+	};
+};
