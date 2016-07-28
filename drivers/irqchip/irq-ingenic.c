@@ -20,7 +20,6 @@
 #include <linux/ioport.h>
 #include <linux/irqchip.h>
 #include <linux/irqchip/chained_irq.h>
-#include <linux/irqchip/ingenic.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/timex.h>
@@ -74,13 +73,13 @@ static void intc_irq_set_mask(struct irq_chip_generic *gc, uint32_t mask)
 	writel(~mask, gc->reg_base + regs->disable);
 }
 
-void ingenic_intc_irq_suspend(struct irq_data *data)
+static void ingenic_intc_irq_suspend(struct irq_data *data)
 {
 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
 	intc_irq_set_mask(gc, gc->wake_active);
 }
 
-void ingenic_intc_irq_resume(struct irq_data *data)
+static void ingenic_intc_irq_resume(struct irq_data *data)
 {
 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
 	intc_irq_set_mask(gc, gc->mask_cache);
