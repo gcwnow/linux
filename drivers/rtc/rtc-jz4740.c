@@ -60,6 +60,7 @@ struct jz4740_rtc {
 	enum jz4740_rtc_type type;
 
 	struct rtc_device *rtc;
+	struct clk *clk;
 
 	int irq;
 
@@ -257,16 +258,9 @@ EXPORT_SYMBOL_GPL(jz4740_rtc_poweroff);
 static void jz4740_rtc_power_off(void)
 {
 	struct jz4740_rtc *rtc = dev_get_drvdata(dev_for_power_off);
+	unsigned long rtc_rate = clk_get_rate(rtc->clk);
 	unsigned long wakeup_filter_ticks;
 	unsigned long reset_counter_ticks;
-	struct clk *rtc_clk;
-	unsigned long rtc_rate;
-
-	rtc_clk = clk_get(dev_for_power_off, "rtc");
-	if (IS_ERR(rtc_clk))
-		panic("unable to get RTC clock");
-	rtc_rate = clk_get_rate(rtc_clk);
-	clk_put(rtc_clk);
 
 	/*
 	 * Set minimum wakeup pin assertion time: 100 ms.
@@ -333,6 +327,12 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
 	rtc->base = devm_ioremap_resource(&pdev->dev, mem);
 	if (IS_ERR(rtc->base))
 		return PTR_ERR(rtc->base);
+
+	rtc->clk = devm_clk_get(&pdev->dev, "rtc");
+	if (IS_ERR(rtc->clk)) {
+		dev_err(&pdev->dev, "Failed to get RTC clock\n");
+		return PTR_ERR(rtc->clk);
+	}
 
 	spin_lock_init(&rtc->lock);
 
