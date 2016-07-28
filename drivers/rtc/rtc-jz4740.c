@@ -309,7 +309,8 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct jz4740_rtc *rtc;
-	uint32_t scratchpad;
+	unsigned long rtc_rate;
+	uint32_t rtcgr, scratchpad;
 	struct resource *mem;
 	const struct platform_device_id *id = platform_get_device_id(pdev);
 	const struct of_device_id *of_id = of_match_device(
@@ -361,6 +362,22 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to request rtc irq: %d\n", ret);
 		return ret;
+	}
+
+	rtc_rate = clk_get_rate(rtc->clk);
+	rtcgr = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_REGULATOR);
+	if ((rtcgr & 0xffff) + 1 != rtc_rate) {
+		if (rtc_rate - 1 >= 0x10000) {
+			dev_warn(&pdev->dev, "Invalid RTC rate: %lu\n",
+				 rtc_rate);
+		} else {
+			dev_warn(&pdev->dev, "Resetting RTC pulse interval\n");
+			ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_REGULATOR,
+				rtc_rate - 1);
+			if (ret)
+				dev_warn(&pdev->dev,
+					 "Could not update RTCGR: %d\n", ret);
+		}
 	}
 
 	scratchpad = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SCRATCHPAD);
