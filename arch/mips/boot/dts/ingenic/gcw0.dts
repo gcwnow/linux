@@ -470,3 +470,7 @@
 	/* MMC2 is not used on the GCW0; disable it */
 	status = "disabled";
 };
+
+&timer_ingenic {
+	timers = <5 6>;
+};
