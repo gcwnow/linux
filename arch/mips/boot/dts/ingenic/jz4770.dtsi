@@ -99,12 +99,23 @@
 					"counter4", "counter5", "counter6", "counter7";
 		};
 
-		clocksource@0x10002000 {
-			compatible = "ingenic,jz4780-tcu";
-			reg = <0x10002000 0x140>;
+		tcu_irq: irq-ingenic-tcu@10002020 {
+			compatible = "ingenic,jz4770-tcu-intc";
+			reg = <0x10002020 0x1c>;
+
+			interrupt-controller;
+			#interrupt-cells = <1>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <26 25>;
+		};
+
+		timer_ingenic: timer-ingenic@0x10002000 {
+			compatible = "ingenic,jz4770-tcu";
+			reg = <0x10002000 0xc0>;
+
+			interrupt-parent = <&tcu_irq>;
+			interrupts = <0 1 2 3 4 5 6 7>;
 
 			clocks = <&tcu JZ4740_CLK_TIMER0
 					&tcu JZ4740_CLK_TIMER1
