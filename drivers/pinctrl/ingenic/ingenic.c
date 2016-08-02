@@ -238,7 +238,7 @@ static void ingenic_gpio_irq_handler(struct irq_desc *desc)
 	unsigned long flag, i;
 
 	chained_irq_enter(irq_chip, desc);
-	flag = jzgc->ops->irq_read(gc);
+	flag = jzgc->ops->irq_read(jzgc->base);
 
 	for_each_set_bit(i, &flag, 32)
 		generic_handle_irq(irq_linear_revmap(gc->irqdomain, i));
