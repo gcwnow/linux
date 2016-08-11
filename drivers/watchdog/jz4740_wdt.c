@@ -51,7 +51,6 @@ struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
 	void __iomem *base;
 	struct clk *clk;
-	struct notifier_block restart_nb;
 };
 
 static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
@@ -108,15 +107,12 @@ static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
 	return 0;
 }
 
-static int jz4740_wdt_restart_handler(struct notifier_block *nb,
-		unsigned long mode, void *cmd)
+static int jz4740_wdt_restart(struct watchdog_device *wdt_dev,
+			      unsigned long action, void *data)
 {
-	struct jz4740_wdt_drvdata *drvdata = container_of(nb,
-			struct jz4740_wdt_drvdata, restart_nb);
-
-	drvdata->wdt.timeout = 0;
-	jz4740_wdt_start(&drvdata->wdt);
-	return NOTIFY_DONE;
+	wdt_dev->timeout = 0;
+	jz4740_wdt_start(wdt_dev);
+	return 0;
 }
 
 static const struct watchdog_info jz4740_wdt_info = {
@@ -130,6 +126,7 @@ static const struct watchdog_ops jz4740_wdt_ops = {
 	.stop = jz4740_wdt_stop,
 	.ping = jz4740_wdt_ping,
 	.set_timeout = jz4740_wdt_set_timeout,
+	.restart = jz4740_wdt_restart,
 };
 
 #ifdef CONFIG_OF
@@ -177,18 +174,9 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 		return PTR_ERR(drvdata->clk);
 	}
 
-	drvdata->restart_nb.notifier_call = jz4740_wdt_restart_handler;
-	ret = register_restart_handler(&drvdata->restart_nb);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "cannot register restart handler\n");
-		return ret;
-	}
-
 	ret = watchdog_register_device(&drvdata->wdt);
-	if (ret < 0) {
-		unregister_restart_handler(&drvdata->restart_nb);
+	if (ret < 0)
 		return ret;
-	}
 
 	platform_set_drvdata(pdev, drvdata);
 
@@ -201,7 +189,6 @@ static int jz4740_wdt_remove(struct platform_device *pdev)
 
 	jz4740_wdt_stop(&drvdata->wdt);
 	watchdog_unregister_device(&drvdata->wdt);
-	unregister_restart_handler(&drvdata->restart_nb);
 
 	return 0;
 }
