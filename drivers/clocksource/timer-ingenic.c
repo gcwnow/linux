@@ -69,7 +69,7 @@ static inline u32 tcu_readl(struct ingenic_tcu *tcu, enum ingenic_tcu_reg reg)
 }
 
 static inline void tcu_writel(struct ingenic_tcu *tcu, u32 val,
-			      enum ingenic_tcu_reg reg)
+		enum ingenic_tcu_reg reg)
 {
 	writel(val, tcu->base + reg);
 }
@@ -222,12 +222,12 @@ static int ingenic_tcu_cevt_set_state_shutdown(struct clock_event_device *evt)
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(evt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
 
-        ingenic_tcu_disable_channel(channel);
-        return 0;
+	ingenic_tcu_disable_channel(channel);
+	return 0;
 }
 
 static int ingenic_tcu_cevt_set_next(unsigned long next,
-				    struct clock_event_device *evt)
+		struct clock_event_device *evt)
 {
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(evt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
