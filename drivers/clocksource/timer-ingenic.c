@@ -60,6 +60,7 @@ struct ingenic_tcu {
 	void __iomem *base;
 	unsigned num_channels;
 	struct ingenic_tcu_channel *channels;
+	unsigned long requested;
 };
 
 static inline u32 tcu_readl(struct ingenic_tcu *tcu, enum ingenic_tcu_reg reg)
@@ -118,29 +119,6 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
 
 	/* Initialise all channels as stopped */
 	for (i = 0; i < tcu->num_channels; i++) {
-		struct clk *clk;
-		char buf[16];
-
-		snprintf(buf, sizeof(buf), "timer%u", i);
-		clk = clk_get(NULL, buf);
-		if (IS_ERR(clk)) {
-			err = PTR_ERR(clk);
-			goto out_clk_put;
-		}
-
-		tcu->channels[i].timer_clk = clk;
-		clk_prepare(clk);
-
-		snprintf(buf, sizeof(buf), "counter%u", i);
-		clk = clk_get(NULL, buf);
-		if (IS_ERR(clk)) {
-			err = PTR_ERR(clk);
-			goto out_clk_put;
-		}
-
-		tcu->channels[i].counter_clk = clk;
-		clk_prepare(clk);
-
 		tcu->channels[i].tcu = tcu;
 		tcu->channels[i].idx = i;
 		tcu->channels[i].stopped = true;
@@ -148,14 +126,6 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
 
 	return tcu;
 
-out_clk_put:
-	for (i = 0; i < tcu->num_channels; i++) {
-		if (tcu->channels[i].timer_clk)
-			clk_put(tcu->channels[i].timer_clk);
-		if (tcu->channels[i].counter_clk)
-			clk_put(tcu->channels[i].counter_clk);
-	}
-	iounmap(tcu->base);
 out_free:
 	kfree(tcu->channels);
 	kfree(tcu);
@@ -163,32 +133,58 @@ out:
 	return ERR_PTR(err);
 }
 
-static struct ingenic_tcu_channel * __init ingenic_tcu_req_channel(
-		struct ingenic_tcu *tcu, int idx)
+static int __init ingenic_tcu_req_channel(struct ingenic_tcu_channel *channel)
 {
-	struct ingenic_tcu_channel *channel;
-	unsigned c;
+	char buf[16];
+	int err;
 
-	if (idx == -1) {
-		for (c = 0; c < tcu->num_channels; c++) {
-			if (!tcu->channels[c].stopped)
-				continue;
-			idx = c;
-			break;
-		}
-		if (idx == -1)
-			return ERR_PTR(-ENODEV);
+	if (test_and_set_bit(channel->idx, &channel->tcu->requested))
+		return -EBUSY;
+
+	snprintf(buf, sizeof(buf), "timer%u", channel->idx);
+	channel->timer_clk = clk_get(NULL, buf);
+	if (IS_ERR(channel->timer_clk)) {
+		err = PTR_ERR(channel->timer_clk);
+		goto out_release;
 	}
 
-	channel = &tcu->channels[idx];
+	snprintf(buf, sizeof(buf), "counter%u", channel->idx);
+	channel->counter_clk = clk_get(NULL, buf);
+	if (IS_ERR(channel->counter_clk)) {
+		err = PTR_ERR(channel->counter_clk);
+		goto out_timer_clk_put;
+	}
 
-	if (!channel->stopped)
-		return ERR_PTR(-EBUSY);
+	err = clk_prepare_enable(channel->timer_clk);
+	if (err)
+		goto out_counter_clk_put;
 
-	clk_enable(channel->timer_clk);
+	err = clk_prepare(channel->counter_clk);
+	if (err)
+		goto out_timer_clk_disable_unprepare;
+
 	jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
 
-	return channel;
+	return 0;
+
+out_timer_clk_disable_unprepare:
+	clk_disable_unprepare(channel->timer_clk);
+out_counter_clk_put:
+	clk_put(channel->counter_clk);
+out_timer_clk_put:
+	clk_put(channel->timer_clk);
+out_release:
+	clear_bit(channel->idx, &channel->tcu->requested);
+	return err;
+}
+
+static void __init ingenic_tcu_free_channel(struct ingenic_tcu_channel *channel)
+{
+	clk_unprepare(channel->counter_clk);
+	clk_disable_unprepare(channel->timer_clk);
+	clk_put(channel->counter_clk);
+	clk_put(channel->timer_clk);
+	clear_bit(channel->idx, &channel->tcu->requested);
 }
 
 struct ingenic_clock_event_device {
@@ -249,27 +245,25 @@ static irqreturn_t ingenic_tcu_cevt_cb(int irq, void *dev_id)
 static int __init ingenic_tcu_setup_cevt(struct device_node *np,
 		struct ingenic_tcu *tcu, unsigned int idx)
 {
-	struct ingenic_tcu_channel *channel;
+	struct ingenic_tcu_channel *channel = &tcu->channels[idx];
 	struct ingenic_clock_event_device *jzcevt;
 	unsigned long rate;
 	int err, virq;
 
-	channel = ingenic_tcu_req_channel(tcu, idx);
-	if (IS_ERR(channel)) {
-		err = PTR_ERR(channel);
-		goto err_out;
-	}
+	err = ingenic_tcu_req_channel(channel);
+	if (err)
+		return err;
 
 	rate = clk_get_rate(channel->timer_clk);
 	if (!rate) {
 		err = -EINVAL;
-		goto err_out_release;
+		goto err_out_free_channel;
 	}
 
 	jzcevt = kzalloc(sizeof(*jzcevt), GFP_KERNEL);
 	if (!jzcevt) {
 		err = -ENOMEM;
-		goto err_out_release;
+		goto err_out_free_channel;
 	}
 
 	virq = irq_of_parse_and_map(np, idx);
@@ -302,9 +296,8 @@ err_out_irq_dispose_mapping:
 	irq_dispose_mapping(virq);
 err_out_kfree_jzcevt:
 	kfree(jzcevt);
-err_out_release:
-	ingenic_tcu_stop_channel(channel);
-err_out:
+err_out_free_channel:
+	ingenic_tcu_free_channel(channel);
 	return err;
 }
 
