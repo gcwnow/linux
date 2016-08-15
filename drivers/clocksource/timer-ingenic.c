@@ -53,7 +53,6 @@ struct ingenic_tcu_channel {
 	struct ingenic_tcu *tcu;
 	unsigned idx;
 	unsigned stopped: 1;
-	unsigned enabled: 1;
 	struct clk *timer_clk, *counter_clk;
 };
 
@@ -86,20 +85,6 @@ static void ingenic_tcu_start_channel(struct ingenic_tcu_channel *channel)
 	if (channel->stopped)
 		clk_enable(channel->counter_clk);
 	channel->stopped = false;
-}
-
-static void ingenic_tcu_enable_channel(struct ingenic_tcu_channel *channel)
-{
-	if (!channel->enabled)
-		clk_enable(channel->timer_clk);
-	channel->enabled = true;
-}
-
-static void ingenic_tcu_disable_channel(struct ingenic_tcu_channel *channel)
-{
-	if (channel->enabled)
-		clk_disable(channel->timer_clk);
-	channel->enabled = false;
 }
 
 static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
@@ -200,9 +185,7 @@ static struct ingenic_tcu_channel * __init ingenic_tcu_req_channel(
 	if (!channel->stopped)
 		return ERR_PTR(-EBUSY);
 
-	ingenic_tcu_enable_channel(channel);
-	ingenic_tcu_start_channel(channel);
-	ingenic_tcu_disable_channel(channel);
+	clk_enable(channel->timer_clk);
 	jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
 
 	return channel;
@@ -222,7 +205,7 @@ static int ingenic_tcu_cevt_set_state_shutdown(struct clock_event_device *evt)
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(evt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
 
-	ingenic_tcu_disable_channel(channel);
+	ingenic_tcu_stop_channel(channel);
 	return 0;
 }
 
@@ -240,7 +223,7 @@ static int ingenic_tcu_cevt_set_next(unsigned long next,
 	tcu_writel(tcu, (unsigned int) next, REG_TDFRc(idx));
 	tcu_writel(tcu, 0, REG_TCNTc(idx));
 
-	ingenic_tcu_enable_channel(channel);
+	ingenic_tcu_start_channel(channel);
 
 	return 0;
 }
@@ -255,7 +238,7 @@ static irqreturn_t ingenic_tcu_cevt_cb(int irq, void *dev_id)
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(cevt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
 
-	ingenic_tcu_disable_channel(channel);
+	ingenic_tcu_stop_channel(channel);
 
 	if (cevt->event_handler)
 		cevt->event_handler(cevt);
