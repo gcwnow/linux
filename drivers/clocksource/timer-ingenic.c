@@ -47,7 +47,6 @@ enum ingenic_tcu_reg {
 #define REG_TCSRc(c)		(REG_TCSR0 + (c * CHANNEL_STRIDE))
 
 struct ingenic_tcu;
-struct ingenic_tcu_channel;
 
 struct ingenic_tcu_channel {
 	struct ingenic_tcu *tcu;
@@ -62,17 +61,6 @@ struct ingenic_tcu {
 	struct ingenic_tcu_channel *channels;
 	unsigned long requested;
 };
-
-static inline u32 tcu_readl(struct ingenic_tcu *tcu, enum ingenic_tcu_reg reg)
-{
-	return readl(tcu->base + reg);
-}
-
-static inline void tcu_writel(struct ingenic_tcu *tcu, u32 val,
-		enum ingenic_tcu_reg reg)
-{
-	writel(val, tcu->base + reg);
-}
 
 static void ingenic_tcu_stop_channel(struct ingenic_tcu_channel *channel)
 {
@@ -216,8 +204,8 @@ static int ingenic_tcu_cevt_set_next(unsigned long next,
 	if (next > 0xffff)
 		return -EINVAL;
 
-	tcu_writel(tcu, (unsigned int) next, REG_TDFRc(idx));
-	tcu_writel(tcu, 0, REG_TCNTc(idx));
+	writel((unsigned int) next, tcu->base + REG_TDFRc(idx));
+	writel(0, tcu->base + REG_TCNTc(idx));
 
 	ingenic_tcu_start_channel(channel);
 
