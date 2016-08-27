@@ -10,16 +10,18 @@
 #include <asm/io.h>
 #include <linux/bitops.h>
 #include <linux/clk.h>
-#include <linux/clk/jz4740-tcu.h>
 #include <linux/clocksource.h>
 #include <linux/compiler.h>
 #include <linux/err.h>
+#include <linux/mfd/syscon.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/printk.h>
+#include <linux/regmap.h>
 #include <linux/sched_clock.h>
 #include <linux/types.h>
 
+#define TCSR_RESERVED_BITS	0x3f
 
 enum jz4770_ost_reg {
 	REG_OSTDR	= 0x00,
@@ -107,8 +109,13 @@ static u64 notrace jz4770_ost_sched_read(void)
 
 static void __init jz4770_ost_init(struct device_node *np)
 {
+	struct regmap *tcsr;
 	unsigned long rate;
 	int err;
+
+	tcsr = syscon_regmap_lookup_by_phandle(np, "tcsr");
+	if (IS_ERR(tcsr))
+		goto err_end;
 
 	ost.base = of_iomap(np, 0);
 	if (!ost.base)
@@ -130,7 +137,10 @@ static void __init jz4770_ost_init(struct device_node *np)
 	writel(0, ost.base + REG_OSTCNTH);
 
 	/* Don't reset counter at compare value. */
-	jz4740_tcu_write_tcsr(ost.timer_clk, 0xFFFF, OSTCSR_CNT_MD);
+	err = regmap_update_bits(tcsr, 0, 0xffff & ~TCSR_RESERVED_BITS,
+			OSTCSR_CNT_MD);
+	if (err)
+		goto err_disable_timer;
 
 	rate = clk_get_rate(ost.timer_clk);
 	pr_info("jz4770-ost: OS Timer rate is %lu Hz\n", rate);
