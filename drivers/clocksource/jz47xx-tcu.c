@@ -221,28 +221,35 @@ static irqreturn_t jz47xx_tcu_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static const char * const jz47xx_tcu_irq_names[NUM_TCU_IRQS] = {
-	"jz47xx-tcu-irq0", "jz47xx-tcu-irq1",
+static struct irqaction jz47xx_tcu_irqaction[NUM_TCU_IRQS] = {
+	{
+		.flags = IRQF_TIMER,
+		.name = "jz47xx-tcu-irq0",
+	},
+	{
+		.flags = IRQF_TIMER,
+		.name = "jz47xx-tcu-irq1",
+	},
 };
 
 static int setup_tcu_irq(struct jz47xx_tcu *tcu, unsigned i)
 {
-	struct jz47xx_tcu_irq *irq = &tcu->irqs[i];
 	unsigned channel_count;
-	irq_handler_t handler;
 
-	channel_count = bitmap_weight(&irq->channel_map,
+	channel_count = bitmap_weight(&tcu->irqs[i].channel_map,
 				      tcu->desc->num_channels);
 	if (channel_count == 1) {
-		handler = jz47xx_tcu_single_channel_irq;
-		irq->channel = find_first_bit(&irq->channel_map,
-				tcu->desc->num_channels);
+		tcu->irqs[i].channel = find_first_bit(&tcu->irqs[i].channel_map,
+						      tcu->desc->num_channels);
+
+		jz47xx_tcu_irqaction[i].handler = jz47xx_tcu_single_channel_irq;
 	} else {
-		handler = jz47xx_tcu_irq;
+		jz47xx_tcu_irqaction[i].handler = jz47xx_tcu_irq;
 	}
 
-	return request_irq(irq->virq, handler, IRQF_TIMER,
-			jz47xx_tcu_irq_names[i], irq);
+	jz47xx_tcu_irqaction[i].dev_id = &tcu->irqs[i];
+
+	return setup_irq(tcu->irqs[i].virq, &jz47xx_tcu_irqaction[i]);
 }
 
 struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
@@ -326,7 +333,7 @@ struct jz47xx_tcu *jz47xx_tcu_init(const struct jz47xx_tcu_desc *desc,
 	return tcu;
 out_irq_dispose:
 	for (i = 0; i < ARRAY_SIZE(tcu->irqs); i++) {
-		free_irq(tcu->irqs[i].virq, &tcu->irqs[i]);
+		remove_irq(tcu->irqs[i].virq, &jz47xx_tcu_irqaction[i]);
 		irq_dispose_mapping(tcu->irqs[i].virq);
 	}
 out_clk_put:
