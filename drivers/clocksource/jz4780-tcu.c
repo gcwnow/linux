@@ -54,7 +54,7 @@ static cycle_t jz4780_tcu_clocksource_read(struct clocksource *cs)
 static void __init jz4780_tcu_init(struct device_node *np)
 {
 	struct jz47xx_tcu *tcu;
-	unsigned long rate;
+	unsigned rate;
 	int err;
 
 	tcu = jz47xx_tcu_init(&jz4780_tcu_desc, np);
@@ -63,8 +63,9 @@ static void __init jz4780_tcu_init(struct device_node *np)
 	jz4780_tcu_clocksource.channel = jz47xx_tcu_req_channel(tcu, 15);
 	BUG_ON(IS_ERR(jz4780_tcu_clocksource.channel));
 
-	rate = jz47xx_tcu_get_channel_rate(jz4780_tcu_clocksource.channel);
-	pr_info("jz4780-tcu-clocksource: OST rate is %luHz\n", rate);
+	rate = jz47xx_tcu_set_channel_rate(jz4780_tcu_clocksource.channel,
+					   JZ47XX_TCU_SRC_EXTAL, 1000000);
+	pr_info("jz4780-tcu-clocksource: OST rate is %uHz\n", rate);
 	BUG_ON(!rate);
 
 	jz47xx_tcu_enable_channel(jz4780_tcu_clocksource.channel);
