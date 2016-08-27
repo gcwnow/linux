@@ -22,9 +22,10 @@
 #include <linux/bitops.h>
 #include <linux/clk-provider.h>
 #include <linux/clkdev.h>
-#include <linux/clk/jz4740-tcu.h>
+#include <linux/mfd/syscon.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/regmap.h>
 #include <linux/spinlock.h>
 
 #include <dt-bindings/clock/ingenic,jz4740-tcu.h>
@@ -62,6 +63,7 @@ struct jz4740_tcu {
 	struct clk_onecell_data clocks;
 
 	spinlock_t lock;
+	struct regmap **tcsr_map;
 };
 
 struct jz4740_tcu_clk_info {
@@ -109,33 +111,26 @@ static int jz4740_tcu_is_enabled(struct clk_hw *hw)
 	return !(readl(tcu->base + TCU_REG_TIMER_STOP) & BIT(info->gate_bit));
 }
 
-static void __iomem * jz4740_tcu_get_tcsr(struct jz4740_tcu_clk *tcu_clk)
-{
-	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-
-	if (info->is_ost)
-		return tcu->ost_base + OST_REG_TCSR;
-	else if (info->is_wdt)
-		return tcu->wdt_base + WDT_REG_TCSR;
-	else
-		return tcu->base + TCU_REG_TIMER_TCSR(tcu_clk->idx);
-}
-
 static u8 jz4740_tcu_get_parent(struct clk_hw *hw)
 {
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
+	struct regmap *tcsr = tcu_clk->tcu->tcsr_map[tcu_clk->idx];
+	unsigned int val = 0;
+	int ret;
 
-	return (u8) ffs(readw(reg) & TCSR_PARENT_CLOCK_MASK) - 1;
+	ret = regmap_read(tcsr, 0, &val);
+	WARN_ONCE(ret < 0, "Unable to read TCSR %i", tcu_clk->idx);
+
+	return (u8) ffs(val & TCSR_PARENT_CLOCK_MASK) - 1;
 }
 
 static int jz4740_tcu_set_parent(struct clk_hw *hw, u8 idx)
 {
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
+	struct regmap *tcsr = tcu->tcsr_map[tcu_clk->idx];
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
+	int ret;
 
 	/*
 	 * Our clock provider has the CLK_SET_PARENT_GATE flag set, so we know
@@ -145,7 +140,9 @@ static int jz4740_tcu_set_parent(struct clk_hw *hw, u8 idx)
 
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_CLEAR);
 
-	writew((readw(reg) & ~TCSR_PARENT_CLOCK_MASK) | BIT(idx), reg);
+	ret = regmap_update_bits(tcsr, 0,
+			TCSR_PARENT_CLOCK_MASK, BIT(idx));
+	WARN_ONCE(ret < 0, "Unable to update TCSR %i", tcu_clk->idx);
 
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_SET);
 
@@ -156,8 +153,14 @@ static unsigned long jz4740_tcu_recalc_rate(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
-	u8 prescale = (readw(reg) & TCSR_PRESCALE_MASK) >> TCSR_PRESCALE_LSB;
+	struct regmap *tcsr = tcu_clk->tcu->tcsr_map[tcu_clk->idx];
+	unsigned int prescale;
+	int ret;
+
+	ret = regmap_read(tcsr, 0, &prescale);
+	WARN_ONCE(ret < 0, "Unable to read TCSR %i", tcu_clk->idx);
+
+	prescale = (prescale & TCSR_PRESCALE_MASK) >> TCSR_PRESCALE_LSB;
 
 	return parent_rate >> (prescale * 2);
 }
@@ -184,8 +187,9 @@ static int jz4740_tcu_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
 	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
 	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
+	struct regmap *tcsr = tcu->tcsr_map[tcu_clk->idx];
 	u8 prescale = (ffs(parent_rate / req_rate) / 2) << TCSR_PRESCALE_LSB;
+	int ret;
 
 	/*
 	 * Our clock provider has the CLK_SET_RATE_GATE flag set, so we know
@@ -195,7 +199,8 @@ static int jz4740_tcu_set_rate(struct clk_hw *hw, unsigned long req_rate,
 
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_CLEAR);
 
-	writew((readw(reg) & ~TCSR_PRESCALE_MASK) | prescale, reg);
+	ret = regmap_update_bits(tcsr, 0, TCSR_PRESCALE_MASK, prescale);
+	WARN_ONCE(ret < 0, "Unable to update TCSR %i", tcu_clk->idx);
 
 	writel(BIT(info->gate_bit), tcu->base + TCU_REG_TIMER_STOP_SET);
 
@@ -371,10 +376,28 @@ static void __init ingenic_tcu_init(struct device_node *np,
 		return;
 	}
 
+	tcu->tcsr_map = kzalloc(sizeof(*tcu->tcsr_map) * nb_clks, GFP_KERNEL);
+	if (!tcu->tcsr_map)
+		goto err_free_tcu;
+
+	for (i = 0; i < nb_clks; i++) {
+		struct device_node *tcsr_node;
+
+		tcsr_node = of_parse_phandle(np, "tcsr", i);
+		if (!tcsr_node)
+			goto err_free_tcu_tcsr_map;
+
+		tcu->tcsr_map[i] = syscon_node_to_regmap(tcsr_node);
+		if (IS_ERR(tcu->tcsr_map[i])) {
+			ret = PTR_ERR(tcu->tcsr_map[i]);
+			goto err_free_tcu_tcsr_map;
+		}
+	}
+
 	tcu->base = of_iomap(np, 0);
 	if (!tcu->base) {
 		pr_err("%s: failed to map TCU registers\n", __func__);
-		goto err_free_tcu;
+		goto err_free_tcu_tcsr_map;
 	}
 
 	tcu->wdt_base = of_iomap(np, 1);
@@ -440,6 +463,8 @@ err_unmap_wdt_base:
 	iounmap(tcu->wdt_base);
 err_unmap_base:
 	iounmap(tcu->base);
+err_free_tcu_tcsr_map:
+	kfree(tcu->tcsr_map);
 err_free_tcu:
 	kfree(tcu);
 }
@@ -461,30 +486,3 @@ static void __init jz4780_tcu_init(struct device_node *np)
 	ingenic_tcu_init(np, ID_JZ4780);
 }
 CLK_OF_DECLARE(jz4780_tcu, "ingenic,jz4780-tcu-clocks", jz4780_tcu_init);
-
-u16 jz4740_tcu_read_tcsr(struct clk *clk)
-{
-	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(__clk_get_hw(clk));
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
-	u16 tcsr = readw(reg);
-
-	return tcsr & ~(TCSR_PARENT_CLOCK_MASK | TCSR_PRESCALE_MASK);
-}
-
-void jz4740_tcu_write_tcsr(struct clk *clk, u16 mask, u16 value)
-{
-	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(__clk_get_hw(clk));
-	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	void __iomem *reg = jz4740_tcu_get_tcsr(tcu_clk);
-	unsigned long flags;
-	u16 tcsr;
-
-	mask &= ~(TCSR_PARENT_CLOCK_MASK | TCSR_PRESCALE_MASK);
-	value &= ~(TCSR_PARENT_CLOCK_MASK | TCSR_PRESCALE_MASK);
-	value &= mask;
-
-	spin_lock_irqsave(&tcu->lock, flags);
-	tcsr = readw(reg) & ~mask;
-	writew(tcsr | value, reg);
-	spin_unlock_irqrestore(&tcu->lock, flags);
-}
