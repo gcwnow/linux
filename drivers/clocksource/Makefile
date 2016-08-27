@@ -48,8 +48,6 @@ obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 obj-$(CONFIG_CLKSRC_NPS)	+= timer-nps.o
-obj-$(CONFIG_JZ47XX_TCU)	+= jz47xx-tcu.o
-obj-$(CONFIG_JZ4780_TCU)	+= jz4780-tcu.o
 obj-$(CONFIG_JZ4770_OST)	+= jz4770-ost.o
 
 obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
