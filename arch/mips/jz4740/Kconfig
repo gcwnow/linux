@@ -27,6 +27,7 @@ config MACH_JZ4770
 	select PINCTRL
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
+	select MFD_SYSCON
 
 config MACH_JZ4780
 	bool
