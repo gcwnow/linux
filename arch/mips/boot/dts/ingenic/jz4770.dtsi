@@ -55,6 +55,66 @@
 			#clock-cells = <1>;
 		};
 
+		tcsr_wdt: tcsr-register@1000200C {
+			compatible = "syscon";
+			reg = <0x1000200C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr0: tcsr-register@1000204C {
+			compatible = "syscon";
+			reg = <0x1000204C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr1: tcsr-register@1000205C {
+			compatible = "syscon";
+			reg = <0x1000205C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr2: tcsr-register@1000206C {
+			compatible = "syscon";
+			reg = <0x1000206C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr3: tcsr-register@1000207C {
+			compatible = "syscon";
+			reg = <0x1000207C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr4: tcsr-register@1000208C {
+			compatible = "syscon";
+			reg = <0x1000208C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr5: tcsr-register@1000209C {
+			compatible = "syscon";
+			reg = <0x1000209C 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr6: tcsr-register@100020AC {
+			compatible = "syscon";
+			reg = <0x100020AC 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr7: tcsr-register@100020BC {
+			compatible = "syscon";
+			reg = <0x100020BC 0x2>;
+			reg-io-width = <2>;
+		};
+
+		tcsr_ost: tcsr-register@100020EC {
+			compatible = "syscon";
+			reg = <0x100020EC 0x2>;
+			reg-io-width = <2>;
+		};
+
 		tcu: jz4770-tcu@10002010 {
 			compatible = "ingenic,jz4770-tcu-clocks";
 			reg = <0x10002010 0x12C			/* TCU regs */
@@ -62,6 +122,8 @@
 					0x100020E0 0x10>;	/* OST regs */
 
 			#clock-cells = <1>;
+
+			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7 &tcsr_wdt &tcsr_ost>;
 		};
 
 		wdt: jz4740-wdt@10002000 {
@@ -70,6 +132,8 @@
 
 			clocks = <&tcu JZ4740_CLK_WDT>;
 			clock-names = "wdt";
+
+			tcsr = <&tcsr_wdt>;
 		};
 
 		pwm: jz4740-pwm@10002010 {
@@ -97,6 +161,8 @@
 					"timer4", "timer5", "timer6", "timer7",
 					"counter0", "counter1", "counter2", "counter3",
 					"counter4", "counter5", "counter6", "counter7";
+
+			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
 		};
 
 		tcu_irq: irq-ingenic-tcu@10002020 {
@@ -137,6 +203,8 @@
 					"timer4", "timer5", "timer6", "timer7",
 					"counter0", "counter1", "counter2", "counter3",
 					"counter4", "counter5", "counter6", "counter7";
+
+			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
 		};
 
 		ost@0x10002000 {
@@ -148,6 +216,8 @@
 
 			clocks = <&tcu JZ4770_CLK_OST &tcu JZ4770_COUNTER_OST>;
 			clock-names = "timer", "counter";
+
+			tcsr = <&tcsr_ost>;
 		};
 
 		rtc: jz4740-rtc@10003000 {
