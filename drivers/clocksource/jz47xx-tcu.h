@@ -17,11 +17,14 @@
 struct jz47xx_tcu_channel_desc {
 	u8 irq;
 	u8 present: 1;
+	unsigned flags;
+#define JZ47XX_TCU_CHANNEL_FIFO	(1 << 0)
 };
 
-#define JZ47XX_TCU_CHANNEL(_irq) {		\
+#define JZ47XX_TCU_CHANNEL(_irq, _flags) {	\
 	.irq = _irq,				\
 	.present = 1,				\
+	.flags = _flags,			\
 }
 
 struct jz47xx_tcu_desc {
