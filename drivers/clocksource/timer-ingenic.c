@@ -12,11 +12,13 @@
 #include <linux/clockchips.h>
 #include <linux/err.h>
 #include <linux/interrupt.h>
+#include <linux/mfd/syscon.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/regmap.h>
 #include <linux/slab.h>
 
-#include <linux/clk/jz4740-tcu.h>
+#define TCSR_RESERVED_BITS	0x3f
 
 enum ingenic_tcu_reg {
 	REG_TER		= 0x10,
@@ -151,8 +153,6 @@ static int __init ingenic_tcu_req_channel(struct ingenic_tcu_channel *channel)
 	if (err)
 		goto out_timer_clk_disable_unprepare;
 
-	jz4740_tcu_write_tcsr(channel->timer_clk, 0xffff, 0);
-
 	return 0;
 
 out_timer_clk_disable_unprepare:
@@ -164,6 +164,23 @@ out_timer_clk_put:
 out_release:
 	clear_bit(channel->idx, &channel->tcu->requested);
 	return err;
+}
+
+static int __init ingenic_tcu_reset_channel(struct device_node *np,
+		struct ingenic_tcu_channel *channel)
+{
+	struct device_node *tcsr_node;
+	struct regmap *tcsr;
+
+	tcsr_node = of_parse_phandle(np, "tcsr", channel->idx);
+	if (!tcsr_node)
+		return -EINVAL;
+
+	tcsr = syscon_node_to_regmap(tcsr_node);
+	if (IS_ERR(tcsr))
+		return PTR_ERR(tcsr);
+
+	return regmap_update_bits(tcsr, 0, 0xffff & ~TCSR_RESERVED_BITS, 0);
 }
 
 static void __init ingenic_tcu_free_channel(struct ingenic_tcu_channel *channel)
@@ -241,6 +258,10 @@ static int __init ingenic_tcu_setup_cevt(struct device_node *np,
 	err = ingenic_tcu_req_channel(channel);
 	if (err)
 		return err;
+
+	err = ingenic_tcu_reset_channel(np, channel);
+	if (err)
+		goto err_out_free_channel;
 
 	rate = clk_get_rate(channel->timer_clk);
 	if (!rate) {
