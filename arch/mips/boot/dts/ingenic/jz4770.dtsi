@@ -154,19 +154,9 @@
 					&tcu JZ4740_CLK_TIMER4
 					&tcu JZ4740_CLK_TIMER5
 					&tcu JZ4740_CLK_TIMER6
-					&tcu JZ4740_CLK_TIMER7
-					&tcu JZ4740_COUNTER0
-					&tcu JZ4740_COUNTER1
-					&tcu JZ4740_COUNTER2
-					&tcu JZ4740_COUNTER3
-					&tcu JZ4740_COUNTER4
-					&tcu JZ4740_COUNTER5
-					&tcu JZ4740_COUNTER6
-					&tcu JZ4740_COUNTER7>;
+					&tcu JZ4740_CLK_TIMER7>;
 			clock-names = "timer0", "timer1", "timer2", "timer3",
-					"timer4", "timer5", "timer6", "timer7",
-					"counter0", "counter1", "counter2", "counter3",
-					"counter4", "counter5", "counter6", "counter7";
+					"timer4", "timer5", "timer6", "timer7";
 
 			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
 			ter = <&ter>;
@@ -197,19 +187,9 @@
 					&tcu JZ4740_CLK_TIMER4
 					&tcu JZ4740_CLK_TIMER5
 					&tcu JZ4740_CLK_TIMER6
-					&tcu JZ4740_CLK_TIMER7
-					&tcu JZ4740_COUNTER0
-					&tcu JZ4740_COUNTER1
-					&tcu JZ4740_COUNTER2
-					&tcu JZ4740_COUNTER3
-					&tcu JZ4740_COUNTER4
-					&tcu JZ4740_COUNTER5
-					&tcu JZ4740_COUNTER6
-					&tcu JZ4740_COUNTER7>;
+					&tcu JZ4740_CLK_TIMER7>;
 			clock-names = "timer0", "timer1", "timer2", "timer3",
-					"timer4", "timer5", "timer6", "timer7",
-					"counter0", "counter1", "counter2", "counter3",
-					"counter4", "counter5", "counter6", "counter7";
+					"timer4", "timer5", "timer6", "timer7";
 
 			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
 			ter = <&ter>;
@@ -222,8 +202,8 @@
 			interrupt-parent = <&intc>;
 			interrupts = <27>;
 
-			clocks = <&tcu JZ4770_CLK_OST &tcu JZ4770_COUNTER_OST>;
-			clock-names = "timer", "counter";
+			clocks = <&tcu JZ4770_CLK_OST>;
+			clock-names = "timer";
 
 			tcsr = <&tcsr_ost>;
 			ter = <&ter>;
