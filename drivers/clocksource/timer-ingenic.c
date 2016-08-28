@@ -13,6 +13,7 @@
 #include <linux/err.h>
 #include <linux/interrupt.h>
 #include <linux/mfd/syscon.h>
+#include <linux/mfd/syscon/jz4740-tcu.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/regmap.h>
@@ -53,8 +54,7 @@ struct ingenic_tcu;
 struct ingenic_tcu_channel {
 	struct ingenic_tcu *tcu;
 	unsigned idx;
-	unsigned stopped: 1;
-	struct clk *timer_clk, *counter_clk;
+	struct clk *clk;
 };
 
 struct ingenic_tcu {
@@ -62,21 +62,8 @@ struct ingenic_tcu {
 	unsigned num_channels;
 	struct ingenic_tcu_channel *channels;
 	unsigned long requested;
+	struct regmap *ter;
 };
-
-static void ingenic_tcu_stop_channel(struct ingenic_tcu_channel *channel)
-{
-	if (!channel->stopped)
-		clk_disable(channel->counter_clk);
-	channel->stopped = true;
-}
-
-static void ingenic_tcu_start_channel(struct ingenic_tcu_channel *channel)
-{
-	if (channel->stopped)
-		clk_enable(channel->counter_clk);
-	channel->stopped = false;
-}
 
 static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
 		unsigned int num_channels)
@@ -100,6 +87,12 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
 		goto out_free;
 	}
 
+	tcu->ter = syscon_regmap_lookup_by_phandle(np, "ter");
+	if (IS_ERR(tcu->ter)) {
+		err = PTR_ERR(tcu->ter);
+		goto out_free;
+	}
+
 	/* Map TCU registers */
 	tcu->base = of_iomap(np, 0);
 	if (!tcu->base) {
@@ -107,11 +100,9 @@ static struct ingenic_tcu * __init ingenic_tcu_init_tcu(struct device_node *np,
 		goto out_free;
 	}
 
-	/* Initialise all channels as stopped */
 	for (i = 0; i < tcu->num_channels; i++) {
 		tcu->channels[i].tcu = tcu;
 		tcu->channels[i].idx = i;
-		tcu->channels[i].stopped = true;
 	}
 
 	return tcu;
@@ -132,35 +123,20 @@ static int __init ingenic_tcu_req_channel(struct ingenic_tcu_channel *channel)
 		return -EBUSY;
 
 	snprintf(buf, sizeof(buf), "timer%u", channel->idx);
-	channel->timer_clk = clk_get(NULL, buf);
-	if (IS_ERR(channel->timer_clk)) {
-		err = PTR_ERR(channel->timer_clk);
+	channel->clk = clk_get(NULL, buf);
+	if (IS_ERR(channel->clk)) {
+		err = PTR_ERR(channel->clk);
 		goto out_release;
 	}
 
-	snprintf(buf, sizeof(buf), "counter%u", channel->idx);
-	channel->counter_clk = clk_get(NULL, buf);
-	if (IS_ERR(channel->counter_clk)) {
-		err = PTR_ERR(channel->counter_clk);
-		goto out_timer_clk_put;
-	}
-
-	err = clk_prepare_enable(channel->timer_clk);
+	err = clk_prepare_enable(channel->clk);
 	if (err)
-		goto out_counter_clk_put;
-
-	err = clk_prepare(channel->counter_clk);
-	if (err)
-		goto out_timer_clk_disable_unprepare;
+		goto out_clk_put;
 
 	return 0;
 
-out_timer_clk_disable_unprepare:
-	clk_disable_unprepare(channel->timer_clk);
-out_counter_clk_put:
-	clk_put(channel->counter_clk);
-out_timer_clk_put:
-	clk_put(channel->timer_clk);
+out_clk_put:
+	clk_put(channel->clk);
 out_release:
 	clear_bit(channel->idx, &channel->tcu->requested);
 	return err;
@@ -185,10 +161,8 @@ static int __init ingenic_tcu_reset_channel(struct device_node *np,
 
 static void __init ingenic_tcu_free_channel(struct ingenic_tcu_channel *channel)
 {
-	clk_unprepare(channel->counter_clk);
-	clk_disable_unprepare(channel->timer_clk);
-	clk_put(channel->counter_clk);
-	clk_put(channel->timer_clk);
+	clk_disable_unprepare(channel->clk);
+	clk_put(channel->clk);
 	clear_bit(channel->idx, &channel->tcu->requested);
 }
 
@@ -206,7 +180,7 @@ static int ingenic_tcu_cevt_set_state_shutdown(struct clock_event_device *evt)
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(evt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
 
-	ingenic_tcu_stop_channel(channel);
+	tcu_timer_disable(channel->tcu->ter, channel->idx);
 	return 0;
 }
 
@@ -224,7 +198,7 @@ static int ingenic_tcu_cevt_set_next(unsigned long next,
 	writel((unsigned int) next, tcu->base + REG_TDFRc(idx));
 	writel(0, tcu->base + REG_TCNTc(idx));
 
-	ingenic_tcu_start_channel(channel);
+	tcu_timer_enable(tcu->ter, channel->idx);
 
 	return 0;
 }
@@ -239,7 +213,7 @@ static irqreturn_t ingenic_tcu_cevt_cb(int irq, void *dev_id)
 	struct ingenic_clock_event_device *jzcevt = ingenic_cevt(cevt);
 	struct ingenic_tcu_channel *channel = jzcevt->channel;
 
-	ingenic_tcu_stop_channel(channel);
+	tcu_timer_disable(channel->tcu->ter, channel->idx);
 
 	if (cevt->event_handler)
 		cevt->event_handler(cevt);
@@ -263,7 +237,7 @@ static int __init ingenic_tcu_setup_cevt(struct device_node *np,
 	if (err)
 		goto err_out_free_channel;
 
-	rate = clk_get_rate(channel->timer_clk);
+	rate = clk_get_rate(channel->clk);
 	if (!rate) {
 		err = -EINVAL;
 		goto err_out_free_channel;
