@@ -34,10 +34,6 @@
 #define TCU_REG_TIMER_STOP_SET		0x1C
 #define TCU_REG_TIMER_STOP_CLEAR	0x2C
 
-#define TCU_REG_COUNTER_EN		0x00
-#define TCU_REG_COUNTER_EN_SET		0x04
-#define TCU_REG_COUNTER_EN_CLEAR	0x08
-
 #define TCU_REG_TIMER_TCSR(x)		(0x3C + (x) * 0x10)
 
 #define OST_REG_TCSR			0x0C
@@ -207,34 +203,6 @@ static int jz4740_tcu_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	return 0;
 }
 
-static int jz4740_tcu_counter_enable(struct clk_hw *hw)
-{
-	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
-	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-	struct jz4740_tcu *tcu = tcu_clk->tcu;
-
-	writel(BIT(info->gate_bit), tcu->base + TCU_REG_COUNTER_EN_SET);
-	return 0;
-}
-
-static void jz4740_tcu_counter_disable(struct clk_hw *hw)
-{
-	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
-	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-
-	writel(BIT(info->gate_bit), tcu->base + TCU_REG_COUNTER_EN_CLEAR);
-}
-
-static int jz4740_tcu_counter_is_enabled(struct clk_hw *hw)
-{
-	struct jz4740_tcu_clk *tcu_clk = to_tcu_clk(hw);
-	struct jz4740_tcu *tcu = tcu_clk->tcu;
-	const struct jz4740_tcu_clk_info *info = tcu_clk->info;
-
-	return readl(tcu->base + TCU_REG_COUNTER_EN) & BIT(info->gate_bit);
-}
-
 static const struct clk_ops jz4740_tcu_clk_ops = {
 	.get_parent	= jz4740_tcu_get_parent,
 	.set_parent	= jz4740_tcu_set_parent,
@@ -246,12 +214,6 @@ static const struct clk_ops jz4740_tcu_clk_ops = {
 	.enable		= jz4740_tcu_enable,
 	.disable	= jz4740_tcu_disable,
 	.is_enabled	= jz4740_tcu_is_enabled,
-};
-
-static const struct clk_ops jz4740_tcu_counter_ops = {
-	.enable		= jz4740_tcu_counter_enable,
-	.disable	= jz4740_tcu_counter_disable,
-	.is_enabled	= jz4740_tcu_counter_is_enabled,
 };
 
 static const char * const jz4740_tcu_timer_parents[] = {
@@ -286,31 +248,10 @@ static const struct jz4740_tcu_clk_info jz4740_tcu_clk_info[] = {
 
 	[JZ4770_CLK_OST]    = DEF_TIMER("ost",   15, true,  false),
 #undef DEF_TIMER
-
-#define DEF_COUNTER(_name, _gate_bit, id)				\
-	{							\
-		.init_data = {						\
-			.name = _name,					\
-			.parent_names = &jz4740_tcu_clk_info[id].init_data.name, \
-			.num_parents = 1, \
-			.ops = &jz4740_tcu_counter_ops,			\
-		},							\
-		.gate_bit = _gate_bit,					\
-	}
-	[JZ4740_COUNTER0] = DEF_COUNTER("counter0", 0, JZ4740_CLK_TIMER0),
-	[JZ4740_COUNTER1] = DEF_COUNTER("counter1", 1, JZ4740_CLK_TIMER1),
-	[JZ4740_COUNTER2] = DEF_COUNTER("counter2", 2, JZ4740_CLK_TIMER2),
-	[JZ4740_COUNTER3] = DEF_COUNTER("counter3", 3, JZ4740_CLK_TIMER3),
-	[JZ4740_COUNTER4] = DEF_COUNTER("counter4", 4, JZ4740_CLK_TIMER4),
-	[JZ4740_COUNTER5] = DEF_COUNTER("counter5", 5, JZ4740_CLK_TIMER5),
-	[JZ4740_COUNTER6] = DEF_COUNTER("counter6", 6, JZ4740_CLK_TIMER6),
-	[JZ4740_COUNTER7] = DEF_COUNTER("counter7", 7, JZ4740_CLK_TIMER7),
-	[JZ4770_COUNTER_OST] = DEF_COUNTER("counter_ost", 15, JZ4770_CLK_OST),
-#undef DEF_COUNTER
 };
 
 static int jz4740_tcu_register_clock(struct jz4740_tcu *tcu, unsigned idx,
-		bool timer, const struct jz4740_tcu_clk_info *info)
+		const struct jz4740_tcu_clk_info *info)
 {
 	struct jz4740_tcu_clk *tcu_clk;
 	struct clk *clk;
@@ -325,15 +266,10 @@ static int jz4740_tcu_register_clock(struct jz4740_tcu *tcu, unsigned idx,
 	tcu_clk->info = info;
 	tcu_clk->tcu = tcu;
 
-	if (timer) {
-		/* Set EXT as the default parent clock */
-		jz4740_tcu_set_parent(&tcu_clk->hw, 2);
-	}
+	/* Set EXT as the default parent clock */
+	jz4740_tcu_set_parent(&tcu_clk->hw, 2);
 
-	if (timer)
-		jz4740_tcu_disable(&tcu_clk->hw);
-	else
-		jz4740_tcu_counter_disable(&tcu_clk->hw);
+	jz4740_tcu_disable(&tcu_clk->hw);
 
 	clk = clk_register(NULL, &tcu_clk->hw);
 	if (IS_ERR(clk)) {
@@ -359,15 +295,13 @@ static void __init ingenic_tcu_init(struct device_node *np,
 		enum jz4740_version id)
 {
 	struct jz4740_tcu *tcu;
-	size_t i, nb_clks, nb_counters;
+	size_t i, nb_clks;
 	int ret = -ENOMEM;
 
 	if (id >= ID_JZ4770) {
 		nb_clks = (JZ4770_CLK_LAST - JZ4740_CLK_TIMER0) + 1;
-		nb_counters = (JZ4770_COUNTER_LAST - JZ4740_COUNTER0) + 1;
 	} else {
 		nb_clks = (JZ4740_CLK_LAST - JZ4740_CLK_TIMER0) + 1;
-		nb_counters = (JZ4740_COUNTER_LAST - JZ4740_COUNTER0) + 1;
 	}
 
 	tcu = kzalloc(sizeof(*tcu), GFP_KERNEL);
@@ -414,10 +348,8 @@ static void __init ingenic_tcu_init(struct device_node *np,
 		}
 	}
 
-	tcu->clocks.clk_num = nb_clks + nb_counters;
-	tcu->clocks.clks = kzalloc(
-			sizeof(struct clk *) * (nb_clks + nb_counters),
-			GFP_KERNEL);
+	tcu->clocks.clk_num = nb_clks;
+	tcu->clocks.clks = kzalloc(sizeof(struct clk *) * nb_clks, GFP_KERNEL);
 	if (!tcu->clocks.clks) {
 		pr_err("%s: cannot allocate memory\n", __func__);
 		goto err_unmap_ost_base;
@@ -426,19 +358,10 @@ static void __init ingenic_tcu_init(struct device_node *np,
 	spin_lock_init(&tcu->lock);
 
 	for (i = 0; i < nb_clks; i++) {
-		ret = jz4740_tcu_register_clock(tcu, i, true,
+		ret = jz4740_tcu_register_clock(tcu, i,
 				&jz4740_tcu_clk_info[JZ4740_CLK_TIMER0 + i]);
 		if (ret) {
 			pr_err("%s: cannot register clocks\n", __func__);
-			goto err_unregister;
-		}
-	}
-
-	for (i = 0; i < nb_counters; i++) {
-		ret = jz4740_tcu_register_clock(tcu, i + nb_clks, false,
-				&jz4740_tcu_clk_info[JZ4740_COUNTER0 + i]);
-		if (ret) {
-			pr_err("%s: cannot register counters\n", __func__);
 			goto err_unregister;
 		}
 	}
