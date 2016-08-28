@@ -20,6 +20,7 @@
 #include <linux/gpio.h>
 #include <linux/kernel.h>
 #include <linux/mfd/syscon.h>
+#include <linux/mfd/syscon/jz4740-tcu.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
@@ -44,8 +45,7 @@ struct jz4740_pwm_chip {
 	struct pwm_chip chip;
 	void __iomem *base;
 	struct clk * clks[NUM_PWM];
-	struct clk * counters[NUM_PWM];
-	struct regmap *tcsr[NUM_PWM];
+	struct regmap *ter, *tcsr[NUM_PWM];
 
 	spinlock_t lock;
 };
@@ -78,7 +78,8 @@ static int jz4740_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 			TCU_TCSR_PWM_EN);
 
 	/* Start counter */
-	clk_prepare_enable(jz->counters[pwm->hwpwm]);
+	tcu_timer_enable(jz->ter, pwm->hwpwm);
+
 	return 0;
 }
 
@@ -93,12 +94,7 @@ static void jz4740_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 	regmap_update_bits(jz->tcsr[pwm->hwpwm], 0, TCU_TCSR_PWM_EN, 0);
 
 	/* Stop counter */
-	clk_disable_unprepare(jz->counters[pwm->hwpwm]);
-}
-
-static bool tcu_counter_enabled(struct jz4740_pwm_chip *jz, unsigned int pwm)
-{
-	return __clk_is_enabled(jz->counters[pwm]);
+	tcu_timer_disable(jz->ter, pwm->hwpwm);
 }
 
 static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
@@ -132,7 +128,7 @@ static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	if (duty >= period)
 		duty = period - 1;
 
-	is_enabled = tcu_counter_enabled(jz4740, pwm->hwpwm);
+	is_enabled = tcu_timer_enabled(jz4740->ter, pwm->hwpwm);
 	if (is_enabled)
 		jz4740_pwm_disable(chip, pwm);
 
@@ -194,6 +190,10 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	if (!jz4740)
 		return -ENOMEM;
 
+	jz4740->ter = syscon_regmap_lookup_by_phandle(pdev->dev.of_node, "ter");
+	if (IS_ERR(jz4740->ter))
+		return PTR_ERR(jz4740->ter);
+
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	jz4740->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(jz4740->base))
@@ -208,12 +208,6 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 		jz4740->clks[i] = devm_clk_get(&pdev->dev, clk_name);
 		if (IS_ERR(jz4740->clks[i]))
 			return PTR_ERR(jz4740->clks[i]);
-
-		snprintf(clk_name, sizeof(clk_name), "counter%u", i);
-
-		jz4740->counters[i] = devm_clk_get(&pdev->dev, clk_name);
-		if (IS_ERR(jz4740->counters[i]))
-			return PTR_ERR(jz4740->counters[i]);
 
 		tcsr_node = of_parse_phandle(pdev->dev.of_node, "tcsr", i);
 		if (!tcsr_node)
