@@ -61,6 +61,12 @@
 			reg-io-width = <2>;
 		};
 
+		ter: ter-register@10002010 {
+			compatible = "syscon";
+			reg = <0x10002010 0xc>;
+			reg-io-width = <4>;
+		};
+
 		tcsr0: tcsr-register@1000204C {
 			compatible = "syscon";
 			reg = <0x1000204C 0x2>;
@@ -163,6 +169,7 @@
 					"counter4", "counter5", "counter6", "counter7";
 
 			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
+			ter = <&ter>;
 		};
 
 		tcu_irq: irq-ingenic-tcu@10002020 {
@@ -205,6 +212,7 @@
 					"counter4", "counter5", "counter6", "counter7";
 
 			tcsr = <&tcsr0 &tcsr1 &tcsr2 &tcsr3 &tcsr4 &tcsr5 &tcsr6 &tcsr7>;
+			ter = <&ter>;
 		};
 
 		ost@0x10002000 {
@@ -218,6 +226,7 @@
 			clock-names = "timer", "counter";
 
 			tcsr = <&tcsr_ost>;
+			ter = <&ter>;
 		};
 
 		rtc: jz4740-rtc@10003000 {
