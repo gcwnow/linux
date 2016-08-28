@@ -14,6 +14,7 @@
 #include <linux/compiler.h>
 #include <linux/err.h>
 #include <linux/mfd/syscon.h>
+#include <linux/mfd/syscon/jz4740-tcu.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/printk.h>
@@ -22,6 +23,8 @@
 #include <linux/types.h>
 
 #define TCSR_RESERVED_BITS	0x3f
+
+#define TCU_OST_CHANNEL		15
 
 enum jz4770_ost_reg {
 	REG_OSTDR	= 0x00,
@@ -39,7 +42,7 @@ struct jz4770_ost {
 	struct clocksource cs;
 #endif
 	void __iomem *base;
-	struct clk *timer_clk, *counter_clk;
+	struct clk *timer_clk;
 };
 
 #ifdef CONFIG_JZ4770_OST_CLOCKSOURCE
@@ -109,12 +112,16 @@ static u64 notrace jz4770_ost_sched_read(void)
 
 static void __init jz4770_ost_init(struct device_node *np)
 {
-	struct regmap *tcsr;
+	struct regmap *tcsr, *ter;
 	unsigned long rate;
 	int err;
 
 	tcsr = syscon_regmap_lookup_by_phandle(np, "tcsr");
 	if (IS_ERR(tcsr))
+		goto err_end;
+
+	ter = syscon_regmap_lookup_by_phandle(np, "ter");
+	if (IS_ERR(ter))
 		goto err_end;
 
 	ost.base = of_iomap(np, 0);
@@ -125,13 +132,9 @@ static void __init jz4770_ost_init(struct device_node *np)
 	if (IS_ERR(ost.timer_clk))
 		goto err_unmap;
 
-	ost.counter_clk = of_clk_get_by_name(np, "counter");
-	if (IS_ERR(ost.counter_clk))
-		goto err_put_timer;
-
 	err = clk_prepare_enable(ost.timer_clk);
 	if (err)
-		goto err_put_counter;
+		goto err_put_timer;
 
 	writel(0, ost.base + REG_OSTCNTL);
 	writel(0, ost.base + REG_OSTCNTH);
@@ -145,7 +148,7 @@ static void __init jz4770_ost_init(struct device_node *np)
 	rate = clk_get_rate(ost.timer_clk);
 	pr_info("jz4770-ost: OS Timer rate is %lu Hz\n", rate);
 
-	err = clk_prepare_enable(ost.counter_clk);
+	err = tcu_timer_enable(ter, TCU_OST_CHANNEL);
 	if (err)
 		goto err_disable_timer;
 
@@ -163,8 +166,6 @@ static void __init jz4770_ost_init(struct device_node *np)
 
 err_disable_timer:
 	clk_disable_unprepare(ost.timer_clk);
-err_put_counter:
-	clk_put(ost.counter_clk);
 err_put_timer:
 	clk_put(ost.timer_clk);
 err_unmap:
