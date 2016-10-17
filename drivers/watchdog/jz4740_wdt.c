@@ -65,18 +65,24 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 	unsigned long clk_rate, timeout_value;
+	bool change_rate;
 
 	clk_rate = clk_get_rate(drvdata->clk);
 	timeout_value = clk_rate * new_timeout;
-
-	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
+	change_rate = false;
 
 	if (timeout_value > 0xffff) {
 		clk_rate = clk_round_rate(drvdata->clk, 0xffff / new_timeout);
-		clk_set_rate(drvdata->clk, clk_rate);
 		timeout_value = clk_rate * new_timeout;
-		BUG_ON(timeout_value > 0xffff);
+		if (timeout_value > 0xffff)
+			return -EINVAL;
+		change_rate = true;
 	}
+
+	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
+
+	if (change_rate)
+		clk_set_rate(drvdata->clk, clk_rate);
 
 	writew((u16)timeout_value, drvdata->base + JZ_REG_WDT_TIMER_DATA);
 	writew(0x0, drvdata->base + JZ_REG_WDT_TIMER_COUNTER);
