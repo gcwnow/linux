@@ -301,30 +301,39 @@ err_out_free_channel:
 	return err;
 }
 
-static void __init ingenic_tcu_init(struct device_node *np)
+static int __init ingenic_tcu_init(struct device_node *np)
 {
 	struct ingenic_tcu *tcu;
 	unsigned i;
 	int err, num_timers, num_channels;
 
+	pr_info("ingenic_tcu_init\n");
+
 	num_timers = of_property_count_elems_of_size(np, "timers", 4);
-	BUG_ON(num_timers < 0);
+	if (num_timers < 0)
+		return -EINVAL;
 
 	num_channels = of_property_count_elems_of_size(np, "interrupts", 4);
-	BUG_ON(num_channels < 0 || num_channels > 8);
+	if (num_channels < 0 || num_channels > 8)
+		return -EINVAL;
 
 	tcu = ingenic_tcu_init_tcu(np, num_channels);
+	// TODO: Report and exit.
 	BUG_ON(IS_ERR(tcu));
 
 	for (i = 0; i < (unsigned) num_timers; i++) {
 		u32 timer;
 
 		err = of_property_read_u32_index(np, "timers", i, &timer);
+		// TODO: How to handle?
 		BUG_ON(err);
 
 		err = ingenic_tcu_setup_cevt(np, tcu, timer);
+		// TODO: How to handle?
 		BUG_ON(err);
 	}
+
+	return 0;
 }
 
 CLOCKSOURCE_OF_DECLARE(jz4740_tcu, "ingenic,jz4740-tcu", ingenic_tcu_init);
