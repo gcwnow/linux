@@ -67,6 +67,7 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 	unsigned long clk_rate, timeout_value;
 	bool change_rate;
 	u8 enabled;
+	int ret = 0;
 
 	clk_rate = clk_get_rate(drvdata->clk);
 	timeout_value = clk_rate * new_timeout;
@@ -83,15 +84,20 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 	enabled = readb(drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 	writeb(0x0, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 
-	if (change_rate)
-		clk_set_rate(drvdata->clk, clk_rate);
+	if (change_rate) {
+		ret = clk_set_rate(drvdata->clk, clk_rate);
+		if (ret)
+			goto done;
+	}
 
 	writew((u16)timeout_value, drvdata->base + JZ_REG_WDT_TIMER_DATA);
 	writew(0x0, drvdata->base + JZ_REG_WDT_TIMER_COUNTER);
-	writeb(enabled, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 
 	wdt_dev->timeout = new_timeout;
-	return 0;
+
+done:
+	writeb(enabled, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
+	return ret;
 }
 
 static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
