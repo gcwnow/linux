@@ -103,12 +103,16 @@ done:
 static int jz4740_wdt_start(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
+	int ret;
 
 	clk_prepare_enable(drvdata->clk);
-	jz4740_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
-	writeb(0x1, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
+	ret = jz4740_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+	if (ret)
+		clk_disable_unprepare(drvdata->clk);
+	else
+		writeb(0x1, drvdata->base + JZ_REG_WDT_COUNTER_ENABLE);
 
-	return 0;
+	return ret;
 }
 
 static int jz4740_wdt_stop(struct watchdog_device *wdt_dev)
