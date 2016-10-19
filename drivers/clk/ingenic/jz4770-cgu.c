@@ -140,7 +140,7 @@ static const struct ingenic_cgu_clk_info jz4770_cgu_clocks[] = {
 	/* External clocks */
 
 	[JZ4770_CLK_EXT] = { "ext", CGU_CLK_EXT },
-	[JZ4770_CLK_RTC] = { "rtc", CGU_CLK_EXT },
+	[JZ4770_CLK_OSC32K] = { "osc32k", CGU_CLK_EXT },
 
 	/* PLLs */
 
@@ -440,6 +440,18 @@ static const struct ingenic_cgu_clk_info jz4770_cgu_clocks[] = {
 		"usb_phy", CGU_CLK_CUSTOM,
 		.parents = { JZ4770_CLK_OTG, -1, -1, -1 },
 		.custom = { &jz4770_otg_phy_ops },
+	},
+
+	[JZ4770_CLK_EXT512] = {
+		"ext/512", CGU_CLK_FIXDIV,
+		.parents = { JZ4770_CLK_EXT },
+		.fixdiv = { 512 },
+	},
+
+	[JZ4770_CLK_RTC] = {
+		"rtc", CGU_CLK_MUX,
+		.parents = { JZ4770_CLK_EXT512, JZ4770_CLK_OSC32K, },
+		.mux = { CGU_REG_OPCR, 2, 1},
 	},
 };
 
