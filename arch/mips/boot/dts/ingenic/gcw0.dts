@@ -401,7 +401,7 @@
 
 &tcu {
 	assigned-clocks = <&tcu JZ4770_CLK_OST>, <&tcu JZ4740_CLK_WDT>;
-	assigned-clock-parents = <0>, <&rtc_clk>;
+	assigned-clock-parents = <0>, <&cgu JZ4770_CLK_RTC>;
 	assigned-clock-rates = <12000000>;
 };
 
@@ -434,7 +434,7 @@
 };
 
 &rtc {
-	clocks = <&rtc_clk>;
+	clocks = <&cgu JZ4770_CLK_RTC>;
 	clock-names = "rtc";
 
 	system-power-controller;
