@@ -32,7 +32,7 @@
 			clock-frequency = <12000000>;
 		};
 
-		rtc_clk: rtc {
+		osc32k: osc32k {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <32768>;
@@ -49,8 +49,8 @@
 			compatible = "ingenic,jz4770-cgu";
 			reg = <0x10000000 0x100>;
 
-			clocks = <&ext>, <&rtc_clk>;
-			clock-names = "ext", "rtc";
+			clocks = <&ext>, <&osc32k>;
+			clock-names = "ext", "osc32k";
 
 			#clock-cells = <1>;
 		};
