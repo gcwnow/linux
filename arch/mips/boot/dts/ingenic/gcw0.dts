@@ -385,12 +385,14 @@
 	 */
 	assigned-clocks =
 		<&cgu JZ4770_CLK_PLL1>,
+		<&cgu JZ4770_CLK_RTC>,
 		<&cgu JZ4770_CLK_UHC>,
 		<&cgu JZ4770_CLK_LPCLK_MUX>,
 		<&cgu JZ4770_CLK_MMC0_MUX>,
 		<&cgu JZ4770_CLK_MMC1_MUX>;
 	assigned-clock-parents =
 		<0>,
+		<&cgu JZ4770_CLK_OSC32K>,
 		<&cgu JZ4770_CLK_PLL1>,
 		<&cgu JZ4770_CLK_PLL1>,
 		<&cgu JZ4770_CLK_PLL1>,
