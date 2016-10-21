@@ -58,13 +58,6 @@ static int jz4740_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct jz4740_pwm_chip *jz = to_jz4740(chip);
 
-	/*
-	 * Timers 0 and 1 are used for system tasks, so they are unavailable
-	 * for use as PWMs.
-	 */
-	if (pwm->hwpwm < 2)
-		return -EBUSY;
-
 	/* Start clock */
 	writel(BIT(pwm->hwpwm), jz->base + TCU_TSCR_OFFSET);
 	return 0;
