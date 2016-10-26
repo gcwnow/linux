@@ -156,6 +156,7 @@ static int jz4780_pinctrl_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id jz4780_pinctrl_dt_match[] = {
+	{ .compatible = "ingenic,jz4770-pinctrl", },
 	{ .compatible = "ingenic,jz4780-pinctrl", },
 	{},
 };
