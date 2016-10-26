@@ -16,5 +16,5 @@ config PINCTRL_JZ4740
 config PINCTRL_JZ4780
 	bool "Pinctrl driver for the Ingenic JZ4780 SoC"
 	default y
-	depends on MACH_JZ4780 || COMPILE_TEST
+	depends on MACH_JZ4770 || MACH_JZ4780 || COMPILE_TEST
 	select PINCTRL_INGENIC
