@@ -465,10 +465,22 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 	idx = pin % PINS_PER_GPIO_PORT;
 
 	for (cfg = 0; cfg < num_configs; cfg++) {
+		switch (pinconf_to_config_param(configs[cfg])) {
+		case PIN_CONFIG_BIAS_DISABLE:
+		case PIN_CONFIG_BIAS_PULL_UP:
+		case PIN_CONFIG_BIAS_PULL_DOWN:
+			continue;
+		default:
+			return -ENOTSUPP;
+		}
+	}
+
+	for (cfg = 0; cfg < num_configs; cfg++) {
 		dev_dbg(jzpc->dev, "%s %u %lu\n", __func__, pin, configs[cfg]);
 
 		switch (pinconf_to_config_param(configs[cfg])) {
 		case PIN_CONFIG_BIAS_DISABLE:
+		default:
 			jzgc->ops->set_bias(jzgc->base, idx, false);
 			break;
 
@@ -483,9 +495,6 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 				return -EINVAL;
 			jzgc->ops->set_bias(jzgc->base, idx, true);
 			break;
-
-		default:
-			return -ENOTSUPP;
 		}
 	}
 
