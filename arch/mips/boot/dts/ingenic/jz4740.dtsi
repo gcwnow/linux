@@ -46,9 +46,13 @@
 
 	pinctrl: ingenic-pinctrl@10010000 {
 		compatible = "ingenic,jz4740-pinctrl";
-		reg = <0x10010000 0x384>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
 
 		gpa: gpa {
+			reg = <0x10010000 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -62,6 +66,8 @@
 		};
 
 		gpb: gpb {
+			reg = <0x10010100 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -75,6 +81,8 @@
 		};
 
 		gpc: gpc {
+			reg = <0x10010200 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -88,6 +96,8 @@
 		};
 
 		gpd: gpd {
+			reg = <0x10010300 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
