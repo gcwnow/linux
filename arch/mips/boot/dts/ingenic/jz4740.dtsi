@@ -71,7 +71,7 @@
 			interrupt-parent = <&intc>;
 			interrupts = <27>;
 
-			ingenic,pull-ups   = <0xffffffff>;
+			ingenic,pull-ups = <0xffffffff>;
 		};
 
 		gpc: gpc {
@@ -97,7 +97,7 @@
 			interrupt-parent = <&intc>;
 			interrupts = <25>;
 
-			ingenic,pull-ups   = <0xdfffffff>;
+			ingenic,pull-ups = <0xdfffffff>;
 		};
 
 		pincfg_nobias: pincfg-nobias {
