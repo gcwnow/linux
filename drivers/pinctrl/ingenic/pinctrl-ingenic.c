@@ -26,8 +26,6 @@
 #include "../pinconf.h"
 #include "pinctrl-ingenic.h"
 
-#define GPIO_REGS_SIZE	0x100
-
 struct ingenic_pinctrl;
 
 struct ingenic_pinctrl_pin {
@@ -71,7 +69,6 @@ struct ingenic_gpio_chip {
 
 struct ingenic_pinctrl {
 	struct device *dev;
-	void __iomem *io_base;
 	uint32_t base;
 	struct pinctrl_dev *pctl;
 	struct pinctrl_pin_desc *pdesc;
@@ -515,7 +512,11 @@ static int ingenic_pinctrl_parse_dt_gpio(struct ingenic_pinctrl *jzpc,
 	jzgc->pinctrl = jzpc;
 	snprintf(jzgc->name, sizeof(jzgc->name), "P%c", 'A' + jzgc->idx);
 
-	jzgc->base = jzpc->io_base + (jzgc->idx * GPIO_REGS_SIZE);
+	jzgc->base = of_iomap(np, 0);
+	if (!jzgc->base) {
+		dev_err(jzpc->dev, "failed to map IO memory\n");
+		return -ENXIO;
+	}
 
 	jzgc->gc.base = jzpc->base + (jzgc->idx * PINS_PER_GPIO_PORT);
 	jzgc->gc.ngpio = PINS_PER_GPIO_PORT;
@@ -719,12 +720,6 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 
 	jzpc->dev = dev;
 	platform_set_drvdata(pdev, jzpc);
-
-	jzpc->io_base = of_iomap(dev->of_node, 0);
-	if (!jzpc->io_base) {
-		dev_err(dev, "failed to map IO memory\n");
-		return -ENXIO;
-	}
 
 	jzpc->base = 0;
 	of_property_read_u32(dev->of_node, "base", &jzpc->base);
