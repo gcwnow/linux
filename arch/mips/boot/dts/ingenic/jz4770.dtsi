@@ -278,9 +278,13 @@
 
 	pinctrl: ingenic-pinctr@10010000 {
 		compatible = "ingenic,jz4770-pinctrl";
-		reg = <0x10010000 0x5AC>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
 
 		gpa: gpa {
+			reg = <0x10010000 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -294,6 +298,8 @@
 		};
 
 		gpb: gpb {
+			reg = <0x10010100 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -308,6 +314,8 @@
 		};
 
 		gpc: gpc {
+			reg = <0x10010200 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -321,6 +329,8 @@
 		};
 
 		gpd: gpd {
+			reg = <0x10010300 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -335,6 +345,8 @@
 		};
 
 		gpe: gpe {
+			reg = <0x10010400 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -349,6 +361,8 @@
 		};
 
 		gpf: gpf {
+			reg = <0x10010500 0x100>;
+
 			gpio-controller;
 			#gpio-cells = <2>;
 
