@@ -705,7 +705,7 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 	struct ingenic_pinctrl *jzpc;
 	struct ingenic_gpio_chip *jzgc;
 	struct pinctrl_desc *pctl_desc;
-	struct device_node *np, *group_node;
+	struct device_node *np, *chips_node, *functions_node;
 	unsigned int i, j;
 	int err;
 
@@ -724,37 +724,37 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 	jzpc->base = 0;
 	of_property_read_u32(dev->of_node, "base", &jzpc->base);
 
-	/* count GPIO chips, pin groups & functions */
-	jzpc->num_gpio_chips = jzpc->num_groups = jzpc->num_funcs = 0;
-	for_each_child_of_node(dev->of_node, np) {
-		if (of_find_property(np, "gpio-controller", NULL)) {
-			jzpc->num_gpio_chips++;
-			continue;
-		}
+	chips_node = of_find_node_by_name(dev->of_node, "gpio-chips");
+	if (!chips_node) {
+		dev_err(dev, "Missing \"chips\" devicetree node\n");
+		return -EINVAL;
+	}
 
-		if (of_find_property(np, "bias-disable", NULL) ||
-			of_find_property(np, "bias-pull-up", NULL) ||
-			of_find_property(np, "bias-pull-down", NULL)) {
-			continue;
-		}
+	jzpc->num_gpio_chips = of_get_available_child_count(chips_node);
+	if (!jzpc->num_gpio_chips) {
+		dev_err(dev, "No GPIO chips found\n");
+		return -EINVAL;
+	}
 
-		if (!of_get_child_count(np)) {
-			dev_err(dev, "function with no groups %s\n",
-					np->full_name);
-			return -EINVAL;
-		}
+	functions_node = of_find_node_by_name(dev->of_node, "functions");
+	if (!functions_node) {
+		dev_err(dev, "Missing \"functions\" devicetree node\n");
+		return -EINVAL;
+	}
 
-		jzpc->num_funcs++;
+	jzpc->num_funcs = of_get_available_child_count(functions_node);
+	if (!jzpc->num_funcs) {
+		dev_err(dev, "No functions found\n");
+		return -EINVAL;
+	}
 
-		for_each_child_of_node(np, group_node) {
-			if (!of_find_property(group_node, "ingenic,pins",
-						NULL)) {
-				dev_err(dev, "invalid DT node %s\n",
-						group_node->full_name);
-				return -EINVAL;
-			}
-			jzpc->num_groups++;
-		}
+	for_each_child_of_node(functions_node, np) {
+		jzpc->num_groups += of_get_available_child_count(np);
+	}
+
+	if (!jzpc->num_groups) {
+		dev_err(dev, "No groups found\n");
+		return -EINVAL;
 	}
 
 	/* allocate memory for GPIO chips, pin groups & functions */
@@ -768,28 +768,13 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 	if (!jzpc->gpio_chips || !jzpc->groups || !jzpc->funcs || !pctl_desc)
 		return -ENOMEM;
 
-	/* register GPIO chips, count pins */
-	i = 0;
-	for_each_child_of_node(dev->of_node, np) {
-		if (!of_find_property(np, "gpio-controller", NULL))
-			continue;
-
-		jzpc->gpio_chips[i].idx = i;
-		jzpc->gpio_chips[i].ops = ops;
-
-		err = ingenic_pinctrl_parse_dt_gpio(jzpc,
-				&jzpc->gpio_chips[i++], np);
-		if (err) {
-			dev_err(dev, "failed to register GPIO chip: %d\n", err);
-			return err;
-		}
-
-		pctl_desc->npins += PINS_PER_GPIO_PORT;
-	}
-
-	/* fill in pin descriptions */
+	/* fill in pinctrl_desc structure */
 	pctl_desc->name = dev_name(dev);
 	pctl_desc->owner = THIS_MODULE;
+	pctl_desc->pctlops = &ingenic_pctlops;
+	pctl_desc->pmxops = &ingenic_pmxops;
+	pctl_desc->confops = &ingenic_confops;
+	pctl_desc->npins = jzpc->num_gpio_chips * PINS_PER_GPIO_PORT;
 	pctl_desc->pins = jzpc->pdesc = devm_kzalloc(&pdev->dev,
 			sizeof(*jzpc->pdesc) * pctl_desc->npins, GFP_KERNEL);
 	if (!jzpc->pdesc)
@@ -802,18 +787,28 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 						i % PINS_PER_GPIO_PORT);
 	}
 
-	/* parse pin functions */
-	i = j = 0;
-	for_each_child_of_node(dev->of_node, np) {
-		if (of_find_property(np, "gpio-controller", NULL))
-			continue;
+	/* Register GPIO chips */
 
-		if (of_find_property(np, "bias-disable", NULL) ||
-			of_find_property(np, "bias-pull-up", NULL) ||
-			of_find_property(np, "bias-pull-down", NULL)) {
-			continue;
+	i = 0;
+	for_each_child_of_node(chips_node, np) {
+		if (!of_find_property(np, "gpio-controller", NULL)) {
+			dev_err(dev, "GPIO chip missing \"gpio-controller\" flag\n");
+			return -EINVAL;
 		}
 
+		jzpc->gpio_chips[i].idx = i;
+		jzpc->gpio_chips[i].ops = ops;
+
+		err = ingenic_pinctrl_parse_dt_gpio(jzpc,
+				&jzpc->gpio_chips[i++], np);
+		if (err) {
+			dev_err(dev, "failed to register GPIO chip: %d\n", err);
+			return err;
+		}
+	}
+
+	i = 0;
+	for_each_child_of_node(functions_node, np) {
 		err = ingenic_pinctrl_parse_dt_func(jzpc, np, &i, &j);
 		if (err) {
 			dev_err(dev, "failed to parse function %s\n",
@@ -822,18 +817,10 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 		}
 	}
 
-	/* XXX: Can this actually happen? */
-	WARN_ON(i != jzpc->num_funcs);
-	WARN_ON(j != jzpc->num_groups);
-
 	for (i = 0; i < jzpc->num_groups; i++)
 		dev_dbg(dev, "group '%s'\n", jzpc->groups[i].name);
 	for (i = 0; i < jzpc->num_funcs; i++)
 		dev_dbg(dev, "func '%s'\n", jzpc->funcs[i].name);
-
-	pctl_desc->pctlops = &ingenic_pctlops;
-	pctl_desc->pmxops = &ingenic_pmxops;
-	pctl_desc->confops = &ingenic_confops;
 
 	jzpc->pctl = pinctrl_register(pctl_desc, dev, jzpc);
 	if (!jzpc->pctl) {
