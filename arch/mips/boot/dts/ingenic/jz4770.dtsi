@@ -282,98 +282,104 @@
 		#size-cells = <1>;
 		ranges;
 
-		gpa: gpa {
-			reg = <0x10010000 0x100>;
+		gpio-chips {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpa: gpa {
+				reg = <0x10010000 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <17>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-ups = <0x3fffffff>;
-		};
+				interrupt-parent = <&intc>;
+				interrupts = <17>;
 
-		gpb: gpb {
-			reg = <0x10010100 0x100>;
+				ingenic,pull-ups = <0x3fffffff>;
+			};
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpb: gpb {
+				reg = <0x10010100 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <16>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-downs = <0x000f0c03>;
-			ingenic,pull-ups   = <0xfff0030c>;
-		};
+				interrupt-parent = <&intc>;
+				interrupts = <16>;
 
-		gpc: gpc {
-			reg = <0x10010200 0x100>;
+				ingenic,pull-downs = <0x000f0c03>;
+				ingenic,pull-ups   = <0xfff0030c>;
+			};
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpc: gpc {
+				reg = <0x10010200 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <15>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-ups = <0xffffffff>;
-		};
+				interrupt-parent = <&intc>;
+				interrupts = <15>;
 
-		gpd: gpd {
-			reg = <0x10010300 0x100>;
+				ingenic,pull-ups = <0xffffffff>;
+			};
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpd: gpd {
+				reg = <0x10010300 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <14>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-downs = <0x0000b000>;
-			ingenic,pull-ups   = <0xffff4fff>;
-		};
+				interrupt-parent = <&intc>;
+				interrupts = <14>;
 
-		gpe: gpe {
-			reg = <0x10010400 0x100>;
+				ingenic,pull-downs = <0x0000b000>;
+				ingenic,pull-ups   = <0xffff4fff>;
+			};
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpe: gpe {
+				reg = <0x10010400 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <13>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-downs = <0x00000483>;
-			ingenic,pull-ups   = <0xfffffb7c>;
-		};
+				interrupt-parent = <&intc>;
+				interrupts = <13>;
 
-		gpf: gpf {
-			reg = <0x10010500 0x100>;
+				ingenic,pull-downs = <0x00000483>;
+				ingenic,pull-ups   = <0xfffffb7c>;
+			};
 
-			gpio-controller;
-			#gpio-cells = <2>;
+			gpf: gpf {
+				reg = <0x10010500 0x100>;
 
-			interrupt-controller;
-			#interrupt-cells = <2>;
+				gpio-controller;
+				#gpio-cells = <2>;
 
-			interrupt-parent = <&intc>;
-			interrupts = <12>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
 
-			ingenic,pull-downs = <0x00580ff0>;
-			ingenic,pull-ups   = <0xffa7f00f>;
+				interrupt-parent = <&intc>;
+				interrupts = <12>;
+
+				ingenic,pull-downs = <0x00580ff0>;
+				ingenic,pull-ups   = <0xffa7f00f>;
+			};
 		};
 
 		pincfg_nobias: nobias {
@@ -388,147 +394,149 @@
 			bias-pull-down;
 		};
 
-		pinfunc_otg: otg {
-			pins_otg_data: otg-data {
-				ingenic,pins = <&gpe 10 0 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_msc0: msc0 {
-			pins_msc0_4bit: msc0_4bit {
-				ingenic,pins = <&gpa 18 1 &pincfg_nobias
-						&gpa 19 1 &pincfg_nobias
-						&gpa 20 0 &pincfg_nobias
-						&gpa 21 1 &pincfg_nobias
-						&gpa 22 1 &pincfg_nobias
-						&gpa 23 1 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_msc1: msc1 {
-			pins_msc1_4bit: msc1_4bit {
-				ingenic,pins = <&gpd 20 0 &pincfg_nobias
-						&gpd 21 0 &pincfg_nobias
-						&gpd 22 0 &pincfg_nobias
-						&gpd 23 0 &pincfg_nobias
-						&gpd 24 0 &pincfg_nobias
-						&gpd 25 0 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_msc2: msc2 {
-			pins_msc2_4bit: msc2_4bit {
-				ingenic,pins = <&gpb 20 0 &pincfg_nobias
-						&gpb 21 0 &pincfg_nobias
-						&gpb 28 0 &pincfg_nobias
-						&gpb 29 0 &pincfg_nobias
-						&gpb 30 0 &pincfg_nobias
-						&gpb 31 0 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_pwm1: pwm1 {
-			pinfunc_pwm1_data: pwm1-data {
-				ingenic,pins = <&gpe 1 0 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_pwm4: pwm4 {
-			pinfunc_pwm4_data: pwm4-data {
-				ingenic,pins = <&gpe 4 0 &pincfg_nobias>;
-			};
-		};
-
-		pinfunc_lcd: lcd {
-			pinfunc_lcd_rgb888: lcd_rgb888 {
-				ingenic,pins = <&gpc  8 0 &pincfg_nobias
-						&gpc  9 0 &pincfg_nobias
-						&gpc 18 0 &pincfg_nobias
-						&gpc 19 0 &pincfg_nobias
-						&gpc  0 0 &pincfg_nobias
-						&gpc  1 0 &pincfg_nobias
-						&gpc  2 0 &pincfg_nobias
-						&gpc  3 0 &pincfg_nobias
-						&gpc  4 0 &pincfg_nobias
-						&gpc 10 0 &pincfg_nobias
-						&gpc 11 0 &pincfg_nobias
-						&gpc 12 0 &pincfg_nobias
-						&gpc 13 0 &pincfg_nobias
-						&gpc 14 0 &pincfg_nobias
-						&gpc 15 0 &pincfg_nobias
-						&gpc 20 0 &pincfg_nobias
-						&gpc 21 0 &pincfg_nobias
-						&gpc 22 0 &pincfg_nobias
-						&gpc 23 0 &pincfg_nobias
-						&gpc 24 0 &pincfg_nobias
-						&gpc  5 0 &pincfg_nobias
-						&gpc 25 0 &pincfg_nobias
-						&gpc  6 0 &pincfg_nobias
-						&gpc  7 0 &pincfg_nobias
-						&gpc 16 0 &pincfg_nobias
-						&gpc 17 0 &pincfg_nobias
-						&gpc 26 0 &pincfg_nobias
-						&gpc 27 0 &pincfg_nobias>;
+		functions {
+			pinfunc_otg: otg {
+				pins_otg_data: otg-data {
+					ingenic,pins = <&gpe 10 0 &pincfg_nobias>;
+				};
 			};
 
-			pinfunc_lcd_nopins: no_pins {
-				ingenic,pins = <>;
-			};
-		};
-
-		pinfunc_uart0: uart0 {
-			pins_uart0_data: uart0-data {
-				ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
-						&gpf  3 0 &pincfg_nobias>; /* txd */
-			};
-
-			pins_uart0_dataplusflow: uart0-dataplusflow {
-				ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
-						&gpf  1 0 &pincfg_nobias   /* cts */
-						&gpf  2 0 &pincfg_nobias   /* rts */
-						&gpf  3 0 &pincfg_nobias>; /* txd */
-			};
-		};
-
-		pinfunc_uart1: uart1 {
-			pins_uart1_data: uart1-data {
-				ingenic,pins = <&gpd 26 0 &pincfg_pull_up   /* rxd */
-						&gpd 28 0 &pincfg_nobias>;  /* txd */
+			pinfunc_msc0: msc0 {
+				pins_msc0_4bit: msc0_4bit {
+					ingenic,pins = <&gpa 18 1 &pincfg_nobias
+							&gpa 19 1 &pincfg_nobias
+							&gpa 20 0 &pincfg_nobias
+							&gpa 21 1 &pincfg_nobias
+							&gpa 22 1 &pincfg_nobias
+							&gpa 23 1 &pincfg_nobias>;
+				};
 			};
 
-			pins_uart1_dataplusflow: uart1-dataplusflow {
-				ingenic,pins = <&gpd 26 0 &pincfg_pull_up  /* rxd */
-						&gpd 28 0 &pincfg_nobias   /* txd */
-						&gpd 27 0 &pincfg_nobias   /* cts */
-						&gpd 29 0 &pincfg_nobias>; /* rts */
-			};
-		};
-
-		pinfunc_uart2: uart2 {
-			pins_uart2_data: uart2-data {
-				ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
-						&gpc 30 0 &pincfg_nobias>; /* txd */
+			pinfunc_msc1: msc1 {
+				pins_msc1_4bit: msc1_4bit {
+					ingenic,pins = <&gpd 20 0 &pincfg_nobias
+							&gpd 21 0 &pincfg_nobias
+							&gpd 22 0 &pincfg_nobias
+							&gpd 23 0 &pincfg_nobias
+							&gpd 24 0 &pincfg_nobias
+							&gpd 25 0 &pincfg_nobias>;
+				};
 			};
 
-			pins_uart2_dataplusflow: uart2-dataplusflow {
-				ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
-						&gpc 30 0 &pincfg_nobias   /* txd */
-						&gpc 29 0 &pincfg_nobias   /* cts */
-						&gpc 31 0 &pincfg_nobias>; /* rts */
-			};
-		};
-
-		pinfunc_uart3: uart3 {
-			pins_uart3_data: uart3-data {
-				ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
-						&gpe  5 1 &pincfg_nobias>;  /* txd */
+			pinfunc_msc2: msc2 {
+				pins_msc2_4bit: msc2_4bit {
+					ingenic,pins = <&gpb 20 0 &pincfg_nobias
+							&gpb 21 0 &pincfg_nobias
+							&gpb 28 0 &pincfg_nobias
+							&gpb 29 0 &pincfg_nobias
+							&gpb 30 0 &pincfg_nobias
+							&gpb 31 0 &pincfg_nobias>;
+				};
 			};
 
-			pins_uart3_dataplusflow: uart3-dataplusflow {
-				ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
-						&gpe  5 1 &pincfg_nobias    /* txd */
-						&gpe  8 0 &pincfg_nobias    /* cts */
-						&gpe  9 0 &pincfg_nobias>;  /* rts */
+			pinfunc_pwm1: pwm1 {
+				pinfunc_pwm1_data: pwm1-data {
+					ingenic,pins = <&gpe 1 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_pwm4: pwm4 {
+				pinfunc_pwm4_data: pwm4-data {
+					ingenic,pins = <&gpe 4 0 &pincfg_nobias>;
+				};
+			};
+
+			pinfunc_lcd: lcd {
+				pinfunc_lcd_rgb888: lcd_rgb888 {
+					ingenic,pins = <&gpc  8 0 &pincfg_nobias
+							&gpc  9 0 &pincfg_nobias
+							&gpc 18 0 &pincfg_nobias
+							&gpc 19 0 &pincfg_nobias
+							&gpc  0 0 &pincfg_nobias
+							&gpc  1 0 &pincfg_nobias
+							&gpc  2 0 &pincfg_nobias
+							&gpc  3 0 &pincfg_nobias
+							&gpc  4 0 &pincfg_nobias
+							&gpc 10 0 &pincfg_nobias
+							&gpc 11 0 &pincfg_nobias
+							&gpc 12 0 &pincfg_nobias
+							&gpc 13 0 &pincfg_nobias
+							&gpc 14 0 &pincfg_nobias
+							&gpc 15 0 &pincfg_nobias
+							&gpc 20 0 &pincfg_nobias
+							&gpc 21 0 &pincfg_nobias
+							&gpc 22 0 &pincfg_nobias
+							&gpc 23 0 &pincfg_nobias
+							&gpc 24 0 &pincfg_nobias
+							&gpc  5 0 &pincfg_nobias
+							&gpc 25 0 &pincfg_nobias
+							&gpc  6 0 &pincfg_nobias
+							&gpc  7 0 &pincfg_nobias
+							&gpc 16 0 &pincfg_nobias
+							&gpc 17 0 &pincfg_nobias
+							&gpc 26 0 &pincfg_nobias
+							&gpc 27 0 &pincfg_nobias>;
+				};
+
+				pinfunc_lcd_nopins: no_pins {
+					ingenic,pins = <>;
+				};
+			};
+
+			pinfunc_uart0: uart0 {
+				pins_uart0_data: uart0-data {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart0_dataplusflow: uart0-dataplusflow {
+					ingenic,pins = <&gpf  0 0 &pincfg_pull_up  /* rxd */
+							&gpf  1 0 &pincfg_nobias   /* cts */
+							&gpf  2 0 &pincfg_nobias   /* rts */
+							&gpf  3 0 &pincfg_nobias>; /* txd */
+				};
+			};
+
+			pinfunc_uart1: uart1 {
+				pins_uart1_data: uart1-data {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up   /* rxd */
+							&gpd 28 0 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart1_dataplusflow: uart1-dataplusflow {
+					ingenic,pins = <&gpd 26 0 &pincfg_pull_up  /* rxd */
+							&gpd 28 0 &pincfg_nobias   /* txd */
+							&gpd 27 0 &pincfg_nobias   /* cts */
+							&gpd 29 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart2: uart2 {
+				pins_uart2_data: uart2-data {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias>; /* txd */
+				};
+
+				pins_uart2_dataplusflow: uart2-dataplusflow {
+					ingenic,pins = <&gpc 28 0 &pincfg_pull_up  /* rxd */
+							&gpc 30 0 &pincfg_nobias   /* txd */
+							&gpc 29 0 &pincfg_nobias   /* cts */
+							&gpc 31 0 &pincfg_nobias>; /* rts */
+				};
+			};
+
+			pinfunc_uart3: uart3 {
+				pins_uart3_data: uart3-data {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias>;  /* txd */
+				};
+
+				pins_uart3_dataplusflow: uart3-dataplusflow {
+					ingenic,pins = <&gpd 12 0 &pincfg_pull_down /* rxd */
+							&gpe  5 1 &pincfg_nobias    /* txd */
+							&gpe  8 0 &pincfg_nobias    /* cts */
+							&gpe  9 0 &pincfg_nobias>;  /* rts */
+				};
 			};
 		};
 	};
