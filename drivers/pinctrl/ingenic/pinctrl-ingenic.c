@@ -454,45 +454,36 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 {
 	struct ingenic_pinctrl *jzpc = pinctrl_dev_get_drvdata(pctldev);
 	struct ingenic_gpio_chip *jzgc;
-	unsigned int idx, cfg;
+	unsigned int idx;
+
+	/* We make sure when parsing the device-tree that there's no more than
+	 * one config per pin, so it shouldn't happen here. */
+	WARN_ON(num_configs > 1);
 
 	if (pin >= (jzpc->num_gpio_chips * PINS_PER_GPIO_PORT))
 		return -EINVAL;
+
 	jzgc = &jzpc->gpio_chips[pin / PINS_PER_GPIO_PORT];
 	idx = pin % PINS_PER_GPIO_PORT;
 
-	for (cfg = 0; cfg < num_configs; cfg++) {
-		switch (pinconf_to_config_param(configs[cfg])) {
-		case PIN_CONFIG_BIAS_DISABLE:
-		case PIN_CONFIG_BIAS_PULL_UP:
-		case PIN_CONFIG_BIAS_PULL_DOWN:
-			continue;
-		default:
-			return -ENOTSUPP;
-		}
-	}
+	switch (pinconf_to_config_param(*configs)) {
+	case PIN_CONFIG_BIAS_DISABLE:
+		jzgc->ops->set_bias(jzgc->base, idx, false);
+		break;
 
-	for (cfg = 0; cfg < num_configs; cfg++) {
-		dev_dbg(jzpc->dev, "%s %u %lu\n", __func__, pin, configs[cfg]);
+	case PIN_CONFIG_BIAS_PULL_UP:
+		if (!(jzgc->pull_ups & (1 << idx)))
+			return -EINVAL;
+		jzgc->ops->set_bias(jzgc->base, idx, true);
+		break;
 
-		switch (pinconf_to_config_param(configs[cfg])) {
-		case PIN_CONFIG_BIAS_DISABLE:
-		default:
-			jzgc->ops->set_bias(jzgc->base, idx, false);
-			break;
-
-		case PIN_CONFIG_BIAS_PULL_UP:
-			if (!(jzgc->pull_ups & (1 << idx)))
-				return -EINVAL;
-			jzgc->ops->set_bias(jzgc->base, idx, true);
-			break;
-
-		case PIN_CONFIG_BIAS_PULL_DOWN:
-			if (!(jzgc->pull_downs & (1 << idx)))
-				return -EINVAL;
-			jzgc->ops->set_bias(jzgc->base, idx, true);
-			break;
-		}
+	case PIN_CONFIG_BIAS_PULL_DOWN:
+		if (!(jzgc->pull_downs & (1 << idx)))
+			return -EINVAL;
+		jzgc->ops->set_bias(jzgc->base, idx, true);
+		break;
+	default:
+		return -EINVAL;
 	}
 
 	return 0;
@@ -580,8 +571,7 @@ static int ingenic_pinctrl_parse_dt_pincfg(struct ingenic_pinctrl *jzpc,
 {
 	struct device_node *cfg_node;
 	unsigned long *configs;
-	unsigned int num_configs, i;
-	enum pin_config_param conf_param;
+	unsigned int num_configs;
 	int err;
 
 	cfg_node = of_find_node_by_phandle(cfg_handle);
@@ -593,23 +583,13 @@ static int ingenic_pinctrl_parse_dt_pincfg(struct ingenic_pinctrl *jzpc,
 	if (err)
 		return err;
 
-	for (i = 0; i < num_configs; i++) {
-		conf_param = pinconf_to_config_param(configs[i]);
-		switch (conf_param) {
-		case PIN_CONFIG_BIAS_DISABLE:
-		case PIN_CONFIG_BIAS_PULL_UP:
-		case PIN_CONFIG_BIAS_PULL_DOWN:
-			pin->bias = (unsigned long)conf_param;
-			break;
-		default:
-			dev_err(jzpc->dev, "unhandled pinconf parameter %u",
-					(unsigned int)conf_param);
-			err = -EINVAL;
-			goto out;
-		}
-	}
+	/* We only support bias-disable / bias-pull-up / bias-pull-down for now,
+	 * it doesn't make sense to have more than one config. */
+	if (num_configs == 1)
+		pin->bias = (unsigned long) pinconf_to_config_param(*configs);
+	else
+		err = -EINVAL;
 
-out:
 	kfree(configs);
 	return err;
 }
