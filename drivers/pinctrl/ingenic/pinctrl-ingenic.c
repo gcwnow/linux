@@ -534,7 +534,7 @@ static int ingenic_pinctrl_parse_dt_gpio(struct ingenic_pinctrl *jzpc,
 		return -EINVAL;
 	}
 
-	err = gpiochip_add(&jzgc->gc);
+	err = devm_gpiochip_add_data(jzpc->dev, &jzgc->gc, NULL);
 	if (err)
 		return err;
 
