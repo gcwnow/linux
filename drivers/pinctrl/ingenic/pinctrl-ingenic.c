@@ -32,7 +32,8 @@ struct ingenic_pinctrl_pin {
 	struct ingenic_gpio_chip *gpio_chip;
 	unsigned int idx;
 	unsigned int func;
-	unsigned long bias;
+	unsigned long *configs;
+	unsigned int num_configs;
 };
 
 struct ingenic_pinctrl_group {
@@ -293,8 +294,9 @@ static int ingenic_pinctrl_dt_node_to_map(
 		new_map[i + 1].type = PIN_MAP_TYPE_CONFIGS_PIN;
 		new_map[i + 1].data.configs.group_or_pin =
 			jzpc->pdesc[group->pins[i].idx].name;
-		new_map[i + 1].data.configs.configs = &group->pins[i].bias;
-		new_map[i + 1].data.configs.num_configs = 1;
+		new_map[i + 1].data.configs.configs = group->pins[i].configs;
+		new_map[i + 1].data.configs.num_configs =
+			group->pins[i].num_configs;
 	}
 
 	*map = new_map;
@@ -458,26 +460,13 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 
 	if (pin >= (jzpc->num_gpio_chips * PINS_PER_GPIO_PORT))
 		return -EINVAL;
+
 	jzgc = &jzpc->gpio_chips[pin / PINS_PER_GPIO_PORT];
 	idx = pin % PINS_PER_GPIO_PORT;
 
 	for (cfg = 0; cfg < num_configs; cfg++) {
 		switch (pinconf_to_config_param(configs[cfg])) {
 		case PIN_CONFIG_BIAS_DISABLE:
-		case PIN_CONFIG_BIAS_PULL_UP:
-		case PIN_CONFIG_BIAS_PULL_DOWN:
-			continue;
-		default:
-			return -ENOTSUPP;
-		}
-	}
-
-	for (cfg = 0; cfg < num_configs; cfg++) {
-		dev_dbg(jzpc->dev, "%s %u %lu\n", __func__, pin, configs[cfg]);
-
-		switch (pinconf_to_config_param(configs[cfg])) {
-		case PIN_CONFIG_BIAS_DISABLE:
-		default:
 			jzgc->ops->set_bias(jzgc->base, idx, false);
 			break;
 
@@ -492,6 +481,10 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 				return -EINVAL;
 			jzgc->ops->set_bias(jzgc->base, idx, true);
 			break;
+		default:
+			dev_warn(jzpc->dev, "Invalid config for pin %s\n",
+					jzpc->pdesc[pin].name);
+			continue;
 		}
 	}
 
@@ -579,39 +572,24 @@ static int ingenic_pinctrl_parse_dt_pincfg(struct ingenic_pinctrl *jzpc,
 		struct ingenic_pinctrl_pin *pin, phandle cfg_handle)
 {
 	struct device_node *cfg_node;
-	unsigned long *configs;
-	unsigned int num_configs, i;
-	enum pin_config_param conf_param;
 	int err;
 
 	cfg_node = of_find_node_by_phandle(cfg_handle);
 	if (!cfg_node)
 		return -EINVAL;
 
-	err = pinconf_generic_parse_dt_config(cfg_node, NULL, &configs,
-			&num_configs);
+	err = pinconf_generic_parse_dt_config(cfg_node, NULL,
+			&pin->configs, &pin->num_configs);
 	if (err)
 		return err;
 
-	for (i = 0; i < num_configs; i++) {
-		conf_param = pinconf_to_config_param(configs[i]);
-		switch (conf_param) {
-		case PIN_CONFIG_BIAS_DISABLE:
-		case PIN_CONFIG_BIAS_PULL_UP:
-		case PIN_CONFIG_BIAS_PULL_DOWN:
-			pin->bias = (unsigned long)conf_param;
-			break;
-		default:
-			dev_err(jzpc->dev, "unhandled pinconf parameter %u",
-					(unsigned int)conf_param);
-			err = -EINVAL;
-			goto out;
-		}
+	err = devm_add_action(jzpc->dev, (void (*)(void *))kfree, pin->configs);
+	if (err) {
+		kfree(pin->configs);
+		return err;
 	}
 
-out:
-	kfree(configs);
-	return err;
+	return 0;
 }
 
 static int ingenic_pinctrl_parse_dt_func(struct ingenic_pinctrl *jzpc,
