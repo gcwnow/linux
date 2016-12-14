@@ -787,6 +787,7 @@ int ingenic_pinctrl_probe(struct platform_device *pdev,
 	}
 
 	i = 0;
+	j = 0;
 	for_each_child_of_node(functions_node, np) {
 		err = ingenic_pinctrl_parse_dt_func(jzpc, np, &i, &j);
 		if (err) {
