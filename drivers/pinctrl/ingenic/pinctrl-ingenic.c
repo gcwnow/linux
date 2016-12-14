@@ -11,6 +11,7 @@
 
 #include <linux/gpio.h>
 #include <linux/io.h>
+#include <linux/module.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/pinctrl/pinctrl.h>
