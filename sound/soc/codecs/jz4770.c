@@ -1033,7 +1033,6 @@ static struct regmap_config jz_icdc_regmap_config = {
 
 	.reg_defaults_raw = jz_icdc_reg_defaults,
 	.num_reg_defaults_raw = ARRAY_SIZE(jz_icdc_reg_defaults),
-	.use_single_rw = 1,
 	.cache_type = REGCACHE_FLAT,
 };
 
