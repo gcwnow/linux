@@ -44,6 +44,7 @@ static struct nt39016_platform_data gcw0_panel_pdata = {
 
 struct nt39016 {
 	struct device *dev;
+	struct device_node *fb_node;
 	struct regmap *regmap;
 	struct lcd_device *lcd;
 
@@ -207,7 +208,7 @@ static int nt39016_match(struct lcd_device *lcd, struct fb_info *info)
 {
 	struct nt39016 *nt39016 = lcd_get_data(lcd);
 
-	return nt39016->dev->parent == info->device;
+	return !nt39016->fb_node || info->device->of_node == nt39016->fb_node;
 }
 
 static struct lcd_ops nt39016_ops = {
@@ -302,6 +303,13 @@ static int nt39016_probe(struct platform_device *pdev)
 	nt39016->gcw0_lcd_regulator_33v = gcw0_lcd_regulator_33v;
 	nt39016->gcw0_lcd_regulator_18v = gcw0_lcd_regulator_18v;
 	platform_set_drvdata(pdev, nt39016);
+
+	nt39016->fb_node = of_parse_phandle(dev->of_node, "fb-dev", 0);
+	if (nt39016->fb_node)
+		dev_info(dev, "Listening to framebuffer device %s\n",
+			 nt39016->fb_node->name);
+	else
+		dev_info(dev, "Listening to any framebuffer device\n");
 
 	nt39016->regmap = devm_regmap_init(dev, NULL, nt39016,
 					   &nt39016_regmap_config);
