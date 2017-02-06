@@ -29,6 +29,7 @@
 #include <linux/gcd.h>
 #include <linux/init.h>
 #include <linux/dma-mapping.h>
+#include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pm.h>
@@ -1089,6 +1090,12 @@ static int jzfb_probe(struct platform_device *pdev)
 
 	fb_prepare_logo(jzfb->fb, 0);
 	fb_show_logo(jzfb->fb, 0);
+
+	ret = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+	if (ret)
+		dev_warn(&pdev->dev, "Failed to populate child devices: %d\n",
+			 ret);
+
 	return 0;
 
 err_remove_integer_scaling_file:
