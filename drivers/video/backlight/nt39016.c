@@ -166,6 +166,34 @@ static int nt39016_set_power(struct lcd_device *lcd, int power)
 	return 0;
 }
 
+static int nt39016_get_contrast(struct lcd_device *lcd)
+{
+	struct nt39016 *nt39016 = lcd_get_data(lcd);
+	unsigned int val;
+	int err;
+
+	err = regmap_read(nt39016->regmap, 0x08, &val);
+	if (err)
+		return err;
+
+	return (int)(val & 0x1F);
+}
+
+static int nt39016_set_contrast(struct lcd_device *lcd, int contrast)
+{
+	struct nt39016 *nt39016 = lcd_get_data(lcd);
+	int err;
+
+	if (contrast > 0x1F)
+		contrast = 0x1F;
+
+	err = regmap_write(nt39016->regmap, 0x08, (unsigned int)contrast);
+	if (err)
+		return err;
+
+	return 0;
+}
+
 static int nt39016_match(struct lcd_device *lcd, struct fb_info *info)
 {
 	struct nt39016 *nt39016 = lcd_get_data(lcd);
@@ -176,6 +204,8 @@ static int nt39016_match(struct lcd_device *lcd, struct fb_info *info)
 static struct lcd_ops nt39016_ops = {
 	.get_power	= nt39016_get_power,
 	.set_power	= nt39016_set_power,
+	.get_contrast	= nt39016_get_contrast,
+	.set_contrast	= nt39016_set_contrast,
 	.check_fb	= nt39016_match,
 };
 
@@ -264,6 +294,8 @@ static int nt39016_probe(struct spi_device *spi)
 		dev_err(dev, "Failed to register LCD device: %d\n", err);
 		return err;
 	}
+
+	nt39016->lcd->props.max_contrast = 0x1F;
 
 	nt39016_power_up(nt39016);
 
