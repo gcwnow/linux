@@ -150,6 +150,13 @@ config LCD_HX8357
 	  If you have a HX-8357 LCD panel, say Y to enable its LCD control
 	  driver.
 
+config LCD_NT39016
+	# TODO: Switch to tristate once the driver is a module.
+	bool "Novatek NT39016 support"
+	help
+	  If you have a panel contolled by a Novatek NT39016 LCD driver IC,
+	  say Y to enable and configure it.
+
 endif # LCD_CLASS_DEVICE
 
 #
