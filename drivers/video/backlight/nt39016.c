@@ -33,7 +33,6 @@ struct nt39016 {
 	struct device *dev;
 	struct device_node *fb_node;
 	struct regmap *regmap;
-	struct spi_device *spi_dev;
 	struct lcd_device *lcd;
 
 	struct regulator *gcw0_lcd_regulator_33v;
@@ -53,15 +52,6 @@ static const struct reg_sequence nt39016_panel_regs[] = {
 };
 #undef RV
 
-static int nt39016_reg_write(void *context, unsigned int reg, unsigned int val)
-{
-	struct nt39016 *nt39016 = context;
-	u16 data = (reg << 10) | (1 << 9) | val;
-
-	// TODO: This is not DMA-safe, but right now we're bit-banging.
-	return spi_write(nt39016->spi_dev, &data, 2);
-}
-
 static const struct regmap_range nt39016_regmap_no_ranges[] = {
 	regmap_reg_range(0x13, 0x1D),
 	regmap_reg_range(0x1F, 0x1F),
@@ -74,13 +64,14 @@ static const struct regmap_access_table nt39016_regmap_access_table = {
 
 static const struct regmap_config nt39016_regmap_config = {
 	.reg_bits = 6,
+	.pad_bits = 2,
 	.val_bits = 8,
 
 	// TODO: All registers are readable, but we haven't implemented reading yet.
-	.reg_write = nt39016_reg_write,
 	.max_register = 0x20,
 	.wr_table = &nt39016_regmap_access_table,
 	//.rd_table = &nt39016_regmap_access_table,
+	.write_flag_mask = 0x02,
 
 	.cache_type = REGCACHE_FLAT,
 };
@@ -237,7 +228,7 @@ static int nt39016_probe(struct spi_device *spi)
 		gpio_direction_output(GPIO_PANEL_SOMETHING, 1);
 	}
 
-	spi->bits_per_word = 16;
+	spi->bits_per_word = 8;
 	spi->mode = SPI_MODE_3;
 	err = spi_setup(spi);
 	if (err)
@@ -248,7 +239,6 @@ static int nt39016_probe(struct spi_device *spi)
 		return -ENOMEM;
 
 	nt39016->dev = dev;
-	nt39016->spi_dev = spi;
 	nt39016->gcw0_lcd_regulator_33v = gcw0_lcd_regulator_33v;
 	nt39016->gcw0_lcd_regulator_18v = gcw0_lcd_regulator_18v;
 	spi_set_drvdata(spi, nt39016);
@@ -260,8 +250,7 @@ static int nt39016_probe(struct spi_device *spi)
 	else
 		dev_info(dev, "Listening to any framebuffer device\n");
 
-	nt39016->regmap = devm_regmap_init(dev, NULL, nt39016,
-					   &nt39016_regmap_config);
+	nt39016->regmap = devm_regmap_init_spi(spi, &nt39016_regmap_config);
 	if (IS_ERR(nt39016->regmap)) {
 		err = PTR_ERR(nt39016->regmap);
 		dev_err(dev, "Failed to init regmap: %d\n", err);
