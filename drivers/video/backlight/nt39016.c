@@ -17,35 +17,23 @@
 #include <linux/lcd.h>
 #include <linux/module.h>
 #include <linux/of.h>
-#include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/regulator/fixed.h>
 #include <linux/regulator/machine.h>
+#include <linux/spi/spi.h>
 #include <linux/slab.h>
 
 #include <asm/mach-jz4740/gpio.h>
 
 
-struct nt39016_platform_data {
-        int gpio_reset;
-        int gpio_clock;
-        int gpio_enable;
-        int gpio_data;
-};
-
-static struct nt39016_platform_data gcw0_panel_pdata = {
-	.gpio_reset		= JZ_GPIO_PORTE(2),
-	.gpio_clock		= JZ_GPIO_PORTE(15),
-	.gpio_enable		= JZ_GPIO_PORTE(16),
-	.gpio_data		= JZ_GPIO_PORTE(17),
-};
-
+#define GPIO_NT39016_RESET	JZ_GPIO_PORTE(2)
 #define GPIO_PANEL_SOMETHING	JZ_GPIO_PORTF(0)
 
 struct nt39016 {
 	struct device *dev;
 	struct device_node *fb_node;
 	struct regmap *regmap;
+	struct spi_device *spi_dev;
 	struct lcd_device *lcd;
 
 	struct regulator *gcw0_lcd_regulator_33v;
@@ -67,26 +55,11 @@ static const struct reg_sequence nt39016_panel_regs[] = {
 
 static int nt39016_reg_write(void *context, unsigned int reg, unsigned int val)
 {
-	//struct nt39016 *nt39016 = context;
-	struct nt39016_platform_data *pdata = &gcw0_panel_pdata;
-	unsigned int data = (reg << 10) | (1 << 9) | val;
-	int bit;
+	struct nt39016 *nt39016 = context;
+	u16 data = (reg << 10) | (1 << 9) | val;
 
-	gpio_direction_output(pdata->gpio_enable, 0);
-
-	for (bit = 15; bit >= 0; bit--) {
-		gpio_direction_output(pdata->gpio_clock, 0);
-		gpio_direction_output(pdata->gpio_data, (data >> bit) & 1);
-		udelay(1);
-		gpio_direction_output(pdata->gpio_clock, 1);
-		udelay(1);
-	}
-
-	gpio_direction_output(pdata->gpio_enable, 1);
-
-	/* Note: Both clock and enable pin are left in inactive state (1). */
-
-	return 0;
+	// TODO: This is not DMA-safe, but right now we're bit-banging.
+	return spi_write(nt39016->spi_dev, &data, 2);
 }
 
 static const struct regmap_range nt39016_regmap_no_ranges[] = {
@@ -115,7 +88,6 @@ static const struct regmap_config nt39016_regmap_config = {
 static int nt39016_power_up(struct nt39016 *nt39016)
 {
 	struct device *dev = nt39016->dev;
-	struct nt39016_platform_data *pdata = &gcw0_panel_pdata;
 	int err;
 
 	err = regulator_enable(nt39016->gcw0_lcd_regulator_33v);
@@ -131,15 +103,14 @@ static int nt39016_power_up(struct nt39016 *nt39016)
 	}
 
 	/* Reset LCD panel. */
-	gpio_direction_output(pdata->gpio_reset, 0);
+	gpio_direction_output(GPIO_NT39016_RESET, 0);
 	udelay(50);
-	gpio_direction_output(pdata->gpio_reset, 1);
+	gpio_direction_output(GPIO_NT39016_RESET, 1);
 	udelay(2);
 
 	/* Init panel registers. */
-	err = regmap_multi_reg_write(nt39016->regmap,
-					nt39016_panel_regs,
-					ARRAY_SIZE(nt39016_panel_regs));
+	err = regmap_multi_reg_write(nt39016->regmap, nt39016_panel_regs,
+				     ARRAY_SIZE(nt39016_panel_regs));
 	if (err) {
 		dev_err(dev, "Failed to write registers: %d\n", err);
 		return err;
@@ -217,11 +188,10 @@ static struct lcd_ops nt39016_ops = {
 	.check_fb	= nt39016_match,
 };
 
-static int nt39016_probe(struct platform_device *pdev)
+static int nt39016_probe(struct spi_device *spi)
 {
 	struct nt39016 *nt39016;
-	struct device *dev = &pdev->dev;
-	struct nt39016_platform_data *pdata = &gcw0_panel_pdata;
+	struct device *dev = &spi->dev;
 	struct regulator *gcw0_lcd_regulator_33v;
 	struct regulator *gcw0_lcd_regulator_18v;
 	int err;
@@ -250,42 +220,14 @@ static int nt39016_probe(struct platform_device *pdev)
 
 	/* Reserve GPIO pins. */
 
-	err = devm_gpio_request(dev, pdata->gpio_reset, "LCD panel reset");
+	err = devm_gpio_request(dev, GPIO_NT39016_RESET, "LCD panel reset");
 	if (err) {
 		dev_err(dev,
 			"Failed to request LCD panel reset pin: %d\n", err);
 		return err;
 	}
 
-	err = devm_gpio_request(dev, pdata->gpio_clock, "LCD 3-wire clock");
-	if (err) {
-		dev_err(dev,
-			"Failed to request LCD panel 3-wire clock pin: %d\n",
-			err);
-		return err;
-	}
-
-	err = devm_gpio_request(dev, pdata->gpio_enable, "LCD 3-wire enable");
-	if (err) {
-		dev_err(dev,
-			"Failed to request LCD panel 3-wire enable pin: %d\n",
-			err);
-		return err;
-	}
-
-	err = devm_gpio_request(dev, pdata->gpio_data, "LCD 3-wire data");
-	if (err) {
-		dev_err(dev,
-			"Failed to request LCD panel 3-wire data pin: %d\n",
-			err);
-		return err;
-	}
-
 	/* Set initial GPIO pin directions and value. */
-
-	gpio_direction_output(pdata->gpio_clock,  1);
-	gpio_direction_output(pdata->gpio_enable, 1);
-	gpio_direction_output(pdata->gpio_data,   0);
 
 	err = devm_gpio_request(dev, GPIO_PANEL_SOMETHING, "LCD panel unknown");
 	if (err) {
@@ -295,14 +237,21 @@ static int nt39016_probe(struct platform_device *pdev)
 		gpio_direction_output(GPIO_PANEL_SOMETHING, 1);
 	}
 
+	spi->bits_per_word = 16;
+	spi->mode = SPI_MODE_3;
+	err = spi_setup(spi);
+	if (err)
+		return err;
+
 	nt39016 = devm_kzalloc(dev, sizeof(*nt39016), GFP_KERNEL);
 	if (!nt39016)
 		return -ENOMEM;
 
 	nt39016->dev = dev;
+	nt39016->spi_dev = spi;
 	nt39016->gcw0_lcd_regulator_33v = gcw0_lcd_regulator_33v;
 	nt39016->gcw0_lcd_regulator_18v = gcw0_lcd_regulator_18v;
-	platform_set_drvdata(pdev, nt39016);
+	spi_set_drvdata(spi, nt39016);
 
 	nt39016->fb_node = of_parse_phandle(dev->of_node, "fb-dev", 0);
 	if (nt39016->fb_node)
@@ -332,9 +281,9 @@ static int nt39016_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int nt39016_remove(struct platform_device *pdev)
+static int nt39016_remove(struct spi_device *spi)
 {
-	struct nt39016 *nt39016 = platform_get_drvdata(pdev);
+	struct nt39016 *nt39016 = spi_get_drvdata(spi);
 
 	if (!nt39016->powerdown)
 		nt39016_power_down(nt39016);
@@ -376,7 +325,7 @@ static const struct of_device_id nt39016_of_match[] = {
 MODULE_DEVICE_TABLE(of, nt39016_of_match);
 #endif
 
-static struct platform_driver nt39016_driver = {
+static struct spi_driver nt39016_driver = {
 	.driver		= {
 		.name		= "nt39016",
 		.pm		= &nt39016_pm_ops,
@@ -386,7 +335,7 @@ static struct platform_driver nt39016_driver = {
 	.remove		= nt39016_remove,
 };
 
-module_platform_driver(nt39016_driver);
+module_spi_driver(nt39016_driver);
 
 MODULE_AUTHOR("Maarten ter Huurne <maarten@treewalker.org>");
 MODULE_LICENSE("GPL v2");

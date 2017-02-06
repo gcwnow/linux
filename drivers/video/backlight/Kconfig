@@ -152,6 +152,7 @@ config LCD_HX8357
 
 config LCD_NT39016
 	tristate "Novatek NT39016 support"
+	depends on SPI
 	help
 	  If you have a panel contolled by a Novatek NT39016 LCD driver IC,
 	  say Y to enable and configure it.
