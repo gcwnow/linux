@@ -36,116 +36,6 @@
 #include <linux/pinctrl/pinconf-generic.h>
 #include <linux/power/gpio-charger.h>
 #include <linux/power/jz4770-battery.h>
-#include <linux/regulator/fixed.h>
-#include <linux/regulator/machine.h>
-#include <video/jzpanel.h>
-#include <video/panel-nt39016.h>
-#include <video/platform_lcd.h>
-
-#include <asm/mach-jz4740/gpio.h>
-
-
-/* LCD panel */
-
-static struct platform_device gcw0_lcd_device;
-static struct regulator *gcw0_lcd_regulator_33v;
-static struct regulator *gcw0_lcd_regulator_18v;
-static void *gcw0_lcd_panel;
-static bool gcw0_lcd_powered;
-
-static struct nt39016_platform_data gcw0_panel_pdata = {
-	.gpio_reset		= JZ_GPIO_PORTE(2),
-	.gpio_clock		= JZ_GPIO_PORTE(15),
-	.gpio_enable		= JZ_GPIO_PORTE(16),
-	.gpio_data		= JZ_GPIO_PORTE(17),
-};
-
-#define GPIO_PANEL_SOMETHING	JZ_GPIO_PORTF(0)
-
-static int gcw0_lcd_probe(struct plat_lcd_data *pdata)
-{
-	struct device *dev = &gcw0_lcd_device.dev;
-	int ret;
-
-	gcw0_lcd_regulator_33v = devm_regulator_get_optional(dev, "LDO6");
-	if (IS_ERR(gcw0_lcd_regulator_33v)) {
-		ret = PTR_ERR(gcw0_lcd_regulator_33v);
-		if (ret == -ENODEV) {
-			return -EPROBE_DEFER;
-		} else {
-			dev_err(dev, "Regulator LD06 missing: %d\n", ret);
-			return ret;
-		}
-	}
-
-	gcw0_lcd_regulator_18v = devm_regulator_get_optional(dev, "LDO8");
-	if (IS_ERR(gcw0_lcd_regulator_18v)) {
-		ret = PTR_ERR(gcw0_lcd_regulator_18v);
-		if (ret == -ENODEV) {
-			return -EPROBE_DEFER;
-		} else {
-			dev_err(dev, "Regulator LD08 missing: %d\n", ret);
-			return ret;
-		}
-	}
-
-	ret = nt39016_panel_ops.init(&gcw0_lcd_panel, dev, &gcw0_panel_pdata);
-	if (ret)
-		return ret;
-
-	ret = devm_gpio_request(dev, GPIO_PANEL_SOMETHING, "LCD panel unknown");
-	if (ret) {
-		dev_err(dev,
-			"Failed to request LCD panel unknown pin: %d\n", ret);
-		return ret;
-	}
-
-	gpio_direction_output(GPIO_PANEL_SOMETHING, 1);
-
-	return 0;
-}
-
-static void gcw0_lcd_set_power(struct plat_lcd_data *pdata, unsigned int power)
-{
-	struct device *dev = &gcw0_lcd_device.dev;
-
-	if (power == gcw0_lcd_powered)
-		return;
-
-	if (power) {
-		if (regulator_enable(gcw0_lcd_regulator_33v))
-			dev_err(dev, "Failed to enable 3.3V regulator\n");
-		if (regulator_enable(gcw0_lcd_regulator_18v))
-			dev_err(dev, "Failed to enable 1.8V regulator\n");
-		nt39016_panel_ops.enable(gcw0_lcd_panel);
-	} else {
-		nt39016_panel_ops.disable(gcw0_lcd_panel);
-		if (regulator_disable(gcw0_lcd_regulator_18v))
-			dev_err(dev, "Failed to disable 1.8V regulator\n");
-		if (regulator_disable(gcw0_lcd_regulator_33v))
-			dev_err(dev, "Failed to disable 3.3V regulator\n");
-	}
-
-	gcw0_lcd_powered = power;
-}
-
-static int jz4770_lcd_match(struct plat_lcd_data *pdata, struct fb_info *info)
-{
-	return 1;
-}
-
-static struct plat_lcd_data gcw0_lcd_pdata = {
-	.match_fb = jz4770_lcd_match,
-	.probe = gcw0_lcd_probe,
-	.set_power = gcw0_lcd_set_power,
-};
-
-static struct platform_device gcw0_lcd_device = {
-	.name = "platform-lcd",
-	.dev = {
-		.platform_data = &gcw0_lcd_pdata,
-	},
-};
 
 
 static const char * gcw0_joystick_gpiokeys_whitelist[] = {
@@ -277,7 +167,6 @@ static struct platform_device gcw0_joystick_device = {
 /* Device registration */
 
 static struct platform_device *jz_platform_devices[] __initdata = {
-	&gcw0_lcd_device,
 	&gcw0_joystick_device,
 };
 
