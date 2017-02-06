@@ -151,8 +151,7 @@ config LCD_HX8357
 	  driver.
 
 config LCD_NT39016
-	# TODO: Switch to tristate once the driver is a module.
-	bool "Novatek NT39016 support"
+	tristate "Novatek NT39016 support"
 	help
 	  If you have a panel contolled by a Novatek NT39016 LCD driver IC,
 	  say Y to enable and configure it.
