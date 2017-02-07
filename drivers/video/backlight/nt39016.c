@@ -76,6 +76,15 @@ static const struct regmap_config nt39016_regmap_config = {
 	.cache_type = REGCACHE_FLAT,
 };
 
+static int nt39016_write_reg(struct nt39016 *nt39016,
+			     unsigned int reg, unsigned int val)
+{
+	int err = regmap_write(nt39016->regmap, reg, val);
+	if (err)
+		dev_err(nt39016->dev, "Failed to write register: %d\n", err);
+	return err;
+}
+
 static int nt39016_power_up(struct nt39016 *nt39016)
 {
 	struct device *dev = nt39016->dev;
@@ -93,11 +102,9 @@ static int nt39016_power_up(struct nt39016 *nt39016)
 		return err;
 	}
 
-	err = regmap_write(nt39016->regmap, 0x00, 0x07);
-	if (err) {
-		dev_err(dev, "Failed to write register: %d\n", err);
+	err = nt39016_write_reg(nt39016, 0x00, 0x07);
+	if (err)
 		return err;
-	}
 
 	return 0;
 }
@@ -107,11 +114,9 @@ static int nt39016_power_down(struct nt39016 *nt39016)
 	struct device *dev = nt39016->dev;
 	int err;
 
-	err = regmap_write(nt39016->regmap, 0x00, 0x05);
-	if (err) {
-		dev_err(dev, "Failed to write register: %d\n", err);
+	err = nt39016_write_reg(nt39016, 0x00, 0x05);
+	if (err)
 		return err;
-	}
 
 	err = regulator_disable(nt39016->gcw0_lcd_regulator_18v);
 	if (err) {
@@ -179,7 +184,7 @@ static int nt39016_set_contrast(struct lcd_device *lcd, int contrast)
 	if (contrast > 0x1F)
 		contrast = 0x1F;
 
-	err = regmap_write(nt39016->regmap, 0x08, (unsigned int)contrast);
+	err = nt39016_write_reg(nt39016, 0x08, (unsigned int)contrast);
 	if (err)
 		return err;
 
