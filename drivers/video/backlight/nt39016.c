@@ -44,7 +44,7 @@ struct nt39016 {
 
 #define RV(REG, VAL) { .reg = (REG), .def = (VAL), .delay_us = 2 }
 static const struct reg_sequence nt39016_panel_regs[] = {
-	RV(0x00, 0x07), RV(0x01, 0x00), RV(0x02, 0x03), RV(0x03, 0xCC),
+	RV(0x00, 0x04), RV(0x01, 0x00), RV(0x02, 0x03), RV(0x03, 0xCC),
 	RV(0x04, 0x46), RV(0x05, 0x05), RV(0x06, 0x00), RV(0x07, 0x00),
 	RV(0x08, 0x08), RV(0x09, 0x40), RV(0x0A, 0x88), RV(0x0B, 0x88),
 	RV(0x0C, 0x20), RV(0x0D, 0x20), RV(0x0E, 0x67), RV(0x0F, 0xA4),
@@ -93,17 +93,9 @@ static int nt39016_power_up(struct nt39016 *nt39016)
 		return err;
 	}
 
-	/* Reset LCD panel. */
-	gpio_direction_output(GPIO_NT39016_RESET, 0);
-	udelay(50);
-	gpio_direction_output(GPIO_NT39016_RESET, 1);
-	udelay(2);
-
-	/* Init panel registers. */
-	err = regmap_multi_reg_write(nt39016->regmap, nt39016_panel_regs,
-				     ARRAY_SIZE(nt39016_panel_regs));
+	err = regmap_write(nt39016->regmap, 0x00, 0x07);
 	if (err) {
-		dev_err(dev, "Failed to write registers: %d\n", err);
+		dev_err(dev, "Failed to write register: %d\n", err);
 		return err;
 	}
 
@@ -117,7 +109,7 @@ static int nt39016_power_down(struct nt39016 *nt39016)
 
 	err = regmap_write(nt39016->regmap, 0x00, 0x05);
 	if (err) {
-		dev_err(dev, "Failed to write registers: %d\n", err);
+		dev_err(dev, "Failed to write register: %d\n", err);
 		return err;
 	}
 
@@ -296,6 +288,25 @@ static int nt39016_probe(struct spi_device *spi)
 	}
 
 	nt39016->lcd->props.max_contrast = 0x1F;
+
+	/*
+	 * Reset the NT39016.
+	 * The documentation says the reset pulse should be at least 40 us to
+	 * pass the glitch filter, but when testing I see some resets fail and
+	 * some succeed when using a 70 us delay, so we use 100 us instead.
+	 */
+	gpio_direction_output(GPIO_NT39016_RESET, 0);
+	usleep_range(100, 1000);
+	gpio_direction_output(GPIO_NT39016_RESET, 1);
+	udelay(2);
+
+	/* Init all registers. */
+	err = regmap_multi_reg_write(nt39016->regmap, nt39016_panel_regs,
+				     ARRAY_SIZE(nt39016_panel_regs));
+	if (err) {
+		dev_err(dev, "Failed to init registers: %d\n", err);
+		return err;
+	}
 
 	nt39016_power_up(nt39016);
 
