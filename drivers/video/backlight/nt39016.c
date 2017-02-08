@@ -27,7 +27,6 @@
 
 
 #define GPIO_NT39016_RESET	JZ_GPIO_PORTE(2)
-#define GPIO_PANEL_SOMETHING	JZ_GPIO_PORTF(0)
 
 struct nt39016 {
 	struct device *dev;
@@ -246,14 +245,6 @@ static int nt39016_probe(struct spi_device *spi)
 	}
 
 	/* Set initial GPIO pin directions and value. */
-
-	err = devm_gpio_request(dev, GPIO_PANEL_SOMETHING, "LCD panel unknown");
-	if (err) {
-		dev_warn(dev,
-			"Failed to request LCD panel unknown pin: %d\n", err);
-	} else {
-		gpio_direction_output(GPIO_PANEL_SOMETHING, 1);
-	}
 
 	spi->bits_per_word = 8;
 	spi->mode = SPI_MODE_3;
