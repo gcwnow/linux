@@ -242,7 +242,10 @@ static int nt39016_probe(struct spi_device *spi)
 	 */
 	reset = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(reset)) {
-		dev_warn(dev, "Failed to get reset pin: %ld\n", PTR_ERR(reset));
+		err = PTR_ERR(reset);
+		if (err == -EPROBE_DEFER)
+			return err;
+		dev_warn(dev, "Failed to get reset pin: %d\n", err);
 		reset = NULL;
 	}
 	if (reset) {
