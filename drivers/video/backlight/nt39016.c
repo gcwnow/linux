@@ -18,8 +18,7 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/regmap.h>
-#include <linux/regulator/fixed.h>
-#include <linux/regulator/machine.h>
+#include <linux/regulator/consumer.h>
 #include <linux/spi/spi.h>
 #include <linux/slab.h>
 
@@ -32,7 +31,7 @@ struct nt39016 {
 	struct regmap *regmap;
 	struct lcd_device *lcd;
 
-	struct regulator *gcw0_lcd_regulator_33v;
+	struct regulator *panel_regulator;
 
 	unsigned int powerdown:1;
 	unsigned int suspended:1;
@@ -86,9 +85,9 @@ static int nt39016_power_up(struct nt39016 *nt39016)
 	struct device *dev = nt39016->dev;
 	int err;
 
-	err = regulator_enable(nt39016->gcw0_lcd_regulator_33v);
+	err = regulator_enable(nt39016->panel_regulator);
 	if (err) {
-		dev_err(dev, "Failed to enable 3.3V regulator: %d\n", err);
+		dev_err(dev, "Failed to enable LCD panel regulator: %d\n", err);
 		return err;
 	}
 
@@ -108,9 +107,9 @@ static int nt39016_power_down(struct nt39016 *nt39016)
 	if (err)
 		return err;
 
-	err = regulator_disable(nt39016->gcw0_lcd_regulator_33v);
+	err = regulator_disable(nt39016->panel_regulator);
 	if (err) {
-		dev_err(dev, "Failed to disable 3.3V regulator: %d\n", err);
+		dev_err(dev, "Failed to disable LCD panel regulator: %d\n", err);
 		return err;
 	}
 
@@ -195,16 +194,16 @@ static int nt39016_probe(struct spi_device *spi)
 	struct nt39016 *nt39016;
 	struct device *dev = &spi->dev;
 	struct gpio_desc *reset;
-	struct regulator *gcw0_lcd_regulator_33v;
+	struct regulator *panel_regulator;
 	int err;
 
-	gcw0_lcd_regulator_33v = devm_regulator_get_optional(dev, "LDO6");
-	if (IS_ERR(gcw0_lcd_regulator_33v)) {
-		err = PTR_ERR(gcw0_lcd_regulator_33v);
+	panel_regulator = devm_regulator_get_optional(dev, "panel");
+	if (IS_ERR(panel_regulator)) {
+		err = PTR_ERR(panel_regulator);
 		if (err == -ENODEV) {
 			return -EPROBE_DEFER;
 		} else {
-			dev_err(dev, "Regulator LD06 missing: %d\n", err);
+			dev_err(dev, "LCD panel regulator missing: %d\n", err);
 			return err;
 		}
 	}
@@ -240,7 +239,7 @@ static int nt39016_probe(struct spi_device *spi)
 		return -ENOMEM;
 
 	nt39016->dev = dev;
-	nt39016->gcw0_lcd_regulator_33v = gcw0_lcd_regulator_33v;
+	nt39016->panel_regulator = panel_regulator;
 	spi_set_drvdata(spi, nt39016);
 
 	nt39016->fb_node = of_parse_phandle(dev->of_node, "fb-dev", 0);
