@@ -271,6 +271,7 @@
 				/* TODO: spi-3wire; */
 
 				reset-gpios = <&gpe 2 GPIO_ACTIVE_LOW>;
+				panel-supply = <&ldo6>;
 
 				fb-dev = <&lcdc>;
 			};
@@ -368,7 +369,7 @@
 			};
 
 			/* LCD panel and FM radio */
-			LDO_REG6 {
+			ldo6: LDO_REG6 {
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 			};
