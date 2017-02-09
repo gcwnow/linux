@@ -270,7 +270,7 @@
 				spi-max-frequency = <3125000>;
 				/* TODO: spi-3wire; */
 
-				/* TODO: reset pin: GPE2 */
+				reset-gpios = <&gpe 2 GPIO_ACTIVE_LOW>;
 
 				fb-dev = <&lcdc>;
 			};
