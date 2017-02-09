@@ -382,13 +382,14 @@
 			};
 
 			/*
-			 * The colors on the LCD are wrong when this is off.
-			 * Which is strange, since the LCD panel data sheet
-			 * only mentions a 3.3V input.
+			 * This powers the HDMI transmitter. If both LDO6 and
+			 * LDO8 have been off, graphical glitches appear on the
+			 * LCD, which appear to originate from the RGB lines.
 			 */
 			LDO_REG8 {
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
 			};
 
 			/* RTC fixed 3.3V */
