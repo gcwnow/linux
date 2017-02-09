@@ -13,7 +13,7 @@
 #include <linux/device.h>
 #include <linux/fb.h>
 #include <linux/gfp.h>
-#include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
 #include <linux/lcd.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -25,8 +25,6 @@
 
 #include <asm/mach-jz4740/gpio.h>
 
-
-#define GPIO_NT39016_RESET	JZ_GPIO_PORTE(2)
 
 struct nt39016 {
 	struct device *dev;
@@ -209,6 +207,7 @@ static int nt39016_probe(struct spi_device *spi)
 {
 	struct nt39016 *nt39016;
 	struct device *dev = &spi->dev;
+	struct gpio_desc *reset;
 	struct regulator *gcw0_lcd_regulator_33v;
 	struct regulator *gcw0_lcd_regulator_18v;
 	int err;
@@ -235,16 +234,22 @@ static int nt39016_probe(struct spi_device *spi)
 		}
 	}
 
-	/* Reserve GPIO pins. */
-
-	err = devm_gpio_request(dev, GPIO_NT39016_RESET, "LCD panel reset");
-	if (err) {
-		dev_err(dev,
-			"Failed to request LCD panel reset pin: %d\n", err);
-		return err;
+	/*
+	 * Acquire reset GPIO pin and reset the NT39016.
+	 * The documentation says the reset pulse should be at least 40 us to
+	 * pass the glitch filter, but when testing I see some resets fail and
+	 * some succeed when using a 70 us delay, so we use 100 us instead.
+	 */
+	reset = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(reset)) {
+		dev_warn(dev, "Failed to get reset pin: %ld\n", PTR_ERR(reset));
+		reset = NULL;
 	}
-
-	/* Set initial GPIO pin directions and value. */
+	if (reset) {
+		usleep_range(100, 1000);
+		gpiod_set_value_cansleep(reset, 0);
+		udelay(2);
+	}
 
 	spi->bits_per_word = 8;
 	spi->mode = SPI_MODE_3;
@@ -284,17 +289,6 @@ static int nt39016_probe(struct spi_device *spi)
 	}
 
 	nt39016->lcd->props.max_contrast = 0x1F;
-
-	/*
-	 * Reset the NT39016.
-	 * The documentation says the reset pulse should be at least 40 us to
-	 * pass the glitch filter, but when testing I see some resets fail and
-	 * some succeed when using a 70 us delay, so we use 100 us instead.
-	 */
-	gpio_direction_output(GPIO_NT39016_RESET, 0);
-	usleep_range(100, 1000);
-	gpio_direction_output(GPIO_NT39016_RESET, 1);
-	udelay(2);
 
 	/* Init all registers. */
 	err = regmap_multi_reg_write(nt39016->regmap, nt39016_panel_regs,
