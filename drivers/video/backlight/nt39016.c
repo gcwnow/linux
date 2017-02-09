@@ -280,16 +280,6 @@ static int nt39016_probe(struct spi_device *spi)
 		return err;
 	}
 
-	nt39016->lcd = devm_lcd_device_register(dev, dev_name(dev), dev,
-						nt39016, &nt39016_ops);
-	if (IS_ERR(nt39016->lcd)) {
-		err = PTR_ERR(nt39016->lcd);
-		dev_err(dev, "Failed to register LCD device: %d\n", err);
-		return err;
-	}
-
-	nt39016->lcd->props.max_contrast = 0x1F;
-
 	/* Init all registers. */
 	err = regmap_multi_reg_write(nt39016->regmap, nt39016_panel_regs,
 				     ARRAY_SIZE(nt39016_panel_regs));
@@ -299,6 +289,16 @@ static int nt39016_probe(struct spi_device *spi)
 	}
 
 	nt39016_power_up(nt39016);
+
+	nt39016->lcd = devm_lcd_device_register(dev, dev_name(dev), dev,
+						nt39016, &nt39016_ops);
+	if (IS_ERR(nt39016->lcd)) {
+		err = PTR_ERR(nt39016->lcd);
+		dev_err(dev, "Failed to register LCD device: %d\n", err);
+		return err;
+	}
+
+	nt39016->lcd->props.max_contrast = 0x1F;
 
 	return 0;
 }
