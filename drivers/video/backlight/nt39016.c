@@ -33,7 +33,6 @@ struct nt39016 {
 	struct lcd_device *lcd;
 
 	struct regulator *gcw0_lcd_regulator_33v;
-	struct regulator *gcw0_lcd_regulator_18v;
 
 	unsigned int powerdown:1;
 	unsigned int suspended:1;
@@ -93,12 +92,6 @@ static int nt39016_power_up(struct nt39016 *nt39016)
 		return err;
 	}
 
-	err = regulator_enable(nt39016->gcw0_lcd_regulator_18v);
-	if (err) {
-		dev_err(dev, "Failed to enable 1.8V regulator: %d\n", err);
-		return err;
-	}
-
 	err = nt39016_write_reg(nt39016, 0x00, 0x07);
 	if (err)
 		return err;
@@ -114,12 +107,6 @@ static int nt39016_power_down(struct nt39016 *nt39016)
 	err = nt39016_write_reg(nt39016, 0x00, 0x05);
 	if (err)
 		return err;
-
-	err = regulator_disable(nt39016->gcw0_lcd_regulator_18v);
-	if (err) {
-		dev_err(dev, "Failed to disable 1.8V regulator: %d\n", err);
-		return err;
-	}
 
 	err = regulator_disable(nt39016->gcw0_lcd_regulator_33v);
 	if (err) {
@@ -209,7 +196,6 @@ static int nt39016_probe(struct spi_device *spi)
 	struct device *dev = &spi->dev;
 	struct gpio_desc *reset;
 	struct regulator *gcw0_lcd_regulator_33v;
-	struct regulator *gcw0_lcd_regulator_18v;
 	int err;
 
 	gcw0_lcd_regulator_33v = devm_regulator_get_optional(dev, "LDO6");
@@ -219,17 +205,6 @@ static int nt39016_probe(struct spi_device *spi)
 			return -EPROBE_DEFER;
 		} else {
 			dev_err(dev, "Regulator LD06 missing: %d\n", err);
-			return err;
-		}
-	}
-
-	gcw0_lcd_regulator_18v = devm_regulator_get_optional(dev, "LDO8");
-	if (IS_ERR(gcw0_lcd_regulator_18v)) {
-		err = PTR_ERR(gcw0_lcd_regulator_18v);
-		if (err == -ENODEV) {
-			return -EPROBE_DEFER;
-		} else {
-			dev_err(dev, "Regulator LD08 missing: %d\n", err);
 			return err;
 		}
 	}
@@ -266,7 +241,6 @@ static int nt39016_probe(struct spi_device *spi)
 
 	nt39016->dev = dev;
 	nt39016->gcw0_lcd_regulator_33v = gcw0_lcd_regulator_33v;
-	nt39016->gcw0_lcd_regulator_18v = gcw0_lcd_regulator_18v;
 	spi_set_drvdata(spi, nt39016);
 
 	nt39016->fb_node = of_parse_phandle(dev->of_node, "fb-dev", 0);
