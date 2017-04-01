@@ -25,17 +25,15 @@
 		interrupts = <2>;
 	};
 
-	clocks {
-		ext: ext {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-		};
+	ext: ext {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+	};
 
-		osc32k: osc32k {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <32768>;
-		};
+	osc32k: osc32k {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
 	};
 
 	cgu: jz4770-cgu@10000000 {
