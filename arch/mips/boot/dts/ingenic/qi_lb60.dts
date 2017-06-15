@@ -31,3 +31,8 @@
 		bias-disable;
 	};
 };
+
+&tcu {
+	assigned-clocks = <&tcu JZ4740_CLK_WDT>;
+	assigned-clock-parents = <&cgu JZ4740_CLK_RTC>;
+};
