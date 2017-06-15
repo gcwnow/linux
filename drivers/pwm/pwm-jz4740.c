@@ -168,10 +168,30 @@ static int jz4740_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	return 0;
 }
 
+static int jz4740_pwm_set_polarity(struct pwm_chip *chip,
+		struct pwm_device *pwm, enum pwm_polarity polarity)
+{
+	struct jz4740_pwm_chip *jz = to_jz4740(chip);
+	u16 value = 0;
+
+	switch (polarity) {
+	case PWM_POLARITY_NORMAL:
+		break;
+	case PWM_POLARITY_INVERSED:
+		value = TCU_TCSR_PWM_INITL_HIGH;
+		break;
+	}
+
+	regmap_update_bits(jz->map, TCU_REG_TCSRc(pwm->hwpwm),
+			TCU_TCSR_PWM_INITL_HIGH, value);
+	return 0;
+}
+
 static const struct pwm_ops jz4740_pwm_ops = {
 	.request = jz4740_pwm_request,
 	.free = jz4740_pwm_free,
 	.config = jz4740_pwm_config,
+	.set_polarity = jz4740_pwm_set_polarity,
 	.enable = jz4740_pwm_enable,
 	.disable = jz4740_pwm_disable,
 	.owner = THIS_MODULE,
@@ -199,6 +219,8 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	jz4740->chip.ops = &jz4740_pwm_ops;
 	jz4740->chip.npwm = NUM_PWM;
 	jz4740->chip.base = -1;
+	jz4740->chip.of_xlate = of_pwm_xlate_with_flags;
+	jz4740->chip.of_pwm_n_cells = 3;
 
 	platform_set_drvdata(pdev, jz4740);
 
