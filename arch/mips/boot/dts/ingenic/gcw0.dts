@@ -305,7 +305,7 @@
 	status = "okay";
 };
 
-&pinctrl {
+&pinctrl_functions {
 	pinfunc_usb_charger: usb {
 		pins_usb_charger: usb-charger {
 			ingenic,pins = <&gpb 5 0 &pincfg_nobias>;
