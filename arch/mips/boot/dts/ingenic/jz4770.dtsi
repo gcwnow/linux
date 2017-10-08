@@ -392,7 +392,7 @@
 			bias-pull-down;
 		};
 
-		functions {
+		pinctrl_functions: functions {
 			pinfunc_otg: otg {
 				pins_otg_data: otg-data {
 					ingenic,pins = <&gpe 10 0 &pincfg_nobias>;
