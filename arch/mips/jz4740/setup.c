@@ -53,16 +53,30 @@ static void __init jz4740_detect_mem(void)
 	add_memory_region(0, size, BOOT_MEM_RAM);
 }
 
+static unsigned long __init get_board_mach_type(const void *fdt)
+{
+	if (!fdt_node_check_compatible(fdt, 0, "ingenic,jz4780"))
+		return MACH_INGENIC_JZ4780;
+	if (!fdt_node_check_compatible(fdt, 0, "ingenic,jz4770"))
+		return MACH_INGENIC_JZ4770;
+
+	return MACH_INGENIC_JZ4740;
+}
+
 void __init plat_mem_setup(void)
 {
 	int offset;
 
+	if (!early_init_dt_scan(__dtb_start))
+		return;
+
 	jz4740_reset_init();
-	__dt_setup_arch(__dtb_start);
 
 	offset = fdt_path_offset(__dtb_start, "/memory");
 	if (offset < 0)
 		jz4740_detect_mem();
+
+	mips_machtype = get_board_mach_type(__dtb_start);
 }
 
 void __init device_tree_init(void)
@@ -75,10 +89,14 @@ void __init device_tree_init(void)
 
 const char *get_system_type(void)
 {
-	if (IS_ENABLED(CONFIG_MACH_JZ4780))
+	switch (mips_machtype) {
+	case MACH_INGENIC_JZ4780:
 		return "JZ4780";
-
-	return "JZ4740";
+	case MACH_INGENIC_JZ4770:
+		return "JZ4770";
+	default:
+		return "JZ4740";
+	}
 }
 
 void __init arch_init_irq(void)
