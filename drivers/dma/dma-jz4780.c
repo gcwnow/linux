@@ -29,6 +29,9 @@
 #define JZ_DMA_REG_DIRQP	0x04
 #define JZ_DMA_REG_DDR		0x08
 #define JZ_DMA_REG_DDRS		0x0c
+#define JZ_DMA_REG_DCKE		0x10
+#define JZ_DMA_REG_DCKES	0x14
+#define JZ_DMA_REG_DCKEC	0x18
 #define JZ_DMA_REG_DMACP	0x1c
 #define JZ_DMA_REG_DSIRQP	0x20
 #define JZ_DMA_REG_DSIRQM	0x24
@@ -135,6 +138,7 @@ struct jz4780_dma_chan {
 };
 
 enum soc_version {
+	ID_JZ4770,
 	ID_JZ4780,
 };
 
@@ -199,6 +203,20 @@ static inline void jz4780_dma_ctrl_writel(struct jz4780_dma_dev *jzdma,
 	writel(val, jzdma->ctrl_base + reg);
 }
 
+static inline void jz4780_dma_chan_enable(struct jz4780_dma_dev *jzdma,
+	unsigned int chn)
+{
+	if (jzdma->version == ID_JZ4770)
+		jz4780_dma_ctrl_writel(jzdma, JZ_DMA_REG_DCKES, BIT(chn));
+}
+
+static inline void jz4780_dma_chan_disable(struct jz4780_dma_dev *jzdma,
+	unsigned int chn)
+{
+	if (jzdma->version == ID_JZ4770)
+		jz4780_dma_ctrl_writel(jzdma, JZ_DMA_REG_DCKEC, BIT(chn));
+}
+
 static struct jz4780_dma_desc *jz4780_dma_desc_alloc(
 	struct jz4780_dma_chan *jzchan, unsigned int count,
 	enum dma_transaction_type type)
@@ -233,8 +251,10 @@ static void jz4780_dma_desc_free(struct virt_dma_desc *vdesc)
 	kfree(desc);
 }
 
-static uint32_t jz4780_dma_transfer_size(unsigned long val, uint32_t *shift)
+static uint32_t jz4780_dma_transfer_size(struct jz4780_dma_chan *jzchan,
+	unsigned long val, uint32_t *shift)
 {
+	struct jz4780_dma_dev *jzdma = jz4780_dma_chan_parent(jzchan);
 	int ord = ffs(val) - 1;
 
 	/*
@@ -246,7 +266,9 @@ static uint32_t jz4780_dma_transfer_size(unsigned long val, uint32_t *shift)
 	 */
 	if (ord == 3)
 		ord = 2;
-	else if (ord > 7)
+	else if (ord > 6 && jzdma->version == ID_JZ4770)
+		ord = 6;
+	else if (ord > 7 && jzdma->version == ID_JZ4780)
 		ord = 7;
 
 	*shift = ord;
@@ -301,7 +323,7 @@ static int jz4780_dma_setup_hwdesc(struct jz4780_dma_chan *jzchan,
 	 * divisible by the transfer size, and we must not use more than the
 	 * maximum burst specified by the user.
 	 */
-	tsz = jz4780_dma_transfer_size(addr | len | (width * maxburst),
+	tsz = jz4780_dma_transfer_size(jzchan, addr | len | (width * maxburst),
 				       &jzchan->transfer_shift);
 
 	switch (width) {
@@ -430,7 +452,7 @@ static struct dma_async_tx_descriptor *jz4780_dma_prep_dma_memcpy(
 	if (!desc)
 		return NULL;
 
-	tsz = jz4780_dma_transfer_size(dest | src | len,
+	tsz = jz4780_dma_transfer_size(jzchan, dest | src | len,
 				       &jzchan->transfer_shift);
 
 	desc->desc[0].dsa = src;
@@ -454,8 +476,10 @@ static void jz4780_dma_begin(struct jz4780_dma_chan *jzchan)
 
 	if (!jzchan->desc) {
 		vdesc = vchan_next_desc(&jzchan->vchan);
-		if (!vdesc)
+		if (!vdesc) {
+			jz4780_dma_chan_disable(jzdma, jzchan->id);
 			return;
+		}
 
 		list_del(&vdesc->node);
 
@@ -489,6 +513,8 @@ static void jz4780_dma_begin(struct jz4780_dma_chan *jzchan)
 		jzchan->curr_hwdesc =
 			(jzchan->curr_hwdesc + 1) % jzchan->desc->count;
 	}
+
+	jz4780_dma_chan_enable(jzdma, jzchan->id);
 
 	/* Use 8-word descriptors. */
 	jz4780_dma_chn_writel(jzdma, jzchan->id, JZ_DMA_REG_DCS, JZ_DMA_DCS_DES8);
@@ -532,6 +558,8 @@ static int jz4780_dma_terminate_all(struct dma_chan *chan)
 		jz4780_dma_desc_free(&jzchan->desc->vdesc);
 		jzchan->desc = NULL;
 	}
+
+	jz4780_dma_chan_disable(jzdma, jzchan->id);
 
 	vchan_get_all_descriptors(&jzchan->vchan, &head);
 
@@ -764,10 +792,12 @@ static struct dma_chan *jz4780_of_dma_xlate(struct of_phandle_args *dma_spec,
 }
 
 static const unsigned int jz4780_dma_nb_channels[] = {
+	[ID_JZ4770] = 6,
 	[ID_JZ4780] = 32,
 };
 
 static const struct of_device_id jz4780_dma_dt_match[] = {
+	{ .compatible = "ingenic,jz4770-dma", .data = (void *) ID_JZ4770 },
 	{ .compatible = "ingenic,jz4780-dma", .data = (void *) ID_JZ4780 },
 	{},
 };
