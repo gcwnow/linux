@@ -547,7 +547,7 @@
 			 <&cgu JZ4770_CLK_EXT>, <&cgu JZ4770_CLK_PLL0>;
 		clock-names = "aic", "i2s", "ext", "pll half";
 
-		dmas = <&dmac1 3>, <&dmac1 4>;
+		dmas = <&dmac1 25 0xffffffff>, <&dmac1 24 0xffffffff>;
 		dma-names = "rx" , "tx";
 
 	};
@@ -570,8 +570,8 @@
 		interrupt-parent = <&intc>;
 		interrupts = <37>;
 
-		dmas = <&dmac1 0>;
-		dma-names = "rx-tx";
+		dmas = <&dmac1 27 0xffffffff>, <&dmac1 26 0xffffffff>;
+		dma-names = "rx", "tx";
 		dma-tx-id = <26>;
 		dma-rx-id = <27>;
 
@@ -590,8 +590,8 @@
 		interrupt-parent = <&intc>;
 		interrupts = <36>;
 
-		dmas = <&dmac1 1>;
-		dma-names = "rx-tx";
+		dmas = <&dmac1 31 0xffffffff>, <&dmac1 30 0xffffffff>;
+		dma-names = "rx", "tx";
 		dma-tx-id = <30>;
 		dma-rx-id = <31>;
 
@@ -610,8 +610,8 @@
 		interrupt-parent = <&intc>;
 		interrupts = <35>;
 
-		dmas = <&dmac1 2>;
-		dma-names = "rx-tx";
+		dmas = <&dmac0 37 0xffffffff>, <&dmac0 36 0xffffffff>;
+		dma-names = "rx", "tx";
 		dma-tx-id = <36>;
 		dma-rx-id = <37>;
 
@@ -671,7 +671,7 @@
 		       0x13420300 0x20>;
 
 		dma-channels = <6>;
-		#dma-cells = <1>;
+		#dma-cells = <2>;
 
 		clocks = <&cgu JZ4770_CLK_DMA>;
 		interrupt-parent = <&intc>;
@@ -687,7 +687,7 @@
 		       0x13420400 0x20>;
 
 		dma-channels = <6>;
-		#dma-cells = <1>;
+		#dma-cells = <2>;
 
 		clocks = <&cgu JZ4770_CLK_DMA>;
 		interrupt-parent = <&intc>;
