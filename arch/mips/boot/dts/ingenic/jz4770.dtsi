@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 
 #include <dt-bindings/clock/jz4770-cgu.h>
+#include <dt-bindings/clock/ingenic,tcu.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	#address-cells = <1>;
@@ -44,6 +46,91 @@
 		clock-names = "ext", "osc32k";
 
 		#clock-cells = <1>;
+	};
+
+	tcu@10002000 {
+		compatible = "syscon", "simple-mfd";
+		reg = <0x10002000 0x13c>;
+
+		tcu: clocks {
+			compatible = "ingenic,jz4770-tcu-clocks";
+			#clock-cells = <1>;
+
+			clocks = <&cgu JZ4770_CLK_RTC
+					  &cgu JZ4770_CLK_EXT
+					  &cgu JZ4770_CLK_PCLK>;
+			clock-names = "rtc", "ext", "pclk";
+		};
+
+		tcu_irq: interrupt-controller {
+			compatible = "ingenic,jz4770-tcu-intc";
+
+			interrupt-controller;
+			#interrupt-cells = <1>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <27 26 25>;
+		};
+
+		tcu_timer: clocksource {
+			compatible = "ingenic,jz4770-tcu";
+
+			interrupt-parent = <&tcu_irq>;
+			interrupts = <0 1 2 3 4 5 6 7>;
+
+			clocks = <&tcu JZ4740_CLK_TIMER0
+					&tcu JZ4740_CLK_TIMER1
+					&tcu JZ4740_CLK_TIMER2
+					&tcu JZ4740_CLK_TIMER3
+					&tcu JZ4740_CLK_TIMER4
+					&tcu JZ4740_CLK_TIMER5
+					&tcu JZ4740_CLK_TIMER6
+					&tcu JZ4740_CLK_TIMER7>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+					"timer4", "timer5", "timer6", "timer7";
+		};
+
+		pwm: pwm {
+			compatible = "ingenic,jz4770-pwm";
+
+			#pwm-cells = <3>;
+
+			clocks = <&tcu JZ4740_CLK_TIMER0
+					&tcu JZ4740_CLK_TIMER1
+					&tcu JZ4740_CLK_TIMER2
+					&tcu JZ4740_CLK_TIMER3
+					&tcu JZ4740_CLK_TIMER4
+					&tcu JZ4740_CLK_TIMER5
+					&tcu JZ4740_CLK_TIMER6
+					&tcu JZ4740_CLK_TIMER7>;
+			clock-names = "timer0", "timer1", "timer2", "timer3",
+					"timer4", "timer5", "timer6", "timer7";
+		};
+
+		watchdog: watchdog {
+			compatible = "ingenic,jz4770-watchdog";
+
+			clocks = <&tcu JZ4740_CLK_WDT>;
+			clock-names = "wdt";
+		};
+
+		ost: timer {
+			compatible = "ingenic,jz4770-ost";
+
+			clocks = <&tcu JZ4770_CLK_OST>;
+			clock-names = "ost";
+		};
+	};
+
+	rtc_dev: rtc@10003000 {
+		compatible = "ingenic,jz4770-rtc";
+		reg = <0x10003000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <15>;
+
+		clocks = <&cgu JZ4770_CLK_RTC>;
+		clock-names = "rtc";
 	};
 
 	pinctrl: pin-controller@10010000 {
@@ -144,6 +231,87 @@
 		};
 	};
 
+	i2s: i2s@10020000 {
+		compatible = "ingenic,jz4770-i2s";
+		reg = <0x10020000 0x94>;
+
+		clocks = <&cgu JZ4770_CLK_AIC>, <&cgu JZ4770_CLK_I2S>,
+			 <&cgu JZ4770_CLK_EXT>, <&cgu JZ4770_CLK_PLL0>;
+		clock-names = "aic", "i2s", "ext", "pll half";
+
+		dmas = <&dmac1 3>, <&dmac1 4>;
+		dma-names = "rx" , "tx";
+
+	};
+
+	codec: codec@100200A0 {
+		compatible = "ingenic,jz4770-codec";
+		reg = <0x100200A0 0x10>;
+
+		clocks = <&cgu JZ4770_CLK_AIC>;
+		clock-names = "aic";
+	};
+
+	mmc0: jz4770-mmc@10021000 {
+		compatible = "ingenic,jz4770-mmc";
+		reg = <0x10021000 0x1000>;
+
+		clocks = <&cgu JZ4770_CLK_MMC0>;
+		clock-names = "mmc";
+
+		interrupt-parent = <&intc>;
+		interrupts = <37>;
+
+		dmas = <&dmac1 0>;
+		dma-names = "rx-tx";
+		dma-tx-id = <26>;
+		dma-rx-id = <27>;
+
+		cap-sd-highspeed;
+		cap-mmc-highspeed;
+		cap-sdio-irq;
+	};
+
+	mmc1: jz4770-mmc@10022000 {
+		compatible = "ingenic,jz4770-mmc";
+		reg = <0x10022000 0x1000>;
+
+		clocks = <&cgu JZ4770_CLK_MMC1>;
+		clock-names = "mmc";
+
+		interrupt-parent = <&intc>;
+		interrupts = <36>;
+
+		dmas = <&dmac1 1>;
+		dma-names = "rx-tx";
+		dma-tx-id = <30>;
+		dma-rx-id = <31>;
+
+		cap-sd-highspeed;
+		cap-mmc-highspeed;
+		cap-sdio-irq;
+	};
+
+	mmc2: jz4770-mmc@10023000 {
+		compatible = "ingenic,jz4770-mmc";
+		reg = <0x10023000 0x1000>;
+
+		clocks = <&cgu JZ4770_CLK_MMC2>;
+		clock-names = "mmc";
+
+		interrupt-parent = <&intc>;
+		interrupts = <35>;
+
+		dmas = <&dmac1 2>;
+		dma-names = "rx-tx";
+		dma-tx-id = <36>;
+		dma-rx-id = <37>;
+
+		cap-sd-highspeed;
+		cap-mmc-highspeed;
+		cap-sdio-irq;
+	};
+
 	uart0: serial@10030000 {
 		compatible = "ingenic,jz4770-uart";
 		reg = <0x10030000 0x100>;
@@ -192,6 +360,131 @@
 
 		interrupt-parent = <&intc>;
 		interrupts = <2>;
+
+		status = "disabled";
+	};
+
+	i2c0: i2c@10050000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+
+		gpios = <&gpd 30 GPIO_ACTIVE_HIGH	/* sda */
+			 &gpd 31 GPIO_ACTIVE_HIGH	/* scl */
+			>;
+
+		status = "disabled";
+	};
+
+	i2c1: i2c@10051000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+
+		gpios = <&gpe 30 GPIO_ACTIVE_HIGH	/* sda */
+			 &gpe 31 GPIO_ACTIVE_HIGH	/* scl */
+			>;
+
+		status = "disabled";
+	};
+
+	i2c2: i2c@10055000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+
+		gpios = <&gpf 16 GPIO_ACTIVE_HIGH	/* sda */
+			 &gpf 17 GPIO_ACTIVE_HIGH	/* scl */
+			>;
+
+		status = "disabled";
+	};
+
+	adc: jz4770-adc@10070000 {
+		compatible = "ingenic,jz4770-adc";
+		reg = <0x10070000 0x30>;
+		#address-cells = <0>;
+		#size-cells = <0>;
+
+		clocks = <&cgu JZ4770_CLK_ADC>;
+		interrupt-parent = <&intc>;
+		interrupts = <18>;
+
+		battery: jz4770-battery {
+			compatible = "ingenic,jz4770-adc,battery", "ingenic,jz4770-battery";
+		};
+
+		joystick: jz4770-touchscreen {
+			compatible = "ingenic,jz4770-adc,touchscreen", "ingenic,jz4770-touchscreen";
+		};
+	};
+
+	lcdc: jz4770-fb@13050000 {
+		compatible = "ingenic,jz4770-fb";
+		reg = <0x13050000 0x300 /* LCDC, TVE, LCDC PART2 */
+		       0x13080000 0x09C /* IPU */
+		       >;
+
+		clocks = <&cgu JZ4770_CLK_LPCLK_MUX>, <&cgu JZ4770_CLK_IPU>;
+		clock-names = "lpclk", "ipu";
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>;
+	};
+
+	gpu: jz4770-gpu@13040000 {
+		compatible = "ingenic,jz4770-gpu-subsystem";
+		reg = <0x13040000 0x40000>;
+
+		clocks = <&cgu JZ4770_CLK_GPU>;
+		clock-names = "gpu";
+		assigned-clocks = <&cgu JZ4770_CLK_GPU>;
+		assigned-clock-rates = <800000000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+	};
+
+	dmac0: jz4770-dma@13420000 {
+		compatible = "ingenic,jz4770-dma";
+		reg = <0x13420000 0xC0
+		       0x13420300 0x20>;
+
+		dma-channels = <6>;
+		#dma-cells = <1>;
+
+		clocks = <&cgu JZ4770_CLK_DMA>;
+		interrupt-parent = <&intc>;
+		interrupts = <24>;
+
+		/* Disable dmac0 until we have something that uses it */
+		status = "disabled";
+	};
+
+	dmac1: jz4770-dma@13420100 {
+		compatible = "ingenic,jz4770-dma";
+		reg = <0x13420100 0xC0
+		       0x13420400 0x20>;
+
+		dma-channels = <6>;
+		#dma-cells = <1>;
+
+		clocks = <&cgu JZ4770_CLK_DMA>;
+		interrupt-parent = <&intc>;
+		interrupts = <23>;
+	};
+
+	usb_otg: usb_otg@0x13440000 {
+		compatible = "ingenic,jz4770-musb";
+		reg = <0x13440000 0x10000
+		       0x1000003C 0x10>;
+
+		clocks = <&cgu JZ4770_CLK_OTG>;
+		clock-names = "usb";
+
+		interrupt-parent = <&intc>;
+		interrupts = <21>;
+		interrupt-names = "mc";
 
 		status = "disabled";
 	};
