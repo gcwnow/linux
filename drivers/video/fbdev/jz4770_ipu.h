@@ -41,6 +41,7 @@
 #define IPU_OUT_PHY_T_ADDR	0x60 /* Output Physical Table Address Register */
 
 #define IPU_CTRL_ADDR_SEL	BIT(20)		/* address mode selector */
+#define IPU_CTRL_ZOOM_SEL	BIT(18)		/* scale 0:bilinear 1:bicubic */
 #define IPU_CTRL_DFIX_SEL	BIT(17)		/* fixed dest addr */
 #define IPU_CTRL_LCDC_SEL	BIT(11)		/* output to LCDC FIFO */
 #define IPU_CTRL_SPKG_SEL	BIT(10)		/* packed input format */

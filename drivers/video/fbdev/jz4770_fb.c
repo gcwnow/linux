@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2012, Maarten ter Huurne <maarten@treewalker.org>
  * Copyright (C) 2014, Paul Cercueil <paul@crapouillou.net>
+ * Copyright (C) 2018, Daniel Silsby <dansilsby@gmail.com>
  *
  * Based on the JZ4760 frame buffer driver:
  * Copyright (C) 2005-2008, Ingenic Semiconductor Inc.
@@ -48,6 +49,11 @@
 
 #define MAX_XRES 640
 #define MAX_YRES 480
+
+/* Signed 15.16 fixed-point math (for bicubic scaling coefficients) */
+#define I2F(i) ((int32_t)(i) * 65536)
+#define F2I(f) ((f) / 65536)
+#define FMUL(fa, fb) ((int32_t)(((int64_t)(fa) * (int64_t)(fb)) / 65536))
 
 struct jz_panel {
 	unsigned int cfg;	/* panel mode and pin usage etc. */
@@ -112,6 +118,16 @@ static void *lcd_frame1;
 static bool keep_aspect_ratio = true;
 static bool allow_downscaling = false;
 static bool integer_scaling = false;
+
+/*
+ * Sharpness settings range is [0,32]
+ * 0       : nearest-neighbor
+ * 1       : bilinear
+ * 2 .. 32 : bicubic (translating to sharpness factor -0.25 .. -4.0 internally)
+ */
+#define SHARPNESS_INCR (I2F(-1) / 8)
+static unsigned int sharpness_upscaling   = 8;      /* -0.125 * 8 = -1.0 */
+static unsigned int sharpness_downscaling = 8;      /* -0.125 * 8 = -1.0 */
 
 static void ctrl_enable(struct jzfb *jzfb)
 {
@@ -383,39 +399,123 @@ static void jzfb_ipu_disable(struct jzfb *jzfb)
 	writel(ctrl & ~IPU_CTRL_CHIP_EN, jzfb->ipu_base + IPU_CTRL);
 }
 
-static void set_downscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
+/*
+ * Apply conventional cubic convolution kernel. Both parameters
+ *  and return value are 15.16 signed fixed-point.
+ *
+ *  @f_a: Sharpness factor, typically in range [-4.0, -0.25].
+ *        A larger magnitude increases perceived sharpness, but going past
+ *        -2.0 might cause ringing artifacts to outweigh any improvement.
+ *        Nice values on a 320x240 LCD are between -0.75 and -2.0.
+ *
+ *  @f_x: Absolute distance in pixels from 'pixel 0' sample position
+ *        along horizontal (or vertical) source axis. Range is [0, +2.0].
+ *
+ *  returns: Weight of this pixel within 4-pixel sample group. Range is
+ *           [-2.0, +2.0]. For moderate (i.e. > -3.0) sharpness factors,
+ *           range is within [-1.0, +1.0].
+ */
+static inline int32_t cubic_conv(const int32_t f_a, const int32_t f_x)
+{
+	const int32_t f_1 = I2F(1);
+	const int32_t f_2 = I2F(2);
+	const int32_t f_3 = I2F(3);
+	const int32_t f_4 = I2F(4);
+	const int32_t f_x2 = FMUL(f_x, f_x);
+	const int32_t f_x3 = FMUL(f_x, f_x2);
+
+	if (f_x <= f_1)
+		return FMUL((f_a + f_2), f_x3) - FMUL((f_a + f_3), f_x2) + f_1;
+	else if (f_x <= f_2)
+		return FMUL(f_a, (f_x3 - 5*f_x2 + 8*f_x - f_4));
+	else
+		return 0;
+}
+
+static void set_coefs_reg(struct jzfb *jzfb, unsigned int reg,
+		unsigned int sharpness_setting,
+		unsigned int weight, unsigned int offset)
+{
+	/*
+	 * On entry, "weight" is a coefficient suitable for bilinear mode,
+	 *  which is converted to a set of four suitable for bicubic mode.
+	 *
+	 * "weight 512" means all of pixel 0;
+	 * "weight 256" means half of pixel 0 and half of pixel 1;
+	 * "weight 0" means all of pixel 1;
+	 *
+	 * "offset" is increment to next source pixel sample location
+	 */
+
+	uint32_t val;
+	int32_t w0, w1, w2, w3; /* Pixel weights at X (or Y) offsets -1,0,1,2 */
+
+	weight = clamp_val(weight, 0, 512);
+
+	if (sharpness_setting < 2) {
+		/*
+		 *  When sharpness setting is 0, emulate nearest-neighbor.
+		 *  When sharpness setting is 1, emulate bilinear.
+		 */
+
+		if (sharpness_setting == 0)
+			weight = weight >= 256 ? 512 : 0;
+		w0 = 0;
+		w1 = weight;
+		w2 = 512 - weight;
+		w3 = 0;
+	} else {
+		const int32_t f_a = SHARPNESS_INCR * sharpness_setting;
+		const int32_t f_h = I2F(1) / 2; /* Round up 0.5 */
+
+		/*
+		 * Note that always rounding towards +infinity here is intended.
+		 * The resulting coefficients match a round-to-nearest-int
+		 * double floating-point implementation.
+		 */
+
+		weight = 512 - weight;
+		w0 = F2I(f_h + 512 * cubic_conv(f_a, I2F(512  + weight) / 512));
+		w1 = F2I(f_h + 512 * cubic_conv(f_a, I2F(0    + weight) / 512));
+		w2 = F2I(f_h + 512 * cubic_conv(f_a, I2F(512  - weight) / 512));
+		w3 = F2I(f_h + 512 * cubic_conv(f_a, I2F(1024 - weight) / 512));
+		w0 = clamp_val(w0, -1024, 1023);
+		w1 = clamp_val(w1, -1024, 1023);
+		w2 = clamp_val(w2, -1024, 1023);
+		w3 = clamp_val(w3, -1024, 1023);
+	}
+
+	val = ((w1 & 0x7FF) << 17) | ((w0 & 0x7FF) << 6);
+	writel(val, jzfb->ipu_base + reg);
+	val = ((w3 & 0x7FF) << 17) | ((w2 & 0x7FF) << 6) | (offset << 1);
+	writel(val, jzfb->ipu_base + reg);
+}
+
+static void set_downscale_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
 	unsigned int i, weight_num = denom;
 
 	for (i = 0; i < num; i++) {
 		unsigned int weight, offset;
-		u32 value;
 
 		weight_num = num + (weight_num - num) % (num * 2);
-
-		/*
-		 * Here, "input pixel 1.0" means half of 0 and half of 1;
-		 * "input pixel 0.5" means all of 0; and
-		 * "input pixel 1.49" means almost all of 1.
-		 */
 		weight = 512 - 512 * (weight_num - num) / (num * 2);
 		weight_num += denom * 2;
 		offset = (weight_num - num) / (num * 2);
 
-		value = ((weight & 0x7FF) << 6) | (offset << 1);
-		writel(value, jzfb->ipu_base + reg);
+		set_coefs_reg(jzfb, reg, sharpness_downscaling, weight, offset);
 	}
 }
 
-static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
+static void set_upscale_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
 	unsigned int i, weight_num = 0;
 
 	for (i = 0; i < num; i++) {
 		unsigned int weight = 512 - 512 * weight_num / num;
-		u32 offset = 0, value;
+		unsigned int offset = 0;
 
 		weight_num += denom;
 		if (weight_num >= num) {
@@ -423,37 +523,20 @@ static void set_upscale_bilinear_coefs(struct jzfb *jzfb, unsigned int reg,
 			offset = 1;
 		}
 
-		value = (weight & 0x7FF) << 6 | (offset << 1);
-		writel(value, jzfb->ipu_base + reg);
-	}
-}
-
-static void set_upscale_nearest_neighbour_coefs(struct jzfb *jzfb,
-			unsigned int reg, unsigned int num)
-{
-	unsigned int i, weight_num = 1;
-
-	for (i = 0; i < num; i++, weight_num++) {
-		u32 value, offset = weight_num / num;
-		weight_num %= num;
-
-		value = (512 << 6) | (offset << 1);
-		writel(value, jzfb->ipu_base + reg);
+		set_coefs_reg(jzfb, reg, sharpness_upscaling, weight, offset);
 	}
 }
 
 static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
-	/* Start programmation of the LUT */
+	/* Begin programming the LUT */
 	writel(1, jzfb->ipu_base + reg);
 
 	if (denom > num)
-		set_downscale_bilinear_coefs(jzfb, reg, num, denom);
-	else if (denom == 1)
-		set_upscale_nearest_neighbour_coefs(jzfb, reg, num);
+		set_downscale_coefs(jzfb, reg, num, denom);
 	else
-		set_upscale_bilinear_coefs(jzfb, reg, num, denom);
+		set_upscale_coefs(jzfb, reg, num, denom);
 }
 
 static inline bool scaling_required(struct jzfb *jzfb)
@@ -522,6 +605,15 @@ static void jzfb_ipu_configure(struct jzfb *jzfb)
 				denomW = denomH;
 			}
 		}
+
+		/*
+		 * Must set ZOOM_SEL before programming bicubic LUTs.
+		 * The IPU supports both bilinear and bicubic modes, but we use
+		 * only bicubic. It can do anything bilinear can and more.
+		 */
+		writel(IPU_CTRL_CHIP_EN | IPU_CTRL_ZOOM_SEL,
+			jzfb->ipu_base + IPU_CTRL);
+		ctrl |= IPU_CTRL_ZOOM_SEL;
 
 		if (numW != 1 || denomW != 1) {
 			set_coefs(jzfb, IPU_HRSZ_COEF_LUT, numW, denomW);
@@ -874,13 +966,9 @@ static irqreturn_t jzfb_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static ssize_t jzfb_boolean_store(struct device *dev,
-		const char *buf, size_t count, bool *bool_ptr)
+static void scaling_settings_change(struct device *dev)
 {
 	struct jzfb *jzfb = dev_get_drvdata(dev);
-
-	if (strtobool(buf, bool_ptr) < 0)
-		return -EINVAL;
 
 	if (jzfb->is_enabled && scaling_required(jzfb)) {
 		ctrl_disable(jzfb);
@@ -889,8 +977,6 @@ static ssize_t jzfb_boolean_store(struct device *dev,
 		jzfb_ipu_enable(jzfb);
 		jzfb_lcdc_enable(jzfb);
 	}
-
-	return count;
 }
 
 static ssize_t keep_aspect_ratio_show(struct device *dev,
@@ -902,7 +988,17 @@ static ssize_t keep_aspect_ratio_show(struct device *dev,
 static ssize_t keep_aspect_ratio_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	return jzfb_boolean_store(dev, buf, count, &keep_aspect_ratio);
+	bool new_val;
+
+	if (kstrtobool(buf, &new_val))
+		return -EINVAL;
+
+	if (keep_aspect_ratio != new_val) {
+		keep_aspect_ratio = new_val;
+		scaling_settings_change(dev);
+	}
+
+	return count;
 }
 
 static ssize_t integer_scaling_show(struct device *dev,
@@ -914,11 +1010,67 @@ static ssize_t integer_scaling_show(struct device *dev,
 static ssize_t integer_scaling_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	return jzfb_boolean_store(dev, buf, count, &integer_scaling);
+	bool new_val;
+
+	if (kstrtobool(buf, &new_val))
+		return -EINVAL;
+
+	if (integer_scaling != new_val) {
+		integer_scaling = new_val;
+		scaling_settings_change(dev);
+	}
+
+	return count;
+}
+
+static ssize_t sharpness_upscaling_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", sharpness_upscaling);
+}
+
+static ssize_t sharpness_upscaling_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int new_val;
+
+	if (kstrtouint(buf, 0, &new_val) || new_val > 32)
+		return -EINVAL;
+
+	if (sharpness_upscaling != new_val) {
+		sharpness_upscaling = new_val;
+		scaling_settings_change(dev);
+	}
+
+	return count;
+}
+
+static ssize_t sharpness_downscaling_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", sharpness_downscaling);
+}
+
+static ssize_t sharpness_downscaling_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int new_val;
+
+	if (kstrtouint(buf, 0, &new_val) || new_val > 32)
+		return -EINVAL;
+
+	if (sharpness_downscaling != new_val) {
+		sharpness_downscaling = new_val;
+		scaling_settings_change(dev);
+	}
+
+	return count;
 }
 
 static DEVICE_ATTR_RW(keep_aspect_ratio);
 static DEVICE_ATTR_RW(integer_scaling);
+static DEVICE_ATTR_RW(sharpness_upscaling);
+static DEVICE_ATTR_RW(sharpness_downscaling);
 static DEVICE_BOOL_ATTR(allow_downscaling, 0644, allow_downscaling);
 
 static int jzfb_probe(struct platform_device *pdev)
@@ -1067,6 +1219,18 @@ static int jzfb_probe(struct platform_device *pdev)
 		goto err_remove_allow_downscaling_file;
 	}
 
+	ret = device_create_file(&pdev->dev, &dev_attr_sharpness_upscaling);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
+		goto err_remove_integer_scaling_file;
+	}
+
+	ret = device_create_file(&pdev->dev, &dev_attr_sharpness_downscaling);
+	if (ret) {
+		dev_err(&pdev->dev, "Unable to create sysfs node: %i\n", ret);
+		goto err_remove_sharpness_upscaling_file;
+	}
+
 	/*
 	 * Wait for at least one full frame to have been sent to the LCD
 	 * before registering the frame buffer, since that is the trigger
@@ -1082,7 +1246,7 @@ static int jzfb_probe(struct platform_device *pdev)
 	ret = register_framebuffer(fb);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device.\n");
-		goto err_remove_integer_scaling_file;
+		goto err_remove_sharpness_downscaling_file;
 	}
 	dev_info(&pdev->dev,
 		"fb%d: %s frame buffer device, using %dK of video memory\n",
@@ -1098,6 +1262,10 @@ static int jzfb_probe(struct platform_device *pdev)
 
 	return 0;
 
+err_remove_sharpness_downscaling_file:
+	device_remove_file(&pdev->dev, &dev_attr_sharpness_downscaling);
+err_remove_sharpness_upscaling_file:
+	device_remove_file(&pdev->dev, &dev_attr_sharpness_upscaling);
 err_remove_integer_scaling_file:
 	device_remove_file(&pdev->dev, &dev_attr_integer_scaling);
 err_remove_allow_downscaling_file:
@@ -1119,6 +1287,8 @@ static int jzfb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
 
+	device_remove_file(&pdev->dev, &dev_attr_sharpness_downscaling);
+	device_remove_file(&pdev->dev, &dev_attr_sharpness_upscaling);
 	device_remove_file(&pdev->dev, &dev_attr_integer_scaling);
 	device_remove_file(&pdev->dev, &dev_attr_allow_downscaling.attr);
 	device_remove_file(&pdev->dev, &dev_attr_keep_aspect_ratio);
