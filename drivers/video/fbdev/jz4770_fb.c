@@ -87,7 +87,7 @@ struct jzfb {
 	struct platform_device *pdev;
 
 	uint32_t pseudo_palette[16];
-	unsigned int bpp;	/* Current 'bits per pixel' value (32 or 16) */
+	unsigned int bpp;	/* Current 'bits per pixel' value (32,16,15) */
 
 	uint32_t pan_offset;
 	uint32_t vsync_count;
@@ -177,12 +177,15 @@ static int jzfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 	if (regno >= ARRAY_SIZE(jzfb->pseudo_palette))
 		return 1;
 
-	if (fb->var.bits_per_pixel == 16)
+	if (fb->var.bits_per_pixel == 15)
 		((u32 *)fb->pseudo_palette)[regno] =
-				(red & 0xf800) | ((green & 0xfc00) >> 5) | (blue >> 11);
+			((red & 0xf800) >> 1) | ((green & 0xf800) >> 6) | (blue >> 11);
+	else if (fb->var.bits_per_pixel == 16)
+		((u32 *)fb->pseudo_palette)[regno] =
+			(red & 0xf800) | ((green & 0xfc00) >> 5) | (blue >> 11);
 	else
 		((u32 *)fb->pseudo_palette)[regno] =
-				((red & 0xff00) << 8) | (green & 0xff00) | (blue >> 8);
+			((red & 0xff00) << 8) | (green & 0xff00) | (blue >> 8);
 
 	return 0;
 }
@@ -277,10 +280,14 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	var->vmode = FB_VMODE_NONINTERLACED;
 	var->yoffset = 0;
 
-	if (var->bits_per_pixel != 32 && var->bits_per_pixel != 16)
-		var->bits_per_pixel = 32;
-
-	if (var->bits_per_pixel == 16) {
+	if (var->bits_per_pixel == 15) {
+		var->transp.offset = 15;
+		var->transp.length = 1;
+		var->red.offset = 10;
+		var->green.offset = 5;
+		var->blue.offset = 0;
+		var->red.length = var->green.length = var->blue.length = 5;
+	} else if (var->bits_per_pixel == 16) {
 		var->transp.length = 0;
 		var->blue.length = var->red.length = 5;
 		var->green.length = 6;
@@ -289,6 +296,9 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		var->green.offset = 5;
 		var->blue.offset = 0;
 	} else {
+		/* Force 32bpp if it's not already */
+		var->bits_per_pixel = 32;
+
 		var->transp.offset = 24;
 		var->red.offset = 16;
 		var->green.offset = 8;
@@ -577,6 +587,9 @@ static void jzfb_ipu_configure(struct jzfb *jzfb)
 	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
 
 	switch (jzfb->bpp) {
+	case 15:
+		/* Nothing to do.. IN_FMT field should be 0. */
+		break;
 	case 16:
 		format |= 3 << IPU_D_FMT_IN_FMT_BIT;
 		break;
@@ -881,7 +894,7 @@ static int jzfb_set_par(struct fb_info *info)
 
 	jzfb->pan_offset = 0;
 	jzfb->bpp = var->bits_per_pixel;
-	fix->line_length = var->xres_virtual * (var->bits_per_pixel >> 3);
+	fix->line_length = var->xres_virtual * ((var->bits_per_pixel + 7) / 8);
 
 	jzfb_set_panel_mode(jzfb);
 	jzfb_ipu_configure(jzfb);
@@ -1208,7 +1221,7 @@ static int jzfb_probe(struct platform_device *pdev)
 	jzfb_change_clock(jzfb, fb->var.pixclock);
 	clk_enable(jzfb->lpclk);
 
-	fb->fix.line_length = fb->var.xres_virtual * (fb->var.bits_per_pixel >> 3);
+	fb->fix.line_length = fb->var.xres_virtual * ((fb->var.bits_per_pixel + 7) / 8);
 
 	jzfb->delay_flush = 0;
 
