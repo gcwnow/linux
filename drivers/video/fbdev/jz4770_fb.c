@@ -768,11 +768,6 @@ static int jzfb_pan_display(struct fb_var_screeninfo *var,
 	return 0;
 }
 
-static inline unsigned int words_per_line(unsigned int width, unsigned int bpp)
-{
-	return (bpp * width + 31) / 32;
-}
-
 /*
  * Map screen memory
  */
