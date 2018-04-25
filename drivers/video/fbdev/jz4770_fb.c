@@ -527,16 +527,35 @@ static void set_upscale_coefs(struct jzfb *jzfb, unsigned int reg,
 	}
 }
 
+static void set_integer_upscale_coefs(struct jzfb *jzfb,
+		unsigned int reg, unsigned int num)
+{
+	/* Force nearest-neighbor scaling and use simple math when upscaling
+	 * by an integer ratio. It looks better, and fixes a few problem cases.
+	 */
+	unsigned int i;
+
+	for (i = 0; i < num; i++) {
+		unsigned int offset = (i == (num - 1)) ? 1 : 0;
+
+		set_coefs_reg(jzfb, reg, 0, 512, offset);
+	}
+}
+
 static void set_coefs(struct jzfb *jzfb, unsigned int reg,
 		unsigned int num, unsigned int denom)
 {
 	/* Begin programming the LUT */
 	writel(1, jzfb->ipu_base + reg);
 
-	if (denom > num)
-		set_downscale_coefs(jzfb, reg, num, denom);
-	else
-		set_upscale_coefs(jzfb, reg, num, denom);
+	if (denom > num) {
+			set_downscale_coefs(jzfb, reg, num, denom);
+	} else {
+		if (denom == 1)
+			set_integer_upscale_coefs(jzfb, reg, num);
+		else
+			set_upscale_coefs(jzfb, reg, num, denom);
+	}
 }
 
 static inline bool scaling_required(struct jzfb *jzfb)
