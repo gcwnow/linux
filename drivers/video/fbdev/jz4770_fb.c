@@ -283,28 +283,43 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	if (var->bits_per_pixel == 15) {
 		var->transp.offset = 15;
 		var->transp.length = 1;
-		var->red.offset = 10;
-		var->green.offset = 5;
-		var->blue.offset = 0;
 		var->red.length = var->green.length = var->blue.length = 5;
+
+		/* Force conventional RGB ordering, unless BGR is requested. */
+		if (var->blue.offset != 10 || var->green.offset != 5 ||
+				var->red.offset != 0) {
+			var->red.offset = 10;
+			var->green.offset = 5;
+			var->blue.offset = 0;
+		}
 	} else if (var->bits_per_pixel == 16) {
-		var->transp.length = 0;
-		var->blue.length = var->red.length = 5;
-		var->green.length = 6;
 		var->transp.offset = 0;
-		var->red.offset = 11;
-		var->green.offset = 5;
-		var->blue.offset = 0;
+		var->transp.length = 0;
+		var->red.length = var->blue.length = 5;
+		var->green.length = 6;
+
+		/* Force conventional RGB ordering, unless BGR is requested. */
+		if (var->blue.offset != 11 || var->green.offset != 5 ||
+				var->red.offset != 0) {
+			var->red.offset = 11;
+			var->green.offset = 5;
+			var->blue.offset = 0;
+		}
 	} else {
 		/* Force 32bpp if it's not already */
 		var->bits_per_pixel = 32;
 
 		var->transp.offset = 24;
-		var->red.offset = 16;
-		var->green.offset = 8;
-		var->blue.offset = 0;
 		var->transp.length = var->red.length =
 				var->green.length = var->blue.length = 8;
+
+		/* Force conventional RGB ordering, unless BGR is requested. */
+		if (var->blue.offset != 16 || var->green.offset != 8 ||
+				var->red.offset != 0) {
+			var->red.offset = 16;
+			var->green.offset = 8;
+			var->blue.offset = 0;
+		}
 	}
 
 	jzfb->clear_fb = var->bits_per_pixel != fb->var.bits_per_pixel ||
@@ -585,6 +600,21 @@ static void jzfb_ipu_configure(struct jzfb *jzfb)
 
 	/* Enable the chip, reset all the registers */
 	writel(IPU_CTRL_CHIP_EN | IPU_CTRL_RST, jzfb->ipu_base + IPU_CTRL);
+
+	/*
+	 * The IPU can swizzle its RGB output. We allow userspace to request
+	 * an unconventional BGR ordering, useful for some emulators. The IPU
+	 * thinks it's swizzling RGB->BGR, but it's actually BGR->RGB.
+	 *  Output swizzling modes IPU supports (3-bit RGB_OUT_OFT field):
+	 *   0: RGB (default)
+	 *   1: RBG
+	 *   2: GBR
+	 *   3: GRB
+	 *   4: BRG
+	 *   5: BGR (only non-default mode supported in this driver)
+	 */
+	if (fb->var.blue.offset > fb->var.green.offset)
+		format |= 5 << IPU_D_FMT_RGB_OUT_OFT_BIT;
 
 	switch (jzfb->bpp) {
 	case 15:
