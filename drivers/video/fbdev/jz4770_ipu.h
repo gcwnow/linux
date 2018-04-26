@@ -59,7 +59,9 @@
 #define IPU_IN_GS_W_BIT		0x10
 #define IPU_OUT_GS_H_BIT	0x0
 #define IPU_OUT_GS_W_BIT	0x10
-#define IPU_D_FMT_IN_FMT_BIT	0x0
-#define IPU_D_FMT_OUT_FMT_BIT	0x13
+
+#define IPU_D_FMT_IN_FMT_BIT		0x0
+#define IPU_D_FMT_OUT_FMT_BIT		0x13
+#define IPU_D_FMT_RGB_OUT_OFT_BIT	0x16
 
 #endif /* __JZ4770_IPU_H__ */
