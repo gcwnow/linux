@@ -665,6 +665,20 @@
 		interrupts = <6>;
 	};
 
+	vpu: jz4770-vpu@132A0000 {
+		compatible = "ingenic,jz4770-vpu";
+		reg = <0x132A0000 0x10000 /* AUX */
+		       0x132B0000 0x10000 /* TCSM0 */
+		       >;
+
+		clocks = <&cgu JZ4770_CLK_AUX>, <&cgu JZ4770_CLK_VPU>;
+		clock-names = "aux", "vpu";
+
+		/* Irq from VPU to CPU is routed directly. */
+		interrupt-parent = <&cpuintc>;
+		interrupts = <3>;
+	};
+
 	dmac0: jz4770-dma@13420000 {
 		compatible = "ingenic,jz4770-dma";
 		reg = <0x13420000 0xC0
