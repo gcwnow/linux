@@ -6,6 +6,7 @@
  * Copyright (C) 2006  Ingenic Semiconductor Inc.
  * Copyright (C) 2013  Wladimir J. van der Laan
  * Copyright (C) 2013  Maarten ter Huurne <maarten@treewalker.org>
+ * Copyright (C) 2018  Daniel Silsby <dansilsby@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -31,6 +32,7 @@
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/io.h>
+#include <linux/bitops.h>
 
 #include <asm/bitops.h>
 #include <asm/pgtable.h>
@@ -40,9 +42,6 @@
 #include <asm/irq.h>
 #include <asm/thread_info.h>
 #include <asm/uaccess.h>
-
-#include <asm/mach-jz4770/jz4770cpm.h>
-#include <asm/mach-jz4770/irq.h>
 
 #include <linux/syscalls.h>
 
@@ -100,15 +99,8 @@ static void jz_vpu_on(struct device *dev)
 {
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 
-	/* Do not stop CPUI clock when in idle mode. */
-	SETREG32(CPM_OPCR, OPCR_IDLE_DIS);
-
-	clk_enable(vpu->aux_clk);
-	clk_enable(vpu->vpu_clk);
-
-	/* enable power to AHB1 (VPU), then wait for it to enable */
-	CLRREG32(CPM_LCR, LCR_PDAHB1);
-	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
+	clk_prepare_enable(vpu->aux_clk);
+	clk_prepare_enable(vpu->vpu_clk);
 
 	/*
 	 * Enable partial kernel mode. This allows user space access
@@ -126,22 +118,16 @@ static void jz_vpu_off(struct device *dev)
 {
 	struct jz_vpu *vpu = dev_get_drvdata(dev->parent);
 
-	/* Power down AHB1 (VPU) */
-	SETREG32(CPM_LCR, LCR_PDAHB1);
-	while (!(REG_CPM_LCR && LCR_PDAHB1S)) ;
-
 	disable_irq_nosync(vpu->irq);
 
-	clk_disable(vpu->aux_clk);
-	clk_disable(vpu->vpu_clk);
+	clk_disable_unprepare(vpu->vpu_clk);
+	clk_disable_unprepare(vpu->aux_clk);
 
 	/*
 	 * Disable partial kernel mode. This disallows user space access
 	 * to the TCSM, cache instructions and VPU.
 	 */
 	clear_c0_config7(BIT(6));
-
-	CLRREG32(CPM_OPCR, OPCR_IDLE_DIS);
 
 	dev_dbg(dev, "VPU disabled\n");
 }
@@ -366,7 +352,7 @@ static int jz_vpu_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = dev_set_drvdata(dev, vpu);
+	dev_set_drvdata(dev, vpu);
 	jz_vpu_misc.parent = dev;
 	ret = misc_register(&jz_vpu_misc);
 	if (ret < 0) {
@@ -406,6 +392,14 @@ static int jz_vpu_resume(struct platform_device *pdev)
 
 #endif
 
+#ifdef CONFIG_OF
+static const struct of_device_id jz_vpu_dt_ids[] = {
+	{ .compatible = "ingenic,jz4770-vpu", },
+	{ /* sentinel */ }
+};
+MODULE_DEVICE_TABLE(of, jz_vpu_dt_ids);
+#endif
+
 static struct platform_driver jz_vpu_driver = {
 	.probe		= jz_vpu_probe,
 	.remove		= jz_vpu_remove,
@@ -414,6 +408,7 @@ static struct platform_driver jz_vpu_driver = {
 	.driver		= {
 		.name	= "jz-vpu",
 		.owner	= THIS_MODULE,
+		.of_match_table	= of_match_ptr(jz_vpu_dt_ids),
 	},
 };
 
