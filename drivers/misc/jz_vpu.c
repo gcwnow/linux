@@ -276,6 +276,7 @@ static int jz_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 }
 
 static struct file_operations jz_vpu_fops = {
+	.owner		= THIS_MODULE,
 	.open		= jz_vpu_open,
 	.release	= jz_vpu_release,
 	.unlocked_ioctl	= jz_vpu_ioctl,
