@@ -483,6 +483,8 @@
 	vmmc-supply = <&mmc0_power>;
 	non-removable;
 
+	max-frequency = <48000000>;
+
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_msc0_4bit>;
 };
@@ -492,6 +494,8 @@
 	max-frequency = <48000000>;
 	cd-gpios = <&gpb 2 GPIO_ACTIVE_LOW>;
 	vmmc-supply = <&mmc1_power>;
+
+	max-frequency = <48000000>;
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_msc1_4bit>;
